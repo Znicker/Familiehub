@@ -592,6 +592,77 @@
 </div>
 
 <script>
+/* Vanlig nettleserlagring som erstatter Claude window.storage */
+window.storage = (() => {
+  const DB_NAME = 'oppskriftsboka';
+  const STORE_NAME = 'data';
+  const DB_VERSION = 1;
+
+  function openDatabase() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME);
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function runTransaction(mode, action) {
+    const db = await openDatabase();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, mode);
+      const store = transaction.objectStore(STORE_NAME);
+      const request = action(store);
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+
+      transaction.oncomplete = () => db.close();
+      transaction.onerror = () => {
+        db.close();
+        reject(transaction.error);
+      };
+    });
+  }
+
+  return {
+    async get(key) {
+      const value = await runTransaction(
+        'readonly',
+        store => store.get(key)
+      );
+
+      return value === undefined ? null : { value };
+    },
+
+    async set(key, value) {
+      await runTransaction(
+        'readwrite',
+        store => store.put(value, key)
+      );
+
+      return { key, value };
+    },
+
+    async delete(key) {
+      await runTransaction(
+        'readwrite',
+        store => store.delete(key)
+      );
+
+      return { key };
+    }
+  };
+})();
+
 /* ---------------- State ---------------- */
 let recipes = [];       // lightweight index: {id, title, baseServings, time, thumb, createdAt} - used for the home list
 let recipeCache = {};   // id -> full recipe object (ingredients, steps, photos), loaded on demand
