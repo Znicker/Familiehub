@@ -104,11 +104,51 @@
   .empty-state .big{ font-size:40px; display:block; margin-bottom:10px; }
   .empty-state p{ margin:6px 0 0; font-size:15px; line-height:1.5; color:#C7CBB4; }
 
-  .list-header{ display:flex; align-items:center; justify-content:space-between; margin-top:16px; }
-  .list-header h2{ font-size:12.5px; color:#D8DAC5; text-transform:uppercase; letter-spacing:0.07em; font-weight:700; }
-  .edit-toggle{
-    background:none; border:none; color:var(--lime); font-family:'Archivo',sans-serif; font-weight:700;
-    font-size:13.5px; padding:6px 4px; text-transform:uppercase; letter-spacing:0.02em;
+  .list-header{
+    position:sticky;
+    top:62px;
+    z-index:18;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin:0 -20px 0;
+    padding:12px 20px 10px;
+    background:linear-gradient(180deg, var(--bg-1) 82%, rgba(41,64,31,0.96));
+    box-shadow:0 8px 14px rgba(0,0,0,0.16);
+  }
+  .list-header h2{
+    font-size:12.5px;
+    color:#D8DAC5;
+    text-transform:uppercase;
+    letter-spacing:0.07em;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .home-actions{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    margin-left:auto;
+  }
+  .home-action{
+    background:none;
+    border:none;
+    color:var(--lime);
+    font-family:'Archivo',sans-serif;
+    font-weight:700;
+    font-size:12.5px;
+    padding:8px 7px;
+    border-radius:8px;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+  }
+  .home-action.active{
+    background:var(--lime);
+    color:#173109;
+  }
+  .home-action:active{
+    background:rgba(124,181,55,0.22);
   }
 
   .recipe-grid{ display:flex; flex-direction:column; gap:12px; margin-top:14px; }
@@ -466,9 +506,6 @@
   <!-- HOME -->
   <section class="view active" id="view-home">
     <div id="home-content"></div>
-    <div class="fab-sticky">
-      <button class="fab" id="fab" onclick="goAdd()">＋</button>
-    </div>
   </section>
 
   <!-- ADD / EDIT -->
@@ -764,7 +801,6 @@ function makeThumbnail(dataUrl, maxDim){
 function showView(id){
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  document.getElementById('fab').style.display = (id === 'view-home') ? 'flex' : 'none';
 
   const topbar = document.getElementById('topbar');
   const backBtn = document.getElementById('topbar-back');
@@ -789,7 +825,7 @@ function showView(id){
 function goAddBack(){
   goHome();
 }
-function goHome(){ renderHome(); showView('view-home'); }
+function goHome(){ homeMode = 'normal'; renderHome(); showView('view-home'); }
 function goAdd(){
   resetAddForm();
   document.getElementById('add-heading').textContent = 'Ny oppskrift';
@@ -797,29 +833,27 @@ function goAdd(){
 }
 
 /* ---------------- Home ---------------- */
-let homeEditMode = false;
+let homeMode = 'normal'; // normal | edit | delete
 
 function renderHome(){
   const el = document.getElementById('home-content');
   if(recipes.length === 0){
-    homeEditMode = false;
+    homeMode = 'normal';
     el.innerHTML = `
+      ${renderHomeActions()}
       <div class="empty-state">
         <span class="big">📇</span>
         <h3>Ingen oppskrifter ennå</h3>
-        <p>Trykk på ＋ nederst for å ta bilde av<br>et oppskriftskort eller legge inn en oppskrift.</p>
+        <p>Trykk på NY for å ta bilde av et oppskriftskort<br>eller legge inn en oppskrift.</p>
       </div>`;
     return;
   }
   const sorted = [...recipes].sort((a,b) => b.createdAt - a.createdAt);
   el.innerHTML = `
-    <div class="list-header">
-      <h2>Dine oppskrifter</h2>
-      <button class="edit-toggle" onclick="toggleHomeEditMode()">${homeEditMode ? 'Ferdig' : 'Rediger'}</button>
-    </div>
+    ${renderHomeActions()}
     <div class="recipe-grid">` + sorted.map(r => `
     <div class="card-wrap">
-      ${homeEditMode ? `<button class="delete-badge" onclick="deleteRecipeFromHome('${r.id}')" title="Slett">−</button>` : ''}
+      ${homeMode === 'delete' ? `<button class="delete-badge" onclick="event.stopPropagation(); deleteRecipeFromHome('${r.id}')" title="Slett">−</button>` : ''}
       <button class="recipe-card" onclick="handleCardTap('${r.id}')">
         <div class="tab"></div>
         ${r.thumb ? `<div class="photo"><img src="${r.thumb}" alt=""></div>` : ''}
@@ -835,14 +869,27 @@ function renderHome(){
   `).join('') + `</div>`;
 }
 
-function toggleHomeEditMode(){
-  homeEditMode = !homeEditMode;
+function renderHomeActions(){
+  return `
+    <div class="list-header">
+      <h2>Dine oppskrifter</h2>
+      <div class="home-actions" aria-label="Oppskriftshandlinger">
+        <button class="home-action" onclick="goAdd()">Ny</button>
+        <button class="home-action ${homeMode === 'edit' ? 'active' : ''}" onclick="setHomeMode('edit')">Rediger</button>
+        <button class="home-action ${homeMode === 'delete' ? 'active' : ''}" onclick="setHomeMode('delete')">Slett</button>
+      </div>
+    </div>`;
+}
+function setHomeMode(mode){
+  homeMode = homeMode === mode ? 'normal' : mode;
   renderHome();
 }
 async function handleCardTap(id){
-  if(homeEditMode){
+  if(homeMode === 'edit'){
     currentRecipeId = id;
     await editCurrentRecipe();
+  }else if(homeMode === 'delete'){
+    deleteRecipeFromHome(id);
   }else{
     await openRecipe(id);
   }
