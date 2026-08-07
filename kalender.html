@@ -334,6 +334,94 @@ footer{
 }
 footer .btn{margin-left:auto}
 
+/* ---------- Ukevisning: kalendere som rader ---------- */
+.uke{flex:1;min-height:0;display:flex;flex-direction:column}
+.uke-head{display:grid;background:var(--bg-2);border-bottom:1px solid var(--grid);flex-shrink:0}
+.uke-corner{
+  border-right:1px solid var(--grid);display:flex;align-items:center;gap:6px;
+  padding:0 10px;font-size:10px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-soft);
+}
+.uke-dcol{
+  padding:7px 4px 8px;text-align:center;cursor:pointer;
+  border-left:1px solid var(--grid);transition:background .12s ease;
+}
+.uke-dcol:first-of-type{border-left:none}
+@media(hover:hover){.uke-dcol:hover{background:#EDF1F4}}
+.uke-dcol.idag .uke-dnum{
+  background:var(--ink);color:#fff;border-radius:999px;
+  display:inline-block;min-width:26px;padding:1px 6px;
+}
+.uke-dcol.sel{background:#EDF1F4;box-shadow:inset 0 -3px 0 var(--ink)}
+.uke-dow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+.uke-dnum{font-size:17px;font-weight:800;line-height:1.25;font-variant-numeric:tabular-nums}
+
+.uke-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
+.uke-row{display:grid;border-bottom:1px solid var(--line);min-height:58px}
+.uke-row:last-child{border-bottom:none}
+.uke-lab{
+  border-right:1px solid var(--grid);background:var(--bg-2);
+  display:flex;align-items:center;gap:8px;padding:8px 10px;
+}
+.uke-swatch{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.uke-navn{
+  font-size:13px;font-weight:700;line-height:1.2;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+.uke-cell{
+  border-left:1px solid var(--grid);padding:5px;cursor:pointer;min-width:0;
+  display:flex;flex-direction:column;gap:4px;
+}
+.uke-cell:first-of-type{border-left:none}
+.uke-cell.helg{background:rgba(44,62,80,.03)}
+.uke-cell.idag{background:rgba(184,217,71,.12)}
+.uke-chip{
+  color:#fff;border-radius:7px;padding:4px 7px;cursor:pointer;
+  font-size:12px;font-weight:700;line-height:1.28;overflow:hidden;
+  box-shadow:0 1px 2px rgba(44,62,80,.18);
+}
+.uke-chip.hel{border-left:3px solid rgba(255,255,255,.5)}
+.uke-chip-t{font-variant-numeric:tabular-nums;opacity:.9;margin-right:5px;font-size:11px}
+
+/* ---------- Dagmeny (langt trykk) ---------- */
+.dagpop{
+  position:fixed;inset:0;background:rgba(44,62,80,.45);z-index:60;
+  display:flex;align-items:center;justify-content:center;padding:22px;
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+}
+.dagpop-card{
+  background:var(--paper);border-radius:16px;width:100%;max-width:340px;
+  max-height:78dvh;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 20px 50px rgba(44,62,80,.32);
+}
+.dagpop-head{
+  padding:15px 18px 12px;font-size:13px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--line);
+}
+.dagpop-ny{
+  margin:12px 14px 4px;padding:12px;border:none;border-radius:11px;
+  background:var(--ink);color:#fff;font-family:'Archivo',sans-serif;
+  font-size:14px;font-weight:700;cursor:pointer;text-align:center;
+}
+.dagpop-ny:active{transform:scale(.98)}
+.dagpop-liste{padding:4px 8px 12px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dagpop-ev{
+  width:100%;display:flex;align-items:center;gap:10px;text-align:left;
+  background:none;border:none;border-radius:9px;padding:11px 10px;cursor:pointer;
+  font-family:'Archivo',sans-serif;color:var(--ink);
+}
+@media(hover:hover){.dagpop-ev:hover{background:var(--bg-2)}}
+.dagpop-ev:active{background:var(--bg-2)}
+.dagpop-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.dagpop-tid{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);
+  min-width:40px;font-variant-numeric:tabular-nums;
+}
+.dagpop-navn{
+  font-size:14px;font-weight:600;line-height:1.3;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+
 /* ---------- Smale skjermer ---------- */
 @media(max-width:900px){
   body{overflow:auto}
@@ -347,6 +435,8 @@ footer .btn{margin-left:auto}
   .who{display:none}
   .cal-ev{font-size:11px}
   .cal-cell{padding:5px}
+  .tg{min-height:72dvh}
+  .uke-lab{position:sticky;left:0;z-index:2}
 }
 </style>
 </head>
@@ -870,11 +960,11 @@ function renderCal(){
     cell.appendChild(box);
 
     cell.onclick = function(){
-      if(skjulTrykk) return;                            /* nettopp sveipet */
-      if(sameDay(date, S.sel)){ nyAvtale(); return; }   /* trykk igjen = ny avtale */
+      if(skjulTrykk) return;                    /* nettopp sveipet eller langt trykk */
       S.sel = date;
       render();
     };
+    langtTrykk(cell, function(){ dagMeny(date); });   /* langt trykk = ny / rediger */
     grid.appendChild(cell);
   }
 
@@ -961,7 +1051,9 @@ function render(){
   const mnd = S.modus === 'month';
   $('cal').hidden = !mnd;
   $('tg').hidden  = mnd;
-  if(mnd) renderCal(); else renderTid();
+  if(mnd) renderCal();
+  else if(S.modus === 'week') renderUke();
+  else renderTid();
 
   renderDay(); renderCalList();
 }
@@ -1035,7 +1127,7 @@ function fyllKalendervalg(valgtId){
   return kan.length;
 }
 
-function nyAvtale(time, minutt){
+function nyAvtale(time, minutt, calId){
   redigerer = null;
   const d = S.sel;
   const naa = new Date();
@@ -1055,7 +1147,7 @@ function nyAvtale(time, minutt){
   $('fNote').value  = '';
   $('btnSlett').hidden = true;
 
-  const antall = fyllKalendervalg(null);
+  const antall = fyllKalendervalg(calId || null);
   allDagToggle();
   dlgFeil(antall ? '' : 'Ingen av kalenderne dine kan skrives til.');
   $('btnLagre').disabled = !antall;
@@ -1225,6 +1317,104 @@ function spor(evs){
   });
   avslutt();
   return ut;
+}
+
+function renderUke(){
+  const start = mandag(S.sel);
+  const dager = [];
+  for(let i=0;i<7;i++) dager.push(plussDager(start, i));
+  const idag = new Date();
+
+  const aktive = S.calendars.filter(function(c){ return c.on; });
+  const kols = '128px repeat(7,minmax(0,1fr))';
+
+  const tg = $('tg');
+  tg.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'uke';
+
+  /* Topprad med ukedager */
+  const head = document.createElement('div');
+  head.className = 'uke-head';
+  head.style.gridTemplateColumns = kols;
+  head.appendChild(Object.assign(document.createElement('div'),
+    {className:'uke-corner', textContent:'Uke ' + ukeNr(start)}));
+  dager.forEach(function(d){
+    const c = document.createElement('div');
+    c.className = 'uke-dcol'
+      + (sameDay(d, idag) ? ' idag' : '')
+      + (sameDay(d, S.sel) ? ' sel' : '');
+    c.innerHTML = '<div class="uke-dow">' + DOW[(d.getDay()+6)%7] + '</div>'
+                + '<div class="uke-dnum">' + d.getDate() + '</div>';
+    c.onclick = function(){ if(skjulTrykk) return; S.sel = d; render(); };
+    langtTrykk(c, function(){ dagMeny(d); });
+    head.appendChild(c);
+  });
+  wrap.appendChild(head);
+
+  /* Rullbart område: én rad per påslått kalender */
+  const scroll = document.createElement('div');
+  scroll.className = 'uke-scroll';
+
+  if(!aktive.length){
+    scroll.innerHTML = '<div class="msg" style="padding:16px">'
+      + 'Ingen kalendere er på. Slå på en kalender i lista.</div>';
+  }
+
+  aktive.forEach(function(c){
+    const row = document.createElement('div');
+    row.className = 'uke-row';
+    row.style.gridTemplateColumns = kols;
+
+    const lab = document.createElement('div');
+    lab.className = 'uke-lab';
+    lab.innerHTML = '<span class="uke-swatch" style="background:'+c.color+'"></span>'
+                  + '<span class="uke-navn">'+esc(c.name)+'</span>';
+    row.appendChild(lab);
+
+    dager.forEach(function(d){
+      const cell = document.createElement('div');
+      cell.className = 'uke-cell'
+        + (sameDay(d, idag) ? ' idag' : '')
+        + ((d.getDay()===0 || d.getDay()===6) ? ' helg' : '');
+
+      const evs = eventsOn(d)
+        .filter(function(e){ return e.calId === c.id; })
+        .sort(function(a,b){
+          if(a.allDay !== b.allDay) return a.allDay ? -1 : 1;
+          return a.start - b.start;
+        });
+
+      evs.forEach(function(e){
+        const chip = document.createElement('div');
+        chip.className = 'uke-chip' + (e.allDay ? ' hel' : '');
+        chip.style.background = e.color;
+        const tid = e.allDay ? ''
+          : '<span class="uke-chip-t">'+pad(e.start.getHours())+'.'+pad(e.start.getMinutes())+'</span>';
+        chip.innerHTML = tid + '<span class="uke-chip-n">'+esc(e.title)+'</span>';
+        chip.title = e.title;
+        chip.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; endreAvtale(e.id); };
+        langtTrykk(chip, function(){ endreAvtale(e.id); });
+        /* hindre at cellens «ny avtale» også armeres når man trykker på en brikke */
+        chip.addEventListener('touchstart', function(ev){ ev.stopPropagation(); }, {passive:true});
+        chip.addEventListener('mousedown',  function(ev){ ev.stopPropagation(); });
+        cell.appendChild(chip);
+      });
+
+      /* langt trykk på tom celle = ny avtale den dagen i denne kalenderen */
+      langtTrykk(cell, function(){
+        S.sel = d;
+        nyAvtale(undefined, undefined, c.kanEndre ? c.id : null);
+      });
+      row.appendChild(cell);
+    });
+
+    scroll.appendChild(row);
+  });
+
+  wrap.appendChild(scroll);
+  tg.appendChild(wrap);
 }
 
 function renderTid(){
@@ -1425,7 +1615,102 @@ function bla(n){
 /* ============================================================
    Sveip til side for å bytte måned
    ============================================================ */
-let skjulTrykk = false;
+let skjulTrykk = false;   /* undertrykker klikk rett etter sveip/langt trykk */
+let dagpopEl   = null;
+
+/* Fanger og forkaster ETT klikk (det syntetiske som følger en berøring),
+   slik at et langt trykk ikke straks lukker dialogen det nettopp åpnet. */
+function svelgNesteKlikk(){
+  function svelg(e){
+    e.stopPropagation(); e.preventDefault();
+    document.removeEventListener('click', svelg, true);
+    clearTimeout(t);
+  }
+  document.addEventListener('click', svelg, true);
+  const t = setTimeout(function(){
+    document.removeEventListener('click', svelg, true);
+  }, 700);
+}
+
+/* Langt trykk (hold ~0,5 s) på et element. Fungerer med både berøring og mus. */
+function langtTrykk(el, handler){
+  let timer = null, x0 = 0, y0 = 0;
+  function start(e){
+    const pt = e.touches ? e.touches[0] : e;
+    x0 = pt.clientX; y0 = pt.clientY;
+    stopp();
+    timer = setTimeout(function(){
+      timer = null;
+      skjulTrykk = true;
+      svelgNesteKlikk();
+      if(navigator.vibrate){ try{ navigator.vibrate(15); }catch(_){} }
+      handler();
+      setTimeout(function(){ skjulTrykk = false; }, 450);
+    }, 480);
+  }
+  function beveg(e){
+    const pt = e.touches ? e.touches[0] : e;
+    if(Math.abs(pt.clientX - x0) > 12 || Math.abs(pt.clientY - y0) > 12) stopp();
+  }
+  function stopp(){ if(timer){ clearTimeout(timer); timer = null; } }
+  el.addEventListener('touchstart', start, {passive:true});
+  el.addEventListener('touchmove',  beveg, {passive:true});
+  el.addEventListener('touchend',   stopp, {passive:true});
+  el.addEventListener('touchcancel',stopp, {passive:true});
+  el.addEventListener('mousedown',  start);
+  el.addEventListener('mousemove',  beveg);
+  el.addEventListener('mouseup',    stopp);
+  el.addEventListener('mouseleave', stopp);
+  el.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
+}
+
+/* Meny som spretter opp ved langt trykk på en dag:
+   ingen avtaler → rett til ny; ellers «Ny avtale» + liste å redigere fra. */
+function dagMeny(d){
+  lukkDagMeny();
+  const evs = eventsOn(d);
+  if(!evs.length){ S.sel = d; render(); nyAvtale(); return; }
+
+  const veil = document.createElement('div');
+  veil.className = 'dagpop';
+  veil.onclick = function(e){ if(e.target === veil) lukkDagMeny(); };
+
+  const card = document.createElement('div');
+  card.className = 'dagpop-card';
+
+  const head = document.createElement('div');
+  head.className = 'dagpop-head';
+  head.textContent = DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase();
+  card.appendChild(head);
+
+  const ny = document.createElement('button');
+  ny.className = 'dagpop-ny';
+  ny.textContent = '+ Ny avtale';
+  ny.onclick = function(){ lukkDagMeny(); S.sel = d; render(); nyAvtale(); };
+  card.appendChild(ny);
+
+  const liste = document.createElement('div');
+  liste.className = 'dagpop-liste';
+  evs.forEach(function(e){
+    const row = document.createElement('button');
+    row.className = 'dagpop-ev';
+    const tid = e.allDay ? 'Hele dagen'
+      : pad(e.start.getHours()) + '.' + pad(e.start.getMinutes());
+    row.innerHTML = '<span class="dagpop-dot" style="background:'+e.color+'"></span>'
+      + '<span class="dagpop-tid">'+esc(tid)+'</span>'
+      + '<span class="dagpop-navn">'+esc(e.title)+'</span>';
+    row.onclick = function(){ lukkDagMeny(); endreAvtale(e.id); };
+    liste.appendChild(row);
+  });
+  card.appendChild(liste);
+
+  veil.appendChild(card);
+  document.body.appendChild(veil);
+  dagpopEl = veil;
+}
+function lukkDagMeny(){
+  if(dagpopEl){ dagpopEl.remove(); dagpopEl = null; }
+}
 
 (function sveip(){
   let x0 = 0, y0 = 0, aktiv = false;
