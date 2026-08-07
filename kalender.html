@@ -509,8 +509,12 @@ const S = {
   view:new Date(),
   sel:new Date(),
   calendars:[],
-  events:[],
+  events:[],             /* avtaler for gjeldende visning (utsnitt av cachen) */
+  all:[],                /* cache: alle hentede avtaler i det lastede vinduet */
+  loaded:null,           /* [start,slutt] for vinduet som ligger i cachen */
+  loadedIds:null,        /* Set av kalender-id-er som var på ved henting */
   loading:false,
+  ventende:false,        /* en ny last kom mens vi holdt på — kjør på nytt */
   visAlle:false
 };
 
@@ -689,10 +693,25 @@ function periode(){
   return [new Date(y, m, 1), new Date(y, m+1, 1)];
 }
 
-async function loadEvents(){
-  const omr = periode();
-  const q = '?startDateTime=' + omr[0].toISOString() + '&endDateTime=' + omr[1].toISOString()
-          + '&$orderby=start/dateTime&$top=200';
+/* Bredere vindu enn selve visningen — så nabo-måneder/uker allerede
+   ligger i cachen når man blar, og bladding blir umiddelbar. */
+function ønsketVindu(){
+  if(S.modus === 'week'){
+    const m = mandag(S.sel);
+    return [plussDager(m,-7), plussDager(m,14)];        /* 3 uker */
+  }
+  if(S.modus === 'day'){
+    const d = new Date(S.sel.getFullYear(), S.sel.getMonth(), S.sel.getDate());
+    return [plussDager(d,-3), plussDager(d,4)];         /* uke rundt dagen */
+  }
+  const y = S.view.getFullYear(), m = S.view.getMonth();
+  return [new Date(y, m-1, 1), new Date(y, m+2, 1)];    /* 3 måneder */
+}
+
+/* Henter alle påslåtte kalendere for [a,b) og returnerer en flat liste */
+async function hentVindu(a, b){
+  const q = '?startDateTime=' + a.toISOString() + '&endDateTime=' + b.toISOString()
+          + '&$orderby=start/dateTime&$top=400';
   const all = [];
   for(const c of S.calendars){
     if(!c.on) continue;
@@ -713,11 +732,42 @@ async function loadEvents(){
       });
     }catch(err){ console.warn('Kalender «'+c.name+'»:', err.message); }
   }
-  all.sort(function(a,b){
-    if(a.allDay !== b.allDay) return a.allDay ? -1 : 1;
-    return a.start - b.start;
+  return all;
+}
+
+/* Dekker cachen gjeldende visning? (riktig periode + alle påslåtte kalendere) */
+function cacheDekker(){
+  if(!S.loaded || !S.loadedIds) return false;
+  const omr = periode();
+  if(!(S.loaded[0] <= omr[0] && S.loaded[1] >= omr[1])) return false;
+  return S.calendars.every(function(c){ return !c.on || S.loadedIds.has(c.id); });
+}
+
+/* Sørger for at cachen dekker gjeldende visning. Henter kun ved behov.
+   Returnerer true hvis det faktisk ble gjort et nettkall. */
+async function sikreCache(force){
+  if(!force && cacheDekker()) return false;
+  const v = ønsketVindu();
+  const events = await hentVindu(v[0], v[1]);
+  S.all = events;
+  S.loaded = v;
+  S.loadedIds = new Set(S.calendars.filter(function(c){ return c.on; })
+                                   .map(function(c){ return c.id; }));
+  return true;
+}
+
+/* Plukker ut avtalene for gjeldende visning fra cachen og legger dem i
+   S.events — helt uten nettkall. Filtrerer også bort avslåtte kalendere. */
+function fyllFraCache(){
+  const omr = periode(), a = omr[0], b = omr[1];
+  const på = {};
+  S.calendars.forEach(function(c){ if(c.on) på[c.id] = 1; });
+  S.events = S.all.filter(function(e){
+    return på[e.calId] && e.start < b && e.end > a;
+  }).sort(function(x,y){
+    if(x.allDay !== y.allDay) return x.allDay ? -1 : 1;
+    return x.start - y.start;
   });
-  S.events = all;
 }
 
 /* ============================================================
@@ -923,32 +973,45 @@ async function toggleCal(id){
   const c = S.calendars.filter(function(x){ return x.id===id; })[0];
   if(!c) return;
   c.on = !c.on;
-  renderCalList();
-  await refresh();
+  fyllFraCache();          /* av-slag vises straks; på-slag hentes under */
+  render();
+  last(false);             /* henter kun hvis en ny kalender mangler i cachen */
 }
 function goToday(){
   const t = new Date();
   S.view = new Date(t.getFullYear(), t.getMonth(), 1);
   S.sel  = t;
-  refresh();
+  naviger();
 }
-async function refresh(){
+async function last(force){
   if(!(S.token || S.refresh)) return;
-  if(S.loading) return;
+  if(S.loading){ S.ventende = S.ventende || force; return; }   /* slå sammen kall */
   S.loading = true;
   msg($('calMsg'), '');
   try{
     if(!S.calendars.length) await loadCalendars();
-    await loadEvents();
+    const hentet = await sikreCache(force);
+    fyllFraCache();
     render();
-    $('foot').textContent = 'Sist oppdatert ' + new Date().toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'});
+    if(hentet){
+      $('foot').textContent = 'Sist oppdatert ' + new Date().toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'});
+    }
   }catch(err){
     console.error(err);
     msg($('calMsg'), err.message, true);
     if(/Ikke innlogget|invalid_grant|expired/i.test(err.message)) logout();
   }finally{
     S.loading = false;
+    if(S.ventende){ S.ventende = false; last(false); }
   }
+}
+async function refresh(){ return last(true); }
+
+/* Rask bladding: tegn straks fra cachen, hent i bakgrunnen kun ved behov */
+function naviger(){
+  fyllFraCache();
+  render();
+  last(false);
 }
 
 /* ============================================================
@@ -1338,7 +1401,7 @@ function settModus(m){
     /* hold månedsvisningen i takt med valgt dag */
     S.view = new Date(S.sel.getFullYear(), S.sel.getMonth(), 1);
   }
-  refresh();
+  naviger();
 }
 
 function bla(n){
@@ -1356,7 +1419,7 @@ function bla(n){
     S.sel = plussDager(S.sel, n);
     S.view = new Date(S.sel.getFullYear(), S.sel.getMonth(), 1);
   }
-  refresh();
+  naviger();
 }
 
 /* ============================================================
