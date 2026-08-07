@@ -383,6 +383,50 @@ footer .btn{margin-left:auto}
 .uke-chip.hel{border-left:3px solid rgba(255,255,255,.5)}
 .uke-chip-t{font-variant-numeric:tabular-nums;opacity:.9;margin-right:5px;font-size:11px}
 
+/* ---------- Heldags / fleredags bånd (måned) ---------- */
+.cal-bars{display:flex;flex-direction:column;gap:2px;margin:0 -7px 3px}
+.cal-band{
+  height:16px;display:flex;align-items:center;color:#fff;
+  font-size:11px;font-weight:700;line-height:1;padding:0 6px;
+  overflow:hidden;white-space:nowrap;
+}
+.cal-band.tom{background:transparent!important}
+.cal-band.s{border-top-left-radius:6px;border-bottom-left-radius:6px}
+.cal-band.e{border-top-right-radius:6px;border-bottom-right-radius:6px}
+.cal-cell.sel .cal-band{box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+
+/* ---------- Heldags / fleredags bånd (uke) ---------- */
+.uke-band{
+  margin:0 -5px 0;padding:5px 7px;color:#fff;
+  font-size:12px;font-weight:700;line-height:1.2;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;
+}
+.uke-band.s{border-top-left-radius:7px;border-bottom-left-radius:7px}
+.uke-band.e{border-top-right-radius:7px;border-bottom-right-radius:7px}
+
+/* ---------- Kalendervelger (dropdown i topplinjen) ---------- */
+.caldrop{position:relative}
+.caldrop-btn{
+  font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;
+  border:1px solid var(--line);background:var(--paper);color:var(--ink);
+  padding:9px 14px;border-radius:999px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
+}
+.caldrop-btn:active{transform:scale(.98)}
+.caldrop-car{font-size:11px;color:var(--ink-soft);font-weight:700}
+.caldrop-panel{
+  position:absolute;top:calc(100% + 8px);right:0;z-index:55;
+  background:var(--paper);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 16px 40px rgba(44,62,80,.22);padding:8px 14px;
+  min-width:240px;max-width:300px;max-height:60vh;overflow-y:auto;
+}
+.caldrop-panel[hidden]{display:none}
+@media(max-width:900px){ .caldrop-panel{right:auto;left:0} }
+
+/* Kalenderlista bor nå i toppmenyen */
+#app .side-cals{display:none}
+#app .side-day{flex:1 1 100%}
+
 /* ---------- Dagmeny (langt trykk) ---------- */
 .dagpop{
   position:fixed;inset:0;background:rgba(44,62,80,.45);z-index:60;
@@ -477,6 +521,10 @@ footer .btn{margin-left:auto}
       </div>
     </a>
     <div class="top-right">
+      <div class="caldrop" id="caldrop" hidden>
+        <button class="caldrop-btn" id="caldropBtn" onclick="toggleCalMeny(event)">Kalendere <span class="caldrop-car">&#9662;</span></button>
+        <div class="caldrop-panel" id="caldropPanel" hidden></div>
+      </div>
       <div class="who" id="who" hidden></div>
       <button class="btn" id="authBtn" onclick="toggleAuth()">Logg inn</button>
     </div>
@@ -919,6 +967,17 @@ function eventsOn(d){
   });
 }
 
+/* Dekker en heldags-/fleredagsavtale denne dagen? */
+function dekkerDag(e, d){
+  const s = new Date(e.start), t = new Date(e.end);
+  const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return d0 >= new Date(s.getFullYear(), s.getMonth(), s.getDate())
+      && d0 <  new Date(t.getFullYear(), t.getMonth(), t.getDate());
+}
+
+/* Kart over heldagsavtaler per uke i månedsvisningen (fylles i renderCal) */
+let mndKart = null;
+
 /* Hvor mange avtaler får plass i én rute — ut fra faktisk rutehøyde */
 function evsPerCell(){
   const cell = document.querySelector('.cal-cell:not(.blank)');
@@ -928,38 +987,74 @@ function evsPerCell(){
 }
 
 function fyllAvtaler(){
-  const maxN = evsPerCell();
+  if(!mndKart) return;
+  const MAX_BANER = 4;
   const bokser = document.querySelectorAll('.cal-evs');
   bokser.forEach(function(box){
     box.innerHTML = '';
     const d = new Date(+box.dataset.t);
-    const evs = eventsOn(d);
-    if(!evs.length) return;
-    const vis = evs.slice(0, maxN);
-    vis.forEach(function(e){
-      const row = document.createElement('div');
-      row.className = 'cal-ev';
-      const dot = document.createElement('span');
-      dot.className = 'cal-ev-dot';
-      dot.style.background = e.color;
-      const txt = document.createElement('span');
-      txt.className = 'cal-ev-x';
-      if(!e.allDay){
+    const w   = Math.floor((mndKart.lead + d.getDate() - 1) / 7);
+    const col = (mndKart.lead + d.getDate() - 1) % 7;
+    const uke = mndKart.uker[w] || [];
+
+    /* --- Heldags / fleredags bånd (fargelegger på tvers av dagene) --- */
+    let baner = 0;
+    if(uke.length){
+      const bars = document.createElement('div');
+      bars.className = 'cal-bars';
+      baner = Math.min(MAX_BANER, uke.length);
+      for(let lane = 0; lane < baner; lane++){
+        const e = uke[lane];
+        const band = document.createElement('div');
+        band.className = 'cal-band';
+        if(e && dekkerDag(e, d)){
+          const erStart = (col === 0) || !dekkerDag(e, plussDager(d, -1));
+          const erSlutt = (col === 6) || !dekkerDag(e, plussDager(d, 1));
+          band.style.background = e.color;
+          if(erStart) band.classList.add('s');
+          if(erSlutt) band.classList.add('e');
+          if(erStart) band.textContent = e.title;   /* tittel ved start/ukestart */
+          band.title = e.title;
+          band.style.cursor = 'pointer';
+          band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; endreAvtale(e.id); };
+          band.addEventListener('touchstart', function(ev){ ev.stopPropagation(); }, {passive:true});
+          band.addEventListener('mousedown',  function(ev){ ev.stopPropagation(); });
+        } else {
+          band.classList.add('tom');
+        }
+        bars.appendChild(band);
+      }
+      box.appendChild(bars);
+    }
+
+    /* --- Tidsbestemte avtaler --- */
+    const timed = eventsOn(d).filter(function(e){ return !e.allDay; });
+    if(timed.length){
+      const rest = Math.max(1, evsPerCell() - baner);
+      const vis = timed.slice(0, rest);
+      vis.forEach(function(e){
+        const row = document.createElement('div');
+        row.className = 'cal-ev';
+        const dot = document.createElement('span');
+        dot.className = 'cal-ev-dot';
+        dot.style.background = e.color;
+        const txt = document.createElement('span');
+        txt.className = 'cal-ev-x';
         const t = document.createElement('span');
         t.className = 'cal-ev-t';
         t.textContent = pad(e.start.getHours())+'.'+pad(e.start.getMinutes());
         txt.appendChild(t);
+        txt.appendChild(document.createTextNode(e.title));
+        row.appendChild(dot);
+        row.appendChild(txt);
+        box.appendChild(row);
+      });
+      if(timed.length > vis.length){
+        const more = document.createElement('div');
+        more.className = 'cal-more';
+        more.textContent = '+' + (timed.length - vis.length) + ' til';
+        box.appendChild(more);
       }
-      txt.appendChild(document.createTextNode(e.title));
-      row.appendChild(dot);
-      row.appendChild(txt);
-      box.appendChild(row);
-    });
-    if(evs.length > vis.length){
-      const more = document.createElement('div');
-      more.className = 'cal-more';
-      more.textContent = '+' + (evs.length - vis.length) + ' til';
-      box.appendChild(more);
     }
   });
 }
@@ -1021,6 +1116,24 @@ function renderCal(){
     grid.appendChild(b);
   }
 
+  /* --- Sorter heldags-/fleredagsavtaler i faste «baner» per uke --- */
+  const heldag = S.events.filter(function(e){ return e.allDay; });
+  const uker = [];
+  for(let d=1; d<=days; d++){
+    const w = Math.floor((lead + d - 1) / 7);
+    if(!uker[w]) uker[w] = [];
+    const dateObj = new Date(y, m, d);
+    heldag.forEach(function(e){
+      if(dekkerDag(e, dateObj) && uker[w].indexOf(e) === -1) uker[w].push(e);
+    });
+  }
+  uker.forEach(function(list){
+    list.sort(function(a, b){
+      return (a.start - b.start) || (b.end - a.end) || (a.calId < b.calId ? -1 : 1);
+    });
+  });
+  mndKart = { lead: lead, days: days, uker: uker };
+
   fyllAvtaler();
 }
 
@@ -1058,7 +1171,15 @@ function tell(c){
 }
 
 function renderCalList(){
-  const el = $('calList');
+  const el = $('caldropPanel');
+  if(!el) return;
+  const på = S.calendars.filter(function(c){ return c.on; }).length;
+  const btn = $('caldropBtn');
+  if(btn){
+    btn.innerHTML = 'Kalendere'
+      + (S.calendars.length ? ' <span class="caldrop-car">('+på+'/'+S.calendars.length+')</span>' : '')
+      + ' <span class="caldrop-car">&#9662;</span>';
+  }
   if(!S.calendars.length){
     el.innerHTML = '<div class="msg">Ingen kalendere funnet.</div>';
     return;
@@ -1081,6 +1202,17 @@ function renderCalList(){
   }
   el.innerHTML = html;
 }
+
+/* Åpne/lukke kalendermenyen; lukkes ved klikk utenfor */
+function toggleCalMeny(ev){
+  if(ev) ev.stopPropagation();
+  const p = $('caldropPanel');
+  if(p) p.hidden = !p.hidden;
+}
+document.addEventListener('click', function(ev){
+  const dd = $('caldrop'), p = $('caldropPanel');
+  if(dd && p && !p.hidden && !dd.contains(ev.target)) p.hidden = true;
+});
 function visTomme(){ S.visAlle = !S.visAlle; renderCalList(); }
 
 function render(){
@@ -1089,6 +1221,7 @@ function render(){
   $('app').hidden  = !inn;
   $('authBtn').textContent = inn ? 'Logg ut' : 'Logg inn';
   $('who').hidden = !inn || !S.me;
+  $('caldrop').hidden = !inn;
   if(S.me) $('who').innerHTML = '<b>'+esc(S.me.displayName||'')+'</b>'+esc(S.me.userPrincipalName||'');
   if(!inn) return;
 
@@ -1431,17 +1564,35 @@ function renderUke(){
           return a.start - b.start;
         });
 
+      const ukeSlutt = plussDager(start, 7);
       evs.forEach(function(e){
+        if(e.allDay){
+          /* heldags/fleredags: fargelegg bakgrunnen, sammenhengende over dagene */
+          const band = document.createElement('div');
+          band.className = 'uke-band';
+          band.style.background = e.color;
+          const forrige = plussDager(d, -1), neste = plussDager(d, 1);
+          const erStart = !dekkerDag(e, forrige) || forrige < start;
+          const erSlutt = !dekkerDag(e, neste)   || neste >= ukeSlutt;
+          if(erStart) band.classList.add('s');
+          if(erSlutt) band.classList.add('e');
+          if(erStart) band.textContent = e.title;
+          band.title = e.title;
+          band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; endreAvtale(e.id); };
+          langtTrykk(band, function(){ endreAvtale(e.id); });
+          band.addEventListener('touchstart', function(ev){ ev.stopPropagation(); }, {passive:true});
+          band.addEventListener('mousedown',  function(ev){ ev.stopPropagation(); });
+          cell.appendChild(band);
+          return;
+        }
         const chip = document.createElement('div');
-        chip.className = 'uke-chip' + (e.allDay ? ' hel' : '');
+        chip.className = 'uke-chip';
         chip.style.background = e.color;
-        const tid = e.allDay ? ''
-          : '<span class="uke-chip-t">'+pad(e.start.getHours())+'.'+pad(e.start.getMinutes())+'</span>';
+        const tid = '<span class="uke-chip-t">'+pad(e.start.getHours())+'.'+pad(e.start.getMinutes())+'</span>';
         chip.innerHTML = tid + '<span class="uke-chip-n">'+esc(e.title)+'</span>';
         chip.title = e.title;
         chip.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; endreAvtale(e.id); };
         langtTrykk(chip, function(){ endreAvtale(e.id); });
-        /* hindre at cellens «ny avtale» også armeres når man trykker på en brikke */
         chip.addEventListener('touchstart', function(ev){ ev.stopPropagation(); }, {passive:true});
         chip.addEventListener('mousedown',  function(ev){ ev.stopPropagation(); });
         cell.appendChild(chip);
