@@ -282,9 +282,8 @@ footer .btn{margin-left:auto}
 const CFG = {
   clientId : 'ccab6959-abc2-4dd9-9212-4b33c0db025c',
   tenantId : '9fcd8ee6-9b49-4904-ae55-117ba14373c3',
-  /* Appen er registrert for "All Microsoft account users".
-     Bytt til 'common' hvis du senere åpner for jobb-/skolekontoer. */
-  authority: 'consumers',
+  /* 'common' = b\u00e5de personlige Microsoft-kontoer og jobb-/skolekontoer. */
+  authority: 'common',
   scopes   : 'openid profile offline_access User.Read Calendars.Read Calendars.ReadWrite'
 };
 const REDIRECT = location.origin + location.pathname;
