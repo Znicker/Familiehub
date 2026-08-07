@@ -422,6 +422,29 @@ footer .btn{margin-left:auto}
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
 }
 
+/* ---------- Fullskjerm ---------- */
+.fs-logo{
+  position:fixed;top:calc(10px + env(safe-area-inset-top));left:14px;z-index:45;
+  width:46px;height:46px;border-radius:50%;background:var(--paper);
+  border:none;padding:6px;cursor:pointer;display:none;
+  box-shadow:0 3px 12px rgba(0,0,0,.26);
+}
+.fs-logo:active{transform:scale(.94)}
+.fs-logo img{width:100%;height:auto;display:block;border-radius:50%}
+#fsBtn{display:inline-flex;align-items:center;justify-content:center;padding:0 11px}
+#fsBtn svg{display:block}
+
+.shell.fullscreen .top{display:none}
+.shell.fullscreen .side{display:none}
+.shell.fullscreen footer{display:none}
+.shell.fullscreen .grid{grid-template-columns:1fr}
+.shell.fullscreen{padding-top:8px}
+.shell.fullscreen .fs-logo{display:block}
+.shell.fullscreen .mnav{padding-left:54px}
+@media(max-width:900px){
+  .shell.fullscreen .mnav{padding-left:52px}
+}
+
 /* ---------- Smale skjermer ---------- */
 @media(max-width:900px){
   body{overflow:auto}
@@ -442,6 +465,8 @@ footer .btn{margin-left:auto}
 </head>
 <body>
 <div class="shell">
+
+  <button class="fs-logo" id="fsLogo" onclick="toggleFull()" title="Avslutt fullskjerm" aria-label="Avslutt fullskjerm"><img alt=""></button>
 
   <div class="top">
     <a class="brand" href="./index.html">
@@ -483,6 +508,7 @@ footer .btn{margin-left:auto}
           <button onclick="bla(-1)" title="Forrige">&lsaquo;</button>
           <button class="txt" onclick="goToday()">I dag</button>
           <button onclick="bla(1)" title="Neste">&rsaquo;</button>
+          <button id="fsBtn" onclick="toggleFull()" title="Fullskjerm" aria-label="Fullskjerm"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
         </div>
         <button class="btn solid" onclick="nyAvtale()">+ Ny avtale</button>
       </div>
@@ -722,9 +748,28 @@ function logout(){
   sessionStorage.clear();
   S.token = null; S.refresh = null; S.me = null; S.expires = 0;
   S.calendars = []; S.events = [];
+  settFull(false);
   render();
 }
 function toggleAuth(){ (S.token || S.refresh) ? logout() : login(); }
+
+/* ---------- Fullskjerm: skjul topplinje, sidepanel og bunn ---------- */
+function settFull(på){
+  const shell = document.querySelector('.shell');
+  shell.classList.toggle('fullscreen', på);
+  const btn = $('fsBtn');
+  if(btn) btn.title = på ? 'Avslutt fullskjerm' : 'Fullskjerm';
+  const logo = $('fsLogo');
+  if(på && logo){
+    const kilde = document.querySelector('.brand-icon img');
+    const bilde = logo.querySelector('img');
+    if(kilde && bilde && !bilde.getAttribute('src')) bilde.src = kilde.src;
+  }
+  if(S.token || S.refresh) render();   /* la kalenderen fylle den nye bredden */
+}
+function toggleFull(){
+  settFull(!document.querySelector('.shell').classList.contains('fullscreen'));
+}
 
 /* ============================================================
    Microsoft Graph
