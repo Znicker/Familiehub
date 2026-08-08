@@ -404,6 +404,43 @@ footer .btn{margin-left:auto}
 .uke-band.s{border-top-left-radius:7px;border-bottom-left-radius:7px}
 .uke-band.e{border-top-right-radius:7px;border-bottom-right-radius:7px}
 
+/* ---------- Planvisning (Dagsplan / Ukeplan) ---------- */
+.plan{flex:1;min-height:0;overflow-y:auto;padding:2px 2px 8px}
+.plan-dhead{
+  font-family:'Archivo',sans-serif;font-weight:800;text-transform:uppercase;
+  letter-spacing:.05em;font-size:13px;color:var(--ink);
+  padding:12px 4px 8px;position:sticky;top:0;background:var(--paper);z-index:1;
+}
+.plan-sec.idag .plan-dhead{box-shadow:inset 3px 0 0 #b8d947;padding-left:9px}
+.plan-sec.idag .plan-dhead::after{content:' · i dag';color:var(--ink-soft);font-weight:600}
+.plan-item{
+  display:flex;gap:12px;align-items:flex-start;
+  padding:11px 13px;margin:0 0 8px;background:var(--paper);
+  border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;
+  cursor:pointer;transition:background .12s ease;
+}
+@media(hover:hover){.plan-item:hover{background:#F5F7F4}}
+.plan-time{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
+  min-width:48px;text-align:right;line-height:1.35;font-variant-numeric:tabular-nums;flex-shrink:0;
+}
+.plan-main{min-width:0;flex:1}
+.plan-title{font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;line-height:1.25;overflow-wrap:anywhere}
+.plan-meta{font-size:12px;color:var(--ink-soft);margin-top:3px}
+.plan-note{
+  font-size:13px;line-height:1.4;color:var(--ink);margin-top:7px;white-space:pre-wrap;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.plan-item.open .plan-note{-webkit-line-clamp:unset;overflow:visible}
+.plan-item.har-note .plan-note{position:relative}
+.plan-item.har-note::after{
+  content:'\2304';color:var(--ink-soft);font-size:15px;line-height:1;
+  align-self:center;flex-shrink:0;margin-left:2px;transition:transform .15s ease;
+}
+.plan-item.har-note.open::after{transform:rotate(180deg)}
+.plan-tom{color:var(--ink-soft);font-size:13px;padding:2px 4px 12px}
+
+
 /* ---------- Kalendervelger (dropdown i topplinjen) ---------- */
 .caldrop{position:relative}
 .caldrop-btn{
@@ -552,6 +589,14 @@ footer .btn{margin-left:auto}
           <button data-m="week" onclick="settModus('week')">Uke</button>
           <button data-m="day" onclick="settModus('day')">Dag</button>
         </div>
+        <div class="seg" id="planSeg" hidden>
+          <button data-p="dag" class="on" onclick="settPlanModus('dag')">Dagsplan</button>
+          <button data-p="uke" onclick="settPlanModus('uke')">Ukeplan</button>
+        </div>
+        <div class="seg vis" id="visSeg">
+          <button data-v="cal" class="on" onclick="settVis(false)">Kalender</button>
+          <button data-v="plan" onclick="settVis(true)">Plan</button>
+        </div>
         <div class="mnav-btns">
           <button onclick="bla(-1)" title="Forrige">&lsaquo;</button>
           <button class="txt" onclick="goToday()">I dag</button>
@@ -562,6 +607,7 @@ footer .btn{margin-left:auto}
       </div>
       <div class="cal" id="cal"></div>
       <div class="tg" id="tg" hidden></div>
+      <div class="plan" id="plan" hidden></div>
       <div class="msg" id="calMsg" hidden></div>
     </section>
 
@@ -679,7 +725,9 @@ const S = {
   loadedIds:null,        /* Set av kalender-id-er som var på ved henting */
   loading:false,
   ventende:false,        /* en ny last kom mens vi holdt på — kjør på nytt */
-  visAlle:false
+  visAlle:false,
+  plan:false,          /* Plan-modus av/på (Kalender | Plan) */
+  planModus:'dag'      /* dag | uke */
 };
 
 const TIME_H = 46;        /* høyde per time i tidsrutenettet */
@@ -1277,13 +1325,30 @@ function render(){
   if(S.me) $('who').innerHTML = '<b>'+esc(S.me.displayName||'')+'</b>'+esc(S.me.userPrincipalName||'');
   if(!inn) return;
 
+  /* Toggle Kalender/Plan + undermeny */
+  $('seg').hidden     = S.plan;
+  $('planSeg').hidden = !S.plan;
+  const vb = $('visSeg').children;
+  for(let i=0;i<vb.length;i++) vb[i].classList.toggle('on', (vb[i].dataset.v === 'plan') === S.plan);
+  const pb = $('planSeg').children;
+  for(let i=0;i<pb.length;i++) pb[i].classList.toggle('on', pb[i].dataset.p === S.planModus);
+
   $('monthTitle').textContent = tittel();
-  const mnd = S.modus === 'month';
-  $('cal').hidden = !mnd;
-  $('tg').hidden  = mnd;
-  if(mnd) renderCal();
-  else if(S.modus === 'week') renderUke();
-  else renderTid();
+
+  if(S.plan){
+    $('cal').hidden = true;
+    $('tg').hidden  = true;
+    $('plan').hidden = false;
+    if(S.planModus === 'uke') renderPlanUke(); else renderPlanDag();
+  } else {
+    $('plan').hidden = true;
+    const mnd = S.modus === 'month';
+    $('cal').hidden = !mnd;
+    $('tg').hidden  = mnd;
+    if(mnd) renderCal();
+    else if(S.modus === 'week') renderUke();
+    else renderTid();
+  }
 
   renderDay(); renderCalList();
 }
@@ -1665,6 +1730,130 @@ function renderUke(){
   tg.appendChild(wrap);
 }
 
+function settVis(plan){
+  if(S.plan === plan) return;
+  S.plan = plan;
+  naviger();
+}
+function settPlanModus(m){
+  if(S.planModus === m) return;
+  S.planModus = m;
+  naviger();
+}
+
+/* Avtaler som gjelder en dag (bånd-avtaler dekker hver dag de spenner over) */
+function planEvs(d){
+  return S.events.filter(function(e){
+    return erBånd(e) ? dekkerDag(e, d) : sameDay(e.start, d);
+  }).sort(function(a, b){
+    if(erBånd(a) !== erBånd(b)) return erBånd(a) ? -1 : 1;
+    return a.start - b.start;
+  });
+}
+
+/* Ett avtalekort med notat: ett trykk utvider notatet, langt trykk redigerer */
+function planItem(e){
+  const it = document.createElement('div');
+  it.className = 'plan-item';
+  it.style.borderLeftColor = e.color;
+
+  const tid = document.createElement('div');
+  tid.className = 'plan-time';
+  tid.innerHTML = e.allDay
+    ? 'Hele<br>dagen'
+    : pad(e.start.getHours())+'.'+pad(e.start.getMinutes())
+      + '<br>' + pad(e.end.getHours())+'.'+pad(e.end.getMinutes());
+  it.appendChild(tid);
+
+  const main = document.createElement('div');
+  main.className = 'plan-main';
+
+  const tittelEl = document.createElement('div');
+  tittelEl.className = 'plan-title';
+  tittelEl.textContent = e.title;
+  main.appendChild(tittelEl);
+
+  const meta = [e.calName, e.where].filter(Boolean).join(' · ');
+  if(meta){
+    const m = document.createElement('div');
+    m.className = 'plan-meta';
+    m.textContent = meta;
+    main.appendChild(m);
+  }
+
+  const note = (e.note || '').trim();
+  if(note){
+    const n = document.createElement('div');
+    n.className = 'plan-note';
+    n.textContent = note;
+    main.appendChild(n);
+    it.classList.add('har-note');
+    it.title = 'Trykk for å se hele notatet';
+  }
+
+  it.appendChild(main);
+
+  it.onclick = function(){
+    if(skjulTrykk) return;               /* nettopp langt trykk / sveip */
+    if(note) it.classList.toggle('open');
+  };
+  langtTrykk(it, function(){ endreAvtale(e.id); });
+
+  return it;
+}
+
+function renderPlanDag(){
+  const wrap = $('plan');
+  wrap.innerHTML = '';
+  const d = S.sel;
+
+  const sec = document.createElement('div');
+  sec.className = 'plan-sec' + (sameDay(d, new Date()) ? ' idag' : '');
+  const head = document.createElement('div');
+  head.className = 'plan-dhead';
+  head.textContent = DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase();
+  sec.appendChild(head);
+
+  const evs = planEvs(d);
+  if(!evs.length){
+    const tom = document.createElement('div');
+    tom.className = 'plan-tom';
+    tom.textContent = 'Ingen avtaler denne dagen.';
+    sec.appendChild(tom);
+  } else {
+    evs.forEach(function(e){ sec.appendChild(planItem(e)); });
+  }
+  wrap.appendChild(sec);
+}
+
+function renderPlanUke(){
+  const wrap = $('plan');
+  wrap.innerHTML = '';
+  const start = mandag(S.sel);
+
+  for(let i = 0; i < 7; i++){
+    const d = plussDager(start, i);
+    const sec = document.createElement('div');
+    sec.className = 'plan-sec' + (sameDay(d, new Date()) ? ' idag' : '');
+
+    const head = document.createElement('div');
+    head.className = 'plan-dhead';
+    head.textContent = DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase();
+    sec.appendChild(head);
+
+    const evs = planEvs(d);
+    if(!evs.length){
+      const tom = document.createElement('div');
+      tom.className = 'plan-tom';
+      tom.textContent = '—';
+      sec.appendChild(tom);
+    } else {
+      evs.forEach(function(e){ sec.appendChild(planItem(e)); });
+    }
+    wrap.appendChild(sec);
+  }
+}
+
 function renderTid(){
   const antall = S.modus === 'day' ? 1 : 7;
   const start  = S.modus === 'day'
@@ -1816,6 +2005,17 @@ function renderTid(){
 }
 
 function tittel(){
+  if(S.plan){
+    if(S.planModus === 'uke'){
+      const m = mandag(S.sel), s = plussDager(m, 6);
+      const sm = m.getMonth() === s.getMonth()
+        ? m.getDate() + '.–' + s.getDate() + '. ' + MND[s.getMonth()].toLowerCase()
+        : m.getDate() + '. ' + MND[m.getMonth()].toLowerCase().slice(0,3)
+          + ' – ' + s.getDate() + '. ' + MND[s.getMonth()].toLowerCase().slice(0,3);
+      return 'Uke ' + ukeNr(m) + ' · ' + sm;
+    }
+    return DAG[S.sel.getDay()] + ' ' + S.sel.getDate() + '. ' + MND[S.sel.getMonth()].toLowerCase();
+  }
   if(S.modus === 'month') return MND[S.view.getMonth()] + ' ' + S.view.getFullYear();
   if(S.modus === 'day'){
     return DAG[S.sel.getDay()] + ' ' + S.sel.getDate() + '. ' + MND[S.sel.getMonth()].toLowerCase();
@@ -1843,6 +2043,12 @@ function settModus(m){
 }
 
 function bla(n){
+  if(S.plan){
+    S.sel = plussDager(S.sel, (S.planModus === 'uke' ? 7 : 1) * n);
+    S.view = new Date(S.sel.getFullYear(), S.sel.getMonth(), 1);
+    naviger();
+    return;
+  }
   if(S.modus === 'month'){
     S.view = new Date(S.view.getFullYear(), S.view.getMonth()+n, 1);
     /* la valgt dag følge med inn i den nye måneden */
