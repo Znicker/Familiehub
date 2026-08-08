@@ -91,7 +91,8 @@ body{
 .side-cals{flex:1 1 45%}
 
 /* ---------- Månedsnavigasjon ---------- */
-.mnav{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-shrink:0}
+.mnav{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-bottom:12px;flex-shrink:0}
+.mnav-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .mnav-title{font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
 .mnav-btns{margin-left:auto;display:flex;gap:8px}
 .mnav-btns button{
@@ -106,7 +107,7 @@ body{
 .cal{
   flex:1;min-height:0;
   display:grid;
-  grid-template-columns:repeat(7,1fr);
+  grid-template-columns:26px repeat(7,1fr);
   grid-template-rows:auto repeat(6,1fr);
   gap:1px;background:var(--grid);
   border:1px solid var(--grid);border-radius:12px;overflow:hidden;
@@ -124,6 +125,11 @@ body{
   transition:background .12s ease;
 }
 .cal-cell.blank{background:var(--bg-2);cursor:default}
+.cal-wk{
+  background:var(--bg-2);display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);
+}
+.uke.endag .uke-row{min-height:74px}
 @media(hover:hover){.cal-cell:not(.blank):hover{background:#F2F5F7}}
 .cal-cell.today{box-shadow:inset 0 0 0 2px var(--ink)}
 .cal-cell.sel{background:var(--ink)}
@@ -611,14 +617,16 @@ footer .btn{margin-left:auto}
     <section class="panel cal-panel">
       <div class="mnav">
         <div class="mnav-title" id="monthTitle">—</div>
+        <div class="mnav-row">
         <div class="seg" id="seg">
           <button data-m="month" class="on" onclick="settModus('month')">Måned</button>
           <button data-m="week" onclick="settModus('week')">Uke</button>
           <button data-m="day" onclick="settModus('day')">Dag</button>
         </div>
         <div class="seg vis" id="visSeg">
-          <button data-v="cal" class="on" onclick="settVis(false)">Kalender</button>
-          <button data-v="plan" onclick="settVis(true)">Plan</button>
+          <button data-v="kal" class="on" onclick="settVis('kal')">Kalender</button>
+          <button data-v="plan" onclick="settVis('plan')">Plan</button>
+          <button data-v="liste" onclick="settVis('liste')">Liste</button>
         </div>
         <div class="mnav-btns">
           <button onclick="bla(-1)" title="Forrige">&lsaquo;</button>
@@ -627,6 +635,7 @@ footer .btn{margin-left:auto}
           <button id="fsBtn" onclick="toggleFull()" title="Fullskjerm" aria-label="Fullskjerm"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
         </div>
         <button class="btn solid" onclick="nyAvtale()">+ Ny avtale</button>
+        </div>
       </div>
       <div class="cal" id="cal"></div>
       <div class="tg" id="tg" hidden></div>
@@ -673,7 +682,7 @@ footer .btn{margin-left:auto}
 
       <div class="fld">
         <label for="fCal">Kalender</label>
-        <select id="fCal" onchange="oppdaterKalStatus()"></select>
+        <select id="fCal"></select>
       </div>
 
       <div class="fld">
@@ -752,7 +761,7 @@ const S = {
   loading:false,
   ventende:false,        /* en ny last kom mens vi holdt på — kjør på nytt */
   visAlle:false,
-  plan:false           /* Plan-modus av/på: viser notater i valgt periode */
+  vis:'kal'            /* visning: kal | plan | liste */
 };
 
 const TIME_H = 46;        /* høyde per time i tidsrutenettet */
@@ -1170,6 +1179,7 @@ function renderCal(medNotat){
 
   const grid = $('cal');
   grid.innerHTML = '';
+  grid.appendChild(Object.assign(document.createElement('div'), {className:'cal-wk cal-wk-h'}));
   DOW.forEach(function(d){
     const h = document.createElement('div');
     h.className = 'cal-dow';
@@ -1180,46 +1190,49 @@ function renderCal(medNotat){
   const lead  = (new Date(y, m, 1).getDay() + 6) % 7;
   const days  = new Date(y, m+1, 0).getDate();
   const today = new Date();
+  const trailing = (7 - ((lead + days) % 7)) % 7;
+  const rows = (lead + days + trailing) / 7;
 
-  for(let i=0;i<lead;i++){
-    const b = document.createElement('div');
-    b.className = 'cal-cell blank';
-    grid.appendChild(b);
-  }
+  for(let r=0; r<rows; r++){
+    const mandagIRad = new Date(y, m, 1 - lead + r*7);
+    const wk = document.createElement('div');
+    wk.className = 'cal-wk';
+    wk.textContent = ukeNr(mandagIRad);
+    grid.appendChild(wk);
 
-  for(let d=1; d<=days; d++){
-    const date = new Date(y, m, d);
-    const cell = document.createElement('div');
-    cell.className = 'cal-cell'
-      + (sameDay(date,today) ? ' today' : '')
-      + (sameDay(date,S.sel) ? ' sel' : '')
-      + ((date.getDay()===0 || date.getDay()===6) ? ' weekend' : '');
+    for(let c=0; c<7; c++){
+      const dnum = r*7 + c - lead + 1;              /* dag i måneden */
+      if(dnum < 1 || dnum > days){
+        const b = document.createElement('div');
+        b.className = 'cal-cell blank';
+        grid.appendChild(b);
+        continue;
+      }
+      const date = new Date(y, m, dnum);
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell'
+        + (sameDay(date,today) ? ' today' : '')
+        + (sameDay(date,S.sel) ? ' sel' : '')
+        + ((date.getDay()===0 || date.getDay()===6) ? ' weekend' : '');
 
-    const num = document.createElement('div');
-    num.className = 'cal-num';
-    num.textContent = d;
-    cell.appendChild(num);
+      const num = document.createElement('div');
+      num.className = 'cal-num';
+      num.textContent = dnum;
+      cell.appendChild(num);
 
-    const box = document.createElement('div');
-    box.className = 'cal-evs';
-    box.dataset.t = +date;
-    cell.appendChild(box);
+      const box = document.createElement('div');
+      box.className = 'cal-evs';
+      box.dataset.t = +date;
+      cell.appendChild(box);
 
-    cell.onclick = function(){
-      if(skjulTrykk) return;                    /* nettopp sveipet eller langt trykk */
-      S.sel = date;
-      render();
-    };
-    langtTrykk(cell, function(){ dagMeny(date); });   /* langt trykk = ny / rediger */
-    grid.appendChild(cell);
-  }
-
-  /* fyll ut siste rad slik at rutenettet alltid er komplett */
-  const rest = (7 - ((lead + days) % 7)) % 7;
-  for(let i=0;i<rest;i++){
-    const b = document.createElement('div');
-    b.className = 'cal-cell blank';
-    grid.appendChild(b);
+      cell.onclick = function(){
+        if(skjulTrykk) return;
+        S.sel = date;
+        render();
+      };
+      langtTrykk(cell, function(){ dagMeny(date); });
+      grid.appendChild(cell);
+    }
   }
 
   /* --- Legg bånd-avtaler i faste baner, uke for uke --- */
@@ -1320,8 +1333,7 @@ function renderCalList(){
     el.innerHTML = '<div class="msg">Ingen kalendere funnet.</div>';
     return;
   }
-  const tomme = S.calendars.filter(function(c){ return c.on && tell(c)===0; }).length;
-  const vis = S.visAlle ? S.calendars : S.calendars.filter(function(c){ return !c.on || tell(c) > 0; });
+  const vis = S.calendars;
 
   let html = vis.map(function(c){
     const palett = FARGER.map(function(hex){
@@ -1340,11 +1352,6 @@ function renderCalList(){
       + '</div>';
   }).join('');
 
-  if(tomme > 0 || S.visAlle){
-    html += '<button class="cal-toggle" onclick="event.stopPropagation(); visTomme()">'
-          + (S.visAlle ? 'Skjul tomme' : 'Vis ' + tomme + ' tomme')
-          + '</button>';
-  }
   el.innerHTML = html;
 }
 
@@ -1370,21 +1377,28 @@ function render(){
   if(S.me) $('who').innerHTML = '<b>'+esc(S.me.displayName||'')+'</b>'+esc(S.me.userPrincipalName||'');
   if(!inn) return;
 
-  /* Kalender/Plan er uavhengig av Måned/Uke/Dag — den endrer bare visningen */
+  /* Kalender / Plan / Liste — uavhengig av Måned/Uke/Dag */
   const vb = $('visSeg').children;
-  for(let i=0;i<vb.length;i++) vb[i].classList.toggle('on', (vb[i].dataset.v === 'plan') === S.plan);
+  for(let i=0;i<vb.length;i++) vb[i].classList.toggle('on', vb[i].dataset.v === S.vis);
 
   $('monthTitle').textContent = tittel();
 
-  const dagListe = (S.modus === 'day' && S.plan);
-  $('cal').hidden  = !(S.modus === 'month');
-  $('tg').hidden   = !(S.modus === 'week' || (S.modus === 'day' && !S.plan));
-  $('plan').hidden = !dagListe;
+  const liste = (S.vis === 'liste');
+  const plan  = (S.vis === 'plan');
+  $('cal').hidden  = liste || S.modus !== 'month';
+  $('tg').hidden   = liste || S.modus === 'month';
+  $('plan').hidden = !liste;
 
-  if(S.modus === 'month')     renderCal(S.plan);
-  else if(S.modus === 'week') renderUke(S.plan);
-  else if(dagListe)           renderPlanDag();
-  else                        renderTid();
+  if(liste){
+    renderListe();
+  } else if(S.modus === 'month'){
+    renderCal(plan);
+  } else if(S.modus === 'week'){
+    renderUke(plan);
+  } else {                                  /* dag */
+    if(plan) renderUke(true, [S.sel]);      /* Dag+Plan: som uke, men én dag */
+    else renderTid();
+  }
 
   renderDay(); renderCalList();
 }
@@ -1451,32 +1465,11 @@ function allDagToggle(){
 
 function fyllKalendervalg(valgtId){
   const sel = $('fCal');
-  const alle = S.calendars;
-  const skriv = function(id){ const c = alle.filter(function(x){ return x.id===id; })[0]; return !!(c && c.kanEndre); };
-  /* standardvalg: foretrukket kalender hvis skrivbar, ellers første skrivbare */
-  let valgt = valgtId;
-  if(!skriv(valgt)){
-    const f = alle.filter(function(c){ return c.kanEndre; })[0];
-    valgt = f ? f.id : (alle[0] && alle[0].id);
-  }
-  sel.innerHTML = alle.map(function(c){
-    return '<option value="'+c.id+'"'+(c.id===valgt?' selected':'')+'>'
-      + esc(c.name) + (c.kanEndre ? '' : ' (skrivebeskyttet)') + '</option>';
+  const kan = S.calendars.filter(function(c){ return c.kanEndre; });
+  sel.innerHTML = kan.map(function(c){
+    return '<option value="'+c.id+'"'+(c.id===valgtId?' selected':'')+'>'+esc(c.name)+'</option>';
   }).join('');
-  return alle.filter(function(c){ return c.kanEndre; }).length;
-}
-
-/* Er den valgte kalenderen i skjemaet skrivbar? */
-function kalenderSkrivbar(){
-  const c = S.calendars.filter(function(x){ return x.id === $('fCal').value; })[0];
-  return !!(c && c.kanEndre);
-}
-/* Oppdater lagre-knapp/melding når man bytter kalender i «Ny avtale» */
-function oppdaterKalStatus(){
-  if(redigerer) return;                 /* redigering: kalender er låst */
-  const ok = kalenderSkrivbar();
-  $('btnLagre').disabled = !ok;
-  dlgFeil(ok ? '' : 'Denne kalenderen er skrivebeskyttet — velg en annen for å lagre.');
+  return kan.length;
 }
 
 function nyAvtale(time, minutt, calId){
@@ -1501,12 +1494,8 @@ function nyAvtale(time, minutt, calId){
 
   const antall = fyllKalendervalg(calId || null);
   allDagToggle();
-  if(!antall){
-    dlgFeil('Ingen av kalenderne dine kan skrives til.');
-    $('btnLagre').disabled = true;
-  } else {
-    oppdaterKalStatus();
-  }
+  dlgFeil(antall ? '' : 'Ingen av kalenderne dine kan skrives til.');
+  $('btnLagre').disabled = !antall;
   $('veil').hidden = false;
   setTimeout(function(){ $('fTitle').focus(); }, 60);
 }
@@ -1675,20 +1664,24 @@ function spor(evs){
   return ut;
 }
 
-function renderUke(medNotat){
-  const start = mandag(S.sel);
-  const dager = [];
-  for(let i=0;i<7;i++) dager.push(plussDager(start, i));
+function renderUke(medNotat, dager){
+  if(!dager){
+    const s0 = mandag(S.sel);
+    dager = [];
+    for(let i=0;i<7;i++) dager.push(plussDager(s0, i));
+  }
+  const start = dager[0];
+  const nCols = dager.length;
   const idag = new Date();
 
   const aktive = S.calendars.filter(function(c){ return c.on; });
-  const kols = '128px repeat(7,minmax(0,1fr))';
+  const kols = '128px repeat(' + nCols + ',minmax(0,1fr))';
 
   const tg = $('tg');
   tg.innerHTML = '';
 
   const wrap = document.createElement('div');
-  wrap.className = 'uke';
+  wrap.className = 'uke' + (nCols === 1 ? ' endag' : '');
 
   /* Topprad med ukedager */
   const head = document.createElement('div');
@@ -1735,7 +1728,7 @@ function renderUke(medNotat){
         + (sameDay(d, idag) ? ' idag' : '')
         + ((d.getDay()===0 || d.getDay()===6) ? ' helg' : '');
 
-      const ukeSlutt = plussDager(start, 7);
+      const ukeSlutt = plussDager(start, nCols);
       const dagBånd = S.events
         .filter(function(e){ return e.calId === c.id && erBånd(e) && dekkerDag(e, d); })
         .sort(function(a, b){ return a.start - b.start; });
@@ -1804,9 +1797,9 @@ function renderUke(medNotat){
   tg.appendChild(wrap);
 }
 
-function settVis(plan){
-  if(S.plan === plan) return;
-  S.plan = plan;
+function settVis(v){
+  if(S.vis === v) return;
+  S.vis = v;
   naviger();
 }
 
@@ -1910,6 +1903,59 @@ function renderPlanDag(){
     evs.forEach(function(e){ sec.appendChild(planItem(e)); });
   }
   wrap.appendChild(sec);
+}
+
+function listePeriode(){
+  if(S.modus === 'day') return [S.sel];
+  if(S.modus === 'week'){
+    const s = mandag(S.sel), a = [];
+    for(let i=0;i<7;i++) a.push(plussDager(s, i));
+    return a;
+  }
+  const y = S.view.getFullYear(), m = S.view.getMonth(), n = new Date(y, m+1, 0).getDate();
+  const a = [];
+  for(let d=1; d<=n; d++) a.push(new Date(y, m, d));
+  return a;
+}
+
+function renderListe(){
+  const wrap = $('plan');
+  wrap.innerHTML = '';
+  const dager = listePeriode();
+  const hoppTomme = (S.modus === 'month');   /* måned: bare dager med avtaler */
+  let noe = false;
+
+  dager.forEach(function(d){
+    const evs = planEvs(d);
+    if(hoppTomme && !evs.length) return;
+    noe = true;
+
+    const sec = document.createElement('div');
+    sec.className = 'plan-sec' + (sameDay(d, new Date()) ? ' idag' : '');
+    const head = document.createElement('div');
+    head.className = 'plan-dhead';
+    head.textContent = DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase()
+      + ' · Uke ' + ukeNr(d);
+    sec.appendChild(head);
+
+    if(!evs.length){
+      const tom = document.createElement('div');
+      tom.className = 'plan-tom';
+      tom.textContent = '—';
+      sec.appendChild(tom);
+    } else {
+      evs.forEach(function(e){ sec.appendChild(planItem(e)); });
+    }
+    wrap.appendChild(sec);
+  });
+
+  if(!noe){
+    const tom = document.createElement('div');
+    tom.className = 'plan-tom';
+    tom.style.padding = '16px 4px';
+    tom.textContent = 'Ingen avtaler i perioden.';
+    wrap.appendChild(tom);
+  }
 }
 
 function renderTid(){
@@ -2065,7 +2111,8 @@ function renderTid(){
 function tittel(){
   if(S.modus === 'month') return MND[S.view.getMonth()] + ' ' + S.view.getFullYear();
   if(S.modus === 'day'){
-    return DAG[S.sel.getDay()] + ' ' + S.sel.getDate() + '. ' + MND[S.sel.getMonth()].toLowerCase();
+    return DAG[S.sel.getDay()] + ' ' + S.sel.getDate() + '. ' + MND[S.sel.getMonth()].toLowerCase()
+      + ' · Uke ' + ukeNr(S.sel);
   }
   const m = mandag(S.sel), s = plussDager(m, 6);
   const sm = m.getMonth() === s.getMonth()
