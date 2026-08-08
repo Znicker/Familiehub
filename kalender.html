@@ -967,15 +967,28 @@ function eventsOn(d){
   });
 }
 
-/* Dekker en heldags-/fleredagsavtale denne dagen? */
+/* ---- Bånd-avtaler: heldags ELLER fleredags (uansett klokkeslett) ---- */
+function bandStart(e){
+  const s = new Date(e.start);
+  return new Date(s.getFullYear(), s.getMonth(), s.getDate());
+}
+function bandSlutt(e){                 /* siste dag avtalen dekker (inklusiv) */
+  const s = bandStart(e);
+  const t = new Date(e.end);
+  let last = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  const midnatt = (t.getHours()===0 && t.getMinutes()===0 && t.getSeconds()===0);
+  if(e.allDay || midnatt) last = new Date(last.getTime() - 86400000);   /* slutt er eksklusiv */
+  if(last.getTime() < s.getTime()) last = s;
+  return last;
+}
+function erFlerdags(e){ return bandSlutt(e).getTime() > bandStart(e).getTime(); }
+function erBånd(e){ return !!e.allDay || erFlerdags(e); }
 function dekkerDag(e, d){
-  const s = new Date(e.start), t = new Date(e.end);
-  const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  return d0 >= new Date(s.getFullYear(), s.getMonth(), s.getDate())
-      && d0 <  new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return d0 >= bandStart(e).getTime() && d0 <= bandSlutt(e).getTime();
 }
 
-/* Kart over heldagsavtaler per uke i månedsvisningen (fylles i renderCal) */
+/* Kart over bånd-avtaler per dag i månedsvisningen (fylles i renderCal) */
 let mndKart = null;
 
 /* Hvor mange avtaler får plass i én rute — ut fra faktisk rutehøyde */
@@ -993,44 +1006,53 @@ function fyllAvtaler(){
   bokser.forEach(function(box){
     box.innerHTML = '';
     const d = new Date(+box.dataset.t);
-    const w   = Math.floor((mndKart.lead + d.getDate() - 1) / 7);
     const col = (mndKart.lead + d.getDate() - 1) % 7;
-    const uke = mndKart.uker[w] || [];
+    const info = mndKart.celle[+d] || { multi: [], maxLane: -1, enkelt: [] };
 
-    /* --- Heldags / fleredags bånd (fargelegger på tvers av dagene) --- */
-    let baner = 0;
-    if(uke.length){
+    const bygg = function(e, rundBegge){
+      const band = document.createElement('div');
+      band.className = 'cal-band';
+      band.style.background = e.color;
+      const erStart = rundBegge || (col === 0) || !dekkerDag(e, plussDager(d, -1));
+      const erSlutt = rundBegge || (col === 6) || !dekkerDag(e, plussDager(d, 1));
+      if(erStart) band.classList.add('s');
+      if(erSlutt) band.classList.add('e');
+      if(erStart) band.textContent = e.title;      /* tittel ved start/ukestart */
+      band.title = e.title;
+      band.style.cursor = 'pointer';
+      band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; endreAvtale(e.id); };
+      band.addEventListener('touchstart', function(ev){ ev.stopPropagation(); }, {passive:true});
+      band.addEventListener('mousedown',  function(ev){ ev.stopPropagation(); });
+      return band;
+    };
+
+    /* --- Bånd: fleredags i faste baner, heldags-endags rett under --- */
+    let linjer = 0;
+    if(info.maxLane >= 0 || info.enkelt.length){
       const bars = document.createElement('div');
       bars.className = 'cal-bars';
-      baner = Math.min(MAX_BANER, uke.length);
-      for(let lane = 0; lane < baner; lane++){
-        const e = uke[lane];
-        const band = document.createElement('div');
-        band.className = 'cal-band';
-        if(e && dekkerDag(e, d)){
-          const erStart = (col === 0) || !dekkerDag(e, plussDager(d, -1));
-          const erSlutt = (col === 6) || !dekkerDag(e, plussDager(d, 1));
-          band.style.background = e.color;
-          if(erStart) band.classList.add('s');
-          if(erSlutt) band.classList.add('e');
-          if(erStart) band.textContent = e.title;   /* tittel ved start/ukestart */
-          band.title = e.title;
-          band.style.cursor = 'pointer';
-          band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; endreAvtale(e.id); };
-          band.addEventListener('touchstart', function(ev){ ev.stopPropagation(); }, {passive:true});
-          band.addEventListener('mousedown',  function(ev){ ev.stopPropagation(); });
-        } else {
-          band.classList.add('tom');
+      for(let lane = 0; lane <= info.maxLane && linjer < MAX_BANER; lane++){
+        const e = info.multi[lane];
+        if(e){ bars.appendChild(bygg(e, false)); }
+        else {
+          const tom = document.createElement('div');
+          tom.className = 'cal-band tom';
+          bars.appendChild(tom);
         }
-        bars.appendChild(band);
+        linjer++;
       }
-      box.appendChild(bars);
+      info.enkelt.forEach(function(e){
+        if(linjer < MAX_BANER){ bars.appendChild(bygg(e, true)); linjer++; }
+      });
+      if(bars.children.length) box.appendChild(bars);
     }
 
-    /* --- Tidsbestemte avtaler --- */
-    const timed = eventsOn(d).filter(function(e){ return !e.allDay; });
+    /* --- Tidsbestemte (én-dags) avtaler --- */
+    const timed = S.events
+      .filter(function(e){ return !erBånd(e) && sameDay(e.start, d); })
+      .sort(function(a, b){ return a.start - b.start; });
     if(timed.length){
-      const rest = Math.max(1, evsPerCell() - baner);
+      const rest = Math.max(1, evsPerCell() - linjer);
       const vis = timed.slice(0, rest);
       vis.forEach(function(e){
         const row = document.createElement('div');
@@ -1116,23 +1138,53 @@ function renderCal(){
     grid.appendChild(b);
   }
 
-  /* --- Sorter heldags-/fleredagsavtaler i faste «baner» per uke --- */
-  const heldag = S.events.filter(function(e){ return e.allDay; });
-  const uker = [];
-  for(let d=1; d<=days; d++){
-    const w = Math.floor((lead + d - 1) / 7);
-    if(!uker[w]) uker[w] = [];
-    const dateObj = new Date(y, m, d);
-    heldag.forEach(function(e){
-      if(dekkerDag(e, dateObj) && uker[w].indexOf(e) === -1) uker[w].push(e);
+  /* --- Legg bånd-avtaler i faste baner, uke for uke --- */
+  const bånd  = S.events.filter(erBånd);
+  const celle = {};
+  const dagI  = function(d){ return new Date(y, m, d); };
+  const colOf = function(d){ return (lead + d - 1) % 7; };
+  for(let d=1; d<=days; d++){ celle[+dagI(d)] = { multi: [], maxLane: -1, enkelt: [] }; }
+
+  const antUker = Math.ceil((lead + days) / 7);
+  for(let w=0; w<antUker; w++){
+    const wDays = [];
+    for(let d=1; d<=days; d++){ if(Math.floor((lead + d - 1) / 7) === w) wDays.push(d); }
+    if(!wDays.length) continue;
+
+    const iUka = function(e){ return wDays.some(function(d){ return dekkerDag(e, dagI(d)); }); };
+    const fler = bånd.filter(function(e){ return erFlerdags(e) && iUka(e); });
+    const enk  = bånd.filter(function(e){ return !erFlerdags(e) && iUka(e); });
+
+    fler.sort(function(a, b){
+      const da = wDays.find(function(d){ return dekkerDag(a, dagI(d)); });
+      const db = wDays.find(function(d){ return dekkerDag(b, dagI(d)); });
+      return (colOf(da) - colOf(db)) || (bandSlutt(b) - bandSlutt(a)) || (a.calId < b.calId ? -1 : 1);
+    });
+
+    const laner = [];                       /* laner[i] = liste av [c0,c1] */
+    fler.forEach(function(e){
+      const cols = wDays.filter(function(d){ return dekkerDag(e, dagI(d)); }).map(colOf);
+      const c0 = Math.min.apply(null, cols), c1 = Math.max.apply(null, cols);
+      let lane = 0;
+      while(laner[lane] && laner[lane].some(function(r){ return c0 <= r[1] && c1 >= r[0]; })) lane++;
+      if(!laner[lane]) laner[lane] = [];
+      laner[lane].push([c0, c1]);
+      wDays.forEach(function(d){
+        if(dekkerDag(e, dagI(d))){
+          const info = celle[+dagI(d)];
+          info.multi[lane] = e;
+          if(lane > info.maxLane) info.maxLane = lane;
+        }
+      });
+    });
+
+    enk.forEach(function(e){
+      wDays.forEach(function(d){
+        if(dekkerDag(e, dagI(d))) celle[+dagI(d)].enkelt.push(e);
+      });
     });
   }
-  uker.forEach(function(list){
-    list.sort(function(a, b){
-      return (a.start - b.start) || (b.end - a.end) || (a.calId < b.calId ? -1 : 1);
-    });
-  });
-  mndKart = { lead: lead, days: days, uker: uker };
+  mndKart = { lead: lead, days: days, celle: celle };
 
   fyllAvtaler();
 }
@@ -1557,34 +1609,34 @@ function renderUke(){
         + (sameDay(d, idag) ? ' idag' : '')
         + ((d.getDay()===0 || d.getDay()===6) ? ' helg' : '');
 
-      const evs = eventsOn(d)
-        .filter(function(e){ return e.calId === c.id; })
-        .sort(function(a,b){
-          if(a.allDay !== b.allDay) return a.allDay ? -1 : 1;
-          return a.start - b.start;
-        });
-
       const ukeSlutt = plussDager(start, 7);
-      evs.forEach(function(e){
-        if(e.allDay){
-          /* heldags/fleredags: fargelegg bakgrunnen, sammenhengende over dagene */
-          const band = document.createElement('div');
-          band.className = 'uke-band';
-          band.style.background = e.color;
-          const forrige = plussDager(d, -1), neste = plussDager(d, 1);
-          const erStart = !dekkerDag(e, forrige) || forrige < start;
-          const erSlutt = !dekkerDag(e, neste)   || neste >= ukeSlutt;
-          if(erStart) band.classList.add('s');
-          if(erSlutt) band.classList.add('e');
-          if(erStart) band.textContent = e.title;
-          band.title = e.title;
-          band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; endreAvtale(e.id); };
-          langtTrykk(band, function(){ endreAvtale(e.id); });
-          band.addEventListener('touchstart', function(ev){ ev.stopPropagation(); }, {passive:true});
-          band.addEventListener('mousedown',  function(ev){ ev.stopPropagation(); });
-          cell.appendChild(band);
-          return;
-        }
+      const dagBånd = S.events
+        .filter(function(e){ return e.calId === c.id && erBånd(e) && dekkerDag(e, d); })
+        .sort(function(a, b){ return a.start - b.start; });
+      const dagTid = S.events
+        .filter(function(e){ return e.calId === c.id && !erBånd(e) && sameDay(e.start, d); })
+        .sort(function(a, b){ return a.start - b.start; });
+
+      dagBånd.forEach(function(e){
+        /* heldags/fleredags: fargelegg bakgrunnen, sammenhengende over dagene */
+        const band = document.createElement('div');
+        band.className = 'uke-band';
+        band.style.background = e.color;
+        const forrige = plussDager(d, -1), neste = plussDager(d, 1);
+        const erStart = !dekkerDag(e, forrige) || forrige < start;
+        const erSlutt = !dekkerDag(e, neste)   || neste >= ukeSlutt;
+        if(erStart) band.classList.add('s');
+        if(erSlutt) band.classList.add('e');
+        if(erStart) band.textContent = e.title;
+        band.title = e.title;
+        band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; endreAvtale(e.id); };
+        langtTrykk(band, function(){ endreAvtale(e.id); });
+        band.addEventListener('touchstart', function(ev){ ev.stopPropagation(); }, {passive:true});
+        band.addEventListener('mousedown',  function(ev){ ev.stopPropagation(); });
+        cell.appendChild(band);
+      });
+
+      dagTid.forEach(function(e){
         const chip = document.createElement('div');
         chip.className = 'uke-chip';
         chip.style.background = e.color;
