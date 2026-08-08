@@ -130,6 +130,21 @@ body{
   font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);
 }
 .uke.endag .uke-row{min-height:74px}
+
+/* Helligdager (røde dager) */
+.cal-cell.helligdag{background:rgba(180,68,58,.09)}
+.cal-cell.helligdag.sel{background:var(--ink)}
+.cal-helg{
+  font-size:9px;font-weight:700;line-height:1.05;color:#B4443A;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;
+}
+.cal-cell.sel .cal-helg{color:#F3B0A8}
+.uke-dcol.helligdag,.uke-cell.helligdag,.tg-dcol.helligdag{background:rgba(180,68,58,.08)}
+.uke-helg,.tg-helg{
+  font-size:9px;font-weight:700;color:#B4443A;line-height:1.1;margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px;
+}
+.plan-helg{color:#B4443A;font-weight:700}
 @media(hover:hover){.cal-cell:not(.blank):hover{background:#F2F5F7}}
 .cal-cell.today{box-shadow:inset 0 0 0 2px var(--ink)}
 .cal-cell.sel{background:var(--ink)}
@@ -793,6 +808,36 @@ function ukeNr(d){
 }
 function minutter(d){ return d.getHours()*60 + d.getMinutes(); }
 
+/* ---- Norske helligdager (røde dager) ---- */
+function paske(y){
+  const a=y%19, b=Math.floor(y/100), c=y%100, d=Math.floor(b/4), e=b%4,
+        f=Math.floor((b+8)/25), g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30,
+        i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7, mm=Math.floor((a+11*h+22*l)/451),
+        mnd=Math.floor((h+l-7*mm+114)/31), dag=((h+l-7*mm+114)%31)+1;
+  return new Date(y, mnd-1, dag);
+}
+let _helgCache = {};
+function helligKart(y){
+  if(_helgCache[y]) return _helgCache[y];
+  const H = {}, pa = paske(y);
+  const set = function(dt, navn){ const k = key(dt); if(!H[k]) H[k] = navn; };
+  set(new Date(y,0,1), 'Nyttårsdag');
+  set(plussDager(pa,-3), 'Skjærtorsdag');
+  set(plussDager(pa,-2), 'Langfredag');
+  set(pa, 'Første påskedag');
+  set(plussDager(pa,1), 'Andre påskedag');
+  set(new Date(y,4,1), 'Offentlig høytidsdag');
+  set(new Date(y,4,17), 'Grunnlovsdag');
+  set(plussDager(pa,39), 'Kristi himmelfartsdag');
+  set(plussDager(pa,49), 'Første pinsedag');
+  set(plussDager(pa,50), 'Andre pinsedag');
+  set(new Date(y,11,25), 'Første juledag');
+  set(new Date(y,11,26), 'Andre juledag');
+  _helgCache[y] = H;
+  return H;
+}
+function helligdag(d){ return helligKart(d.getFullYear())[key(d)] || null; }
+
 function msg(el, text, isErr){
   el.hidden = !text;
   el.className = 'msg' + (isErr ? ' err' : '');
@@ -1219,6 +1264,16 @@ function renderCal(medNotat){
       num.className = 'cal-num';
       num.textContent = dnum;
       cell.appendChild(num);
+
+      const hnavn = helligdag(date);
+      if(hnavn){
+        cell.classList.add('helligdag');
+        const hn = document.createElement('div');
+        hn.className = 'cal-helg';
+        hn.textContent = hnavn;
+        hn.title = hnavn;
+        cell.appendChild(hn);
+      }
 
       const box = document.createElement('div');
       box.className = 'cal-evs';
@@ -1691,11 +1746,14 @@ function renderUke(medNotat, dager){
     {className:'uke-corner', textContent:'Uke ' + ukeNr(start)}));
   dager.forEach(function(d){
     const c = document.createElement('div');
+    const hd = helligdag(d);
     c.className = 'uke-dcol'
       + (sameDay(d, idag) ? ' idag' : '')
-      + (sameDay(d, S.sel) ? ' sel' : '');
+      + (sameDay(d, S.sel) ? ' sel' : '')
+      + (hd ? ' helligdag' : '');
     c.innerHTML = '<div class="uke-dow">' + DOW[(d.getDay()+6)%7] + '</div>'
-                + '<div class="uke-dnum">' + d.getDate() + '</div>';
+                + '<div class="uke-dnum">' + d.getDate() + '</div>'
+                + (hd ? '<div class="uke-helg" title="'+esc(hd)+'">'+esc(hd)+'</div>' : '');
     c.onclick = function(){ if(skjulTrykk) return; S.sel = d; render(); };
     langtTrykk(c, function(){ dagMeny(d); });
     head.appendChild(c);
@@ -1726,7 +1784,8 @@ function renderUke(medNotat, dager){
       const cell = document.createElement('div');
       cell.className = 'uke-cell'
         + (sameDay(d, idag) ? ' idag' : '')
-        + ((d.getDay()===0 || d.getDay()===6) ? ' helg' : '');
+        + ((d.getDay()===0 || d.getDay()===6) ? ' helg' : '')
+        + (helligdag(d) ? ' helligdag' : '');
 
       const ukeSlutt = plussDager(start, nCols);
       const dagBånd = S.events
@@ -1933,9 +1992,11 @@ function renderListe(){
     const sec = document.createElement('div');
     sec.className = 'plan-sec' + (sameDay(d, new Date()) ? ' idag' : '');
     const head = document.createElement('div');
+    const hd = helligdag(d);
     head.className = 'plan-dhead';
-    head.textContent = DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase()
-      + ' · Uke ' + ukeNr(d);
+    head.innerHTML = esc(DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase()
+      + ' · Uke ' + ukeNr(d)) + (hd ? ' <span class="plan-helg">· '+esc(hd)+'</span>' : '');
+    if(hd) sec.classList.add('helligdag');
     sec.appendChild(head);
 
     if(!evs.length){
@@ -1979,11 +2040,14 @@ function renderTid(){
   head.appendChild(Object.assign(document.createElement('div'), {className:'tg-corner'}));
   dager.forEach(function(d){
     const c = document.createElement('div');
+    const hd = helligdag(d);
     c.className = 'tg-dcol'
       + (sameDay(d, idag) ? ' idag' : '')
-      + (sameDay(d, S.sel) ? ' sel' : '');
+      + (sameDay(d, S.sel) ? ' sel' : '')
+      + (hd ? ' helligdag' : '');
     c.innerHTML = '<div class="tg-dow">' + DOW[(d.getDay()+6)%7] + '</div>'
-                + '<div class="tg-dnum">' + d.getDate() + '</div>';
+                + '<div class="tg-dnum">' + d.getDate() + '</div>'
+                + (hd ? '<div class="tg-helg" title="'+esc(hd)+'">'+esc(hd)+'</div>' : '');
     c.onclick = function(){
       if(skjulTrykk) return;
       S.sel = d;
