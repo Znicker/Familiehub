@@ -162,6 +162,17 @@ body{
 .cal-row + .cal-row{border-top:1px solid var(--line)}
 .cal-row.off{opacity:.38}
 .cal-swatch{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;box-shadow:0 0 0 1px var(--line)}
+.cal-rad + .cal-rad{border-top:1px solid var(--line)}
+.cal-rad .cal-row + .cal-row{border-top:none}
+.cal-palett{display:flex;flex-wrap:wrap;gap:8px;padding:2px 2px 10px 26px}
+.cal-palett[hidden]{display:none}
+.cal-palett .farge{
+  width:22px;height:22px;border-radius:50%;border:2px solid var(--paper);
+  box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0;transition:transform .1s ease;
+}
+.cal-palett .farge:active{transform:scale(.88)}
+.cal-palett .farge.valgt{box-shadow:0 0 0 2px var(--ink)}
 .cal-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cal-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft)}
 .cal-toggle{
@@ -723,6 +734,9 @@ const AUTH_BASE = 'https://login.microsoftonline.com/' + CFG.authority + '/oauth
 const GRAPH     = 'https://graph.microsoft.com/v1.0';
 
 const PALETTE = ['#2C3E50','#B4443A','#3E7C5A','#8A6BB1','#C08A2E','#4A7FA8','#A05A7A','#5A6C7D'];
+const FARGER  = ['#2C3E50','#4A7FA8','#2E8B8B','#3E7C5A','#5AA469','#C08A2E','#D98032','#B4443A','#C65B7C','#8A6BB1','#7A8B2E','#5A6C7D'];
+let fargeValg = {};
+try{ fargeValg = JSON.parse(localStorage.getItem('fh_cal_farger') || '{}') || {}; }catch(e){ fargeValg = {}; }
 
 const S = {
   token:null, expires:0, refresh:null,
@@ -914,7 +928,7 @@ async function loadCalendars(){
   S.calendars.forEach(function(c){ prev[c.id] = c.on; });
   S.calendars = (d.value||[]).map(function(c,i){
     return {
-      id:c.id, name:c.name, color:PALETTE[i % PALETTE.length],
+      id:c.id, name:c.name, color: fargeValg[c.id] || PALETTE[i % PALETTE.length],
       kanEndre: c.canEdit !== false,
       on: prev[c.id] !== undefined ? prev[c.id] : true
     };
@@ -1310,10 +1324,19 @@ function renderCalList(){
   const vis = S.visAlle ? S.calendars : S.calendars.filter(function(c){ return !c.on || tell(c) > 0; });
 
   let html = vis.map(function(c){
-    return '<div class="cal-row'+(c.on?'':' off')+'" onclick="toggleCal(\''+c.id+'\')">'
-      + '<span class="cal-swatch" style="background:'+c.color+'"></span>'
-      + '<span class="cal-name">'+esc(c.name)+'</span>'
-      + '<span class="cal-count">'+(c.on ? tell(c) : '—')+'</span>'
+    const palett = FARGER.map(function(hex){
+      const valgt = (String(c.color).toLowerCase() === hex.toLowerCase()) ? ' valgt' : '';
+      return '<button class="farge'+valgt+'" style="background:'+hex+'" title="'+hex+'"'
+        + ' onclick="event.stopPropagation(); settFarge(this.closest(\'.cal-rad\').dataset.id,\''+hex+'\')"></button>';
+    }).join('');
+    return '<div class="cal-rad" data-id="'+c.id+'">'
+      + '<div class="cal-row'+(c.on?'':' off')+'" onclick="toggleCal(\''+c.id+'\')">'
+      +   '<button class="cal-swatch" style="background:'+c.color+'" title="Endre farge"'
+      +     ' onclick="event.stopPropagation(); vekslPalett(this)"></button>'
+      +   '<span class="cal-name">'+esc(c.name)+'</span>'
+      +   '<span class="cal-count">'+(c.on ? tell(c) : '—')+'</span>'
+      + '</div>'
+      + '<div class="cal-palett" hidden>'+palett+'</div>'
       + '</div>';
   }).join('');
 
@@ -1760,6 +1783,23 @@ function settVis(plan){
   if(S.plan === plan) return;
   S.plan = plan;
   naviger();
+}
+
+/* Fargevelger per kalender */
+function vekslPalett(el){
+  const p = el.closest('.cal-rad').querySelector('.cal-palett');
+  if(p) p.hidden = !p.hidden;
+}
+function settFarge(id, hex){
+  const c = S.calendars.filter(function(x){ return x.id === id; })[0];
+  if(!c) return;
+  c.color = hex;
+  fargeValg[id] = hex;
+  try{ localStorage.setItem('fh_cal_farger', JSON.stringify(fargeValg)); }catch(e){}
+  [S.all, S.events].forEach(function(arr){
+    (arr || []).forEach(function(e){ if(e.calId === id) e.color = hex; });
+  });
+  render();
 }
 
 /* Avtaler som gjelder en dag (bånd-avtaler dekker hver dag de spenner over) */
