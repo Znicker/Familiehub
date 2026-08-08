@@ -673,7 +673,7 @@ footer .btn{margin-left:auto}
 
       <div class="fld">
         <label for="fCal">Kalender</label>
-        <select id="fCal"></select>
+        <select id="fCal" onchange="oppdaterKalStatus()"></select>
       </div>
 
       <div class="fld">
@@ -1330,7 +1330,7 @@ function renderCalList(){
         + ' onclick="event.stopPropagation(); settFarge(this.closest(\'.cal-rad\').dataset.id,\''+hex+'\')"></button>';
     }).join('');
     return '<div class="cal-rad" data-id="'+c.id+'">'
-      + '<div class="cal-row'+(c.on?'':' off')+'" onclick="toggleCal(\''+c.id+'\')">'
+      + '<div class="cal-row'+(c.on?'':' off')+'" onclick="event.stopPropagation(); toggleCal(\''+c.id+'\')">'
       +   '<button class="cal-swatch" style="background:'+c.color+'" title="Endre farge"'
       +     ' onclick="event.stopPropagation(); vekslPalett(this)"></button>'
       +   '<span class="cal-name">'+esc(c.name)+'</span>'
@@ -1341,7 +1341,7 @@ function renderCalList(){
   }).join('');
 
   if(tomme > 0 || S.visAlle){
-    html += '<button class="cal-toggle" onclick="visTomme()">'
+    html += '<button class="cal-toggle" onclick="event.stopPropagation(); visTomme()">'
           + (S.visAlle ? 'Skjul tomme' : 'Vis ' + tomme + ' tomme')
           + '</button>';
   }
@@ -1451,11 +1451,32 @@ function allDagToggle(){
 
 function fyllKalendervalg(valgtId){
   const sel = $('fCal');
-  const kan = S.calendars.filter(function(c){ return c.kanEndre; });
-  sel.innerHTML = kan.map(function(c){
-    return '<option value="'+c.id+'"'+(c.id===valgtId?' selected':'')+'>'+esc(c.name)+'</option>';
+  const alle = S.calendars;
+  const skriv = function(id){ const c = alle.filter(function(x){ return x.id===id; })[0]; return !!(c && c.kanEndre); };
+  /* standardvalg: foretrukket kalender hvis skrivbar, ellers første skrivbare */
+  let valgt = valgtId;
+  if(!skriv(valgt)){
+    const f = alle.filter(function(c){ return c.kanEndre; })[0];
+    valgt = f ? f.id : (alle[0] && alle[0].id);
+  }
+  sel.innerHTML = alle.map(function(c){
+    return '<option value="'+c.id+'"'+(c.id===valgt?' selected':'')+'>'
+      + esc(c.name) + (c.kanEndre ? '' : ' (skrivebeskyttet)') + '</option>';
   }).join('');
-  return kan.length;
+  return alle.filter(function(c){ return c.kanEndre; }).length;
+}
+
+/* Er den valgte kalenderen i skjemaet skrivbar? */
+function kalenderSkrivbar(){
+  const c = S.calendars.filter(function(x){ return x.id === $('fCal').value; })[0];
+  return !!(c && c.kanEndre);
+}
+/* Oppdater lagre-knapp/melding når man bytter kalender i «Ny avtale» */
+function oppdaterKalStatus(){
+  if(redigerer) return;                 /* redigering: kalender er låst */
+  const ok = kalenderSkrivbar();
+  $('btnLagre').disabled = !ok;
+  dlgFeil(ok ? '' : 'Denne kalenderen er skrivebeskyttet — velg en annen for å lagre.');
 }
 
 function nyAvtale(time, minutt, calId){
@@ -1480,8 +1501,12 @@ function nyAvtale(time, minutt, calId){
 
   const antall = fyllKalendervalg(calId || null);
   allDagToggle();
-  dlgFeil(antall ? '' : 'Ingen av kalenderne dine kan skrives til.');
-  $('btnLagre').disabled = !antall;
+  if(!antall){
+    dlgFeil('Ingen av kalenderne dine kan skrives til.');
+    $('btnLagre').disabled = true;
+  } else {
+    oppdaterKalStatus();
+  }
   $('veil').hidden = false;
   setTimeout(function(){ $('fTitle').focus(); }, 60);
 }
@@ -2204,11 +2229,12 @@ function lukkDagMeny(){
     setTimeout(function(){ skjulTrykk = false; }, 400);
   }
 
-  ['cal','tg'].forEach(function(id){
-    const el = $(id);
-    el.addEventListener('touchstart', start, {passive:true});
-    el.addEventListener('touchend', slutt, {passive:true});
-  });
+  const panel = document.querySelector('.cal-panel');
+  if(panel){
+    /* capture-fasen: fanges selv om brikker stopper bobling for langt trykk */
+    panel.addEventListener('touchstart', start, {passive:true, capture:true});
+    panel.addEventListener('touchend',   slutt, {passive:true, capture:true});
+  }
 })();
 
 /* Juster antall linjer per rute når vinduet endrer størrelse */
