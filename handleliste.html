@@ -1,0 +1,2908 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<title>Familie Hub – Handleliste</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg-1: #F5F5F5;
+    --bg-2: #FAFAFA;
+    --bg-solid: #FFFFFF;
+    --paper: #FFFFFF;
+    --paper-soft: #F0F0F0;
+    --ink: #2C3E50;
+    --ink-soft: #5A6C7D;
+    --lime: #4CAF50;
+    --lime-dark: #388E3C;
+    --blue: #2E6FB7;
+    --blue-light: #DCE6F6;
+    --mustard-light: #F0D9A6;
+    --line: #E0E0E0;
+    --danger: #A64D3C;
+    --shadow: 0 2px 8px rgba(0,0,0,0.1);
+    --radius: 16px;
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  button, .item-row, .trash-row, .store-header{ touch-action: manipulation; }
+  html,body{ margin:0; padding:0; color:var(--ink); width:100%; overflow-x:clip; }
+  body{
+    font-family:'Archivo', sans-serif;
+    min-height:100vh;
+    padding-bottom:calc(172px + max(0px, env(safe-area-inset-bottom)));
+    background-color:var(--bg-solid);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0),
+      radial-gradient(ellipse 900px 500px at 15% 0%, #F5F5F5, transparent 60%),
+      radial-gradient(ellipse 700px 600px at 90% 30%, rgba(0,0,0,0.28), transparent 55%),
+      radial-gradient(ellipse 800px 700px at 20% 90%, rgba(0,0,0,0.22), transparent 55%),
+      linear-gradient(160deg, var(--bg-1), var(--bg-2));
+    background-size: 5px 5px, auto, auto, auto, auto;
+    background-attachment: fixed;
+  }
+  h1,h2,h3{ font-family:'Archivo', sans-serif; margin:0; font-weight:800; letter-spacing:-0.01em; }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  button{ font-family:inherit; cursor:pointer; }
+  input, textarea, select{ font-family:inherit; }
+  ::selection{ background:var(--mustard-light); }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:20; background:transparent;
+    padding:20px 20px 8px; display:flex; align-items:center; gap:10px;
+    transition:background .15s;
+  }
+  .topbar.scrolled{ background:linear-gradient(180deg, var(--bg-1) 88%, transparent); box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+  .topbar-brand{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    display:flex; align-items:center; gap:10px; min-width:0; max-width:62%; pointer-events:none;
+  }
+  .topbar-home-actions{ display:flex; gap:4px; flex-shrink:0; margin-left:auto; }
+  .icon-btn{
+    background:none; border:none; padding:8px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; color:var(--ink);
+  }
+  .icon-btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
+    outline:2px solid var(--lime); outline-offset:2px;
+  }
+  .icon-btn:active{ background:rgba(0,0,0,0.05); }
+  .icon-btn .badge{
+    position:absolute; transform:translate(11px,-11px);
+    min-width:17px; height:17px; border-radius:999px; padding:0 4px;
+    background:var(--danger); color:#fff; font-size:10.5px; font-weight:700;
+    display:none; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .icon-btn .badge.active{ display:flex; }
+
+  .par-kort{
+    border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px;
+    background:var(--paper);
+  }
+  .par-navn{
+    display:block; width:100%; text-align:left; padding:11px 13px; margin-bottom:7px;
+    border:1.5px solid var(--line); border-radius:10px; background:var(--paper-soft);
+    font-family:'Archivo',sans-serif; font-size:15px; font-weight:600; color:var(--ink);
+  }
+  .par-navn.valgt{
+    border-color:var(--lime-dark); background:var(--lime-dark); color:#FFFFFF;
+  }
+  .par-hint{ font-size:13px; color:var(--ink-soft); margin:0 0 10px; }
+  .klynge-rad{
+    display:flex; align-items:center; gap:10px; padding:9px 2px;
+    border-bottom:1px solid var(--line);
+  }
+  .klynge-rad:last-of-type{ border-bottom:none; }
+  .klynge-rad input{ width:18px; height:18px; accent-color:var(--lime); flex-shrink:0; }
+  .klynge-navn{ flex:1; min-width:0; font-size:15px; word-break:break-word; }
+  .klynge-mengde{
+    font-family:'Archivo',sans-serif; font-size:13px; font-weight:700;
+    color:var(--ink-soft); white-space:nowrap; flex-shrink:0;
+  }
+  .klynge-rad.av .klynge-navn{ color:var(--ink-soft); text-decoration:line-through; }
+  .klynge-rad.av .klynge-mengde{ opacity:0.4; }
+  .par-sikker{
+    display:inline-block; font-size:11px; font-weight:800; text-transform:uppercase;
+    letter-spacing:0.07em; padding:3px 8px; border-radius:999px; margin-bottom:9px;
+    background:var(--paper-soft); color:var(--ink-soft);
+  }
+  .par-sikker.hoy{ background:var(--lime-dark); color:#fff; }
+  .par-valg{ display:flex; gap:8px; margin-top:4px; }
+  .par-valg button{
+    flex:1; border:none; border-radius:999px; padding:10px; font-size:13px; font-weight:700;
+    font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.02em;
+  }
+  .par-ja{ background:var(--lime); color:#fff; }
+  .par-nei{ background:none; color:var(--ink-soft); border:1.5px solid var(--line) !important; }
+
+  .type-rad{
+    display:flex; align-items:center; gap:10px; padding:11px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .type-rad:last-child{ border-bottom:none; }
+  .type-rad .navn{ flex:1; min-width:0; font-size:15px; word-break:break-word; }
+  .type-rad select{
+    flex:0 0 150px; border:1.5px solid var(--line); border-radius:9px; padding:8px;
+    font-family:'Archivo',sans-serif; font-size:13px; background:#fff; color:var(--ink);
+  }
+
+  .trash-row{
+    display:flex; gap:12px; align-items:center; padding:13px 4px;
+    border-bottom:1px solid var(--line);
+  }
+  .trash-row:last-child{ border-bottom:none; }
+  .trash-body{ flex:1; min-width:0; }
+  .trash-name{ font-size:17px; font-weight:600; line-height:1.3; color:var(--ink); }
+  .trash-meta{ font-size:13px; color:var(--ink-soft); margin-top:2px; }
+  .trash-back{
+    border:none; border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:700;
+    font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.02em;
+    background:var(--lime); color:#fff; flex-shrink:0;
+  }
+  .topbar-back{
+    width:40px; height:40px; margin:-4px 0 -4px -8px; font-size:20px;
+    background:none; border:none; color:var(--ink); cursor:pointer;
+  }
+  .topbar h1{
+    font-size:15px; color:var(--ink); text-transform:uppercase; text-align:center;
+    letter-spacing:0.04em; line-height:1.15;
+  }
+
+  main{ max-width:520px; margin:0 auto; padding:0 20px; }
+
+  /* ---------- Home hero ---------- */
+  .home-hero{
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:8px 0 2px; position:relative; z-index:1;
+  }
+  .home-hero-icon{
+    width:60px; height:60px; border-radius:50%; background:var(--paper);
+    display:flex; align-items:center; justify-content:center; padding:9px;
+    box-shadow:0 3px 10px rgba(0,0,0,0.28); margin-bottom:7px;
+  }
+  .home-hero-icon img{ width:100%; height:auto; display:block; }
+  .home-hero-title{
+    font-size:22.5px; font-weight:800; color:var(--ink); text-transform:uppercase;
+    letter-spacing:0.05em; margin:0; line-height:1.2;
+  }
+  .home-hero-sub{
+    font-size:15px; color:var(--ink-soft); text-transform:uppercase;
+    letter-spacing:0.1em; margin:3px 0 0; font-weight:600;
+  }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  .punched{ position:relative; }
+
+  .card-panel{
+    background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:20px 20px 22px 34px; margin:14px 0 20px;
+  }
+
+  /* ---------- Week nav ---------- */
+  .week-nav{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--paper-soft); border-radius:999px; padding:4px; margin:16px 0 4px;
+  }
+  .week-nav button{
+    background:none; border:none; color:var(--ink); font-size:20px; line-height:1;
+    padding:6px 16px; border-radius:999px;
+  }
+  .week-nav button:active{ background:rgba(0,0,0,0.06); }
+  .week-label{
+    flex:1; text-align:center; font-family:'IBM Plex Mono', monospace;
+    font-size:13px; font-weight:700; color:var(--ink);
+  }
+  .week-label small{
+    display:block; font-weight:400; font-size:11px; color:var(--ink-soft);
+  }
+  .week-today{ display:none; }
+
+  /* ---------- Store / category ---------- */
+  .store-group{ margin-bottom:18px; }
+  .store-header{
+    display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+    padding:11px 14px; background:var(--blue); border:none; border-radius:9px;
+    margin:26px 0 4px; box-shadow:0 2px 6px rgba(46,111,183,0.28);
+  }
+  .store-group:first-child .store-header{ margin-top:12px; }
+  .store-header:active{ background:#20447F; }
+  .store-header .caret{ font-size:11px; color:#FFFFFF; width:12px; flex-shrink:0; opacity:0.8; }
+  .store-header h3{
+    flex:1; font-family:'Archivo',sans-serif; font-size:15px; font-weight:800;
+    color:#FFFFFF; text-transform:uppercase; letter-spacing:0.09em;
+  }
+  .store-count{
+    font-family:'Archivo',sans-serif; font-size:12.5px; font-weight:700;
+    color:#FFFFFF; opacity:0.85; flex-shrink:0;
+  }
+  .store-group.collapsed .store-body{ display:none; }
+
+  .category-group{ margin:0; }
+  .category-header{
+    margin:26px 0 8px; padding:9px 14px; border-radius:9px;
+    background:var(--lime-dark); color:#FFFFFF;
+    font-family:'Archivo',sans-serif; font-size:15px; font-weight:800;
+    text-transform:uppercase; letter-spacing:0.09em; text-align:center;
+    box-shadow:0 2px 6px rgba(56,142,60,0.28);
+  }
+  .category-group:first-child .category-header{ margin-top:10px; }
+
+  .item-list{ display:flex; flex-direction:column; }
+  .item-row{
+    display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+    padding:13px 0; border-bottom:1px solid var(--line); cursor:pointer;
+    transition:opacity .13s ease;
+  }
+  .item-row:last-child{ border-bottom:none; }
+  .item-row:active{ background:var(--paper-soft); }
+  .item-row.checked{ opacity:0.5; }
+  .item-row.checked .item-name{ text-decoration:line-through; color:var(--ink-soft); }
+  /* Nederst er hele blokken alt dempet - ikke demp raden en gang til */
+  .done-wrap .item-row.checked{ opacity:1; }
+  .item-store, .item-move{
+    background:none; border:none; color:var(--ink-soft); padding:4px 5px;
+    font-size:14px; flex-shrink:0; line-height:1; opacity:0.55;
+  }
+  .item-store:active{ color:var(--blue); opacity:1; }
+  .item-move:active{ color:var(--lime-dark); opacity:1; }
+
+  /* Handlet-seksjonen nederst */
+  .done-divider{
+    margin:30px 0 8px; padding:9px 14px; border-radius:9px;
+    background:var(--paper-soft); border:1px solid var(--line); color:var(--ink-soft);
+    font-family:'Archivo',sans-serif; font-size:15px; font-weight:800;
+    text-transform:uppercase; letter-spacing:0.09em; text-align:center;
+  }
+  .done-wrap{ opacity:0.6; }
+  .done-wrap .store-header{ background:var(--ink-soft); box-shadow:none; }
+  .done-wrap .category-header{ background:var(--ink-soft); box-shadow:none; }
+
+  .btn-quiet{
+    display:block; width:100%; background:none; border:none; padding:12px 10px;
+    color:var(--ink-soft); font-family:'Archivo',sans-serif; font-size:13px; font-weight:600;
+    text-transform:none; letter-spacing:0; text-decoration:underline; text-underline-offset:3px;
+  }
+  .btn-quiet:active{ color:var(--ink); }
+  .item-body{ flex:1; min-width:0; }
+  .item-name{ font-size:17px; font-weight:600; line-height:1.3; color:var(--ink); }
+  .item-meta{ font-size:13px; color:var(--ink-soft); margin-top:2px; line-height:1.3; }
+  /* Mengden er ofte det viktigste på linja ved hylla - full farge, ikke grå */
+  .item-qty{
+    font-family:'Archivo',sans-serif; font-size:17px; font-weight:700;
+    color:var(--ink); white-space:nowrap; text-align:right; flex-shrink:0;
+  }
+  .vare-stjerne{ color:var(--lime-dark); font-weight:700; margin-left:4px; }
+  .liste-fotnote{
+    font-size:13px; color:var(--ink-soft); margin:14px 0 0; padding-top:2px;
+  }
+  /* Dempet bånd - basisvarer er ikke noe man handler etter */
+  .basis-band{
+    margin:26px 0 8px; padding:9px 14px; border-radius:9px;
+    background:var(--paper-soft); color:var(--ink-soft); border:1px solid var(--line);
+    font-family:'Archivo',sans-serif; font-size:15px; font-weight:800;
+    text-transform:uppercase; letter-spacing:0.09em; text-align:center;
+  }
+  .item-row.checked .item-qty{ color:var(--ink-soft); }
+  .item-btn{
+    background:none; border:none; color:var(--ink-soft); padding:4px 6px;
+    font-size:15px; flex-shrink:0;
+  }
+  .item-btn:active{ color:var(--danger); }
+
+  .empty-state{ margin-top:60px; text-align:center; color:var(--ink-soft); }
+  .empty-state .big{ font-size:40px; display:block; margin-bottom:10px; }
+  .empty-state p{ margin:6px 0 0; font-size:15px; line-height:1.5; color:var(--ink-soft); }
+
+  /* ---------- Bottom bar ---------- */
+  .bottom-bar{
+    position:fixed; left:0; right:0; z-index:26;
+    bottom:calc(88px + env(safe-area-inset-bottom));
+    display:flex; justify-content:center; align-items:center; gap:13px;
+    padding:0 12px; pointer-events:none;
+  }
+  .bottom-bar > *{ pointer-events:auto; }
+  .new-fab, .inbox-fab{
+    position:relative; width:48px; height:48px; border-radius:50%;
+    background:var(--lime); color:#FFFFFF; border:none; padding:0; font-size:20px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+  }
+  .inbox-fab{ background:var(--blue); }
+  .new-fab:active, .inbox-fab:active{ transform:scale(0.95); }
+  .inbox-badge{
+    position:absolute; right:-3px; bottom:-3px; min-width:20px; height:20px; border-radius:999px;
+    background:var(--danger); color:#fff; border:2px solid var(--bg-solid);
+    font-size:11px; font-weight:700; line-height:1; padding:0 3px;
+    display:none; align-items:center; justify-content:center;
+  }
+  .inbox-badge.active{ display:flex; }
+
+  /* ---------- Buttons & fields ---------- */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:13px 18px; border-radius:999px; border:none;
+    font-size:14.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
+    font-family:'Archivo', sans-serif;
+  }
+  .btn-primary{ background:var(--blue); color:#fff; width:100%; margin-top:14px; }
+  .btn-primary:disabled{ background:#B7C2D4; }
+  .btn-primary:active:not(:disabled){ background:#20447F; }
+  .btn-ghost{ background:none; color:var(--ink); border:1.5px solid var(--line); width:100%; }
+  .btn-danger{ background:none; color:var(--danger); }
+  .btn-success{ background:var(--lime); color:#fff; }
+
+  .field{ margin-bottom:12px; }
+  .field label{
+    display:block; font-size:13px; color:var(--ink-soft); margin-bottom:4px;
+  }
+  .field input, .field textarea, .field select{
+    width:100%; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line);
+    background:#fff; font-size:15px; color:var(--ink);
+  }
+  .field textarea{ resize:vertical; min-height:56px; }
+  .field-hint{ font-size:11.5px; color:var(--lime-dark); margin:4px 0 0; font-weight:600; }
+  .field-note{ font-size:11.5px; color:var(--ink-soft); margin:4px 0 0; }
+  .new-value{ margin-top:8px; }
+
+  /* ---------- Tabs ---------- */
+  .tabs{
+    display:flex; background:var(--paper-soft); border-radius:999px;
+    padding:4px; margin:16px 0 18px;
+  }
+  .tab-btn{
+    flex:1; border:none; background:none; padding:10px; border-radius:999px;
+    font-size:13px; font-weight:700; color:var(--ink-soft);
+    text-transform:uppercase; letter-spacing:0.02em; font-family:'Archivo', sans-serif;
+  }
+  .tab-btn.active{ background:var(--lime); color:#FFFFFF; }
+  .tabpane{ display:none; }
+  .tabpane.active{ display:block; }
+
+  /* ---------- Summary ---------- */
+  .sum-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:11px 2px; border-bottom:1px solid var(--line);
+  }
+  .sum-row:last-child{ border-bottom:none; }
+  .sum-label{ font-size:13px; color:var(--ink-soft); }
+  .sum-value{ font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; color:var(--ink); }
+
+  /* ---------- Inbox ---------- */
+  .inbox-item{
+    background:var(--blue-light); border:1.5px solid var(--blue); border-radius:12px;
+    padding:13px 14px; margin-bottom:10px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .inbox-item-body{ flex:1; min-width:0; }
+  .inbox-item-name{ font-weight:600; color:var(--blue); font-size:14.5px; }
+  .inbox-item-meta{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .inbox-item-btn{
+    border:none; border-radius:999px; padding:8px 14px; font-size:12.5px; font-weight:700;
+    font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.03em;
+    background:var(--lime); color:#fff; flex-shrink:0;
+  }
+  .inbox-item-btn.skip{ background:none; color:var(--ink-soft); border:1.5px solid var(--line); }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop{
+    display:none; position:fixed; inset:0; background:rgba(10,14,7,0.85); z-index:100;
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-backdrop.active{ display:flex; }
+
+  /* Usynlig lokk som hindrer dobbelttrykk mens noe lagres */
+  .lock{ position:fixed; inset:0; z-index:300; display:none; background:transparent; }
+  .lock.active{ display:block; }
+
+  .toast{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:150px; z-index:500; max-width:88%;
+    background:var(--ink); color:#fff; border-radius:10px;
+    padding:11px 16px; font-size:13px; font-weight:600;
+    box-shadow:0 4px 14px rgba(0,0,0,0.25); display:none;
+  }
+  .toast.active{ display:block; }
+  .modal-card{
+    background:var(--paper); border-radius:var(--radius); padding:22px;
+    max-width:400px; width:100%; box-shadow:0 8px 24px rgba(0,0,0,0.2);
+    max-height:88vh; overflow-y:auto;
+  }
+  .modal-card h3{ margin:0 0 4px; font-size:16px; }
+  .modal-card .lead{ font-size:13px; color:var(--ink-soft); margin:0 0 16px; }
+  .modal-actions{ display:flex; gap:8px; margin-top:16px; }
+  .modal-actions .btn{ flex:1; margin-top:0; }
+
+  /* ---------- Import ---------- */
+  .pick-group{
+    font-size:11.5px; text-transform:uppercase; letter-spacing:0.09em;
+    color:var(--lime-dark); font-weight:700; margin:16px 0 7px;
+  }
+  .pick-group:first-child{ margin-top:4px; }
+  .pick-row{
+    display:flex; gap:10px; align-items:center; padding:9px 11px;
+    background:var(--paper-soft); border:1px solid var(--line);
+    border-radius:10px; margin-bottom:6px;
+  }
+  .pick-row input{ width:18px; height:18px; accent-color:var(--lime); flex-shrink:0; }
+  .pick-title{ flex:1; min-width:0; font-size:14px; font-weight:500; }
+  .pick-serv{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); flex-shrink:0; }
+  .import-error{
+    background:#F7E9E6; border:1px solid var(--danger); color:var(--danger);
+    border-radius:10px; padding:10px 12px; font-size:12.5px; margin:0 0 12px;
+  }
+  .file-btn{
+    display:block; width:100%; text-align:center; padding:12px;
+    border:1.5px dashed var(--line); border-radius:12px; background:none;
+    color:var(--ink-soft); font-size:13px; font-weight:700;
+    font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.03em;
+    margin-bottom:12px;
+  }
+  .file-btn:active{ border-color:var(--lime); color:var(--lime-dark); }
+</style>
+</head>
+<body>
+
+<div class="topbar" id="topbar">
+  <button class="topbar-back" id="topbar-back" onclick="goHome()" style="display:none;" title="Tilbake">←</button>
+  <div class="topbar-brand" id="topbar-brand"></div>
+  <div class="topbar-home-actions" id="topbar-home-actions">
+    <button class="icon-btn" id="btn-rydd" onclick="openMerge()" title="Rydd i varene">🧹</button>
+    <button class="icon-btn" id="btn-papirkurv" onclick="openTrash()" title="Papirkurv">🗑</button>
+  </div>
+</div>
+
+<main>
+
+  <!-- HOME -->
+  <section class="view active" id="view-home">
+    <div class="home-hero">
+      <span class="home-hero-icon"><img src="data:image/png;base64,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" alt=""></span>
+      <h2 class="home-hero-title">Familie Hub</h2>
+      <p class="home-hero-sub">Handleliste</p>
+    </div>
+
+    <div class="week-nav">
+      <button type="button" onclick="stepWeek(-1)" title="Forrige uke">‹</button>
+      <span class="week-label" id="week-label">Uke –</span>
+      <button type="button" onclick="stepWeek(1)" title="Neste uke">›</button>
+    </div>
+    <span class="week-today" id="week-today"></span>
+
+    <div class="card-panel punched">
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-btn-mat" onclick="switchTab('mat')">Dagligvarer</button>
+        <button class="tab-btn" id="tab-btn-annet" onclick="switchTab('annet')">Andre behov</button>
+        <button class="tab-btn" id="tab-btn-summary" onclick="switchTab('summary')">Oversikt</button>
+      </div>
+
+      <div class="tabpane active" id="tab-mat">
+        <div id="stores-container"></div>
+        <button class="btn btn-primary" onclick="openAddItem('mat')">Legg til vare</button>
+      </div>
+
+      <div class="tabpane" id="tab-annet">
+        <div id="annet-container"></div>
+        <button class="btn btn-primary" onclick="openAddItem('annet')">Legg til behov</button>
+      </div>
+
+      <button type="button" class="btn-quiet" id="btn-tom" onclick="openTomListe()">Tøm lista</button>
+
+      <div class="tabpane" id="tab-summary">
+        <div class="sum-row"><span class="sum-label">Dagligvarer</span><span class="sum-value" id="sum-count">0</span></div>
+        <div class="sum-row"><span class="sum-label">Andre behov</span><span class="sum-value" id="sum-annet">0</span></div>
+        <div class="sum-row"><span class="sum-label">Handlet</span><span class="sum-value" id="sum-checked">0 / 0</span></div>
+        <div class="sum-row"><span class="sum-label">Butikker</span><span class="sum-value" id="sum-stores">0</span></div>
+        <div class="sum-row"><span class="sum-label">Varetyper</span><span class="sum-value" id="sum-cats">0</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ADD / EDIT -->
+  <section class="view" id="view-add">
+    <div class="card-panel punched" style="margin-top:20px;">
+      <h2 id="add-title">Ny vare</h2>
+      <p class="field-note" id="add-week-note" style="margin:4px 0 0;"></p>
+
+      <div class="tabs" style="margin:14px 0 18px;">
+        <button type="button" class="tab-btn active" id="omr-btn-mat" onclick="settOmrade('mat')">Dagligvare</button>
+        <button type="button" class="tab-btn" id="omr-btn-annet" onclick="settOmrade('annet')">Annet behov</button>
+      </div>
+
+      <div class="field">
+        <label for="f-name">Vare</label>
+        <input type="text" id="f-name" placeholder="Melk, brokkoli, kaffe …"
+               autocomplete="off" oninput="onNameInput()">
+        <p class="field-hint" id="f-name-hint" style="display:none;"></p>
+      </div>
+
+      <div class="field">
+        <label for="f-store">Butikk</label>
+        <select id="f-store" onchange="onSelectChange('store')"></select>
+        <input type="text" id="f-store-new" class="new-value" placeholder="Navn på butikk" style="display:none;">
+      </div>
+
+      <div class="field" id="felt-type">
+        <label for="f-cat">Varetype</label>
+        <select id="f-cat"></select>
+      </div>
+
+      <div class="field">
+        <label for="f-by">Lagt til av</label>
+        <select id="f-by">
+          <option value="Magne">Magne</option>
+          <option value="Andrea">Andrea</option>
+          <option value="Emma">Emma</option>
+          <option value="Nina">Nina</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="f-notes">Notat</label>
+        <textarea id="f-notes" placeholder="Mengde, merke, øko …"></textarea>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveItem()">Lagre vare</button>
+      <button class="btn btn-ghost" style="margin-top:8px;" onclick="goHome()">Avbryt</button>
+    </div>
+  </section>
+
+  <!-- RYDD -->
+  <section class="view" id="view-merge">
+    <div class="card-panel punched" style="margin-top:20px;">
+      <h2>Rydd i varene</h2>
+      <p class="field-note" style="margin:4px 0 0;">Handle foreslår, du bestemmer.</p>
+
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-btn-par" onclick="switchMergeTab('par')">Samme vare?</button>
+        <button class="tab-btn" id="tab-btn-typer" onclick="switchMergeTab('typer')">Varetyper</button>
+        <button class="tab-btn" id="tab-btn-avvist" onclick="switchMergeTab('avvist')">Avviste</button>
+      </div>
+
+      <div class="tabpane active" id="tab-par">
+        <div id="par-container"></div>
+      </div>
+
+      <div class="tabpane" id="tab-typer">
+        <div id="typer-container"></div>
+      </div>
+
+      <div class="tabpane" id="tab-avvist">
+        <p class="field-note" style="margin:0 0 10px;">Par du har sagt ikke hører sammen. Tar du et opp igjen, kommer det tilbake som forslag.</p>
+        <div id="avvist-container"></div>
+      </div>
+
+      <button type="button" class="btn-quiet" onclick="openKatalog()">Varekatalogen</button>
+      <button class="btn btn-ghost" style="margin-top:8px;" onclick="goHome()">Tilbake</button>
+    </div>
+  </section>
+
+  <!-- PAPIRKURV -->
+  <section class="view" id="view-trash">
+    <div class="card-panel punched" style="margin-top:20px;">
+      <h2>Papirkurv</h2>
+      <p class="field-note" style="margin:4px 0 16px;">Slettede varer ligger her til du tømmer kurven.</p>
+      <div id="trash-container"></div>
+      <button type="button" class="btn-quiet" id="btn-tom-kurv" onclick="openEmptyTrash()">Tøm papirkurven</button>
+      <button class="btn btn-ghost" style="margin-top:8px;" onclick="goHome()">Tilbake</button>
+    </div>
+  </section>
+
+
+</main>
+
+<div class="lock" id="lock"></div>
+<div class="toast" id="toast"></div>
+
+<div class="bottom-bar" id="bottom-bar">
+  <button type="button" class="new-fab" onclick="openAddItem()" title="Ny vare">+</button>
+  <button type="button" class="inbox-fab" onclick="openImport()" title="Hent fra Oppskriftsboka">📥</button>
+</div>
+
+<!-- Importer fra Oppskriftsboka -->
+<div class="modal-backdrop" id="import-modal">
+  <div class="modal-card">
+    <h3>Hent fra Oppskriftsboka</h3>
+    <p class="lead">Velg handlelista du lastet ned fra Oppskriftsboka, eller lim inn innholdet.</p>
+
+    <div id="import-error" class="import-error" style="display:none;"></div>
+
+    <button class="file-btn" onclick="document.getElementById('import-file').click()">Velg JSON-fil</button>
+    <input type="file" id="import-file" accept=".json,application/json" style="display:none;" onchange="readImportFile(this)">
+
+    <div class="field">
+      <label for="import-text">Eller lim inn her - JSON, eller én vare per linje</label>
+      <textarea id="import-text" style="min-height:110px; font-family:'IBM Plex Mono',monospace; font-size:12px;" placeholder='{"format":"familiehub-handleliste-1","varer":[…]}'></textarea>
+    </div>
+
+    <button type="button" class="btn-quiet" id="import-tekst" style="display:none;" onclick="importSomTekst()"></button>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('import-modal')">Avbryt</button>
+      <button class="btn btn-success" onclick="parseImport()">Les inn</button>
+    </div>
+  </div>
+</div>
+
+<!-- Varekatalogen -->
+<div class="modal-backdrop" id="katalog-modal">
+  <div class="modal-card">
+    <h3>Varekatalogen</h3>
+    <p class="lead"><strong id="kat-antall">0</strong> varer · <strong id="kat-avvist">0</strong> avviste par</p>
+
+    <div id="kat-error" class="import-error" style="display:none;"></div>
+
+    <button class="btn btn-success" style="width:100%; margin-top:0;" onclick="eksporterKatalog()">Last ned katalogen</button>
+
+    <button class="file-btn" style="margin-top:12px;" onclick="document.getElementById('kat-file').click()">Hent inn katalog</button>
+    <input type="file" id="kat-file" accept=".json,application/json" style="display:none;" onchange="lesKatalogFil(this)">
+
+    <div class="field">
+      <label for="kat-text">Eller lim inn her</label>
+      <textarea id="kat-text" style="min-height:90px; font-family:'IBM Plex Mono',monospace; font-size:12px;" placeholder='{"format":"familiehub-varekatalog-1","katalog":{…}}'></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('katalog-modal')">Lukk</button>
+      <button class="btn btn-success" onclick="importerKatalog()">Slå sammen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Flytt til neste uke -->
+<div class="modal-backdrop" id="move-modal">
+  <div class="modal-card">
+    <h3>Flytt til neste uke?</h3>
+    <p class="lead"><strong id="move-name"></strong> flyttes til uke <span id="move-uke"></span>, <span id="move-aar"></span>.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('move-modal')">Avbryt</button>
+      <button class="btn btn-success" onclick="confirmMove()">Flytt</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tøm lista -->
+<div class="modal-backdrop" id="tom-modal">
+  <div class="modal-card">
+    <h3>Tømme lista?</h3>
+    <p class="lead">Varene legges i papirkurven, og kan hentes tilbake derfra.</p>
+
+    <button class="btn btn-primary" style="margin-top:0; background:var(--danger);" onclick="tomListe('uke')">
+      <span id="tom-uke-tekst"></span>
+    </button>
+    <button class="btn btn-primary" style="margin-top:10px; background:var(--danger);" onclick="tomListe('alt')">
+      <span id="tom-alt-tekst"></span>
+    </button>
+    <button class="btn btn-ghost" style="margin-top:10px;" onclick="closeModal('tom-modal')">Avbryt</button>
+  </div>
+</div>
+
+<!-- Slett vare -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal-card">
+    <h3>Slette varen?</h3>
+    <p class="lead"><strong id="del-name"></strong> legges i papirkurven, og kan hentes tilbake derfra.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('delete-modal')">Avbryt</button>
+      <button class="btn btn-primary" style="margin-top:0; background:var(--danger);" onclick="confirmDelete()">Slett</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rediger vare -->
+<div class="modal-backdrop" id="edit-modal">
+  <div class="modal-card">
+    <h3>Rediger</h3>
+
+    <div class="field">
+      <label for="e-name">Vare</label>
+      <input type="text" id="e-name">
+    </div>
+
+    <div class="field">
+      <label for="e-qty">Mengde</label>
+      <input type="text" id="e-qty" oninput="oppdaterSumKnapp()" placeholder="F.eks. 2 stk">
+      <button type="button" class="btn-quiet" id="e-sum" style="display:none; text-align:left; padding:8px 0;" onclick="summerMengde()"></button>
+    </div>
+
+    <div class="field" id="e-cat-felt">
+      <label for="e-cat">Varetype</label>
+      <select id="e-cat"></select>
+    </div>
+
+    <div class="field">
+      <label for="e-store">Butikk</label>
+      <select id="e-store" onchange="onSelectChange('itemstore')"></select>
+      <input type="text" id="e-store-new" class="new-value" placeholder="Navn på butikk" style="display:none;">
+    </div>
+
+    <div class="field">
+      <label for="e-notes">Notat</label>
+      <textarea id="e-notes"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('edit-modal')">Avbryt</button>
+      <button class="btn btn-success" onclick="lagreEndring()">Lagre</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tøm papirkurven -->
+<div class="modal-backdrop" id="empty-trash-modal">
+  <div class="modal-card">
+    <h3>Tøm papirkurven?</h3>
+    <p class="lead"><strong id="tom-antall">0</strong> varer slettes for godt. Dette kan ikke angres.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('empty-trash-modal')">Avbryt</button>
+      <button class="btn btn-primary" style="margin-top:0; background:var(--danger);" onclick="confirmEmptyTrash()">Slett alt</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sammendrag av ferdig handleliste -->
+<div class="modal-backdrop" id="sum-modal">
+  <div class="modal-card">
+    <h3>Handleliste fra Oppskriftsboka</h3>
+    <p class="lead"><strong id="sum-antall">0</strong> varer · <span id="sum-uke"></span></p>
+
+    <div id="sum-kilde" style="display:none; margin-bottom:14px;">
+      <p class="par-hint" style="margin-bottom:8px;">Hva skal Handle jobbe med?</p>
+      <button type="button" class="par-navn valgt" id="sum-kilde-raa" onclick="velgKilde('raa')">
+        <span id="sum-raa-tekst"></span>
+      </button>
+      <button type="button" class="par-navn" id="sum-kilde-varer" onclick="velgKilde('varer')">
+        <span id="sum-varer-tekst"></span>
+      </button>
+    </div>
+
+    <p class="field-note" id="sum-katalog" style="display:none; margin:0 0 14px;"></p>
+
+    <div id="sum-basis-rad" style="display:none;">
+      <label class="pick-row" style="margin-bottom:0;">
+        <input type="checkbox" id="sum-basis">
+        <span class="pick-title" id="sum-basis-tekst"></span>
+      </label>
+      <p class="field-note" style="margin:6px 0 0;">Basisvarer er ting Oppskriftsboka regner med at dere har hjemme.</p>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('sum-modal')">Avbryt</button>
+      <button class="btn btn-success" onclick="bekreftListe()">Legg i innboks</button>
+    </div>
+  </div>
+</div>
+
+<!-- Velg retter -->
+<div class="modal-backdrop" id="pick-modal">
+  <div class="modal-card">
+    <h3>Velg retter</h3>
+    <p class="lead" id="pick-lead"></p>
+    <div id="pick-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('pick-modal')">Avbryt</button>
+      <button class="btn btn-success" id="pick-confirm" onclick="hentIngredienser()">Hent ingredienser</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Lagring: IndexedDB (delt database 'familiehub', store 'kv').
+   Store beholder samme get/set-API som før, så resten av appen
+   er urørt - bare hvor dataene ligger er endret. localStorage
+   brukes bare som nødløsning hvis IndexedDB ikke er tilgjengelig
+   (f.eks. enkelte nettlesere i privat modus).
+   ============================================================ */
+const Store = (() => {
+  const DB_NAME = 'familiehub';
+  const DB_VERSION = 1;
+  const STORE_NAME = 'kv';
+  let dbPromise = null;
+
+  function openDb(){
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+      if (typeof indexedDB === 'undefined'){ reject(new Error('IndexedDB utilgjengelig')); return; }
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error('Kunne ikke åpne databasen'));
+    });
+    return dbPromise;
+  }
+
+  async function idbGet(key){
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).get(key);
+      req.onsuccess = () => resolve(req.result === undefined ? null : req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbSet(key, value){
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).put(value, key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error('Lagring avbrutt'));
+    });
+  }
+
+  return {
+    // Verdiene lagres som ferdig-parsede objekter i IndexedDB (ikke som streng),
+    // så get returnerer dem direkte. Nødløsningen mot localStorage bruker JSON.
+    async get(key){
+      try {
+        return await idbGet(key);
+      } catch(e){
+        try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+        catch(_){ return null; }
+      }
+    },
+    async set(key, value){
+      try {
+        await idbSet(key, value);
+        return true;
+      } catch(e){
+        try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+        catch(_){ return false; }
+      }
+    }
+  };
+})();
+
+const KEY = 'handleliste:v1';
+const KATALOG_KEY = 'vare-katalog';
+
+// Faste varetyper - delt med Matlaging. Ikke utvid uten at begge appene endres.
+const VARETYPER = [
+  'Frukt','Grønnsaker','Kjøtt','Fisk og sjømat','Meieri','Pålegg',
+  'Brød og bakevarer','Tørrvarer','Hermetikk','Krydder og saus',
+  'Frysevarer','Snacks','Drikke','Annet'
+];
+
+// { katalog: { "revet hvitløk": {vare, basis, type} }, avvist: ["navnA||navnB"] }
+let katalog = { katalog: {}, avvist: [] };
+
+function katalogOppslag(navn){
+  if (!navn) return null;
+  return katalog.katalog[String(navn).trim().toLowerCase()] || null;
+}
+
+// Butikk hører ikke hjemme i katalogen - typen sier hva noe er,
+// butikken er en beslutning som varierer med uke og tilbud.
+function katalogLagre(navn, type, basis){
+  const n = String(navn || '').trim();
+  if (!n) return;
+  const eksisterende = katalogOppslag(n);
+  katalog.katalog[n.toLowerCase()] = {
+    vare: eksisterende ? eksisterende.vare : n,
+    basis: basis === undefined ? (eksisterende ? !!eksisterende.basis : false) : !!basis,
+    type: type || (eksisterende ? eksisterende.type : '') || 'Annet'
+  };
+}
+
+async function lagreKatalog(){
+  return await Store.set(KATALOG_KEY, katalog);
+}
+
+/* ============================================================
+   Tilstand
+   ============================================================ */
+// Samme inndeling som Oppskriftsboka bruker, så de to appene matcher
+
+
+const STANDARD_BUTIKK = 'Kiwi';
+
+let data = {
+  items: [],          // {id, name, week, year, store, cat, by, notes, done}
+  stores: [STANDARD_BUTIKK],   // butikker for dagligvarer
+  andreStores: [],             // butikker for andre behov, husket etter hvert som de skrives inn
+  cats: VARETYPER.slice(),
+  butikkvalg: {},     // varenavn (lowercase) -> butikk. Handle sitt eget, ikke katalogens.
+  trash: [],          // slettede varer, med slettet-tidspunkt
+  raalinjer: {},      // "2026-W33" -> ingrediensene slik de sto i oppskriftene
+  collapsed: []       // butikker som er slått sammen
+};
+
+let viewWeek, viewYear;
+let assignId = null;
+
+/* ============================================================
+   Uke
+   ============================================================ */
+function isoWeek(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return { week: Math.ceil((((d - yearStart) / 86400000) + 1) / 7), year: d.getUTCFullYear() };
+}
+
+// Mandag i en gitt ISO-uke
+function mondayOf(week, year){
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dayNum = jan4.getUTCDay() || 7;
+  const week1Mon = new Date(jan4);
+  week1Mon.setUTCDate(jan4.getUTCDate() - dayNum + 1);
+  const d = new Date(week1Mon);
+  d.setUTCDate(week1Mon.getUTCDate() + (week - 1) * 7);
+  return d;
+}
+
+function stepWeek(dir){
+  clearTimeout(omrokeringTimer); omrokeringTimer = null;
+  const mon = mondayOf(viewWeek, viewYear);
+  mon.setUTCDate(mon.getUTCDate() + dir * 7);
+  const iso = isoWeek(new Date(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate()));
+  viewWeek = iso.week; viewYear = iso.year;
+  renderWeek();
+  render();
+}
+
+function renderWeek(){
+  const mon = mondayOf(viewWeek, viewYear);
+  const sun = new Date(mon); sun.setUTCDate(mon.getUTCDate() + 6);
+  const f = d => d.getUTCDate() + '.' + (d.getUTCMonth() + 1) + '.';
+  const now = isoWeek(new Date());
+  const naa = (now.week === viewWeek && now.year === viewYear);
+  const under = (naa ? 'Denne uka · ' : '') + f(mon) + '–' + f(sun);
+
+  const el = document.getElementById('week-label');
+  el.textContent = '';
+  el.appendChild(document.createTextNode('Uke ' + viewWeek + ' · ' + viewYear));
+  const s = document.createElement('small');
+  s.textContent = under;
+  el.appendChild(s);
+}
+
+/* ============================================================
+   Nedtrekk
+   ============================================================ */
+const NY = '__ny__';
+
+// Fast liste uten mulighet for nye verdier
+function fillFast(sel, values, valgt){
+  sel.innerHTML = '';
+  const tom = document.createElement('option');
+  tom.value = ''; tom.textContent = '– velg –';
+  sel.appendChild(tom);
+  values.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    sel.appendChild(o);
+  });
+  sel.value = (valgt && values.includes(valgt)) ? valgt : '';
+}
+
+function fillSelect(sel, values, valgt, nyTekst){
+  sel.innerHTML = '';
+  const tom = document.createElement('option');
+  tom.value = ''; tom.textContent = '– velg –';
+  sel.appendChild(tom);
+  values.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    sel.appendChild(o);
+  });
+  const ny = document.createElement('option');
+  ny.value = NY; ny.textContent = nyTekst;
+  sel.appendChild(ny);
+  sel.value = (valgt && values.includes(valgt)) ? valgt : '';
+}
+
+const NYFELT = {
+  store:     ['f-store','f-store-new'],
+  itemstore: ['e-store','e-store-new']
+};
+
+function onSelectChange(which){
+  const [selId, inpId] = NYFELT[which];
+  const sel = document.getElementById(selId);
+  const inp = document.getElementById(inpId);
+  if (sel.value === NY){
+    inp.style.display = 'block';
+    inp.focus();
+  } else {
+    inp.style.display = 'none';
+    inp.value = '';
+  }
+}
+
+// Butikken som foreslås når vi ikke vet bedre. Gjelder bare dagligvarer -
+// andre behov har ingen naturlig standardbutikk.
+function standardButikk(){
+  return data.stores.includes(STANDARD_BUTIKK) ? STANDARD_BUTIKK : '';
+}
+
+// Riktig butikkliste for området
+function butikkListe(omrade){
+  return omrade === 'annet' ? data.andreStores : data.stores;
+}
+
+function huskButikk(omrade, navn){
+  if (!navn) return;
+  const liste = butikkListe(omrade);
+  if (!liste.includes(navn)){
+    liste.push(navn);
+    liste.sort((a, b) => a.localeCompare(b, 'no'));
+  }
+}
+
+// Leser verdien fra et nedtrekk, eller fra "ny"-feltet hvis det er i bruk
+function readSelect(which){
+  const [selId, inpId] = NYFELT[which];
+  const sel = document.getElementById(selId);
+  const inp = document.getElementById(inpId);
+  if (sel.value === NY) return inp.value.trim();
+  return sel.value;
+}
+
+/* ============================================================
+   Skjema
+   ============================================================ */
+let nyttOmrade = 'mat';
+
+function settOmrade(omrade){
+  nyttOmrade = omrade;
+  document.getElementById('omr-btn-mat').classList.toggle('active', omrade === 'mat');
+  document.getElementById('omr-btn-annet').classList.toggle('active', omrade === 'annet');
+
+  // Andre behov har ingen faste varetyper
+  document.getElementById('felt-type').style.display = omrade === 'mat' ? 'block' : 'none';
+
+  document.getElementById('add-title').textContent =
+    omrade === 'mat' ? 'Ny vare' : 'Nytt behov';
+  document.getElementById('f-name').placeholder =
+    omrade === 'mat' ? 'Melk, brokkoli, kaffe …' : 'Skruer, maling, pensel …';
+
+  // Ingen forhåndsutfylt butikk for andre behov
+  const valgt = omrade === 'mat' ? standardButikk() : '';
+  fillSelect(document.getElementById('f-store'), butikkListe(omrade), valgt, '+ Ny butikk …');
+  document.getElementById('f-store-new').style.display =
+    (omrade === 'annet' && !data.andreStores.length) ? 'block' : 'none';
+  if (omrade === 'annet' && !data.andreStores.length){
+    document.getElementById('f-store').value = NY;
+  }
+}
+
+function openAddItem(omrade){
+  document.getElementById('add-week-note').textContent =
+    'Legges i uke ' + viewWeek + ', ' + viewYear + '.';
+
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('f-name-hint').style.display = 'none';
+  document.getElementById('f-store-new').value = '';
+
+  fillFast(document.getElementById('f-cat'), VARETYPER, '');
+  settOmrade(omrade || aktivOmrade());
+
+  showView('add');
+  document.getElementById('f-name').focus();
+}
+
+// Hvilken fane man står i, så plussknappen treffer riktig
+function aktivOmrade(){
+  return document.getElementById('tab-annet').classList.contains('active') ? 'annet' : 'mat';
+}
+
+// Fyller butikk og kategori automatisk hvis vi har sett vara før
+function onNameInput(){
+  const navn = document.getElementById('f-name').value.trim().toLowerCase();
+  const hint = document.getElementById('f-name-hint');
+
+  if (nyttOmrade !== 'mat'){ hint.style.display = 'none'; return; }
+
+  const oppf = katalogOppslag(navn);
+  const butikk = data.butikkvalg[navn];
+  const deler = [];
+
+  const catSel = document.getElementById('f-cat');
+  const storeSel = document.getElementById('f-store');
+
+  if (oppf && oppf.type && VARETYPER.includes(oppf.type) && catSel.value === ''){
+    catSel.value = oppf.type;
+    deler.push(oppf.type);
+  }
+  if (butikk && data.stores.includes(butikk) &&
+      (storeSel.value === '' || storeSel.value === standardButikk()) &&
+      storeSel.value !== butikk){
+    storeSel.value = butikk;
+    deler.push(butikk);
+  }
+
+  if (deler.length){
+    hint.textContent = 'Fylt ut fra forrige gang: ' + deler.join(' · ');
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+async function saveItem(){
+  const name = document.getElementById('f-name').value.trim();
+  if (!name){ document.getElementById('f-name').focus(); return; }
+
+  const store = readSelect('store');
+  const cat = nyttOmrade === 'mat' ? document.getElementById('f-cat').value : '';
+
+  huskButikk(nyttOmrade, store);
+
+  data.items.push({
+    id: 'i' + Date.now() + Math.random().toString(36).slice(2,6),
+    name,
+    week: viewWeek,
+    year: viewYear,
+    store: store || '',
+    cat: cat || '',
+    by: document.getElementById('f-by').value,
+    notes: document.getElementById('f-notes').value.trim(),
+    qty: '',
+    omrade: nyttOmrade,
+    done: false
+  });
+
+  if (nyttOmrade === 'mat') katalogLagre(name, cat, false);
+  if (store) data.butikkvalg[name.toLowerCase()] = store;
+
+  const ok = await medLaas(async () => {
+    await lagreKatalog();
+    return await save();
+  });
+
+  if (ok === false){
+    data.items.pop();
+    visMelding('Klarte ikke lagre varen. Prøv igjen.');
+    return;
+  }
+  goHome();
+}
+
+/* ============================================================
+   Innboks
+   ============================================================ */
+// Leser innholdet som en vanlig liste, én vare per linje
+async function importSomTekst(){
+  const linjer = document.getElementById('import-text').value
+    .split('\n').map(s => s.trim()).filter(Boolean);
+  if (!linjer.length) return;
+  closeModal('import-modal');
+  await leggIListen(linjer.map(l => ({ name: l, qty: '', cat: '' })));
+}
+
+/* ============================================================
+   Import fra Oppskriftsboka
+   ============================================================ */
+let impRecipes = [];   // oppskriftene i fila
+let impPlan = null;    // mealPlan hvis den finnes
+let impValg = [];      // {id, title, servings, checked}
+
+function openImport(){
+  document.getElementById('import-text').value = '';
+  document.getElementById('import-file').value = '';
+  document.getElementById('import-error').style.display = 'none';
+  document.getElementById('import-tekst').style.display = 'none';
+  document.getElementById('import-modal').classList.add('active');
+}
+
+function readImportFile(input){
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { document.getElementById('import-text').value = r.result; parseImport(); };
+  r.onerror = () => importFeil('Klarte ikke lese fila.');
+  r.readAsText(f);
+}
+
+function importFeil(melding){
+  const e = document.getElementById('import-error');
+  e.textContent = melding;
+  e.style.display = 'block';
+}
+
+// Gjør en ingrediens om til {name, qty}
+function normIng(x){
+  if (typeof x === 'string') return { name: x, qty: '' };
+  if (!x || !x.name) return null;
+  return { name: String(x.name), qty: mengdeTekst(x.amount, x.amountText, x.unit) };
+}
+
+function fmtTall(n){
+  return Number(n.toFixed(2)).toString().replace('.', ',');
+}
+
+function mengdeTekst(amount, amountText, unit){
+  const u = (unit || '').trim();
+  if (amount !== undefined && amount !== null && amount !== '' && !isNaN(Number(amount))){
+    return (fmtTall(Number(amount)) + ' ' + u).trim();
+  }
+  const t = (amountText || '').trim();
+  return t ? (t + ' ' + u).trim() : u;
+}
+
+function parseImport(){
+  const raw = document.getElementById('import-text').value.trim();
+  if (!raw) return importFeil('Velg en fil, eller lim inn innholdet.');
+
+  let d;
+  try {
+    d = JSON.parse(raw);
+  } catch(e){
+    const n = raw.split('\n').map(s => s.trim()).filter(Boolean).length;
+    importFeil('Dette er ikke JSON.');
+    const knapp = document.getElementById('import-tekst');
+    knapp.textContent = 'Les inn som vanlig liste (' + n + (n === 1 ? ' linje)' : ' linjer)');
+    knapp.style.display = 'block';
+    return;
+  }
+
+  // Ren liste med varenavn
+  if (Array.isArray(d) && d.length && d.every(x => typeof x === 'string')){
+    closeModal('import-modal');
+    return leggIListen(d.map(s => ({ name: s, qty: '' })));
+  }
+
+  // Ferdig handleliste fra Oppskriftsboka
+  if (d && typeof d === 'object' && Array.isArray(d.varer)){
+    closeModal('import-modal');
+    return visListeSammendrag(d);
+  }
+
+  let recipes = null, plan = null;
+
+  if (Array.isArray(d)){
+    recipes = d;                                  // gammelt format: bare oppskrifter
+  } else if (d && typeof d === 'object'){
+    if (Array.isArray(d.recipes)) recipes = d.recipes;   // format 2
+    plan = d.mealPlan || null;
+    if (!recipes){
+      const rett = d.ingredients || d.items || d.inbox;
+      if (Array.isArray(rett)){
+        closeModal('import-modal');
+        return leggIListen(rett.map(normIng).filter(Boolean));
+      }
+    }
+  }
+
+  if (!recipes) return importFeil('Fant verken en handleliste, oppskrifter eller ingredienser i fila. Forventet «varer», «recipes» eller «ingredients».');
+
+  recipes = recipes.filter(r => r && Array.isArray(r.ingredients) && r.ingredients.length);
+  if (!recipes.length) return importFeil('Fant ingen oppskrifter med ingredienser.');
+
+  impRecipes = recipes;
+  impPlan = plan;
+  closeModal('import-modal');
+  openPicker();
+}
+
+let impListe = null;
+
+// "1,5 dl" - slår sammen flere mengder og fritekst til én linje
+function mengdeFraListe(mengder, fritekst){
+  const deler = [];
+  (mengder || []).forEach(m => {
+    if (!m) return;
+    const n = Number(m.mengde);
+    const e = (m.enhet || '').trim();
+    if (!isNaN(n) && m.mengde !== null && m.mengde !== '') deler.push((fmtTall(n) + ' ' + e).trim());
+    else if (e) deler.push(e);
+  });
+  (fritekst || []).forEach(t => { if (t) deler.push(String(t).trim()); });
+  return deler.join(' + ');
+}
+
+// Beslutninger som alt er tatt i Matlaging - ta dem inn så brukeren
+// slipper å svare på det samme to ganger
+function taInnKatalog(vk){
+  if (!vk || typeof vk !== 'object') return 0;
+  let n = 0;
+
+  const inn = vk.katalog || {};
+  Object.keys(inn).forEach(navn => {
+    const e = inn[navn];
+    if (!e || typeof e !== 'object') return;
+    katalog.katalog[String(navn).toLowerCase()] = {
+      vare: e.vare || navn,
+      basis: !!e.basis,
+      type: VARETYPER.includes(e.type) ? e.type : 'Annet'
+    };
+    n++;
+  });
+
+  (vk.avvist || []).forEach(par => {
+    if (typeof par === 'string' && katalog.avvist.indexOf(par) === -1){
+      katalog.avvist.push(par);
+      n++;
+    }
+  });
+
+  return n;
+}
+
+function visListeSammendrag(d){
+  impListe = d;
+
+  const antall = (d.varer || []).length;
+  const basis = (d.basisvarer || []).length;
+  const raa = Array.isArray(d.raalinjer) ? d.raalinjer : [];
+
+  document.getElementById('sum-antall').textContent = antall;
+
+  // Kildevalg vises bare når pakken faktisk har begge deler
+  const kilde = document.getElementById('sum-kilde');
+  if (raa.length && antall){
+    const retter = [...new Set(raa.map(r => r && r.rett).filter(Boolean))].length;
+    document.getElementById('sum-raa-tekst').textContent =
+      'Rålinjer – ' + raa.length + ' linjer fra ' + retter + (retter === 1 ? ' rett' : ' retter');
+    document.getElementById('sum-varer-tekst').textContent =
+      'Ferdig sammenslått av Matlaging – ' + antall + ' varer';
+    kilde.style.display = 'block';
+    velgKilde('raa');
+  } else {
+    kilde.style.display = 'none';
+    impKilde = raa.length ? 'raa' : 'varer';
+  }
+
+  const kat = document.getElementById('sum-katalog');
+  const antKat = d.varekatalog ? Object.keys((d.varekatalog.katalog) || {}).length : 0;
+  const antAvv = d.varekatalog ? ((d.varekatalog.avvist) || []).length : 0;
+  if (antKat || antAvv){
+    kat.style.display = 'block';
+    kat.textContent = 'Tar også med ' + antKat + ' oppslag og ' +
+      antAvv + ' avviste par fra Matlagings varekatalog.';
+  } else {
+    kat.style.display = 'none';
+  }
+
+  const uke = Number(d.uke), aar = Number(d.aar);
+  const harUke = !isNaN(uke) && uke > 0 && !isNaN(aar);
+  document.getElementById('sum-uke').textContent =
+    harUke ? ('Uke ' + uke + ', ' + aar) : ('Uke ' + viewWeek + ', ' + viewYear);
+
+  const rad = document.getElementById('sum-basis-rad');
+  if (basis){
+    rad.style.display = 'block';
+    document.getElementById('sum-basis-tekst').textContent =
+      'Ta med ' + basis + ' basisvarer (' + (d.basisvarer || []).slice(0,3).join(', ') + ' …)';
+    document.getElementById('sum-basis').checked = false;
+  } else {
+    rad.style.display = 'none';
+  }
+
+  document.getElementById('sum-modal').classList.add('active');
+}
+
+let impKilde = 'raa';
+
+function velgKilde(k){
+  impKilde = k;
+  document.getElementById('sum-kilde-raa').classList.toggle('valgt', k === 'raa');
+  document.getElementById('sum-kilde-varer').classList.toggle('valgt', k === 'varer');
+}
+
+// Én rålinje blir én vare. Sammenslåingen tar gjennomgangen seg av.
+function fraRaalinjer(raa){
+  return raa.map(r => {
+    if (!r) return null;
+    const navn = String(r.navn || '').trim();
+    if (!navn) return null;
+    const oppf = katalogOppslag(navn);
+    return {
+      name: navn,
+      qty: mengdeTekst(r.mengde, r.fritekst, r.enhet),
+      cat: (oppf && oppf.type) || 'Annet',
+      fra: r.rett ? [String(r.rett)] : []
+    };
+  }).filter(Boolean);
+}
+
+async function bekreftListe(){
+  const d = impListe;
+  if (!d) return closeModal('sum-modal');
+
+  // Uka i fila bestemmer hvor varene havner
+  const uke = Number(d.uke), aar = Number(d.aar);
+  if (!isNaN(uke) && uke > 0 && !isNaN(aar)){
+    viewWeek = uke; viewYear = aar;
+    renderWeek();
+  }
+
+  taInnKatalog(d.varekatalog);
+
+  // Rålinjene lagres uansett hvilken kilde som brukes, så gjennomgangen
+  // kan kjøres på nytt senere
+  const raa = Array.isArray(d.raalinjer) ? d.raalinjer : [];
+  if (raa.length){
+    data.raalinjer[viewYear + '-W' + String(viewWeek).padStart(2, '0')] = raa;
+  }
+
+  const varer = (impKilde === 'raa' && raa.length)
+    ? fraRaalinjer(raa)
+    : (d.varer || []).map(v => ({
+        name: String(v.vare || '').trim(),
+        qty: mengdeFraListe(v.mengder, v.fritekst),
+        cat: (v.type || '').trim(),
+        fra: Array.isArray(v.fraRetter) ? v.fraRetter : []
+      })).filter(v => v.name);
+
+  if (document.getElementById('sum-basis').checked){
+    (d.basisvarer || []).forEach(navn => {
+      if (!navn) return;
+      const n = String(navn).trim();
+      const oppf = katalogOppslag(n);
+      varer.push({ name: n, qty: '', cat: (oppf && oppf.type) || 'Annet', fra: [], basis: true });
+    });
+  }
+
+  // Typer utenfor den faste lista havner i Annet
+  varer.forEach(v => {
+    if (v.cat && !VARETYPER.includes(v.cat)) v.cat = 'Annet';
+  });
+
+  impListe = null;
+  closeModal('sum-modal');
+  await leggIListen(varer);
+
+  // Gjennomgangen starter av seg selv rett etter import
+  openMerge();
+}
+
+function planNokkel(){
+  return viewYear + '-W' + String(viewWeek).padStart(2, '0');
+}
+
+// Rettene som ligger i ukemenyen for uka vi står i
+function retterIUkemenyen(){
+  if (!impPlan) return [];
+  const uke = impPlan[planNokkel()];
+  if (!uke) return [];
+  const ut = [];
+  Object.keys(uke).forEach(dag => {
+    (uke[dag] || []).forEach(e => {
+      if (e && e.id) ut.push({ id: e.id, servings: Number(e.servings) || null });
+    });
+  });
+  return ut;
+}
+
+function openPicker(){
+  const iMeny = retterIUkemenyen();
+  const menyIder = iMeny.map(e => e.id);
+
+  impValg = impRecipes.map(r => {
+    const traff = iMeny.find(e => e.id === r.id);
+    return {
+      id: r.id,
+      title: r.title || 'Uten navn',
+      servings: (traff && traff.servings) || Number(r.baseServings) || 4,
+      checked: !!traff,
+      iMeny: !!traff
+    };
+  });
+
+  const lead = document.getElementById('pick-lead');
+  if (menyIder.length){
+    lead.textContent = 'Ukemenyen for uke ' + viewWeek + ' er huket av på forhånd.';
+  } else if (impPlan){
+    lead.textContent = 'Ingen ukemeny for uke ' + viewWeek + ' i fila. Velg retter selv.';
+  } else {
+    lead.textContent = 'Fila inneholder ingen ukemeny. Velg retter selv.';
+  }
+
+  tegnPicker();
+  document.getElementById('pick-modal').classList.add('active');
+}
+
+function tegnPicker(){
+  const c = document.getElementById('pick-list');
+  c.innerHTML = '';
+
+  const grupper = [
+    ['I ukemenyen', impValg.filter(v => v.iMeny)],
+    ['Andre oppskrifter', impValg.filter(v => !v.iMeny)]
+  ];
+
+  grupper.forEach(([tittel, liste]) => {
+    if (!liste.length) return;
+    const h = document.createElement('div');
+    h.className = 'pick-group';
+    h.textContent = tittel;
+    c.appendChild(h);
+
+    liste.forEach(v => {
+      const row = document.createElement('label');
+      row.className = 'pick-row';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = v.checked;
+      cb.onchange = () => { v.checked = cb.checked; oppdaterPickKnapp(); };
+
+      const t = document.createElement('span');
+      t.className = 'pick-title';
+      t.textContent = v.title;
+
+      const s = document.createElement('span');
+      s.className = 'pick-serv';
+      s.textContent = v.servings + ' pors.';
+
+      row.appendChild(cb); row.appendChild(t); row.appendChild(s);
+      c.appendChild(row);
+    });
+  });
+
+  oppdaterPickKnapp();
+}
+
+function oppdaterPickKnapp(){
+  const n = impValg.filter(v => v.checked).length;
+  const b = document.getElementById('pick-confirm');
+  b.textContent = n ? 'Hent fra ' + n + ' ' + (n === 1 ? 'rett' : 'retter') : 'Hent ingredienser';
+  b.disabled = !n;
+}
+
+function hentIngredienser(){
+  const valgte = impValg.filter(v => v.checked);
+  if (!valgte.length) return;
+
+  // Slå sammen like varer på tvers av retter, når enheten er den samme
+  const samlet = new Map();
+
+  valgte.forEach(v => {
+    const r = impRecipes.find(x => x.id === v.id);
+    if (!r) return;
+    const base = Number(r.baseServings) || v.servings || 1;
+    const skala = base ? (v.servings / base) : 1;
+
+    r.ingredients.forEach(ing => {
+      if (!ing || !ing.name) return;
+      const navn = String(ing.name).trim();
+      const enhet = (ing.unit || '').trim();
+      const nokkel = navn.toLowerCase() + '|' + enhet.toLowerCase();
+      const tall = Number(ing.amount);
+      const harTall = ing.amount !== undefined && ing.amount !== null && ing.amount !== '' && !isNaN(tall);
+
+      if (samlet.has(nokkel)){
+        const f = samlet.get(nokkel);
+        if (harTall) f.sum = (f.sum === null ? 0 : f.sum) + tall * skala;
+        if (!f.tekst && ing.amountText) f.tekst = String(ing.amountText).trim();
+      } else {
+        samlet.set(nokkel, {
+          name: navn,
+          unit: enhet,
+          sum: harTall ? tall * skala : null,
+          tekst: (ing.amountText || '').trim()
+        });
+      }
+    });
+  });
+
+  const varer = [...samlet.values()].map(v => ({
+    name: v.name,
+    qty: v.sum !== null ? (fmtTall(v.sum) + ' ' + v.unit).trim()
+                        : mengdeTekst(null, v.tekst, v.unit)
+  }));
+
+  closeModal('pick-modal');
+  leggIListen(varer);
+}
+
+// Varene går rett inn i uka, med standardbutikken. Butikk endres per vare etterpå.
+async function leggIListen(varer){
+  const butikk = standardButikk();
+  varer.filter(Boolean).forEach(v => {
+    const cat = (v.cat || '').trim();
+    data.items.push({
+      id: 'i' + Date.now() + Math.random().toString(36).slice(2,6),
+      name: v.name,
+      week: viewWeek, year: viewYear,
+      store: butikk, cat: cat, by: '',
+      notes: (v.fra && v.fra.length) ? v.fra.join(', ') : '',
+      qty: v.qty || '', basis: !!v.basis, omrade: 'mat', done: false
+    });
+    katalogLagre(v.name, cat, !!v.basis);
+    if (butikk) data.butikkvalg[v.name.trim().toLowerCase()] = butikk;
+  });
+  await lagreKatalog();
+  await save();
+  oppdaterRyddMerke();
+  goHome();
+}
+
+/* ============================================================
+   Rydding - forslag om at to navn er samme vare
+   ============================================================ */
+
+// Ord som beskriver tilberedning eller mengde, ikke hvilken vare det er
+const PREP_ORD = new Set([
+  // behandling
+  'revet','finrevet','hakket','finhakket','grovhakket','oppskåret','skivet',
+  'skiver','skive','strimlet','strimler','snittet','finsnittet','presset',
+  'knust','knuste','malt','delt','halvert','renset','skrelt','kokt','kokte',
+  'ristet','ristede','tørket','tørkede','frisk','friske','fersk','ferske',
+  'tynne','tynn','biter','terninger','båter','båt','marinert','stekt',
+  // størrelse og mengdeord
+  'stor','store','liten','lite','små','ca','evt','eventuelt','kun','helst',
+  // bindeord
+  'eller','og','til','av','i','med','uten','som','saft','skall',
+  // enheter
+  'stk','pk','g','kg','ss','ts','dl','l','ml','bunt','pose','boks','plante',
+  'stilk','potte','neve','fedd','klype'
+]);
+
+// Enkel entallsform, nok til å kjenne igjen cherrytomater/cherrytomat
+function entall(o){
+  if (o.length > 5){
+    if (o.endsWith('ene')) return o.slice(0, -3);
+    if (o.endsWith('er'))  return o.slice(0, -2);
+  }
+  return o;
+}
+
+// Kjernen i et varenavn: uten parentes, uten presisering etter komma,
+// uten tilberedningsord
+function kjerne(navn){
+  let s = String(navn || '').toLowerCase();
+  s = s.split('(')[0];
+  s = s.split(',')[0];
+  s = s.replace(/[^a-zæøå0-9 ]/g, ' ');
+  return s.split(/\s+/).filter(Boolean).filter(o => !PREP_ORD.has(o)).map(entall);
+}
+
+function avvistNokkel(a, b){
+  return [String(a).toLowerCase(), String(b).toLowerCase()].sort().join('||');
+}
+
+function erAvvist(a, b){
+  return katalog.avvist.indexOf(avvistNokkel(a, b)) !== -1;
+}
+
+// Alle navn som kan slås sammen, gruppert i klynger.
+// Par er ikke nok: "friske urter, som koriander ... og/eller mynte" ligner på
+// både koriander og mynte, men de to er ikke samme vare. Med hele gruppen
+// synlig kan brukeren hake bort det som ikke hører hjemme.
+function finnKlynger(){
+  const navn = [...new Set(data.items
+    .filter(v => (v.omrade || 'mat') === 'mat')
+    .map(v => (v.name || '').trim()).filter(Boolean))];
+
+  // Union-find over navn som ligner
+  const forelder = {};
+  navn.forEach(n => forelder[n] = n);
+  function finn(x){ while (forelder[x] !== x) { forelder[x] = forelder[forelder[x]]; x = forelder[x]; } return x; }
+  function slaa(a, b){ const ra = finn(a), rb = finn(b); if (ra !== rb) forelder[ra] = rb; }
+
+  for (let i = 0; i < navn.length; i++){
+    for (let j = i + 1; j < navn.length; j++){
+      const a = navn[i], b = navn[j];
+      if (a.toLowerCase() === b.toLowerCase()) continue;
+      if (erAvvist(a, b)) continue;
+
+      const ka = new Set(kjerne(a)), kb = new Set(kjerne(b));
+      if (!ka.size || !kb.size) continue;
+      const lik = [...ka].filter(x => kb.has(x));
+      if (!lik.length) continue;
+
+      if ((ka.size === kb.size && lik.length === ka.size) ||
+          lik.length === ka.size || lik.length === kb.size){
+        slaa(a, b);
+      }
+    }
+  }
+
+  const grupper = {};
+  navn.forEach(n => {
+    const r = finn(n);
+    (grupper[r] = grupper[r] || []).push(n);
+  });
+
+  return Object.values(grupper)
+    .filter(g => g.length > 1)
+    .map(g => {
+      // Korteste normaliserte navn er nesten alltid riktig
+      const sortert = g.slice().sort((a, b) => kjerne(a).join(' ').length - kjerne(b).join(' ').length || a.length - b.length);
+      return { navn: g.slice().sort((a, b) => a.localeCompare(b, 'no')), forslag: sortert[0] };
+    })
+    .sort((x, y) => y.navn.length - x.navn.length);
+}
+
+// Beholdes for merket i topplinja
+function finnForslag(){ return finnKlynger(); }
+
+// Alle varer med et gitt navn, i alle uker
+function varerMedNavn(navn){
+  return data.items.filter(v => (v.name || '').trim().toLowerCase() === navn.toLowerCase());
+}
+
+// Samlet mengde for et navn, slått sammen der enhetene tillater det
+function samletMengde(navn){
+  const deler = varerMedNavn(navn).map(v => v.qty).filter(Boolean);
+  if (!deler.length) return '';
+  return deler.reduce((a, b) => slaaMengder(a, b));
+}
+
+// Kan mengdene for disse navnene summeres? Da fyller vi ut totalen selv.
+function foreslaattTotal(navnListe){
+  const mengder = [];
+  navnListe.forEach(n => varerMedNavn(n).forEach(v => { if (v.qty) mengder.push(v.qty); }));
+  if (!mengder.length) return '';
+
+  const parset = mengder.map(parseMengde);
+  if (parset.some(p => !p)) return '';
+
+  const enheter = [...new Set(parset.map(p => normEnhet(p.enhet)))];
+  if (enheter.length > 1) return '';   // potte og spiseskjeer kan ingen regel summere
+
+  const sum = parset.reduce((a, p) => a + p.tall, 0);
+  return (fmtTall(sum) + ' ' + parset[0].enhet).trim();
+}
+
+/* ---------- Enheter ---------- */
+// Uten dette ser samme vare ut til å ha to ulike enheter
+const ENHET_ALIAS = {
+  'stk':'stk','stk.':'stk','stykk':'stk','styk':'stk',
+  'g':'g','gram':'g','gr':'g',
+  'kg':'kg','kilo':'kg','kilogram':'kg',
+  'l':'l','liter':'l',
+  'dl':'dl','desiliter':'dl',
+  'ml':'ml','milliliter':'ml',
+  'ss':'ss','spiseskje':'ss','spiseskjeer':'ss',
+  'ts':'ts','teskje':'ts','teskjeer':'ts',
+  'pk':'pk','pakke':'pk','pakker':'pk','pakning':'pk',
+  'boks':'boks','bokser':'boks',
+  'pose':'pose','poser':'pose',
+  'stilk':'stilk','stilker':'stilk',
+  'båt':'båt','båter':'båt',
+  'skive':'skive','skiver':'skive','skive(r)':'skive',
+  'potte':'potte','potter':'potte',
+  'plante':'plante','planter':'plante',
+  'neve':'neve','never':'neve',
+  'fedd':'fedd','klype':'klype','klyper':'klype'
+};
+
+function normEnhet(e){
+  const s = String(e || '').trim().toLowerCase();
+  return ENHET_ALIAS[s] || s;
+}
+
+/* ---------- Mengder ---------- */
+function parseMengde(s){
+  const m = /^([\d.,]+)\s*(.*)$/.exec(String(s || '').trim());
+  if (!m) return null;
+  const t = Number(m[1].replace(',', '.'));
+  if (isNaN(t)) return null;
+  return { tall: t, enhet: (m[2] || '').trim() };
+}
+
+// Samler alle deler, summerer hver enhet for seg og lar det som ikke kan
+// tolkes stå igjen som egne linjer. Uten dette stopper summeringen så snart
+// én del ikke kan leses - "7 ss + etter smak + 0,5 ss" ble aldri 7,5 ss.
+function normaliserMengde(qty){
+  const deler = String(qty || '').split(' + ').map(s => s.trim()).filter(Boolean);
+  if (!deler.length) return '';
+
+  const sum = new Map();   // normalisert enhet -> { tall, enhet }
+  const tekst = [];
+
+  deler.forEach(d => {
+    const p = parseMengde(d);
+    if (p){
+      const n = normEnhet(p.enhet);
+      if (sum.has(n)) sum.get(n).tall += p.tall;
+      else sum.set(n, { tall: p.tall, enhet: p.enhet });
+    } else if (!tekst.includes(d)){
+      tekst.push(d);       // "etter smak" gjentas ikke
+    }
+  });
+
+  return [...sum.values()]
+    .map(x => (fmtTall(x.tall) + ' ' + x.enhet).trim())
+    .concat(tekst)
+    .join(' + ');
+}
+
+function slaaMengder(a, b){
+  if (!a) return normaliserMengde(b);
+  if (!b) return normaliserMengde(a);
+  return normaliserMengde(a + ' + ' + b);
+}
+
+// Varer med samme navn i samme uke og butikk blir til én
+function flettDuplikater(){
+  const sett = new Map();
+  const beholdt = [];
+  data.items.forEach(v => {
+    const n = (v.name || '').trim().toLowerCase() + '|' + v.week + '|' + v.year +
+              '|' + (v.store || '') + '|' + (v.done ? 1 : 0);
+    if (sett.has(n)){
+      const f = sett.get(n);
+      f.qty = slaaMengder(f.qty, v.qty);
+      const noter = [f.notes, v.notes].filter(Boolean).join(', ');
+      f.notes = [...new Set(noter.split(', ').filter(Boolean))].join(', ');
+    } else {
+      sett.set(n, v);
+      beholdt.push(v);
+    }
+  });
+  data.items = beholdt;
+}
+
+/* ---------- Handlinger ---------- */
+let klyngeValg = {};   // klyngeindeks -> { navn: {avhuket}, tittel, total }
+
+function renderMerge(){
+  const c = document.getElementById('par-container');
+  const klynger = finnKlynger();
+  klyngeValg = {};
+  c.innerHTML = '';
+
+  oppdaterRyddMerke(klynger.length);
+
+  if (!klynger.length){
+    c.innerHTML = '<div class="empty-state" style="margin-top:20px;"><span class="big">✨</span>' +
+      '<p>Ingen varer ser ut til å være like.</p></div>';
+    return;
+  }
+
+  klynger.forEach((kl, i) => {
+    // Indeksen følger visningsrekkefølgen, ellers treffer knappene feil rad
+    const valg = { avhuket: {}, tittel: kl.forslag };
+    kl.navn.forEach(n => valg.avhuket[n] = true);
+    klyngeValg[i] = valg;
+
+    const kort = document.createElement('div');
+    kort.className = 'par-kort';
+
+    const merke = document.createElement('span');
+    merke.className = 'par-sikker hoy';
+    merke.textContent = kl.navn.length + ' som ligner';
+    kort.appendChild(merke);
+
+    const hint = document.createElement('p');
+    hint.className = 'par-hint';
+    hint.textContent = 'Hak bort det som ikke hører sammen:';
+    kort.appendChild(hint);
+
+    // Medlemmene
+    kl.navn.forEach(n => {
+      const rad = document.createElement('label');
+      rad.className = 'klynge-rad';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = true;
+      cb.onchange = () => {
+        valg.avhuket[n] = cb.checked;
+        rad.classList.toggle('av', !cb.checked);
+        oppdaterKlynge(i, kort);
+      };
+
+      const t = document.createElement('span');
+      t.className = 'klynge-navn';
+      t.textContent = n;
+
+      const m = document.createElement('span');
+      m.className = 'klynge-mengde';
+      m.textContent = samletMengde(n);
+
+      rad.appendChild(cb); rad.appendChild(t); rad.appendChild(m);
+      kort.appendChild(rad);
+    });
+
+    // Navnet som skal beholdes
+    const navnFelt = document.createElement('div');
+    navnFelt.className = 'field';
+    navnFelt.style.margin = '12px 0 0';
+    navnFelt.innerHTML = '<label>Navn som beholdes</label>';
+    const navnInp = document.createElement('input');
+    navnInp.type = 'text';
+    navnInp.className = 'klynge-tittel';
+    navnInp.value = kl.forslag;
+    navnInp.oninput = () => { valg.tittel = navnInp.value; };
+    navnFelt.appendChild(navnInp);
+    kort.appendChild(navnFelt);
+
+    // Total
+    const totFelt = document.createElement('div');
+    totFelt.className = 'field';
+    totFelt.style.margin = '10px 0 0';
+    totFelt.innerHTML = '<label>Mengde å handle</label>';
+    const totInp = document.createElement('input');
+    totInp.type = 'text';
+    totInp.className = 'klynge-total';
+    totInp.oninput = () => { valg.total = totInp.value; };
+    totFelt.appendChild(totInp);
+    const totHint = document.createElement('p');
+    totHint.className = 'field-note klynge-tothint';
+    totFelt.appendChild(totHint);
+    kort.appendChild(totFelt);
+
+    const valgRad = document.createElement('div');
+    valgRad.className = 'par-valg';
+    valgRad.style.marginTop = '14px';
+
+    const ja = document.createElement('button');
+    ja.className = 'par-ja';
+    ja.textContent = 'Slå sammen';
+    ja.onclick = () => slaaSammenKlynge(i, kl);
+
+    const nei = document.createElement('button');
+    nei.className = 'par-nei';
+    nei.textContent = 'Ingen hører sammen';
+    nei.onclick = () => avvisKlynge(kl);
+
+    valgRad.appendChild(ja); valgRad.appendChild(nei);
+    kort.appendChild(valgRad);
+
+    c.appendChild(kort);
+    oppdaterKlynge(i, kort);
+  });
+}
+
+// Totalen fylles ut når enhetene kan summeres, ellers skrives den inn
+function oppdaterKlynge(i, kort){
+  const valg = klyngeValg[i];
+  const avhuket = Object.keys(valg.avhuket).filter(n => valg.avhuket[n]);
+
+  const totInp = kort.querySelector('.klynge-total');
+  const hint = kort.querySelector('.klynge-tothint');
+  const ja = kort.querySelector('.par-ja');
+
+  const foreslag = foreslaattTotal(avhuket);
+  if (foreslag){
+    totInp.value = foreslag;
+    valg.total = foreslag;
+    hint.textContent = 'Summert for deg.';
+  } else {
+    const deler = avhuket.map(samletMengde).filter(Boolean);
+    totInp.value = valg.total || '';
+    hint.textContent = deler.length
+      ? 'Ulike enheter: ' + deler.join(' · ') + '. Skriv inn hva som skal handles.'
+      : '';
+  }
+
+  ja.disabled = avhuket.length < 2;
+  ja.style.opacity = avhuket.length < 2 ? '0.5' : '1';
+}
+
+async function slaaSammenKlynge(i, kl){
+  const valg = klyngeValg[i];
+  const avhuket = kl.navn.filter(n => valg.avhuket[n]);
+  const fravalgt = kl.navn.filter(n => !valg.avhuket[n]);
+  if (avhuket.length < 2) return;
+
+  const beholdt = (valg.tittel || '').trim() || avhuket[0];
+
+  // Det som ble haket bort hører ikke sammen med resten.
+  // Da dukker de opp som egen gruppe neste gang.
+  fravalgt.forEach(f => avhuket.forEach(a => {
+    const n = avvistNokkel(f, a);
+    if (katalog.avvist.indexOf(n) === -1) katalog.avvist.push(n);
+  }));
+
+  const type = avhuket.map(n => (katalogOppslag(n) || {}).type).find(Boolean) || 'Annet';
+  avhuket.forEach(n => {
+    katalogLagre(n, type, false);
+    katalog.katalog[n.toLowerCase()].vare = beholdt;
+  });
+  katalogLagre(beholdt, type, false);
+
+  // Behold én vare per uke, butikk og status
+  const berort = new Set(avhuket.map(n => n.toLowerCase()));
+  data.items.forEach(v => {
+    if (berort.has((v.name || '').trim().toLowerCase())){
+      v.name = beholdt;
+      v.sammenslatt = true;
+    }
+  });
+  flettDuplikater();
+
+  // Mengden brukeren bestemte gjelder for inneværende uke
+  if (valg.total !== undefined && valg.total !== null){
+    data.items.forEach(v => {
+      if ((v.name || '').trim().toLowerCase() === beholdt.toLowerCase() &&
+          v.week === viewWeek && v.year === viewYear){
+        v.qty = String(valg.total).trim();
+      }
+    });
+  }
+
+  await medLaas(async () => { await lagreKatalog(); return await save(); });
+  renderMerge();
+  renderTyper();
+  renderAvviste();
+  render();
+}
+
+// Ingen i gruppen hører sammen
+async function avvisKlynge(kl){
+  for (let a = 0; a < kl.navn.length; a++){
+    for (let b = a + 1; b < kl.navn.length; b++){
+      const n = avvistNokkel(kl.navn[a], kl.navn[b]);
+      if (katalog.avvist.indexOf(n) === -1) katalog.avvist.push(n);
+    }
+  }
+  await medLaas(async () => await lagreKatalog());
+  renderMerge();
+  renderAvviste();
+}
+
+/* ---------- Veien tilbake fra avviste ---------- */
+function renderAvviste(){
+  const c = document.getElementById('avvist-container');
+  if (!c) return;
+
+  if (!katalog.avvist.length){
+    c.innerHTML = '<div class="empty-state" style="margin-top:20px;"><span class="big">↩</span>' +
+      '<p>Ingen avviste forslag.</p></div>';
+    return;
+  }
+
+  c.innerHTML = '';
+  katalog.avvist.slice().forEach((par, i) => {
+    const deler = par.split('||');
+    const rad = document.createElement('div');
+    rad.className = 'type-rad';
+
+    const t = document.createElement('span');
+    t.className = 'navn';
+    t.textContent = deler[0] + '  ⟷  ' + (deler[1] || '');
+
+    const kn = document.createElement('button');
+    kn.className = 'trash-back';
+    kn.textContent = 'Ta opp igjen';
+    kn.onclick = () => angreAvvisning(par);
+
+    rad.appendChild(t); rad.appendChild(kn);
+    c.appendChild(rad);
+  });
+}
+
+async function angreAvvisning(par){
+  katalog.avvist = katalog.avvist.filter(x => x !== par);
+  await medLaas(async () => await lagreKatalog());
+  renderAvviste();
+  renderMerge();
+}
+
+function openMerge(){
+  renderMerge();
+  renderTyper();
+  renderAvviste();
+  switchMergeTab('par');
+  showView('merge');
+}
+
+function switchMergeTab(navn){
+  ['par','typer','avvist'].forEach(n => {
+    document.getElementById('tab-' + n).classList.toggle('active', n === navn);
+    document.getElementById('tab-btn-' + n).classList.toggle('active', n === navn);
+  });
+}
+
+function renderTyper(){
+  const c = document.getElementById('typer-container');
+  // Uten type øverst, deretter de som står som Annet
+  const utenType = [...new Set(data.items
+    .filter(v => (v.omrade || 'mat') === 'mat' && !v.cat)
+    .map(v => (v.name || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'no'));
+  const somAnnet = [...new Set(data.items
+    .filter(v => (v.omrade || 'mat') === 'mat' && v.cat === 'Annet')
+    .map(v => (v.name || '').trim()).filter(Boolean))]
+    .filter(n => !utenType.includes(n))
+    .sort((a, b) => a.localeCompare(b, 'no'));
+  const navn = utenType.concat(somAnnet);
+
+  c.innerHTML = '';
+  if (!navn.length){
+    c.innerHTML = '<div class="empty-state" style="margin-top:20px;"><span class="big">🏷</span>' +
+      '<p>Alle varer har en type.</p></div>';
+    return;
+  }
+
+  navn.forEach(n => {
+    const rad = document.createElement('div');
+    rad.className = 'type-rad';
+
+    const t = document.createElement('span');
+    t.className = 'navn';
+    t.textContent = n;
+
+    const sel = document.createElement('select');
+    fillFast(sel, VARETYPER, '');
+    sel.onchange = () => settType(n, sel.value);
+
+    rad.appendChild(t); rad.appendChild(sel);
+    c.appendChild(rad);
+  });
+}
+
+async function settType(navn, type){
+  if (!type) return;
+  data.items.forEach(v => {
+    if ((v.name || '').trim().toLowerCase() === navn.toLowerCase()) v.cat = type;
+  });
+  katalogLagre(navn, type, false);
+  await medLaas(async () => { await lagreKatalog(); return await save(); });
+  renderTyper();
+  render();
+}
+
+function oppdaterRyddMerke(antall){
+  const knapp = document.getElementById('btn-rydd');
+  if (!knapp) return;
+  let merke = knapp.querySelector('.badge');
+  if (!merke){
+    merke = document.createElement('span');
+    merke.className = 'badge';
+    knapp.appendChild(merke);
+  }
+  const n = (antall === undefined) ? finnForslag().length : antall;
+  merke.textContent = n > 99 ? '99+' : n;
+  merke.classList.toggle('active', n > 0);
+}
+
+/* ============================================================
+   Varekatalogen inn og ut
+   ============================================================ */
+function openKatalog(){
+  document.getElementById('kat-antall').textContent = Object.keys(katalog.katalog).length;
+  document.getElementById('kat-avvist').textContent = katalog.avvist.length;
+  document.getElementById('kat-error').style.display = 'none';
+  document.getElementById('kat-text').value = '';
+  document.getElementById('katalog-modal').classList.add('active');
+}
+
+function eksporterKatalog(){
+  const ut = {
+    format: 'familiehub-varekatalog-1',
+    kilde: 'Handle',
+    laget: new Date().toISOString(),
+    katalog: katalog.katalog,
+    avvist: katalog.avvist
+  };
+  const blob = new Blob([JSON.stringify(ut, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'vare-katalog.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function lesKatalogFil(input){
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { document.getElementById('kat-text').value = r.result; importerKatalog(); };
+  r.readAsText(f);
+}
+
+function katalogFeil(m){
+  const e = document.getElementById('kat-error');
+  e.textContent = m;
+  e.style.display = 'block';
+}
+
+async function importerKatalog(){
+  const raw = document.getElementById('kat-text').value.trim();
+  if (!raw) return katalogFeil('Velg en fil, eller lim inn innholdet.');
+
+  let d;
+  try { d = JSON.parse(raw); }
+  catch(e){ return katalogFeil('Dette er ikke gyldig JSON.'); }
+
+  const inn = d && (d.katalog || (d.format === undefined && d));
+  if (!inn || typeof inn !== 'object') return katalogFeil('Fant ingen katalog i fila.');
+
+  let nye = 0, oppdatert = 0;
+  Object.keys(inn).forEach(navn => {
+    const e = inn[navn];
+    if (!e || typeof e !== 'object') return;
+    const type = VARETYPER.includes(e.type) ? e.type : 'Annet';
+    if (katalog.katalog[navn]) oppdatert++; else nye++;
+    katalog.katalog[navn] = { vare: e.vare || navn, basis: !!e.basis, type: type };
+  });
+
+  (d.avvist || []).forEach(n => {
+    if (typeof n === 'string' && katalog.avvist.indexOf(n) === -1) katalog.avvist.push(n);
+  });
+
+  await lagreKatalog();
+  closeModal('katalog-modal');
+  visMelding('Katalogen er oppdatert: ' + nye + ' nye, ' + oppdatert + ' endret.');
+  renderMerge();
+  renderTyper();
+}
+
+/* ============================================================
+   Flytt til neste uke
+   ============================================================ */
+let flyttId = null;
+
+// Uka etter den varen ligger i
+function nesteUke(uke, aar){
+  const mon = mondayOf(uke, aar);
+  mon.setUTCDate(mon.getUTCDate() + 7);
+  return isoWeek(new Date(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate()));
+}
+
+function openMove(id){
+  const v = data.items.find(x => x.id === id);
+  if (!v) return;
+  flyttId = id;
+  const neste = nesteUke(v.week, v.year);
+  document.getElementById('move-name').textContent = v.name;
+  document.getElementById('move-uke').textContent = neste.week;
+  document.getElementById('move-aar').textContent = neste.year;
+  document.getElementById('move-modal').classList.add('active');
+}
+
+async function confirmMove(){
+  clearTimeout(omrokeringTimer); omrokeringTimer = null;
+  const v = data.items.find(x => x.id === flyttId);
+  if (!v){ flyttId = null; return closeModal('move-modal'); }
+
+  const neste = nesteUke(v.week, v.year);
+  v.week = neste.week;
+  v.year = neste.year;
+  v.done = false;   // flyttes fordi den ikke ble handlet
+
+  flyttId = null;
+  closeModal('move-modal');
+  await save();
+  render();
+}
+
+/* ============================================================
+   Tøm lista
+   ============================================================ */
+function openTomListe(){
+  const iUka = ukensVarer().length;
+  const alt = data.items.length;
+  if (!alt) return visMelding('Lista er allerede tom.');
+
+  document.getElementById('tom-uke-tekst').textContent =
+    'Tøm uke ' + viewWeek + ' (' + iUka + ')';
+  document.getElementById('tom-alt-tekst').textContent =
+    'Tøm alle uker (' + alt + ')';
+  document.getElementById('tom-uke-tekst').parentElement.style.display =
+    iUka ? 'flex' : 'none';
+
+  document.getElementById('tom-modal').classList.add('active');
+}
+
+async function tomListe(omfang){
+  const naa = Date.now();
+  const skalBort = (omfang === 'alt')
+    ? data.items.slice()
+    : ukensVarer();
+
+  if (!skalBort.length) return closeModal('tom-modal');
+
+  const ider = new Set(skalBort.map(v => v.id));
+  skalBort.forEach(v => { v.slettet = naa; });
+  data.trash = skalBort.concat(data.trash);
+  if (data.trash.length > 200) data.trash.length = 200;
+  data.items = data.items.filter(v => !ider.has(v.id));
+
+  closeModal('tom-modal');
+  const ok = await medLaas(async () => await save());
+  if (ok === false) visMelding('Klarte ikke lagre.');
+
+  render();
+  oppdaterKurvMerke();
+  oppdaterRyddMerke();
+  visMelding(skalBort.length + ' varer flyttet til papirkurven.');
+}
+
+/* ============================================================
+   Sletting - med bekreftelse
+   ============================================================ */
+let slettId = null;
+
+function openDelete(id){
+  const v = data.items.find(x => x.id === id);
+  if (!v) return;
+  slettId = id;
+  document.getElementById('del-name').textContent = v.name;
+  document.getElementById('delete-modal').classList.add('active');
+}
+
+async function confirmDelete(){
+  const id = slettId;
+  slettId = null;
+  closeModal('delete-modal');
+  if (id) await deleteItem(id);
+}
+
+/* ============================================================
+   Bytt butikk på én vare
+   ============================================================ */
+let byttId = null;
+
+function openEdit(id){
+  const v = data.items.find(x => x.id === id);
+  if (!v) return;
+  byttId = id;
+  const erMat = (v.omrade || 'mat') === 'mat';
+
+  document.getElementById('e-name').value = v.name || '';
+  document.getElementById('e-qty').value = v.qty || '';
+  document.getElementById('e-notes').value = v.notes || '';
+
+  document.getElementById('e-cat-felt').style.display = erMat ? 'block' : 'none';
+  if (erMat) fillFast(document.getElementById('e-cat'), VARETYPER, v.cat || '');
+
+  fillSelect(document.getElementById('e-store'), butikkListe(v.omrade || 'mat'), v.store, '+ Ny butikk …');
+  document.getElementById('e-store-new').style.display = 'none';
+  document.getElementById('e-store-new').value = '';
+
+  oppdaterSumKnapp();
+  document.getElementById('edit-modal').classList.add('active');
+}
+
+// Knappen vises bare når det faktisk er noe å slå sammen
+function oppdaterSumKnapp(){
+  const felt = document.getElementById('e-qty');
+  const knapp = document.getElementById('e-sum');
+  const na = felt.value.trim();
+  const etter = normaliserMengde(na);
+  knapp.style.display = (na.indexOf(' + ') !== -1 && etter !== na) ? 'block' : 'none';
+  knapp.textContent = 'Slå sammen mengdene → ' + etter;
+}
+
+function summerMengde(){
+  const felt = document.getElementById('e-qty');
+  felt.value = normaliserMengde(felt.value);
+  oppdaterSumKnapp();
+}
+
+async function lagreEndring(){
+  const v = data.items.find(x => x.id === byttId);
+  if (!v){ byttId = null; return closeModal('edit-modal'); }
+
+  const forrige = { name: v.name, qty: v.qty, cat: v.cat, store: v.store, notes: v.notes };
+  const erMat = (v.omrade || 'mat') === 'mat';
+
+  const nyttNavn = document.getElementById('e-name').value.trim();
+  if (!nyttNavn){ document.getElementById('e-name').focus(); return; }
+
+  const butikk = readSelect('itemstore');
+  huskButikk(v.omrade || 'mat', butikk);
+
+  v.name = nyttNavn;
+  v.qty = normaliserMengde(document.getElementById('e-qty').value);
+  v.notes = document.getElementById('e-notes').value.trim();
+  v.store = butikk || '';
+  if (erMat) v.cat = document.getElementById('e-cat').value || '';
+
+  if (erMat) katalogLagre(v.name, v.cat, !!v.basis);
+  if (v.store) data.butikkvalg[v.name.toLowerCase()] = v.store;
+  else delete data.butikkvalg[v.name.toLowerCase()];
+
+  flettDuplikater();
+
+  const ok = await medLaas(async () => {
+    if (erMat) await lagreKatalog();
+    return await save();
+  });
+
+  if (ok === false){
+    Object.assign(v, forrige);
+    visMelding('Klarte ikke lagre. Endringen er tilbakestilt.');
+  }
+
+  byttId = null;
+  closeModal('edit-modal');
+  render();
+}/* ============================================================
+   Liste
+   ============================================================ */
+let omrokeringTimer = null;
+
+// Raden endrer seg med det samme. Lagring og omrokering skjer etterpå,
+// så lista ikke flytter på seg mens fingeren fortsatt er i bevegelse.
+function toggleDone(id, row){
+  const v = data.items.find(x => x.id === id);
+  if (!v) return;
+
+  v.done = !v.done;
+
+  if (row){
+    row.classList.toggle('checked', v.done);
+    const q = row.querySelector('.item-qty');
+    if (q) q.style.color = v.done ? 'var(--ink-soft)' : '';
+  }
+  oppdaterSum();
+
+  // Rull tilbake hvis lagringen ryker, ellers viser skjermen noe som ikke finnes
+  save().then(ok => {
+    if (ok === false){
+      v.done = !v.done;
+      if (row) row.classList.toggle('checked', v.done);
+      oppdaterSum();
+      visMelding('Klarte ikke lagre. Endringen er tilbakestilt.');
+    }
+  }).catch(() => {
+    v.done = !v.done;
+    if (row) row.classList.toggle('checked', v.done);
+    oppdaterSum();
+    visMelding('Klarte ikke lagre. Endringen er tilbakestilt.');
+  });
+
+  // Ny nedtelling for hvert trykk: kryss av flere raskt etter hverandre,
+  // og lista bygges om én gang når du er ferdig.
+  clearTimeout(omrokeringTimer);
+  omrokeringTimer = setTimeout(() => { omrokeringTimer = null; render(); }, 450);
+}
+
+async function deleteItem(id){
+  clearTimeout(omrokeringTimer); omrokeringTimer = null;
+  const v = data.items.find(x => x.id === id);
+  if (v){
+    v.slettet = Date.now();
+    data.trash.unshift(v);
+    if (data.trash.length > 200) data.trash.length = 200;
+  }
+  data.items = data.items.filter(x => x.id !== id);
+  await save();
+  render();
+  oppdaterKurvMerke();
+}
+
+/* ============================================================
+   Papirkurv
+   ============================================================ */
+function openTrash(){ renderTrash(); showView('trash'); }
+
+function oppdaterKurvMerke(){
+  const knapp = document.getElementById('btn-papirkurv');
+  if (!knapp) return;
+  let merke = knapp.querySelector('.badge');
+  if (!merke){
+    merke = document.createElement('span');
+    merke.className = 'badge';
+    knapp.appendChild(merke);
+  }
+  const n = data.trash.length;
+  merke.textContent = n > 99 ? '99+' : n;
+  merke.classList.toggle('active', n > 0);
+}
+
+async function restoreItem(id){
+  const v = data.trash.find(x => x.id === id);
+  if (!v) return;
+  delete v.slettet;
+  data.items.push(v);
+  data.trash = data.trash.filter(x => x.id !== id);
+  await save();
+  renderTrash();
+  oppdaterKurvMerke();
+}
+
+function openEmptyTrash(){
+  if (!data.trash.length) return;
+  document.getElementById('tom-antall').textContent = data.trash.length;
+  document.getElementById('empty-trash-modal').classList.add('active');
+}
+
+async function confirmEmptyTrash(){
+  data.trash = [];
+  closeModal('empty-trash-modal');
+  await save();
+  renderTrash();
+  oppdaterKurvMerke();
+}
+
+function slettetTekst(tid){
+  if (!tid) return '';
+  const min = Math.floor((Date.now() - tid) / 60000);
+  if (min < 1) return 'nettopp';
+  if (min < 60) return min + ' min siden';
+  const t = Math.floor(min / 60);
+  if (t < 24) return t + ' t siden';
+  const d = Math.floor(t / 24);
+  return d === 1 ? 'i går' : d + ' dager siden';
+}
+
+function renderTrash(){
+  const c = document.getElementById('trash-container');
+  const knapp = document.getElementById('btn-tom-kurv');
+  if (knapp) knapp.style.display = data.trash.length ? 'block' : 'none';
+
+  if (!data.trash.length){
+    c.innerHTML = '<div class="empty-state" style="margin-top:20px;"><span class="big">🗑</span>' +
+      '<p>Papirkurven er tom.</p></div>';
+    return;
+  }
+
+  c.innerHTML = '';
+  data.trash.forEach(v => {
+    const row = document.createElement('div');
+    row.className = 'trash-row';
+
+    const body = document.createElement('div');
+    body.className = 'trash-body';
+    const navn = document.createElement('div');
+    navn.className = 'trash-name';
+    navn.textContent = v.name;
+    body.appendChild(navn);
+
+    const meta = document.createElement('div');
+    meta.className = 'trash-meta';
+    meta.textContent = [v.qty, 'uke ' + v.week, slettetTekst(v.slettet)]
+      .filter(Boolean).join(' · ');
+    body.appendChild(meta);
+
+    const angre = document.createElement('button');
+    angre.className = 'trash-back';
+    angre.textContent = 'Legg tilbake';
+    angre.onclick = () => restoreItem(v.id);
+
+    row.appendChild(body);
+    row.appendChild(angre);
+    c.appendChild(row);
+  });
+}
+
+async function toggleStore(navn){
+  const i = data.collapsed.indexOf(navn);
+  if (i === -1) data.collapsed.push(navn); else data.collapsed.splice(i, 1);
+  await save();
+  render();
+}
+
+function ukensVarer(omrade){
+  return data.items.filter(v =>
+    v.week === viewWeek && v.year === viewYear &&
+    (omrade === undefined || (v.omrade || 'mat') === omrade));
+}
+
+function oppdaterSum(){
+  const alle = ukensVarer();
+  const mat = ukensVarer('mat');
+  const annet = ukensVarer('annet');
+  const butikker = [...new Set(alle.map(v => v.store || 'Uten butikk'))];
+  const typer = [...new Set(mat.map(v => v.cat || 'Uten kategori'))];
+  const handlet = alle.filter(v => v.done).length;
+
+  document.getElementById('sum-count').textContent = mat.length;
+  document.getElementById('sum-annet').textContent = annet.length;
+  document.getElementById('sum-checked').textContent = handlet + ' / ' + alle.length;
+  document.getElementById('sum-stores').textContent = alle.length ? butikker.length : 0;
+  document.getElementById('sum-cats').textContent = mat.length ? typer.length : 0;
+}
+
+function render(){
+  oppdaterSum();
+  tegnOmrade('mat',   document.getElementById('stores-container'));
+  tegnOmrade('annet', document.getElementById('annet-container'));
+}
+
+// Andre behov har ingen varetyper - der grupperes det bare på butikk
+function tegnOmrade(omrade, c){
+  const varer = ukensVarer(omrade);
+  const utenType = (omrade === 'annet');
+
+  if (!varer.length){
+    c.innerHTML = omrade === 'mat'
+      ? '<div class="empty-state"><span class="big">🛒</span>' +
+        '<p>Ingen varer i uke ' + viewWeek + '.</p>' +
+        '<p style="font-size:13px;">Legg til en vare, eller hent ingredienser fra Oppskriftsboka.</p></div>'
+      : '<div class="empty-state"><span class="big">🔧</span>' +
+        '<p>Ingen andre behov i uke ' + viewWeek + '.</p>' +
+        '<p style="font-size:13px;">Jernvare, verktøy, interiør – alt som ikke er mat.</p></div>';
+    return;
+  }
+
+  c.innerHTML = '';
+
+  const igjen = varer.filter(v => !v.done);
+  const ferdig = varer.filter(v => v.done);
+
+  if (igjen.length){
+    tegnSeksjon(c, igjen, false, utenType);
+  } else {
+    const alt = document.createElement('div');
+    alt.className = 'empty-state';
+    alt.style.padding = '26px 20px';
+    alt.innerHTML = '<span class="big">✅</span><p>Alt er handlet.</p>';
+    c.appendChild(alt);
+  }
+
+  if (ferdig.length){
+    const skille = document.createElement('div');
+    skille.className = 'done-divider';
+    skille.textContent = 'Handlet · ' + ferdig.length;
+    c.appendChild(skille);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'done-wrap';
+    c.appendChild(wrap);
+    tegnSeksjon(wrap, ferdig, true, utenType);
+  }
+
+  if (varer.some(v => v.sammenslatt)){
+    const fot = document.createElement('p');
+    fot.className = 'liste-fotnote';
+    fot.textContent = '* slått sammen fra flere ingredienser';
+    c.appendChild(fot);
+  }
+}
+
+// Rekkefølgen man går gjennom butikken i, ikke alfabetisk
+function typeRang(t){
+  if (!t) return VARETYPER.length + 1;              // uten kategori nest sist
+  if (t === BASIS_BOLK) return VARETYPER.length + 2; // basisvarer helt nederst
+  const i = VARETYPER.indexOf(t);
+  return i === -1 ? VARETYPER.length : i;
+}
+
+const BASIS_BOLK = 'Basisvarer';
+
+// Tegner butikk -> varetype -> varer. Brukes både over og under skillet.
+function tegnSeksjon(c, varer, erHandlet, utenType){
+  // Er ingenting kategorisert, er ett bånd som sier "Uten kategori"
+  // over hele lista verre enn ingen bånd
+  const harType = varer.some(v => v.cat && !v.basis);
+  const skjulBand = utenType || !harType;
+
+  const grupper = {};
+  varer.forEach(v => {
+    const b = v.store || 'Uten butikk';
+    const k = skjulBand ? '' : (v.basis ? BASIS_BOLK : (v.cat || 'Uten kategori'));
+    grupper[b] = grupper[b] || {};
+    grupper[b][k] = grupper[b][k] || [];
+    grupper[b][k].push(v);
+  });
+
+  const butikkNavn = Object.keys(grupper).sort((a, b) => {
+    if (a === 'Uten butikk') return 1;
+    if (b === 'Uten butikk') return -1;
+    return a.localeCompare(b, 'no');
+  });
+
+  butikkNavn.forEach(b => {
+    const alle = Object.values(grupper[b]).flat();
+    const nokkel = (erHandlet ? 'handlet:' : '') + b;
+    const skjult = data.collapsed.includes(nokkel);
+
+    const grp = document.createElement('div');
+    grp.className = 'store-group' + (skjult ? ' collapsed' : '');
+
+    const head = document.createElement('button');
+    head.type = 'button';
+    head.className = 'store-header';
+    head.onclick = () => toggleStore(nokkel);
+    head.innerHTML = '<span class="caret">' + (skjult ? '▶' : '▼') + '</span>' +
+                     '<h3></h3><span class="store-count">' + alle.length +
+                     (erHandlet ? '' : ' igjen') + '</span>';
+    head.querySelector('h3').textContent = b;
+    grp.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'store-body';
+
+    Object.keys(grupper[b]).sort((x, y) => typeRang(x) - typeRang(y)).forEach(k => {
+      const kg = document.createElement('div');
+      kg.className = 'category-group';
+      if (k){
+        const kh = document.createElement('div');
+        kh.className = (k === BASIS_BOLK) ? 'basis-band' : 'category-header';
+        kh.textContent = k;
+        kg.appendChild(kh);
+      }
+
+      const liste = document.createElement('div');
+      liste.className = 'item-list';
+
+      // Inne i hver bolk alfabetisk
+      grupper[b][k].sort((p, q) => (p.name || '').localeCompare(q.name || '', 'no'));
+
+      grupper[b][k].forEach(v => {
+        const row = document.createElement('div');
+        row.className = 'item-row' + (v.done ? ' checked' : '');
+
+        row.onclick = () => toggleDone(v.id, row);
+
+        const body2 = document.createElement('div');
+        body2.className = 'item-body';
+        const navn = document.createElement('div');
+        navn.className = 'item-name';
+        navn.textContent = v.name;
+        if (v.sammenslatt){
+          const stj = document.createElement('span');
+          stj.className = 'vare-stjerne';
+          stj.textContent = '*';
+          navn.appendChild(stj);
+        }
+        body2.appendChild(navn);
+
+        const meta = [v.notes, v.by].filter(Boolean).join(' · ');
+        if (meta){
+          const m = document.createElement('div');
+          m.className = 'item-meta';
+          m.textContent = meta;
+          body2.appendChild(m);
+        }
+
+        const bytt = document.createElement('button');
+        bytt.className = 'item-store';
+        bytt.title = 'Rediger';
+        bytt.textContent = '✎';
+        bytt.onclick = (e) => { e.stopPropagation(); openEdit(v.id); };
+
+        const flytt = document.createElement('button');
+        flytt.className = 'item-move';
+        flytt.title = 'Flytt til neste uke';
+        flytt.textContent = '»';
+        flytt.onclick = (e) => { e.stopPropagation(); openMove(v.id); };
+
+        const del = document.createElement('button');
+        del.className = 'item-btn';
+        del.title = 'Fjern';
+        del.textContent = '✕';
+        del.onclick = (e) => { e.stopPropagation(); openDelete(v.id); };
+
+        row.appendChild(body2);
+        if (v.qty){
+          const q = document.createElement('span');
+          q.className = 'item-qty';
+          // Kan de ikke summeres, står de under hverandre -
+          // ikke slått sammen til ett tall appen ikke kan stå inne for
+          String(v.qty).split(' + ').forEach((del, n) => {
+            if (n) q.appendChild(document.createElement('br'));
+            q.appendChild(document.createTextNode(del));
+          });
+          row.appendChild(q);
+        }
+        row.appendChild(bytt); row.appendChild(flytt); row.appendChild(del);
+        liste.appendChild(row);
+      });
+
+      kg.appendChild(liste);
+      body.appendChild(kg);
+    });
+
+    grp.appendChild(body);
+    c.appendChild(grp);
+  });
+}
+
+/* ============================================================
+   Navigasjon
+   ============================================================ */
+function showView(navn){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + navn).classList.add('active');
+  const hjem = navn === 'home';
+  document.getElementById('topbar').classList.toggle('subview', !hjem);
+  document.getElementById('topbar-back').style.display = hjem ? 'none' : 'flex';
+  document.getElementById('topbar-home-actions').style.display = hjem ? 'flex' : 'none';
+  document.getElementById('bottom-bar').style.display = hjem ? 'flex' : 'none';
+  window.scrollTo(0, 0);
+}
+
+function goHome(){
+  clearTimeout(omrokeringTimer); omrokeringTimer = null;
+  render();
+  showView('home');
+}
+
+// Avgrenset til forsiden, ellers nullstilles fanene i rydde-visningen
+// og omradevelgeren i skjemaet, som bruker samme klasser
+function switchTab(navn){
+  const rot = document.getElementById('view-home');
+  rot.querySelectorAll('.tabpane').forEach(el => el.classList.remove('active'));
+  rot.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + navn).classList.add('active');
+  document.getElementById('tab-btn-' + navn).classList.add('active');
+}
+
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+
+window.addEventListener('scroll', () => {
+  document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 10);
+});
+
+/* ============================================================
+   Oppstart
+   ============================================================ */
+async function save(){ return await Store.set(KEY, data); }
+
+// Lokket legger seg over skjermen etter 220 ms, så raske handlinger
+// ikke blinker, men trege ikke rekker å bli trykket to ganger.
+let laasTimer = null;
+async function medLaas(jobb){
+  const lock = document.getElementById('lock');
+  clearTimeout(laasTimer);
+  laasTimer = setTimeout(() => lock.classList.add('active'), 220);
+  try {
+    return await jobb();
+  } finally {
+    clearTimeout(laasTimer);
+    lock.classList.remove('active');
+  }
+}
+
+let toastTimer = null;
+function visMelding(tekst){
+  const t = document.getElementById('toast');
+  t.textContent = tekst;
+  t.classList.add('active');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('active'), 3500);
+}
+
+async function init(){
+  let flyttet = false;
+
+  const lagretKatalog = await Store.get(KATALOG_KEY);
+  if (lagretKatalog && lagretKatalog.katalog){
+    katalog = { katalog: lagretKatalog.katalog || {}, avvist: lagretKatalog.avvist || [] };
+  }
+
+  const lagret = await Store.get(KEY);
+  if (lagret){
+    data = Object.assign(data, lagret);
+    data.cats = VARETYPER.slice();
+    data.stores = data.stores || [];
+    if (!data.stores.length) data.stores = [STANDARD_BUTIKK];
+    data.andreStores = data.andreStores || [];
+    data.items.forEach(v => { if (!v.omrade) v.omrade = 'mat'; });
+    data.butikkvalg = data.butikkvalg || {};
+
+    // Flytt over fra den gamle known-strukturen, der butikk lå sammen med typen
+    if (lagret.known){
+      Object.keys(lagret.known).forEach(navn => {
+        const k = lagret.known[navn];
+        if (!k) return;
+        if (k.cat) katalogLagre(navn, k.cat, false);
+        if (k.store && !data.butikkvalg[navn]) data.butikkvalg[navn] = k.store;
+      });
+      delete data.known;
+      flyttet = true;
+    }
+    data.collapsed = data.collapsed || [];
+    data.trash = data.trash || [];
+    data.raalinjer = data.raalinjer || {};
+
+    // Mengder lagret av en tidligere versjon kan ha usummerte like enheter
+    data.items.forEach(v => {
+      if (v.qty && String(v.qty).indexOf(' + ') !== -1){
+        const ny = normaliserMengde(v.qty);
+        if (ny !== v.qty){ v.qty = ny; flyttet = true; }
+      }
+    });
+  }
+  const nå = isoWeek(new Date());
+  viewWeek = nå.week; viewYear = nå.year;
+  if (flyttet){ await lagreKatalog(); await save(); }
+
+  renderWeek();
+  render();
+  oppdaterKurvMerke();
+  oppdaterRyddMerke();
+}
+
+init();
+</script>
+
+</body>
+</html>
