@@ -495,7 +495,8 @@ async function sjekkTilgang(){
       return;
     }
   } else if(!hent()){
-    return;                       /* ingen lagret pålogging — porten blir stående */
+    loggInn();                    /* ingen lagret pålogging — send rett til Microsoft */
+    return;
   }
 
   try{
