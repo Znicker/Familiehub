@@ -358,8 +358,7 @@ async function loggInn(){
     scope: CFG.scopes,
     state: stateTok,
     code_challenge: await challenge(verifier),
-    code_challenge_method: 'S256',
-    prompt: 'select_account'
+    code_challenge_method: 'S256'
   });
   location.href = AUTH_BASE + '/authorize?' + p;
 }
