@@ -983,7 +983,7 @@
   <button class="icon-btn topbar-back" id="topbar-back" onclick="goHome()" style="display:none;" title="Tilbake">←</button>
   <div class="topbar-brand">
   </div>
-  <div class="topbar-home-actions" id="topbar-home-actions"></div>
+  <div class="topbar-home-actions" id="topbar-home-actions"><button class="icon-btn" onclick="loggUt()" title="Logg ut">🚪</button></div>
 </div>
 
 <main>
@@ -6185,6 +6185,12 @@ document.addEventListener('visibilitychange', async () => {
     if(el) el.textContent = navn;
   }catch(_){}
 })();
+</script>
+<script>
+function loggUt(){
+  try{ localStorage.removeItem('fh_cal_auth'); }catch(_){}
+  location.href = '/cdn-cgi/access/logout';
+}
 </script>
 </body>
 </html>

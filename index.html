@@ -405,10 +405,9 @@ async function gyldigToken(){
   return A.token;
 }
 function loggUt(){
-  localStorage.removeItem('fh_cal_auth');
-  sessionStorage.clear();
+  try{ localStorage.removeItem('fh_cal_auth'); sessionStorage.clear(); }catch(_){}
   A.token = null; A.refresh = null; A.me = null; A.expires = 0;
-  location.reload();
+  location.href = '/cdn-cgi/access/logout';
 }
 
 function portNote(tekst, feil){
