@@ -840,25 +840,58 @@ const Store = (() => {
     });
   }
 
+  /* Delt lagring i skyen via Cloudflare-funksjonen /api/data (KV bak).
+     Access-porten beskytter den, og nettleseren sender med økt-cookien
+     automatisk, så bare familien når den. */
+  const API = '/api/data';
+  async function cloudGet(key){
+    const r = await fetch(API + '?key=' + encodeURIComponent(key), { headers:{ 'Accept':'application/json' } });
+    if (!r.ok) throw new Error('sky get ' + r.status);
+    const d = await r.json();
+    return (d && d.value !== undefined) ? d.value : null;
+  }
+  async function cloudSet(key, value){
+    const r = await fetch(API + '?key=' + encodeURIComponent(key), {
+      method:'PUT',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(value)
+    });
+    if (!r.ok) throw new Error('sky set ' + r.status);
+    return true;
+  }
+  async function lokalGet(key){
+    try { return await idbGet(key); }
+    catch(e){
+      try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : null; }
+      catch(_){ return null; }
+    }
+  }
+  async function lokalSet(key, value){
+    try { await idbSet(key, value); return true; }
+    catch(e){
+      try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+      catch(_){ return false; }
+    }
+  }
+
   return {
-    // Verdiene lagres som ferdig-parsede objekter i IndexedDB (ikke som streng),
-    // så get returnerer dem direkte. Nødløsningen mot localStorage bruker JSON.
+    // Skyen (delt via /api/data) er fasit, med lokal buffer som reserve når man er offline.
     async get(key){
-      try {
-        return await idbGet(key);
-      } catch(e){
-        try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
-        catch(_){ return null; }
+      let sky = null, skyOk = false;
+      try { sky = await cloudGet(key); skyOk = true; } catch(e){ skyOk = false; }
+      const lokal = await lokalGet(key);
+      if (!skyOk) return lokal;                    // offline → bruk lokal buffer
+      if (sky === null && lokal != null){          // skyen er tom, enheten har data → så den til skyen (engangs)
+        try { await cloudSet(key, lokal); } catch(_){}
+        return lokal;
       }
+      try { await lokalSet(key, sky); } catch(_){}  // hold lokal buffer oppdatert
+      return sky;
     },
     async set(key, value){
-      try {
-        await idbSet(key, value);
-        return true;
-      } catch(e){
-        try { localStorage.setItem(key, JSON.stringify(value)); return true; }
-        catch(_){ return false; }
-      }
+      await lokalSet(key, value);                  // skriv lokalt straks (raskt, virker offline)
+      try { await cloudSet(key, value); return true; }
+      catch(e){ return false; }                    // offline: beholdt lokalt, deles ved neste lagring
     }
   };
 })();
@@ -2900,6 +2933,45 @@ async function init(){
   oppdaterKurvMerke();
   oppdaterRyddMerke();
 }
+
+/* ============================================================
+   Live-synk: hent de delte dataene på nytt når appen kommer i
+   forgrunnen igjen (f.eks. når du bytter tilbake til fanen mens
+   du handler, og noen andre har endret lista i mellomtiden).
+   ============================================================ */
+function _sig(o){ try { return JSON.stringify(o); } catch(e){ return ''; } }
+let synkPaagaar = false;
+async function synkroniserFraSky(){
+  if (synkPaagaar) return;
+  synkPaagaar = true;
+  try {
+    const skyKat = await Store.get(KATALOG_KEY);
+    if (skyKat && skyKat.katalog){
+      katalog = { katalog: skyKat.katalog || {}, avvist: skyKat.avvist || [] };
+    }
+    const sky = await Store.get(KEY);
+    if (sky && _sig(sky) !== _sig(data)){
+      data = Object.assign(data, sky);
+      data.cats = VARETYPER.slice();
+      data.stores = (data.stores && data.stores.length) ? data.stores : [STANDARD_BUTIKK];
+      data.andreStores = data.andreStores || [];
+      data.butikkvalg = data.butikkvalg || {};
+      data.collapsed = data.collapsed || [];
+      data.trash = data.trash || [];
+      data.raalinjer = data.raalinjer || {};
+      data.items.forEach(v => { if (!v.omrade) v.omrade = 'mat'; });
+      renderWeek();
+      render();
+      oppdaterKurvMerke();
+      oppdaterRyddMerke();
+    }
+  } catch(e){}
+  finally { synkPaagaar = false; }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') synkroniserFraSky();
+});
 
 init();
 </script>
