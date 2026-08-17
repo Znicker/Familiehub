@@ -34,13 +34,34 @@ function feil(melding, status) {
 
 /* Sjekker Microsoft-tokenet appen sender med, og returnerer e-postadressen
    det tilhører. Uten gyldig token slipper ingen gjennom. */
+/* Leser e-posten ut av Access-tokenet (JWT). Cloudflare har allerede
+   sjekket tokenet foer forespoerselen naar hit, saa vi trenger bare aa
+   lese innholdet, ikke aa verifisere det paa nytt. */
+function epostFraJwt(jwt) {
+  try {
+    const bit = jwt.split('.')[1];
+    if (!bit) return null;
+    const json = atob(bit.replace(/-/g, '+').replace(/_/g, '/'));
+    const data = JSON.parse(json);
+    return (data.email || data.identity || '').toLowerCase() || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function hvemErDette(request) {
-  // Cloudflare Access legger identiteten paa hver forespoersel som gaar
-  // gjennom porten. Da trenger ikke appen sende noe token i det hele tatt.
+  // 1) E-post-header fra porten (settes i noen oppsett).
   const accessEpost = request.headers.get('Cf-Access-Authenticated-User-Email');
   if (accessEpost) return accessEpost.toLowerCase();
 
-  // Reserveloesning: Microsoft-token (som foer).
+  // 2) Access-tokenet (JWT) - inneholder alltid e-posten.
+  const jwt = request.headers.get('Cf-Access-Jwt-Assertion');
+  if (jwt) {
+    const e = epostFraJwt(jwt);
+    if (e) return e;
+  }
+
+  // 3) Reserveloesning: Microsoft-token, hvis appen sender et.
   const auth = request.headers.get('Authorization') || '';
   if (!auth.startsWith('Bearer ')) return null;
 
@@ -71,7 +92,14 @@ export async function onRequestPost(context) {
 
   const epost = await hvemErDette(request);
   if (!epost) {
-    return feil('Du må være logget inn for å bruke denne funksjonen.', 401);
+    const sawAccess = !!(request.headers.get('Cf-Access-Jwt-Assertion') ||
+                         request.headers.get('Cf-Access-Authenticated-User-Email'));
+    return feil(
+      sawAccess
+        ? 'Innlogget, men klarte ikke å lese e-posten fra porten.'
+        : 'Fant ingen Access-identitet på forespørselen.',
+      401
+    );
   }
   if (SLIPP_INN.length && !SLIPP_INN.map(e => e.toLowerCase()).includes(epost)) {
     return feil('Denne kontoen har ikke tilgang.', 403);
