@@ -35,6 +35,12 @@ function feil(melding, status) {
 /* Sjekker Microsoft-tokenet appen sender med, og returnerer e-postadressen
    det tilhører. Uten gyldig token slipper ingen gjennom. */
 async function hvemErDette(request) {
+  // Cloudflare Access legger identiteten paa hver forespoersel som gaar
+  // gjennom porten. Da trenger ikke appen sende noe token i det hele tatt.
+  const accessEpost = request.headers.get('Cf-Access-Authenticated-User-Email');
+  if (accessEpost) return accessEpost.toLowerCase();
+
+  // Reserveloesning: Microsoft-token (som foer).
   const auth = request.headers.get('Authorization') || '';
   if (!auth.startsWith('Bearer ')) return null;
 
