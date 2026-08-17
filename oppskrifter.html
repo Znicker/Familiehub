@@ -1610,36 +1610,98 @@
     });
   }
 
+  /* Delt lagring i skyen via Cloudflare-funksjonen /api/data (KV bak).
+     Access-porten beskytter den, og nettleseren sender med okt-cookien,
+     saa bare familien naar den. Verdiene her er strenger (som lokalt). */
+  const SKY_API = '/api/data';
+  async function cloudGet(k){
+    const r = await fetch(SKY_API + '?key=' + encodeURIComponent(k), { headers:{ 'Accept':'application/json' } });
+    if (!r.ok) throw new Error('sky get ' + r.status);
+    const d = await r.json();
+    return (d && d.value !== undefined) ? d.value : null;
+  }
+  async function cloudSet(k, v){
+    const r = await fetch(SKY_API + '?key=' + encodeURIComponent(k), {
+      method:'PUT', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(v)
+    });
+    if (!r.ok) throw new Error('sky set ' + r.status);
+    return true;
+  }
+  async function cloudDelete(k){
+    const r = await fetch(SKY_API + '?key=' + encodeURIComponent(k), { method:'DELETE' });
+    if (!r.ok) throw new Error('sky delete ' + r.status);
+    return true;
+  }
+  async function idbAllKeys(){
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).getAllKeys();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
   // Samme form som artifact-lageret: verdier lagres som strenger,
   // get returnerer { value }, slik at all eksisterende res.value / JSON.parse-kode virker.
   window.storage = {
+    // Skyen (delt via /api/data) er fasit, med lokal buffer (IndexedDB) som reserve naar man er offline.
     async get(key, shared){
       const k = fullKey(key, shared);
-      try {
-        const v = await idbGetRaw(k);
-        return (v === null || v === undefined) ? null : { value: v };
-      } catch(e){
-        try { const v = localStorage.getItem(k); return v === null ? null : { value: v }; }
-        catch(_){ return null; }
+      let sky = null, skyOk = false;
+      try { sky = await cloudGet(k); skyOk = true; } catch(e){ skyOk = false; }
+      let lokal = null;
+      try { lokal = await idbGetRaw(k); }
+      catch(e){ try { lokal = localStorage.getItem(k); } catch(_){ lokal = null; } }
+      if (!skyOk){
+        return (lokal === null || lokal === undefined) ? null : { value: lokal };
       }
+      if (sky === null){
+        if (lokal != null){                       // skyen tom, enheten har data -> saa den til skyen
+          try { await cloudSet(k, lokal); } catch(_){}
+          return { value: lokal };
+        }
+        return null;
+      }
+      try { await idbSetRaw(k, sky); } catch(_){}   // hold lokal buffer oppdatert
+      return { value: sky };
     },
     async set(key, value, shared){
       const k = fullKey(key, shared);
       const v = typeof value === 'string' ? value : JSON.stringify(value);
-      try {
-        await idbSetRaw(k, v);
-        return { value: v };
-      } catch(e){
-        try { localStorage.setItem(k, v); return { value: v }; }
-        catch(_){ return null; }
-      }
+      try { await idbSetRaw(k, v); }
+      catch(e){ try { localStorage.setItem(k, v); } catch(_){} }
+      try { await cloudSet(k, v); } catch(e){}      // offline: beholdt lokalt, deles ved neste lagring
+      return { value: v };
     },
     async delete(key, shared){
       const k = fullKey(key, shared);
-      try { await idbDeleteRaw(k); return true; }
-      catch(e){
-        try { localStorage.removeItem(k); return true; } catch(_){ return false; }
+      try { await idbDeleteRaw(k); }
+      catch(e){ try { localStorage.removeItem(k); } catch(_){} }
+      try { await cloudDelete(k); } catch(e){}
+      return true;
+    },
+    /* Engangs-flytting: kopierer alle oppskrifts-appens lokale nokler (p:/s:)
+       til skyen forste gang skyen er tom for oppskrifter. Rorer IKKE handlelistas
+       nokler (de er uten prefiks og har eget skyformat). Kjores fra init. */
+    async migrerTilSky(){
+      let skyIndex = null;
+      try { skyIndex = await cloudGet(fullKey('recipe-index', false)); }
+      catch(e){ return false; }                     // sky utilgjengelig -> hopp, proev igjen senere
+      if (skyIndex != null) return false;           // skyen har alt -> ingenting aa migrere
+      let keys = [];
+      try { keys = await idbAllKeys(); } catch(e){ return false; }
+      let n = 0;
+      for (const k of keys){
+        if (!(typeof k === 'string' && (k.indexOf('p:') === 0 || k.indexOf('s:') === 0))) continue;
+        try {
+          const v = await idbGetRaw(k);
+          if (v === null || v === undefined) continue;
+          await cloudSet(k, typeof v === 'string' ? v : JSON.stringify(v));
+          n++;
+        } catch(e){}
       }
+      return n;
     }
   };
 })();
@@ -6081,6 +6143,7 @@ function settBusy(på){
 });
 
 (async function init(){
+  await window.storage.migrerTilSky();
   await loadRecipeIndex();
   await loadMealPlan();
   await loadIngEdits();
@@ -6092,6 +6155,20 @@ function settBusy(på){
   updateTopbarHeightVar();
   backfillRatingCounts();   // i bakgrunnen, uten å forsinke første tegning
 })();
+
+/* Live-synk: frisk opp oppskrift-indeksen fra skyen naar appen kommer i
+   forgrunnen igjen, og tegn forsiden paa nytt hvis du staar paa den (river
+   deg ikke ut av en aapen oppskrift). En oppskrift du aapner hentes uansett
+   ferskt fra skyen. */
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible') return;
+  try {
+    await loadRecipeIndex();
+    await loadVarekatalog();
+    const home = document.getElementById('view-home');
+    if (home && home.classList.contains('active')) renderHome();
+  } catch(e){}
+});
 </script>
 </body>
 </html>

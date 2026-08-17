@@ -63,6 +63,15 @@ export async function onRequestPut({ request, env }) {
   return json({ ok: true });
 }
 
+export async function onRequestDelete({ request, env }) {
+  const { key, feil } = lesNokkel(request);
+  if (feil) return json({ error: feil }, 400);
+  if (!env.FAMILIE_KV) return json({ error: 'KV ikke bundet (FAMILIE_KV mangler)' }, 500);
+
+  await env.FAMILIE_KV.delete(PREFIX + key);
+  return json({ ok: true });
+}
+
 /* Enkelt svar på andre metoder, så feilsøking blir lettere. */
 export async function onRequest({ request }) {
   return json({ error: 'bruk GET eller PUT med ?key=' , method: request.method }, 405);
