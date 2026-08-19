@@ -2995,8 +2995,9 @@ init();
 </script>
 <script>
 function loggUt(){
-  try{ localStorage.removeItem('fh_cal_auth'); }catch(_){}
-  location.href = '/cdn-cgi/access/logout';
+  try{ localStorage.removeItem('fh_cal_auth'); sessionStorage.clear(); }catch(_){}
+  location.href = 'https://login.microsoftonline.com/common/oauth2/v2.0/logout?post_logout_redirect_uri=' +
+    encodeURIComponent(location.origin + '/cdn-cgi/access/logout');
 }
 </script>
 </body>

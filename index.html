@@ -407,7 +407,11 @@ async function gyldigToken(){
 function loggUt(){
   try{ localStorage.removeItem('fh_cal_auth'); sessionStorage.clear(); }catch(_){}
   A.token = null; A.refresh = null; A.me = null; A.expires = 0;
-  location.href = '/cdn-cgi/access/logout';
+  /* Logger ut Microsoft-kontoen foerst (delt nettleser-sesjon),
+     som sender deg videre til Access-utloggingen etterpaa —
+     saa ett trykk logger deg helt ut, ikke bare av porten. */
+  location.href = 'https://login.microsoftonline.com/common/oauth2/v2.0/logout?post_logout_redirect_uri=' +
+    encodeURIComponent(location.origin + '/cdn-cgi/access/logout');
 }
 
 function portNote(tekst, feil){
