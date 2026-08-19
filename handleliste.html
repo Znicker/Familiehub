@@ -2981,7 +2981,7 @@ init();
 <script>
 (async function(){
   try{
-    const r = await fetch('/cdn-cgi/access/get-identity', { headers: { Accept: 'application/json' } });
+    const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), { headers: { Accept: 'application/json' }, cache: 'no-store' });
     if(!r.ok) return;
     const id = await r.json();
     const epost = (id.email || id.name || '').trim();
