@@ -109,6 +109,47 @@ body{
 .plan-rad.forbi{opacity:.42}
 .plan-rad.naa .plan-tittel{font-weight:800}
 .plan-rad.naa .plan-tid{color:var(--blaa)}
+.plan-rad{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.plan-rad:active{background:#F7F9FA}
+.plan-notatprikk{
+  font-size:8px;color:var(--ink-soft);flex-shrink:0;
+  align-self:center;opacity:.55;
+}
+
+/* ---------- Detaljer ---------- */
+.detalj-bak{position:fixed;inset:0;z-index:60;background:rgba(44,62,80,.18)}
+.detalj{
+  position:fixed;z-index:61;
+  background:var(--paper);border-radius:18px;
+  padding:22px 24px 24px;
+  width:min(380px,calc(100vw - 32px));
+  max-height:min(70vh,520px);overflow-y:auto;
+  box-shadow:0 12px 40px rgba(0,0,0,.24);
+  -webkit-overflow-scrolling:touch;
+}
+.detalj-lukk{
+  position:absolute;top:14px;right:16px;
+  background:none;border:none;font-size:28px;line-height:1;
+  color:var(--ink-soft);cursor:pointer;padding:4px 8px;font-family:inherit;
+}
+.detalj-topp{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.detalj-prikk{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.detalj-kal{
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--ink-soft);
+}
+.detalj-tittel{font-size:23px;font-weight:800;line-height:1.25;padding-right:30px}
+.detalj-tid{font-size:15px;font-weight:600;color:var(--blaa);margin-top:6px;font-variant-numeric:tabular-nums}
+.detalj-linje{font-size:14px;margin-top:12px;line-height:1.4}
+.detalj-linje span{
+  display:block;font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--ink-soft);margin-bottom:2px;
+}
+.detalj-notat{
+  margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
+  font-size:14px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;
+}
+.detalj-notat.tom{color:var(--ink-soft);font-style:italic}
 
 /* ---------- Vær ---------- */
 .vaer-naa{display:flex;align-items:center;gap:14px;flex-shrink:0}
@@ -182,6 +223,12 @@ body{
   </button>
   <div class="port-note" id="portNote"></div>
   <a class="port-hjem" id="portHjem" href="./index.html" hidden>Til forsiden</a>
+</div>
+
+<div class="detalj-bak" id="detaljBak" hidden onclick="lukkDetalj()"></div>
+<div class="detalj" id="detalj" hidden>
+  <button class="detalj-lukk" id="detaljLukk" onclick="lukkDetalj()" aria-label="Lukk">×</button>
+  <div id="detaljInn"></div>
 </div>
 
 <div class="skjerm" id="skjerm">
@@ -494,6 +541,32 @@ function kl(d){
   return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
 
+/* Notatfeltet fra Graph kommer som HTML naar avtalen er laget i Outlook.
+   Vi viser ren tekst: DOMParser kjoerer ingen skript og vi setter aldri
+   HTML-en inn i siden. bodyPreview kan ikke brukes — den kuttes ved ~255 tegn. */
+function htmlTilTekst(innhold, type){
+  const s = String(innhold || '');
+  if(!s) return '';
+  if(String(type).toLowerCase() !== 'html') return s.trim();
+  try{
+    const doc = new DOMParser().parseFromString(s, 'text/html');
+    doc.querySelectorAll('br').forEach(function(b){ b.replaceWith('\n'); });
+    doc.querySelectorAll('p,div,li,tr,h1,h2,h3,h4,h5,h6').forEach(function(b){ b.append('\n'); });
+    return (doc.body.textContent || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }catch(e){
+    /* Reserve om DOMParser ikke er tilgjengelig: gjoer blokkslutt til
+       linjeskift foer taggene fjernes, ellers klistres avsnitt sammen. */
+    return s.replace(/<\/(p|div|li|tr|h[1-6])>/gi, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]*>/g, '')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+  }
+}
+
 async function hentPlan(){
   const naa = new Date();
   const start = new Date(naa.getFullYear(), naa.getMonth(), naa.getDate());
@@ -506,7 +579,8 @@ async function hentPlan(){
 
   const q = '?startDateTime=' + start.toISOString()
           + '&endDateTime=' + slutt.toISOString()
-          + '&$orderby=start/dateTime&$top=100';
+          + '&$orderby=start/dateTime&$top=100'
+          + '&$select=subject,isAllDay,start,end,location,body';
 
   /* Maks tre samtidige kall, og en kalender som feiler skal ikke
      stilltiende bli borte — vi sier fra i stedet. */
@@ -524,6 +598,7 @@ async function hentPlan(){
             start: new Date(e.start.dateTime + (e.start.timeZone === 'UTC' ? 'Z' : '')),
             slutt: new Date(e.end.dateTime + (e.end.timeZone === 'UTC' ? 'Z' : '')),
             sted: (e.location && e.location.displayName) || '',
+            notat: htmlTilTekst(e.body && e.body.content, e.body && e.body.contentType),
             farge: c.farge,
             kalender: c.navn
           };
@@ -546,9 +621,12 @@ async function hentPlan(){
   return { avtaler: alle, feilet: feilet };
 }
 
+let dagensAvtaler = [];
+
 function tegnPlan(res){
   const boks = $('plan');
   const avtaler = res.avtaler;
+  dagensAvtaler = avtaler;
 
   $('planBi').textContent = avtaler.length
     ? avtaler.length + (avtaler.length === 1 ? ' avtale' : ' avtaler')
@@ -560,11 +638,12 @@ function tegnPlan(res){
   }
 
   const naa = new Date();
-  boks.innerHTML = avtaler.map(function(e){
+  boks.innerHTML = avtaler.map(function(e, i){
     const forbi = !e.heleDagen && e.slutt < naa;
     const paagaar = !e.heleDagen && e.start <= naa && e.slutt > naa;
     const meta = [e.sted, e.kalender].filter(Boolean).join(' · ');
-    return '<div class="plan-rad' + (forbi ? ' forbi' : '') + (paagaar ? ' naa' : '') + '">'
+    return '<div class="plan-rad' + (forbi ? ' forbi' : '') + (paagaar ? ' naa' : '') + '"'
+      + ' onclick="visDetalj(' + i + ', event)" role="button" tabindex="0">'
       + '<div class="plan-tid' + (e.heleDagen ? ' hel' : '') + '">'
       +   (e.heleDagen ? 'Hele<br>dagen' : esc(kl(e.start)))
       + '</div>'
@@ -573,6 +652,7 @@ function tegnPlan(res){
       +   '<div class="plan-tittel">' + esc(e.tittel) + '</div>'
       +   (meta ? '<div class="plan-meta">' + esc(meta) + '</div>' : '')
       + '</div>'
+      + (e.notat ? '<div class="plan-notatprikk" title="Har notat">●</div>' : '')
       + '</div>';
   }).join('');
 
@@ -580,6 +660,54 @@ function tegnPlan(res){
     boks.innerHTML += '<div class="plan-meta feil" style="padding-top:10px">'
       + res.feilet + ' kalender(e) svarte ikke — prøv Oppdater.</div>';
   }
+}
+
+/* ---- Detaljer for én avtale, som en boble ved siden av raden ---- */
+function visDetalj(i, klikk){
+  const e = dagensAvtaler[i];
+  if(!e) return;
+
+  const tid = e.heleDagen ? 'Hele dagen' : kl(e.start) + '–' + kl(e.slutt);
+
+  let html = '<div class="detalj-topp">'
+    + '<span class="detalj-prikk" style="background:' + e.farge + '"></span>'
+    + '<span class="detalj-kal">' + esc(e.kalender) + '</span>'
+    + '</div>'
+    + '<div class="detalj-tittel">' + esc(e.tittel) + '</div>'
+    + '<div class="detalj-tid">' + esc(tid) + '</div>';
+
+  if(e.sted) html += '<div class="detalj-linje"><span>Sted</span>' + esc(e.sted) + '</div>';
+
+  html += e.notat
+    ? '<div class="detalj-notat">' + esc(e.notat) + '</div>'
+    : '<div class="detalj-notat tom">Ingen notater.</div>';
+
+  const b = $('detalj');
+  $('detaljInn').innerHTML = html;
+  $('detaljBak').hidden = false;
+  b.hidden = false;
+
+  /* Plasser boblen ved raden, og hold den innenfor skjermen. */
+  const mål = (klikk && (klikk.currentTarget || klikk.target)) || null;
+  const r = mål && mål.getBoundingClientRect ? mål.getBoundingClientRect() : null;
+  const bb = b.getBoundingClientRect();
+  const marg = 12;
+
+  let venstre = r ? (r.right + 12) : (innerWidth/2 - bb.width/2);
+  if(venstre + bb.width > innerWidth - marg){
+    venstre = r ? Math.max(marg, r.left - bb.width - 12) : marg;
+  }
+  venstre = Math.max(marg, Math.min(venstre, innerWidth - bb.width - marg));
+
+  let topp = r ? (r.top + r.height/2 - bb.height/2) : (innerHeight/2 - bb.height/2);
+  topp = Math.max(marg, Math.min(topp, innerHeight - bb.height - marg));
+
+  b.style.left = Math.round(venstre) + 'px';
+  b.style.top  = Math.round(topp) + 'px';
+}
+function lukkDetalj(){
+  $('detalj').hidden = true;
+  $('detaljBak').hidden = true;
 }
 
 /* ============================================================
@@ -715,8 +843,14 @@ function visNavn(fulltNavn){
 
 async function oppdaterAlt(manuelt){
   if(S.laster) return;
+  /* Ikke tegn planen om igjen under beina paa noen som leser detaljer —
+     radene ville byttet plass og indeksene pekt feil. */
+  if(!manuelt && !$('detalj').hidden) return;
   S.laster = true;
-  if(manuelt) $('status').textContent = 'Oppdaterer …';
+  if(manuelt){
+    $('status').textContent = 'Oppdaterer …';
+    lukkDetalj();
+  }
 
   /* Hver del feiler for seg — vaeret skal ikke ryke fordi kalenderen gjoer det. */
   const jobber = [
@@ -817,6 +951,10 @@ async function oppdaterAlt(manuelt){
   /* Skjermen staar paa hele dagen — hold den fersk. */
   setInterval(function(){ if(!document.hidden) oppdaterAlt(false); }, 5*60*1000);
 })();
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && !$('detalj').hidden) lukkDetalj();
+});
 
 document.addEventListener('visibilitychange', function(){
   if(!document.hidden){ tegnKlokke(); oppdaterAlt(false); }

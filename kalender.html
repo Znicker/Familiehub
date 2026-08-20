@@ -288,6 +288,45 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .msg.err{color:#B4443A}
 
 /* ---------- Dialogvindu ---------- */
+/* ---------- Detaljboble ---------- */
+.boble-bak{position:fixed;inset:0;z-index:70;background:transparent}
+.boble{
+  position:fixed;z-index:71;
+  background:var(--paper);border-radius:16px;
+  padding:18px 20px 20px;width:min(340px,calc(100vw - 32px));
+  max-height:min(60vh,440px);overflow-y:auto;
+  box-shadow:0 12px 38px rgba(0,0,0,.24);
+  -webkit-overflow-scrolling:touch;
+}
+.boble::after{
+  content:'';position:absolute;width:14px;height:14px;
+  background:var(--paper);transform:rotate(45deg);
+}
+.boble[data-side="ned"]::after{top:-6px;left:var(--peker,24px)}
+.boble[data-side="opp"]::after{bottom:-6px;left:var(--peker,24px)}
+.boble-lukk{
+  position:absolute;top:9px;right:11px;background:none;border:none;
+  font-size:24px;line-height:1;color:var(--ink-soft);cursor:pointer;
+  padding:2px 7px;font-family:inherit;
+}
+.boble-topp{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.boble-prikk{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.boble-kal{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+.boble-tittel{font-size:18px;font-weight:800;line-height:1.25;padding-right:26px}
+.boble-tid{font-size:14px;font-weight:600;color:#4A7FA8;margin-top:4px;font-variant-numeric:tabular-nums}
+.boble-sted{font-size:13px;color:var(--ink-soft);margin-top:5px}
+.boble-notat{
+  margin-top:13px;padding-top:12px;border-top:1px solid var(--line);
+  font-size:14px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;
+}
+.boble-notat.ingen{color:var(--ink-soft);font-style:italic}
+.boble-knapp{
+  margin-top:15px;width:100%;background:var(--ink);color:#fff;border:none;
+  border-radius:999px;padding:11px;font-family:inherit;font-size:13px;
+  font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;
+}
+.boble-knapp:active{opacity:.85}
+
 .veil{
   position:fixed;inset:0;background:rgba(44,62,80,.45);
   display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;
@@ -684,6 +723,12 @@ footer .btn{margin-left:auto}
 </div>
 
 <!-- Dialogvindu for ny/endret avtale -->
+<div class="boble-bak" id="bobleBak" hidden onclick="lukkBoble()"></div>
+<div class="boble" id="boble" hidden>
+  <button class="boble-lukk" onclick="lukkBoble()" aria-label="Lukk">&times;</button>
+  <div id="bobleInn"></div>
+</div>
+
 <div class="veil" id="veil" hidden onclick="if(event.target===this) lukk()">
   <div class="dlg">
     <div class="dlg-head">
@@ -1157,9 +1202,39 @@ function ønsketVindu(){
 /* Henter alle påslåtte kalendere for [a,b).
    Returnerer ett resultat per kalender, med om hentingen faktisk lyktes —
    en kalender som feilet skal ikke forveksles med en som er tom. */
+/* Notatfeltet fra Graph kommer som HTML naar avtalen er laget i Outlook.
+   Vi viser ren tekst: DOMParser kjoerer ingen skript og vi setter aldri
+   HTML-en inn i siden, saa ingenting fra en avtale kan kjoere hos oss.
+   bodyPreview kan ikke brukes — Microsoft kutter den ved ~255 tegn. */
+function htmlTilTekst(innhold, type){
+  const s = String(innhold || '');
+  if(!s) return '';
+  if(String(type).toLowerCase() !== 'html') return s.trim();
+  try{
+    const doc = new DOMParser().parseFromString(s, 'text/html');
+    doc.querySelectorAll('br').forEach(function(b){ b.replaceWith('\n'); });
+    doc.querySelectorAll('p,div,li,tr,h1,h2,h3,h4,h5,h6').forEach(function(b){
+      b.append('\n');
+    });
+    return (doc.body.textContent || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }catch(e){
+    /* Reserve om DOMParser ikke er tilgjengelig: gjoer blokkslutt til
+       linjeskift foer taggene fjernes, ellers klistres avsnitt sammen. */
+    return s.replace(/<\/(p|div|li|tr|h[1-6])>/gi, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]*>/g, '')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+  }
+}
+
 async function hentVindu(a, b){
   const q = '?startDateTime=' + a.toISOString() + '&endDateTime=' + b.toISOString()
-          + '&$orderby=start/dateTime&$top=400';
+          + '&$orderby=start/dateTime&$top=400'
+          + '&$select=subject,isAllDay,start,end,location,body,seriesMasterId,type';
   const aktive = S.calendars.filter(function(c){ return c.on; });
 
   async function hentEn(c){
@@ -1173,7 +1248,7 @@ async function hentVindu(a, b){
           start:new Date(e.start.dateTime + (e.start.timeZone==='UTC'?'Z':'')),
           end:new Date(e.end.dateTime + (e.end.timeZone==='UTC'?'Z':'')),
           where:(e.location && e.location.displayName) || '',
-          note:e.bodyPreview || '',
+          note: htmlTilTekst(e.body && e.body.content, e.body && e.body.contentType),
           serie:!!e.seriesMasterId || e.type==='occurrence' || e.type==='exception',
           calId:c.id, color:c.color, calName:c.name, kanEndre:c.kanEndre
         };
@@ -1318,7 +1393,7 @@ function fyllAvtaler(){
       if(erStart) band.textContent = e.title;      /* tittel ved start/ukestart */
       band.title = e.title;
       band.style.cursor = 'pointer';
-      band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; endreAvtale(e.id); };
+      band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; visBoble(e.id, ev); };
       band.addEventListener('touchstart', function(ev){ ev.stopPropagation(); }, {passive:true});
       band.addEventListener('mousedown',  function(ev){ ev.stopPropagation(); });
       return band;
@@ -1531,7 +1606,7 @@ function renderDay(){
       : pad(e.start.getHours())+'.'+pad(e.start.getMinutes())
         + '<br>' + pad(e.end.getHours())+'.'+pad(e.end.getMinutes());
     const meta = [e.calName, e.where].filter(Boolean).join(' · ');
-    return '<div class="ev klikk" onclick="endreAvtale(\''+e.id+'\')">'
+    return '<div class="ev klikk" onclick="visBoble(\''+e.id+'\', event)">'
       + '<div class="ev-time">'+time+'</div>'
       + '<div class="ev-body">'
       +   '<div class="ev-title">'+esc(e.title)+'</div>'
@@ -1679,6 +1754,7 @@ async function refresh(){ return last(true); }
 
 /* Rask bladding: tegn straks fra cachen, hent i bakgrunnen kun ved behov */
 function naviger(){
+  lukkBoble();
   fyllFraCache();
   render();
   last(false);
@@ -1731,6 +1807,68 @@ function nyAvtale(time, minutt, calId){
   $('btnLagre').disabled = !antall;
   $('veil').hidden = false;
   setTimeout(function(){ $('fTitle').focus(); }, 60);
+}
+
+/* ---------- Detaljboble ----------
+   Viser hele notatet uten aa aapne redigeringsskjemaet. */
+function lukkBoble(){
+  $('boble').hidden = true;
+  $('bobleBak').hidden = true;
+}
+
+function visBoble(id, klikk){
+  const e = S.events.filter(function(x){ return x.id === id; })[0];
+  if(!e) return;
+
+  const tid = e.allDay
+    ? 'Hele dagen'
+    : tid2str(e.start) + '–' + tid2str(e.end);
+
+  let html = '<div class="boble-topp">'
+    + '<span class="boble-prikk" style="background:' + e.color + '"></span>'
+    + '<span class="boble-kal">' + esc(e.calName) + '</span>'
+    + '</div>'
+    + '<div class="boble-tittel">' + esc(e.title) + '</div>'
+    + '<div class="boble-tid">' + esc(tid) + '</div>'
+    + (e.where ? '<div class="boble-sted">' + esc(e.where) + '</div>' : '')
+    + (e.note
+        ? '<div class="boble-notat">' + esc(e.note) + '</div>'
+        : '<div class="boble-notat ingen">Ingen notater.</div>');
+
+  if(e.kanEndre){
+    html += '<button class="boble-knapp" onclick="lukkBoble(); endreAvtale(\''
+      + e.id.replace(/'/g, "\\'") + '\')">Endre avtale</button>';
+  }
+
+  const b = $('boble');
+  $('bobleInn').innerHTML = html;
+  $('bobleBak').hidden = false;
+  b.hidden = false;
+
+  /* Plasser boblen ved siden av det som ble trykket, og hold den
+     innenfor skjermen. Peker settes der det er plass. */
+  const mål = (klikk && (klikk.currentTarget || klikk.target)) || null;
+  const r = mål && mål.getBoundingClientRect ? mål.getBoundingClientRect() : null;
+  const bb = b.getBoundingClientRect();
+  const marg = 10;
+
+  let venstre = r ? (r.left + r.width/2 - bb.width/2) : (innerWidth/2 - bb.width/2);
+  venstre = Math.max(marg, Math.min(venstre, innerWidth - bb.width - marg));
+
+  let topp, side;
+  if(r && (r.bottom + bb.height + 14 < innerHeight)){
+    topp = r.bottom + 10; side = 'ned';
+  } else if(r && (r.top - bb.height - 14 > 0)){
+    topp = r.top - bb.height - 10; side = 'opp';
+  } else {
+    topp = Math.max(marg, innerHeight/2 - bb.height/2); side = 'ned';
+  }
+
+  b.style.left = Math.round(venstre) + 'px';
+  b.style.top  = Math.round(topp) + 'px';
+  b.dataset.side = side;
+  const senter = r ? (r.left + r.width/2 - venstre) : bb.width/2;
+  b.style.setProperty('--peker', Math.round(Math.max(16, Math.min(senter - 7, bb.width - 30))) + 'px');
 }
 
 function endreAvtale(id){
@@ -1795,9 +1933,16 @@ function bygg(){
   const p = {
     subject: tittel,
     isAllDay: heleDagen,
-    location: { displayName: $('fWhere').value.trim() },
-    body: { contentType:'text', content: $('fNote').value.trim() }
+    location: { displayName: $('fWhere').value.trim() }
   };
+
+  /* Notatet sendes bare naar det faktisk er endret. Rikt formaterte
+     notater fra Outlook ville ellers blitt flatet ut til ren tekst
+     hver eneste gang noen justerte klokkeslettet. */
+  const notatNaa = $('fNote').value.trim();
+  if(!redigerer || notatNaa !== String(redigerer.note || '').trim()){
+    p.body = { contentType:'text', content: notatNaa };
+  }
 
   if(heleDagen){
     const d2 = $('fDate2').value || d1;
@@ -1985,7 +2130,7 @@ function renderUke(medNotat, dager){
         if(erSlutt) band.classList.add('e');
         if(erStart) band.textContent = e.title;
         band.title = e.title;
-        band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; endreAvtale(e.id); };
+        band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; visBoble(e.id, ev); };
         langtTrykk(band, function(){ endreAvtale(e.id); });
         band.addEventListener('touchstart', function(ev){ ev.stopPropagation(); }, {passive:true});
         band.addEventListener('mousedown',  function(ev){ ev.stopPropagation(); });
@@ -2010,8 +2155,7 @@ function renderUke(medNotat, dager){
         chip.onclick = function(ev){
           ev.stopPropagation();
           if(skjulTrykk) return;
-          if(note) chip.classList.toggle('open');   /* Plan: ett trykk = utvid notat */
-          else endreAvtale(e.id);                    /* ellers: rediger */
+          visBoble(e.id, ev);            /* ett trykk = detaljer med hele notatet */
         };
         langtTrykk(chip, function(){ endreAvtale(e.id); });
         chip.addEventListener('touchstart', function(ev){ ev.stopPropagation(); }, {passive:true});
@@ -2257,7 +2401,7 @@ function renderTid(){
         chip.style.background = e.color;
         chip.textContent = e.title;
         chip.title = e.title;
-        chip.onclick = function(ev){ ev.stopPropagation(); endreAvtale(e.id); };
+        chip.onclick = function(ev){ ev.stopPropagation(); visBoble(e.id, ev); };
         col.appendChild(chip);
       });
       all.appendChild(col);
@@ -2327,7 +2471,7 @@ function renderTid(){
       if(hoy >= 62 && p.e.where) html += '<div class="tg-ev-w">' + esc(p.e.where) + '</div>';
       boks.innerHTML = html;
       boks.title = p.e.title;
-      boks.onclick = function(ev){ ev.stopPropagation(); endreAvtale(p.e.id); };
+      boks.onclick = function(ev){ ev.stopPropagation(); visBoble(p.e.id, ev); };
       col.appendChild(boks);
     });
 
@@ -2486,7 +2630,7 @@ function dagMeny(d){
     row.innerHTML = '<span class="dagpop-dot" style="background:'+e.color+'"></span>'
       + '<span class="dagpop-tid">'+esc(tid)+'</span>'
       + '<span class="dagpop-navn">'+esc(e.title)+'</span>';
-    row.onclick = function(){ lukkDagMeny(); endreAvtale(e.id); };
+    row.onclick = function(ev){ lukkDagMeny(); visBoble(e.id, ev); };
     liste.appendChild(row);
   });
   card.appendChild(liste);
