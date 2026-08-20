@@ -2689,15 +2689,12 @@ async function calludeEttForsok(system, content, maxTokens){
   return textBlocks.join('\n').trim();
 }
 
-/* Målt oppførsel i artifact-miljøet: max_tokens 4000 gir tomt svar med HTTP 200,
-   mens 2000 går gjennom. Trolig en tidsgrense i mellomleddet - lange svar tar for
-   lang tid å generere. Men 2000 er samtidig i minste laget: den største oppskriften
-   i samlingen trenger drøyt 2000 tokens, og ville blitt kuttet.
-
-   Derfor en trapp: start på det oppgitte taket, fall ned ved tomt svar. Blir svaret
-   kuttet på veien, sier vi fra om det i stedet for å levere halve data.
-   Hele denne trappa kan fjernes når appen står på egen hosting. */
-const AI_TRAPP = [3000, 2000, 1400];
+/* Appen kjører nå på egen hosting (Cloudflare Pages Function + Workers Paid),
+   så den gamle lave taket fra Claude.ai sin forhåndsvisning trengs ikke lenger.
+   Ett høyt tak er nok for så godt som alle oppskrifter; stigen under er bare et
+   sikkerhetsnett for de aller lengste, og forsøkene på hvert trinn tar fortsatt
+   forbigående feil (nettverk, overbelastet API) som før. */
+const AI_TRAPP = [8000];
 
 async function callClaudeText(system, content, maxTokens){
   const trapp = AI_TRAPP.filter(t => t <= (maxTokens || 3000));
@@ -2733,7 +2730,7 @@ async function callClaudeText(system, content, maxTokens){
    så fremgangsmåten for seg. To korte svar i stedet for ett langt. */
 async function callRecipeExtractAI(userText){
   try{
-    const raw = await callClaudeText(RECIPE_EXTRACT_SYSTEM, userText, 3000);
+    const raw = await callClaudeText(RECIPE_EXTRACT_SYSTEM, userText, 8000);
     return JSON.parse(extractBalancedJsonObject(raw));
   }catch(e){
     if(!e.tomtHeleVeien) throw e;
@@ -2746,13 +2743,13 @@ async function callRecipeExtractDelt(userText){
   const utenSteps = await callClaudeText(
     RECIPE_EXTRACT_SYSTEM,
     userText + '\n\nVIKTIG: Utelat "steps" helt denne gangen. Sett "steps": [] og ta med alle de andre feltene som normalt.',
-    2000);
+    4000);
   const del1 = JSON.parse(extractBalancedJsonObject(utenSteps));
 
   const baresteps = await callClaudeText(
     RECIPE_EXTRACT_SYSTEM,
     userText + '\n\nVIKTIG: Returner KUN fremgangsmåten denne gangen, som {"steps": [string, ...]}. Utelat alle andre felter.',
-    2000);
+    4000);
   const del2 = JSON.parse(extractBalancedJsonObject(baresteps));
 
   del1.steps = Array.isArray(del2.steps) ? del2.steps : [];
@@ -2890,7 +2887,7 @@ async function submitPhysicalImport(){
 
   try{
     const raw = await callClaudeText(PHYSICAL_EXTRACT_SYSTEM,
-      [...imageContent, { type: 'text', text: 'Les oppskriftskortet/-kortene og returner JSON som spesifisert.' }], 3000);
+      [...imageContent, { type: 'text', text: 'Les oppskriftskortet/-kortene og returner JSON som spesifisert.' }], 8000);
     const parsed = JSON.parse(extractBalancedJsonObject(raw));
 
     closePhysicalImportModal();
@@ -3600,7 +3597,7 @@ async function callAllergenNutritionSmart(items, baseServingsVal){
 
 async function callAllergenNutritionAI(listText, baseServingsVal){
   const raw = await callClaudeText(ALLERGEN_NUTRITION_SYSTEM,
-    `Ingrediensliste (oppskriften gir ${baseServingsVal} porsjoner totalt):\n${listText}\n\nReturner JSON som spesifisert.`, 3000);
+    `Ingrediensliste (oppskriften gir ${baseServingsVal} porsjoner totalt):\n${listText}\n\nReturner JSON som spesifisert.`, 8000);
   const rawJsonBlock = extractBalancedJsonObject(raw);
   // Prøv flere reparasjoner av vanlige AI-genererte JSON-glipper før vi gir opp:
   // hengende komma før } eller ], og feiltastet ">" i stedet for ":" etter et feltnavn.
