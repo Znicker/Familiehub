@@ -1079,7 +1079,25 @@ async function graph(path, method, payload){
     opt.headers['Content-Type'] = 'application/json';
     opt.body = JSON.stringify(payload);
   }
-  const r = await fetch(GRAPH + path, opt);
+
+  /* Microsoft struper oss (429) naar flere kalendere hentes samtidig.
+     Da venter vi tiden de ber om og proever igjen, i stedet for aa la
+     kalenderen falle ut av visningen. Kun for lesing — vi vil ikke
+     risikere aa opprette samme avtale to ganger. */
+  const kanProeveIgjen = !method || method === 'GET';
+  let forsoek = 0;
+  let r;
+  while(true){
+    r = await fetch(GRAPH + path, opt);
+    if(!kanProeveIgjen || forsoek >= 3) break;
+    if(r.status !== 429 && r.status !== 503 && r.status !== 504) break;
+    const vent = parseInt(r.headers.get('Retry-After') || '', 10);
+    const ms = (isFinite(vent) && vent > 0) ? Math.min(vent * 1000, 8000)
+                                            : 500 * Math.pow(2, forsoek);
+    await new Promise(function(ok){ setTimeout(ok, ms); });
+    forsoek++;
+  }
+
   if(r.status === 204) return null;                 // sletting gir tomt svar
   const txt = await r.text();
   if(!txt) return null;
@@ -1136,18 +1154,18 @@ function ønsketVindu(){
   return [new Date(y, m-1, 1), new Date(y, m+2, 1)];    /* 3 måneder */
 }
 
-/* Henter alle påslåtte kalendere for [a,b) og returnerer en flat liste */
+/* Henter alle påslåtte kalendere for [a,b).
+   Returnerer ett resultat per kalender, med om hentingen faktisk lyktes —
+   en kalender som feilet skal ikke forveksles med en som er tom. */
 async function hentVindu(a, b){
   const q = '?startDateTime=' + a.toISOString() + '&endDateTime=' + b.toISOString()
           + '&$orderby=start/dateTime&$top=400';
   const aktive = S.calendars.filter(function(c){ return c.on; });
-  /* Hent alle påslåtte kalendere samtidig i stedet for én etter én —
-     det er ventetiden på nettverket, ikke selve arbeidet, som dominerer,
-     så parallelle kall kutter lastetiden betraktelig ved flere kalendere. */
-  const resultater = await Promise.all(aktive.map(async function(c){
+
+  async function hentEn(c){
     try{
       const d = await graph('/me/calendars/' + c.id + '/calendarView' + q);
-      return (d.value||[]).map(function(e){
+      const events = (d.value||[]).map(function(e){
         return {
           id:e.id,
           title:e.subject || '(uten tittel)',
@@ -1160,12 +1178,23 @@ async function hentVindu(a, b){
           calId:c.id, color:c.color, calName:c.name, kanEndre:c.kanEndre
         };
       });
+      return { calId:c.id, ok:true, events:events };
     }catch(err){
       console.warn('Kalender «'+c.name+'»:', err.message);
-      return [];
+      return { calId:c.id, ok:false, events:[] };
     }
-  }));
-  return resultater.flat();
+  }
+
+  /* Parallelt, men ikke alle på én gang — for mange samtidige kall mot
+     Graph gir struping, som var årsaken til at avtaler forsvant. */
+  const GRENSE = 3;
+  const resultater = [];
+  for(let i = 0; i < aktive.length; i += GRENSE){
+    const bolk = aktive.slice(i, i + GRENSE);
+    const svar = await Promise.all(bolk.map(hentEn));
+    svar.forEach(function(s){ resultater.push(s); });
+  }
+  return resultater;
 }
 
 /* Dekker cachen gjeldende visning? (riktig periode + alle påslåtte kalendere) */
@@ -1181,11 +1210,29 @@ function cacheDekker(){
 async function sikreCache(force){
   if(!force && cacheDekker()) return false;
   const v = ønsketVindu();
-  const events = await hentVindu(v[0], v[1]);
-  S.all = events;
+  const resultater = await hentVindu(v[0], v[1]);
+
+  /* En kalender som feilet skal ikke tømmes i visningen. Vi beholder det
+     vi hadde fra før, og lar den staa som ikke-lastet slik at neste
+     oppdatering forsoeker paa nytt. Uten dette forsvant avtaler og kom
+     tilbake igjen tilsynelatende tilfeldig. */
+  const feilet = {};
+  resultater.forEach(function(r){ if(!r.ok) feilet[r.calId] = 1; });
+
+  const nye = [];
+  resultater.forEach(function(r){
+    if(r.ok) r.events.forEach(function(e){ nye.push(e); });
+  });
+  if(Object.keys(feilet).length){
+    (S.all || []).forEach(function(e){
+      if(feilet[e.calId]) nye.push(e);
+    });
+  }
+
+  S.all = nye;
   S.loaded = v;
-  S.loadedIds = new Set(S.calendars.filter(function(c){ return c.on; })
-                                   .map(function(c){ return c.id; }));
+  S.loadedIds = new Set(resultater.filter(function(r){ return r.ok; })
+                                  .map(function(r){ return r.calId; }));
   return true;
 }
 
