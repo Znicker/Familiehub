@@ -759,8 +759,73 @@ const GRAPH     = 'https://graph.microsoft.com/v1.0';
 
 const PALETTE = ['#2C3E50','#B4443A','#3E7C5A','#8A6BB1','#C08A2E','#4A7FA8','#A05A7A','#5A6C7D'];
 const FARGER  = ['#2C3E50','#4A7FA8','#2E8B8B','#3E7C5A','#5AA469','#C08A2E','#D98032','#B4443A','#C65B7C','#8A6BB1','#7A8B2E','#5A6C7D'];
-let fargeValg = {};
-try{ fargeValg = JSON.parse(localStorage.getItem('fh_cal_farger') || '{}') || {}; }catch(e){ fargeValg = {}; }
+
+/* Standardfarger — brukes til en admin eventuelt overstyrer dem.
+   Nøkkelen er kalendernavnet, ikke id-en: hver bruker ser de delte
+   kalenderne med ulik id, men samme navn. */
+const FASTE_FARGER = {
+  'Familie': '#2C3E50',
+  'Magne'  : '#4A7FA8',
+  'Nina'   : '#B4443A',
+  'Emma'   : '#8A6BB1',
+  'Andrea' : '#C65B7C'
+};
+
+/* Bare disse kan endre farger. Alle andre ser dem, men kan ikke røre dem. */
+const FARGE_ADMIN = ['sys@neam.no', 'magne@neam.no'];
+const FARGE_KEY   = 'kal-farger';        /* i KV: fh:kal-farger */
+
+let fargeOverstyring = {};   /* navn -> hex, hentet fra Cloudflare KV */
+let erFargeAdmin    = false;
+let minEpost        = null;
+
+/* Gjeldende farge for en kalender: overstyring → standard → palett */
+function kalenderFarge(navn, i){
+  return fargeOverstyring[navn] || FASTE_FARGER[navn] || PALETTE[i % PALETTE.length];
+}
+
+/* ---- Identitet fra Cloudflare Access ---- */
+async function hentIdentitet(){
+  try{
+    const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), {cache:'no-store'});
+    if(!r.ok) return;
+    const d = await r.json();
+    minEpost = (d.email || '').toLowerCase();
+    erFargeAdmin = FARGE_ADMIN.indexOf(minEpost) !== -1;
+  }catch(e){ /* uten Access: ingen admin-rettigheter */ }
+}
+
+/* ---- Felles farger i Cloudflare KV ---- */
+async function hentFarger(){
+  try{
+    const r = await fetch('/api/data?key=' + FARGE_KEY, {cache:'no-store'});
+    if(!r.ok) return;                      /* 404 = ikke satt ennå, bruk standard */
+    const txt = await r.text();
+    if(!txt) return;
+    let d = JSON.parse(txt);
+    if(d && typeof d === 'object' && d.value !== undefined){
+      d = (typeof d.value === 'string') ? JSON.parse(d.value) : d.value;
+    }
+    if(d && typeof d === 'object') fargeOverstyring = d;
+  }catch(e){ console.warn('Kunne ikke hente farger:', e.message); }
+}
+async function lagreFarger(){
+  try{
+    await fetch('/api/data?key=' + FARGE_KEY, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(fargeOverstyring)
+    });
+  }catch(e){ console.warn('Kunne ikke lagre farger:', e.message); }
+}
+
+/* Husk hvilke kalendere som er slått på/av, per enhet. */
+const KAL_VALG_KEY = 'fh_cal_valgt';
+let kalenderValg = {};
+try{ kalenderValg = JSON.parse(localStorage.getItem(KAL_VALG_KEY) || '{}') || {}; }catch(e){ kalenderValg = {}; }
+function lagreKalenderValg(){
+  try{ localStorage.setItem(KAL_VALG_KEY, JSON.stringify(kalenderValg)); }catch(e){}
+}
 
 const S = {
   token:null, expires:0, refresh:null,
@@ -911,12 +976,18 @@ function loadTokens(){
     return !!(S.token || S.refresh);
   }catch(e){ return false; }
 }
+let fornyelsePågår = null;
 async function validToken(){
   if(S.token && Date.now() < S.expires) return S.token;
   if(!S.refresh) return null;
-  const d = await exchange({grant_type:'refresh_token', refresh_token:S.refresh, scope:CFG.scopes});
-  saveTokens(d);
-  return S.token;
+  /* Flere kalendere kan be om token samtidig — gjenbruk samme
+     fornyelse i stedet for å sende flere refresh-kall parallelt. */
+  if(!fornyelsePågår){
+    fornyelsePågår = exchange({grant_type:'refresh_token', refresh_token:S.refresh, scope:CFG.scopes})
+      .then(function(d){ saveTokens(d); return S.token; })
+      .finally(function(){ fornyelsePågår = null; });
+  }
+  return fornyelsePågår;
 }
 function logout(){
   localStorage.removeItem('fh_cal_auth');
@@ -981,10 +1052,11 @@ async function loadCalendars(){
   const prev = {};
   S.calendars.forEach(function(c){ prev[c.id] = c.on; });
   S.calendars = (d.value||[]).map(function(c,i){
+    const husket = kalenderValg[c.id];
     return {
-      id:c.id, name:c.name, color: fargeValg[c.id] || PALETTE[i % PALETTE.length],
+      id:c.id, name:c.name, color: kalenderFarge(c.name, i),
       kanEndre: c.canEdit !== false,
-      on: prev[c.id] !== undefined ? prev[c.id] : true
+      on: prev[c.id] !== undefined ? prev[c.id] : (husket !== undefined ? husket : true)
     };
   });
 }
@@ -1022,13 +1094,15 @@ function ønsketVindu(){
 async function hentVindu(a, b){
   const q = '?startDateTime=' + a.toISOString() + '&endDateTime=' + b.toISOString()
           + '&$orderby=start/dateTime&$top=400';
-  const all = [];
-  for(const c of S.calendars){
-    if(!c.on) continue;
+  const aktive = S.calendars.filter(function(c){ return c.on; });
+  /* Hent alle påslåtte kalendere samtidig i stedet for én etter én —
+     det er ventetiden på nettverket, ikke selve arbeidet, som dominerer,
+     så parallelle kall kutter lastetiden betraktelig ved flere kalendere. */
+  const resultater = await Promise.all(aktive.map(async function(c){
     try{
       const d = await graph('/me/calendars/' + c.id + '/calendarView' + q);
-      (d.value||[]).forEach(function(e){
-        all.push({
+      return (d.value||[]).map(function(e){
+        return {
           id:e.id,
           title:e.subject || '(uten tittel)',
           allDay:!!e.isAllDay,
@@ -1038,11 +1112,14 @@ async function hentVindu(a, b){
           note:e.bodyPreview || '',
           serie:!!e.seriesMasterId || e.type==='occurrence' || e.type==='exception',
           calId:c.id, color:c.color, calName:c.name, kanEndre:c.kanEndre
-        });
+        };
       });
-    }catch(err){ console.warn('Kalender «'+c.name+'»:', err.message); }
-  }
-  return all;
+    }catch(err){
+      console.warn('Kalender «'+c.name+'»:', err.message);
+      return [];
+    }
+  }));
+  return resultater.flat();
 }
 
 /* Dekker cachen gjeldende visning? (riktig periode + alle påslåtte kalendere) */
@@ -1391,19 +1468,25 @@ function renderCalList(){
   const vis = S.calendars;
 
   let html = vis.map(function(c){
-    const palett = FARGER.map(function(hex){
+    /* Bare sys@ og magne@ får fargevelger — alle andre ser bare prikken. */
+    const swatch = erFargeAdmin
+      ? '<button class="cal-swatch" style="background:'+c.color+'" title="Endre farge"'
+        + ' onclick="event.stopPropagation(); vekslPalett(this)"></button>'
+      : '<span class="cal-swatch" style="background:'+c.color+'"></span>';
+
+    const palett = erFargeAdmin ? FARGER.map(function(hex){
       const valgt = (String(c.color).toLowerCase() === hex.toLowerCase()) ? ' valgt' : '';
       return '<button class="farge'+valgt+'" style="background:'+hex+'" title="'+hex+'"'
-        + ' onclick="event.stopPropagation(); settFarge(this.closest(\'.cal-rad\').dataset.id,\''+hex+'\')"></button>';
-    }).join('');
-    return '<div class="cal-rad" data-id="'+c.id+'">'
+        + ' onclick="event.stopPropagation(); settFarge(this.closest(\'.cal-rad\').dataset.navn,\''+hex+'\')"></button>';
+    }).join('') : '';
+
+    return '<div class="cal-rad" data-id="'+c.id+'" data-navn="'+esc(c.name)+'">'
       + '<div class="cal-row'+(c.on?'':' off')+'" onclick="event.stopPropagation(); toggleCal(\''+c.id+'\')">'
-      +   '<button class="cal-swatch" style="background:'+c.color+'" title="Endre farge"'
-      +     ' onclick="event.stopPropagation(); vekslPalett(this)"></button>'
+      +   swatch
       +   '<span class="cal-name">'+esc(c.name)+'</span>'
       +   '<span class="cal-count">'+(c.on ? tell(c) : '—')+'</span>'
       + '</div>'
-      + '<div class="cal-palett" hidden>'+palett+'</div>'
+      + (erFargeAdmin ? '<div class="cal-palett" hidden>'+palett+'</div>' : '')
       + '</div>';
   }).join('');
 
@@ -1465,6 +1548,8 @@ async function toggleCal(id){
   const c = S.calendars.filter(function(x){ return x.id===id; })[0];
   if(!c) return;
   c.on = !c.on;
+  kalenderValg[id] = c.on;
+  lagreKalenderValg();
   fyllFraCache();          /* av-slag vises straks; på-slag hentes under */
   render();
   last(false);             /* henter kun hvis en ny kalender mangler i cachen */
@@ -1862,22 +1947,25 @@ function settVis(v){
   naviger();
 }
 
-/* Fargevelger per kalender */
+/* ---- Fargevelger — kun for sys@neam.no og magne@neam.no ---- */
 function vekslPalett(el){
+  if(!erFargeAdmin) return;
   const p = el.closest('.cal-rad').querySelector('.cal-palett');
   if(p) p.hidden = !p.hidden;
 }
-function settFarge(id, hex){
-  const c = S.calendars.filter(function(x){ return x.id === id; })[0];
-  if(!c) return;
-  c.color = hex;
-  fargeValg[id] = hex;
-  try{ localStorage.setItem('fh_cal_farger', JSON.stringify(fargeValg)); }catch(e){}
+async function settFarge(navn, hex){
+  if(!erFargeAdmin) return;
+  fargeOverstyring[navn] = hex;
+  /* Oppdater alt som allerede er tegnet, så endringen vises umiddelbart */
+  S.calendars.forEach(function(c){ if(c.name === navn) c.color = hex; });
   [S.all, S.events].forEach(function(arr){
-    (arr || []).forEach(function(e){ if(e.calId === id) e.color = hex; });
+    (arr || []).forEach(function(e){ if(e.calName === navn) e.color = hex; });
   });
   render();
+  await lagreFarger();       /* deles med alle via Cloudflare KV */
 }
+
+
 
 /* Avtaler som gjelder en dag (bånd-avtaler dekker hver dag de spenner over) */
 function planEvs(d){
@@ -2398,7 +2486,13 @@ window.addEventListener('resize', function(){
 
   render();
   if(S.token || S.refresh){
-    try{ await loadMe(); }catch(e){}
+    /* Identitet og felles farger hentes samtidig med brukerinfo —
+       de er små kall og skal ikke forsinke kalenderlastingen. */
+    await Promise.all([
+      loadMe().catch(function(){}),
+      hentIdentitet(),
+      hentFarger()
+    ]);
     render();
     await refresh();
   }
