@@ -799,7 +799,7 @@ function normEpost(s){
   return s;
 }
 
-/* ---- Identitet fra Cloudflare Access ---- */
+/* ---- Identitet fra Cloudflare Access (kun til rettigheter) ---- */
 async function hentIdentitet(){
   try{
     const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), {cache:'no-store'});
@@ -807,19 +807,18 @@ async function hentIdentitet(){
     const d = await r.json();
     minEpost = normEpost(d.email || '');
     erFargeAdmin = FARGE_ADMIN.indexOf(minEpost) !== -1;
-    visNavn(d.name || '');
-  }catch(e){ /* uten Access: ingen admin-rettigheter, intet navn */ }
+  }catch(e){ /* uten Access: ingen admin-rettigheter */ }
 }
 
-/* Fornavn under logoen. Bruker navnet fra Access hvis det finnes,
-   ellers delen foran @ i e-postadressen. */
+/* Fornavn under logoen. Kilden er Microsoft Graph, ikke Access —
+   Access-sesjonen kan henge igjen som forrige bruker ved brukerbytte,
+   mens Graph-navnet er riktig hver gang. Lagres slik at oppskrifter
+   og handleliste kan bruke det ogsaa. */
 function visNavn(fulltNavn){
-  let navn = String(fulltNavn || '').trim().split(/\s+/)[0] || '';
-  if(!navn && minEpost) navn = minEpost.split('@')[0];
-  if(!navn) return;
-  navn = navn.charAt(0).toUpperCase() + navn.slice(1).toLowerCase();
+  const fullt = String(fulltNavn || '').trim();
   const el = $('brandNavn');
-  if(el) el.textContent = navn;
+  if(el) el.textContent = fullt.split(/\s+/)[0] || '';
+  try{ if(fullt) localStorage.setItem('fh_navn', fullt); }catch(e){}
 }
 
 /* ---- Felles farger i Cloudflare KV ---- */
@@ -1034,6 +1033,9 @@ function nullstillLokalt(){
    egen side, som allerede er registrert, og tar Access-utloggingen der. */
 function loggUt(){
   nullstillLokalt();
+  try{ localStorage.removeItem('fh_navn'); }catch(_){}
+  const el = $('brandNavn');
+  if(el) el.textContent = '';
   try{ sessionStorage.setItem('fh_ut', '1'); }catch(_){}
   location.href = 'https://login.microsoftonline.com/common/oauth2/v2.0/logout?post_logout_redirect_uri=' +
     encodeURIComponent(location.origin + location.pathname);
@@ -1086,7 +1088,10 @@ async function graph(path, method, payload){
   if(!r.ok) throw new Error((data.error && data.error.message) || 'Graph-feil');
   return data;
 }
-async function loadMe(){ S.me = await graph('/me'); }
+async function loadMe(){
+  S.me = await graph('/me');
+  visNavn(S.me && S.me.displayName);
+}
 
 async function loadCalendars(){
   const d = await graph('/me/calendars?$top=50');
@@ -2498,6 +2503,16 @@ window.addEventListener('resize', function(){
 })();
 
 (async function init(){
+  /* Vis et eventuelt lagret navn straks, saa det ikke staar tomt mens
+     Graph-kallet paagaar. Overskrives naar det ekte svaret kommer. */
+  try{
+    const lagret = localStorage.getItem('fh_navn');
+    if(lagret){
+      const el = $('brandNavn');
+      if(el) el.textContent = String(lagret).trim().split(/\s+/)[0] || '';
+    }
+  }catch(e){}
+
   const q = new URLSearchParams(location.search);
 
   if(q.get('error')){

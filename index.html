@@ -404,7 +404,7 @@ async function gyldigToken(){
   return A.token;
 }
 function loggUt(){
-  try{ localStorage.removeItem('fh_cal_auth'); sessionStorage.clear(); }catch(_){}
+  try{ localStorage.removeItem('fh_cal_auth'); localStorage.removeItem('fh_navn'); sessionStorage.clear(); }catch(_){}
   A.token = null; A.refresh = null; A.me = null; A.expires = 0;
   /* To sesjoner maa avsluttes: Microsoft-kontoen og Cloudflare Access.
      Vi kan ikke sende Microsoft rett til /cdn-cgi/access/logout, for den
@@ -442,7 +442,13 @@ function slippInn(){
   s.hidden = false;
   s.style.display = '';
   if(A.me){
-    document.getElementById('hvem').textContent = A.me.displayName || 'Familie Hub';
+    const fullt = A.me.displayName || '';
+    document.getElementById('hvem').textContent = fullt || 'Familie Hub';
+    /* Samme kilde som bunnteksten — den er riktig hver gang.
+       Lagres slik at oppskrifter og handleliste kan bruke den ogsaa,
+       siden de ikke selv snakker med Microsoft Graph. */
+    if(typeof settToppNavn === 'function') settToppNavn(fullt);
+    try{ if(fullt) localStorage.setItem('fh_navn', fullt); }catch(_){}
   }
   start();
 }
@@ -655,18 +661,23 @@ document.addEventListener('visibilitychange', () => {
 });
 </script>
 <script>
-(async function(){
-  try{
-    const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), { headers: { Accept: 'application/json' }, cache: 'no-store' });
-    if(!r.ok) return;
-    const id = await r.json();
-    const epost = (id.email || id.name || '').trim();
-    if(!epost) return;
-    let navn = epost.split('@')[0].replace(/[._-]+/g,' ').trim();
-    navn = navn.charAt(0).toUpperCase() + navn.slice(1);
-    const el = document.getElementById('innlogget-navn');
-    if(el) el.textContent = navn;
-  }catch(_){}
+/* Fornavnet under logoen. Kilden er Microsoft Graph, ikke Cloudflare
+   Access — Access-sesjonen kan henge igjen som forrige bruker ved
+   brukerbytte, mens Graph-navnet er riktig hver gang.
+   Graph-navnet hentes i skriptet over og lagres i localStorage. */
+function settToppNavn(fulltNavn){
+  const el = document.getElementById('innlogget-navn');
+  if(!el) return;
+  const fornavn = String(fulltNavn || '').trim().split(/\s+/)[0] || '';
+  el.textContent = fornavn;
+}
+
+/* Vis et eventuelt lagret navn med en gang, saa det ikke blinker tomt
+   mens Graph-kallet paagaar. Overskrives naar det ekte svaret kommer. */
+(function(){
+  let lagret = null;
+  try{ lagret = localStorage.getItem('fh_navn'); }catch(_){}
+  if(lagret) settToppNavn(lagret);
 })();
 </script>
 </body>

@@ -6171,23 +6171,22 @@ document.addEventListener('visibilitychange', async () => {
 });
 </script>
 <script>
-(async function(){
-  try{
-    const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), { headers: { Accept: 'application/json' }, cache: 'no-store' });
-    if(!r.ok) return;
-    const id = await r.json();
-    const epost = (id.email || id.name || '').trim();
-    if(!epost) return;
-    let navn = epost.split('@')[0].replace(/[._-]+/g,' ').trim();
-    navn = navn.charAt(0).toUpperCase() + navn.slice(1);
-    const el = document.getElementById('innlogget-navn');
-    if(el) el.textContent = navn;
-  }catch(_){}
+/* Fornavnet under logoen. Kilden er Microsoft Graph, ikke Cloudflare
+   Access - Access-sesjonen kan henge igjen som forrige bruker ved
+   brukerbytte, mens Graph-navnet er riktig hver gang. Denne siden
+   snakker ikke selv med Graph, saa vi bruker navnet som index.html
+   og kalender.html lagrer naar de henter det. */
+(function(){
+  let lagret = null;
+  try{ lagret = localStorage.getItem('fh_navn'); }catch(_){}
+  if(!lagret) return;
+  const el = document.getElementById('innlogget-navn');
+  if(el) el.textContent = String(lagret).trim().split(/\s+/)[0] || '';
 })();
 </script>
 <script>
 function loggUt(){
-  try{ localStorage.removeItem('fh_cal_auth'); sessionStorage.clear(); }catch(_){}
+  try{ localStorage.removeItem('fh_cal_auth'); localStorage.removeItem('fh_navn'); sessionStorage.clear(); }catch(_){}
   /* To sesjoner maa avsluttes: Microsoft-kontoen og Cloudflare Access.
      Vi kan ikke sende Microsoft rett til /cdn-cgi/access/logout, for den
      URL-en maa vaere registrert i Azure - er den ikke det, nekter Microsoft
