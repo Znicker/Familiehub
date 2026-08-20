@@ -2996,9 +2996,26 @@ init();
 <script>
 function loggUt(){
   try{ localStorage.removeItem('fh_cal_auth'); sessionStorage.clear(); }catch(_){}
+  /* To sesjoner maa avsluttes: Microsoft-kontoen og Cloudflare Access.
+     Vi kan ikke sende Microsoft rett til /cdn-cgi/access/logout, for den
+     URL-en maa vaere registrert i Azure - er den ikke det, nekter Microsoft
+     og Access-sesjonen overlever (da viser toppen feil navn).
+     I stedet returnerer vi til vaar egen side, som allerede er registrert,
+     og tar Access-utloggingen derfra. Da fungerer det uansett. */
+  try{ sessionStorage.setItem('fh_ut', '1'); }catch(_){}
   location.href = 'https://login.microsoftonline.com/common/oauth2/v2.0/logout?post_logout_redirect_uri=' +
-    encodeURIComponent(location.origin + '/cdn-cgi/access/logout');
+    encodeURIComponent(location.origin + location.pathname);
 }
+
+/* Andre etappe av utloggingen: rydder Access-sesjonen naar vi er
+   tilbake fra Microsoft. Kjoerer foer alt annet paa siden. */
+(function fullfoerUtlogging(){
+  let flagg = null;
+  try{ flagg = sessionStorage.getItem('fh_ut'); }catch(_){}
+  if(!flagg) return;
+  try{ sessionStorage.removeItem('fh_ut'); }catch(_){}
+  location.replace('/cdn-cgi/access/logout');
+})();
 </script>
 </body>
 </html>
