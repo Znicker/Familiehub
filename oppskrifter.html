@@ -2650,6 +2650,9 @@ async function calludeEttForsok(system, content, maxTokens){
       body: JSON.stringify({
         model: 'claude-sonnet-5',
         max_tokens: maxTokens,
+        // Streng dataoppgave (JSON-uttrekk), ikke kreativ skriving - lav
+        // temperatur gir mer forutsigbart format og færre mistolkede svar.
+        temperature: 0,
         system,
         messages: [{ role: 'user', content }]
       })
