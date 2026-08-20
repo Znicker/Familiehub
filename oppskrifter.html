@@ -6154,6 +6154,16 @@ function settBusy(på){
   renderPlanFab();
   updateTopbarHeightVar();
   backfillRatingCounts();   // i bakgrunnen, uten å forsinke første tegning
+
+  /* Dyplenke: ?rett=<id> aapner oppskriften direkte. Brukes av
+     dashboardet, saa dagens middag kan trykkes paa. */
+  try{
+    const rett = new URLSearchParams(location.search).get('rett');
+    if(rett){
+      history.replaceState({}, '', location.pathname);
+      await openRecipe(rett);
+    }
+  }catch(e){ console.warn('Kunne ikke aapne oppskrift fra lenke:', e); }
 })();
 
 /* Live-synk: frisk opp oppskrift-indeksen fra skyen naar appen kommer i

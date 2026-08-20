@@ -168,7 +168,23 @@ body{
 
 /* ---------- Middag ---------- */
 .middag{display:flex;align-items:center;gap:14px}
+a.middag{
+  text-decoration:none;color:inherit;
+  -webkit-tap-highlight-color:transparent;
+  border-radius:12px;margin:-6px;padding:6px;
+  transition:background .15s ease;
+}
+a.middag:active{background:#F5F7F9}
+.middag-pil{
+  margin-left:auto;font-size:26px;color:var(--ink-soft);
+  line-height:1;flex-shrink:0;opacity:.5;
+}
+.middag-lenke{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .middag-ikon{font-size:38px;line-height:1;flex-shrink:0}
+.middag-bilde{
+  width:74px;height:74px;border-radius:14px;object-fit:cover;
+  flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.14);
+}
 .middag-navn{font-size:22px;font-weight:800;line-height:1.2;word-wrap:break-word}
 .middag-meta{font-size:12px;color:var(--ink-soft);margin-top:3px;font-weight:600}
 .middag-flere{
@@ -731,15 +747,65 @@ const WMO = {
 function vkode(c){ return WMO[c] || ['🌡️','—']; }
 function rund(v){ return Math.round(v); }
 
+/* Posisjon: iPaden staar stille, saa vi spoer enheten én gang og
+   husker svaret. Da slipper vi bade tillatelsesdialog hver gang og
+   unoedig batteribruk. Uten tillatelse faller vi tilbake til Arendal. */
+let posisjon = { lat: STED.lat, lon: STED.lon, navn: STED.navn, presis: false };
+
+function lesLagretPosisjon(){
+  try{
+    const raw = localStorage.getItem('fh_pos');
+    if(!raw) return false;
+    const p = JSON.parse(raw);
+    if(typeof p.lat === 'number' && typeof p.lon === 'number'){
+      posisjon = { lat:p.lat, lon:p.lon, navn:p.navn || 'Din posisjon', presis:true };
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+async function finnPosisjon(){
+  if(lesLagretPosisjon()) return;
+  if(!navigator.geolocation) return;
+  try{
+    const p = await new Promise(function(ok, nei){
+      navigator.geolocation.getCurrentPosition(ok, nei, {
+        enableHighAccuracy:false, timeout:8000, maximumAge:86400000
+      });
+    });
+    posisjon = {
+      lat: Math.round(p.coords.latitude  * 10000) / 10000,
+      lon: Math.round(p.coords.longitude * 10000) / 10000,
+      navn: 'Din posisjon',
+      presis: true
+    };
+    /* Prøv å sette et stedsnavn — feiler det, står «Din posisjon». */
+    try{
+      const g = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client'
+        + '?latitude=' + posisjon.lat + '&longitude=' + posisjon.lon + '&localityLanguage=no');
+      if(g.ok){
+        const gd = await g.json();
+        const navn = gd.locality || gd.city || gd.principalSubdivision;
+        if(navn) posisjon.navn = navn;
+      }
+    }catch(e){}
+    try{ localStorage.setItem('fh_pos', JSON.stringify(posisjon)); }catch(e){}
+  }catch(e){
+    /* Avslaatt eller tidsavbrudd — Arendal duger. */
+  }
+}
+
 async function hentVaer(){
   const url = 'https://api.open-meteo.com/v1/forecast'
-    + '?latitude=' + STED.lat + '&longitude=' + STED.lon
+    + '?latitude=' + posisjon.lat + '&longitude=' + posisjon.lon
     + '&current=temperature_2m,apparent_temperature,weather_code'
     + '&hourly=temperature_2m,weather_code'
     + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum'
     + '&timezone=Europe%2FOslo&forecast_days=1';
   const r = await fetch(url);
   if(!r.ok) throw new Error('HTTP ' + r.status);
+  $('vaerSted').textContent = posisjon.navn;
   return r.json();
 }
 
@@ -793,6 +859,29 @@ function isoUke(dato){
   return { aar: aar, uke: uke, dagNr: dagNr + 1 };  /* dagNr: 1 = mandag */
 }
 
+/* Bildet hentes fra den lette oppskriftsindeksen, ikke fra hele
+   oppskriften — indeksen har en 200px-miniatyr, mens selve oppskriften
+   ogsaa baerer alle stegbildene og kan bli mange megabyte. */
+let bildeIndeks = null;
+
+async function hentBildeIndeks(){
+  if(bildeIndeks) return bildeIndeks;
+  bildeIndeks = {};
+  try{
+    const r = await fetch('/api/data?key=' + encodeURIComponent('p:recipe-index'), {cache:'no-store'});
+    if(!r.ok) return bildeIndeks;
+    const txt = await r.text();
+    if(!txt) return bildeIndeks;
+    let d = JSON.parse(txt);
+    if(d && typeof d === 'object' && d.value !== undefined) d = d.value;
+    if(typeof d === 'string') d = JSON.parse(d);
+    if(Array.isArray(d)){
+      d.forEach(function(r){ if(r && r.id && r.thumb) bildeIndeks[r.id] = r.thumb; });
+    }
+  }catch(e){ /* uten bilde klarer vi oss */ }
+  return bildeIndeks;
+}
+
 async function hentMiddag(){
   const r = await fetch('/api/data?key=' + encodeURIComponent('p:meal-plan'), {cache:'no-store'});
   if(!r.ok){
@@ -814,23 +903,38 @@ async function hentMiddag(){
   return uke[i.dagNr] || uke[String(i.dagNr)] || [];
 }
 
-function tegnMiddag(retter){
+async function tegnMiddag(retter){
   const boks = $('middag');
   if(!retter.length){
     boks.innerHTML = '<div class="tom">Ingenting planlagt i dag.</div>';
     return;
   }
   const forste = retter[0];
-  let html = '<div class="middag">'
-    + '<div class="middag-ikon">🍽️</div>'
+  const bilder = await hentBildeIndeks();
+  const bilde = forste.id && bilder[forste.id];
+  /* Trykk gaar rett til oppskriften i Matlaging. Uten id har vi
+     ingenting aa lenke til, og da lar vi kortet vaere som foer. */
+  const lenke = forste.id ? 'oppskrifter.html?rett=' + encodeURIComponent(forste.id) : '';
+
+  let html = (lenke ? '<a class="middag klikk" href="' + esc(lenke) + '">' : '<div class="middag">')
+    + (bilde
+        ? '<img class="middag-bilde" src="' + esc(bilde) + '" alt="">'
+        : '<div class="middag-ikon">🍽️</div>')
     + '<div>'
     +   '<div class="middag-navn">' + esc(forste.title || 'Uten navn') + '</div>'
     +   (forste.servings ? '<div class="middag-meta">' + esc(forste.servings) + ' porsjoner</div>' : '')
     + '</div>'
-    + '</div>';
+    + (lenke ? '<span class="middag-pil">›</span>' : '')
+    + (lenke ? '</a>' : '</div>');
+
   if(retter.length > 1){
     html += '<div class="middag-flere">Også i dag: '
-      + retter.slice(1).map(function(r){ return esc(r.title || 'Uten navn'); }).join(', ')
+      + retter.slice(1).map(function(r){
+          return r.id
+            ? '<a class="middag-lenke" href="oppskrifter.html?rett='
+              + esc(encodeURIComponent(r.id)) + '">' + esc(r.title || 'Uten navn') + '</a>'
+            : esc(r.title || 'Uten navn');
+        }).join(', ')
       + '</div>';
   }
   boks.innerHTML = html;
@@ -853,6 +957,7 @@ async function oppdaterAlt(manuelt){
   if(manuelt){
     $('status').textContent = 'Oppdaterer …';
     lukkDetalj();
+    bildeIndeks = null;      /* hent bildene på nytt ved manuell oppdatering */
   }
 
   /* Hver del feiler for seg — vaeret skal ikke ryke fordi kalenderen gjoer det. */
@@ -941,6 +1046,7 @@ async function oppdaterAlt(manuelt){
     return;
   }
 
+  lesLagretPosisjon();
   await hentFarger();
   graph('/me').then(function(me){
     if(me && me.displayName){
@@ -950,6 +1056,15 @@ async function oppdaterAlt(manuelt){
   }).catch(function(){});
 
   await oppdaterAlt(false);
+
+  /* Spoer om posisjon foerst naar skjermen staar der — da kommer
+     tillatelsesdialogen oppaa noe ferdig, ikke en tom side. Skjer bare
+     én gang; svaret huskes. */
+  if(!posisjon.presis){
+    finnPosisjon().then(function(){
+      if(posisjon.presis) hentVaer().then(tegnVaer).catch(function(){});
+    });
+  }
 
   /* Skjermen staar paa hele dagen — hold den fersk. */
   setInterval(function(){ if(!document.hidden) oppdaterAlt(false); }, 5*60*1000);
