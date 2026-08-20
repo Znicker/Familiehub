@@ -123,9 +123,12 @@ body{
   background:var(--paper);border-radius:18px;
   padding:22px 24px 24px;
   width:min(380px,calc(100vw - 32px));
-  max-height:min(70vh,520px);overflow-y:auto;
   box-shadow:0 12px 40px rgba(0,0,0,.24);
-  -webkit-overflow-scrolling:touch;
+}
+/* Panelet scroller ikke — innholdet gjoer det, slik at krysset blir staaende. */
+#detaljInn{
+  max-height:min(64vh,470px);overflow-y:auto;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
 }
 .detalj-lukk{
   position:absolute;top:14px;right:16px;
