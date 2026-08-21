@@ -1042,13 +1042,18 @@
       display:grid; grid-template-columns:minmax(0,1fr) 210px; gap:16px;
       align-items:start; max-width:1240px; margin:0 auto; width:100%;
     }
-    #detalj-topp > .sticky-sub{ grid-column:1; min-width:0; }
+    /* Raden maa settes eksplisitt paa begge. Bildekortet staar foerst i DOM,
+       og naar det laases til kolonne 2 flytter plasseringspekeren seg forbi
+       rad 1 - da havner tittelen i rad 2 med et tomt felt over seg. */
+    #detalj-topp > .sticky-sub{ grid-column:1; grid-row:1; min-width:0; }
     #view-detail #detail-photo-card{
-      grid-column:2; align-self:stretch;
-      display:block; margin:8px 0 0; padding:0; overflow:hidden;
+      grid-column:2; grid-row:1; align-self:stretch;
+      display:block; margin:8px 0 4px; padding:0; overflow:hidden;
+      border-radius:var(--radius);
     }
     #view-detail #detail-photo-card .detail-photo{
-      width:100%; height:100%; margin:0; aspect-ratio:4/3;
+      width:100%; height:100%; margin:0;
+      aspect-ratio:auto;            /* ellers slaass 4:3 mot hoeyden fra raden */
       object-fit:cover; border-radius:var(--radius);
     }
 
