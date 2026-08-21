@@ -650,9 +650,9 @@ footer .btn{margin-left:auto}
   .pu-kol.idag{background:rgba(184,217,71,.10)}
   .pu-kol.rolig{opacity:.55}          /* rolige dager skal faktisk se rolige ut */
 
+  /* Fyll og rammefarge settes i JS fra kalenderfargen. */
   .pu-ev{
-    background:var(--paper);border:1px solid var(--line);
-    border-left:4px solid var(--line);border-radius:9px;
+    border:1px solid transparent;border-radius:9px;
     padding:6px 8px;overflow:hidden;
   }
   .pu-topp{display:flex;align-items:center;gap:5px;margin-bottom:2px}
@@ -662,29 +662,24 @@ footer .btn{margin-left:auto}
     display:flex;align-items:center;justify-content:center;line-height:1;
   }
   .pu-tid{
-    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);
-    font-variant-numeric:tabular-nums;white-space:nowrap;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink);
+    font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.75;
   }
   .pu-tittel{
     font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;
     line-height:1.25;overflow-wrap:anywhere;
   }
-  .pu-meta{font-size:11px;color:var(--ink-soft);margin-top:2px;overflow-wrap:anywhere}
-  .pu-note{
-    font-size:11px;color:var(--ink-soft);margin-top:4px;line-height:1.35;
-    padding-top:4px;border-top:1px dashed var(--line);overflow-wrap:anywhere;
+  /* Liten prikk = det finnes sted eller notat aa se i boblen. */
+  .pu-mer{
+    width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:auto;
   }
-  .pu-ev.heldags{background:var(--bg-2)}
-  /* Kollisjon: to avtaler ligger oppaa hverandre i tid. Skal skille seg
-     tydelig fra avtaler som bare foelger etter hverandre. */
-  .pu-ev.kollisjon{
-    border-style:dashed;border-color:#B4443A;
-    box-shadow:0 0 0 2px rgba(180,68,58,.13);
-  }
-  .pu-ev.kollisjon .pu-tid{color:#B4443A;font-weight:700}
+  /* Kollisjon: to avtaler ligger oppaa hverandre i tid. Markeres med en solid
+     ring i personens egen farge, ikke med stiplet ramme. */
+  .pu-ev.kollisjon .pu-tid{font-weight:700;color:var(--ink)}
   .pu.endag .pu-tittel{font-size:15px}
-  .pu.endag .pu-tid,.pu.endag .pu-meta,.pu.endag .pu-note{font-size:13px}
-  @media(hover:hover){ .pu-ev:hover{background:#F5F7F4} }
+  .pu.endag .pu-tid{font-size:13px}
+  .pu.endag .pu-ini{width:19px;height:19px;font-size:12px}
+  @media(hover:hover){ .pu-ev:hover{filter:brightness(.96)} }
 </style>
 </head>
 <body>
@@ -2112,11 +2107,29 @@ function spor(evs){
    kronologisk soeyle med alle paaslaatte kalendere blandet. Fargestripe
    og initial forteller hvem det gjelder. Kalender-visningen bruker
    fortsatt renderUke og er uroert. */
+/* Kalenderfargen som gjennomsiktig fyll. Teksten blir staaende moerk mot en
+   lys tone av personens egen farge, saa hvem det gjelder leses uten forklaring. */
+function rgbAv(hex){
+  const h = String(hex || '').replace('#','').trim();
+  const full = h.length === 3 ? h[0]+h[0]+h[1]+h[1]+h[2]+h[2] : h;
+  if(!/^[0-9a-fA-F]{6}$/.test(full)) return {r:44, g:62, b:80};   /* faller tilbake paa blekk */
+  return {
+    r: parseInt(full.slice(0,2),16),
+    g: parseInt(full.slice(2,4),16),
+    b: parseInt(full.slice(4,6),16)
+  };
+}
+function dus(hex, a){
+  const c = rgbAv(hex);
+  return 'rgba('+c.r+','+c.g+','+c.b+','+a+')';
+}
+
 function planFarget(e){
   const bokstav = (e.calName || '?').trim().charAt(0).toUpperCase();
   const el = document.createElement('div');
   el.className = 'pu-ev';
-  el.style.borderLeftColor = e.color;
+  el.style.background  = dus(e.color, .18);
+  el.style.borderColor = dus(e.color, .38);
 
   const topp = document.createElement('div');
   topp.className = 'pu-topp';
@@ -2134,26 +2147,22 @@ function planFarget(e){
     ? 'Hele dagen'
     : pad(e.start.getHours())+'.'+pad(e.start.getMinutes());
   topp.appendChild(tid);
+
+  /* Sted og notat vises ikke her - de ligger i boblen ved trykk. En liten
+     prikk forteller bare at det finnes mer aa se. */
+  if((e.note || '').trim() || e.where){
+    const mer = document.createElement('span');
+    mer.className = 'pu-mer';
+    mer.style.background = dus(e.color, .75);
+    mer.title = 'Trykk for detaljer';
+    topp.appendChild(mer);
+  }
   el.appendChild(topp);
 
   const t = document.createElement('div');
   t.className = 'pu-tittel';
   t.textContent = e.title;
   el.appendChild(t);
-
-  if(e.where){
-    const w = document.createElement('div');
-    w.className = 'pu-meta';
-    w.textContent = e.where;
-    el.appendChild(w);
-  }
-  const note = (e.note || '').trim();
-  if(note){
-    const n = document.createElement('div');
-    n.className = 'pu-note';
-    n.textContent = note;
-    el.appendChild(n);
-  }
 
   el.title = e.title;
   el.onclick = function(ev){
@@ -2257,7 +2266,10 @@ function renderUkePlan(dager){
     evs.forEach(function(e){
       const el = planFarget(e);
       if(erBånd(e)) el.classList.add('heldags');
-      if(kolliderer.has(e.id)) el.classList.add('kollisjon');
+      if(kolliderer.has(e.id)){
+        el.classList.add('kollisjon');
+        el.style.boxShadow = 'inset 0 0 0 2px ' + dus(e.color, .85);
+      }
       kol.appendChild(el);
     });
 
