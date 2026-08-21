@@ -75,7 +75,9 @@ body{
 /* ---------- Hovedrutenett ---------- */
 .grid{
   flex:1;min-height:0;
-  display:grid;grid-template-columns:1fr 300px;gap:14px;
+  /* Hoeyrekolonnen med "I dag" er fjernet - kalenderlista ligger i
+     nedtrekksmenyen oeverst, saa hele bredden gaar til avtalene. */
+  display:grid;grid-template-columns:1fr;gap:14px;
 }
 .panel{
   background:var(--paper);border-radius:16px;padding:16px;
@@ -86,11 +88,11 @@ body{
 .panel-note{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);opacity:.75}
 
 .cal-panel{display:flex;flex-direction:column;min-height:0}
-.side{display:flex;flex-direction:column;gap:14px;min-height:0}
+
 .side .panel{display:flex;flex-direction:column;min-height:0}
 .side .scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
-.side-day{flex:1 1 55%}
-.side-cals{flex:1 1 45%}
+
+
 
 /* ---------- Månedsnavigasjon ---------- */
 .mnav{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-bottom:12px;flex-shrink:0}
@@ -554,8 +556,8 @@ footer .btn{margin-left:auto}
 @media(max-width:900px){ .caldrop-panel{right:auto;left:0} }
 
 /* Kalenderlista bor nå i toppmenyen */
-#app .side-cals{display:none}
-#app .side-day{flex:1 1 100%}
+#app 
+#app 
 
 /* ---------- Dagmeny (langt trykk) ---------- */
 .dagpop{
@@ -609,7 +611,7 @@ footer .btn{margin-left:auto}
 #fsBtn svg{display:block}
 
 .shell.fullscreen .top{display:none}
-.shell.fullscreen .side{display:none}
+.shell.fullscreen 
 .shell.fullscreen footer{display:none}
 .shell.fullscreen .grid{grid-template-columns:1fr}
 .shell.fullscreen{padding-top:8px}
@@ -625,8 +627,6 @@ footer .btn{margin-left:auto}
   .shell{height:auto;min-height:100dvh;padding:16px 14px calc(16px + env(safe-area-inset-bottom))}
   .grid{display:flex;flex-direction:column}
   .cal{height:auto;grid-template-rows:auto repeat(6,minmax(76px,auto))}
-  .side-day,.side-cals{flex:none}
-  .side .scroll{overflow:visible}
   .brand-icon{width:46px;height:46px;padding:6px}
   .brand-title{font-size:18px}
   .who{display:none}
@@ -748,20 +748,6 @@ footer .btn{margin-left:auto}
       <div class="msg" id="calMsg" hidden></div>
     </section>
 
-    <div class="side">
-      <section class="panel side-day">
-        <div class="panel-head">
-          <span class="panel-title" id="dayTitle">I dag</span>
-          <span class="panel-note" id="dayCount"></span>
-        </div>
-        <div class="scroll" id="dayList"><div class="msg">Laster …</div></div>
-      </section>
-
-      <section class="panel side-cals">
-        <div class="panel-head"><span class="panel-title">Kalendere</span></div>
-        <div class="scroll" id="calList"><div class="msg">—</div></div>
-      </section>
-    </div>
   </div>
 
   <footer>
@@ -1644,35 +1630,6 @@ function renderCal(medNotat){
   fyllAvtaler();
 }
 
-function renderDay(){
-  const d = S.sel, today = new Date();
-  $('dayTitle').textContent = sameDay(d,today)
-    ? 'I dag'
-    : DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase();
-
-  const evs = eventsOn(d);
-  $('dayCount').textContent = evs.length ? evs.length + (evs.length===1 ? ' avtale' : ' avtaler') : '';
-
-  const list = $('dayList');
-  if(!evs.length){
-    list.innerHTML = '<div class="msg">Ingen avtaler denne dagen.</div>';
-    return;
-  }
-  list.innerHTML = evs.map(function(e){
-    const time = e.allDay
-      ? 'Hele<br>dagen'
-      : pad(e.start.getHours())+'.'+pad(e.start.getMinutes())
-        + '<br>' + pad(e.end.getHours())+'.'+pad(e.end.getMinutes());
-    const meta = [e.calName, e.where].filter(Boolean).join(' · ');
-    return '<div class="ev klikk" onclick="visBoble(\''+e.id+'\', event)">'
-      + '<div class="ev-time">'+time+'</div>'
-      + '<div class="ev-body">'
-      +   '<div class="ev-title">'+esc(e.title)+'</div>'
-      +   '<div class="ev-meta"><span class="ev-who" style="background:'+e.color+'"></span>'+esc(meta)+'</div>'
-      + '</div></div>';
-  }).join('');
-}
-
 function tell(c){
   return S.events.filter(function(e){ return e.calId===c.id; }).length;
 }
@@ -1765,7 +1722,7 @@ function render(){
     else renderTid();
   }
 
-  renderDay(); renderCalList();
+  renderCalList();
 }
 
 /* ============================================================
