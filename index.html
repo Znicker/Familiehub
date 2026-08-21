@@ -703,15 +703,18 @@ async function vurderDashFlis(){
   const kort = document.getElementById('dashKort');
   if(!kort) return;
   let epost = '';
-  try{
-    const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), {cache:'no-store'});
-    if(r.ok){
-      const d = await r.json();
-      epost = normEpostDash(d.email || '');
-    }
-  }catch(_){}
-  if(!epost && A && A.me){
+  /* Graph foerst — Access-sesjonen kan henge igjen som forrige bruker. */
+  if(A && A.me){
     epost = normEpostDash(A.me.mail || A.me.userPrincipalName || '');
+  }
+  if(!epost){
+    try{
+      const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), {cache:'no-store'});
+      if(r.ok){
+        const d = await r.json();
+        epost = normEpostDash(d.email || '');
+      }
+    }catch(_){}
   }
   kort.hidden = DASH_TILGANG.indexOf(epost) === -1;
 }

@@ -848,14 +848,20 @@ function normEpost(s){
   return s;
 }
 
-/* ---- Identitet fra Cloudflare Access (kun til rettigheter) ---- */
+/* ---- Identitet (kun til rettigheter) ----
+   Graph foerst: Access-sesjonen kan henge igjen som forrige bruker ved
+   brukerbytte paa delt iPad, og da ville feil person faatt fargevelgeren. */
+function settRettigheter(){
+  erFargeAdmin = !!minEpost && FARGE_ADMIN.indexOf(minEpost) !== -1;
+}
 async function hentIdentitet(){
+  if(minEpost){ settRettigheter(); return; }
   try{
     const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), {cache:'no-store'});
     if(!r.ok) return;
     const d = await r.json();
     minEpost = normEpost(d.email || '');
-    erFargeAdmin = FARGE_ADMIN.indexOf(minEpost) !== -1;
+    settRettigheter();
   }catch(e){ /* uten Access: ingen admin-rettigheter */ }
 }
 
@@ -1158,6 +1164,9 @@ async function graph(path, method, payload){
 async function loadMe(){
   S.me = await graph('/me');
   visNavn(S.me && S.me.displayName);
+  /* Graph er fasit for hvem som er innlogget — sett rettighetene herfra. */
+  const fra = normEpost((S.me && (S.me.mail || S.me.userPrincipalName)) || '');
+  if(fra){ minEpost = fra; settRettigheter(); render(); }
 }
 
 async function loadCalendars(){

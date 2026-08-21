@@ -70,6 +70,8 @@ body{
   min-height:0;
 }
 .hoyre{display:flex;flex-direction:column;gap:16px;min-height:0}
+.hoyre > .kort:first-child{flex:0 0 auto}      /* vaeret: naturlig hoeyde */
+.hoyre > .kort:last-child{flex:1 1 auto}       /* middagen: resten */
 
 .kort{
   background:var(--paper);
@@ -87,6 +89,9 @@ body{
 }
 .kort-tittel .bi{margin-left:auto;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:11px}
 .kort-kropp{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+/* Middagskortet skal fylle hoeyden: kroppen maa ikke rulle, den skal
+   strekke innholdet i stedet, ellers har bildet ingen plass aa vokse i. */
+#middag{overflow:hidden;display:flex;flex-direction:column}
 .kort-kropp::-webkit-scrollbar{width:0;background:transparent}
 
 .tom{color:var(--ink-soft);font-size:14px;padding:6px 0}
@@ -167,26 +172,37 @@ body{
 .vaer-t-gr{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 
 /* ---------- Middag ---------- */
-.middag{display:flex;align-items:center;gap:14px}
+.middag{
+  display:flex;flex-direction:column;align-items:stretch;gap:0;
+  height:100%;min-height:0;
+}
 a.middag{
   text-decoration:none;color:inherit;
   -webkit-tap-highlight-color:transparent;
-  border-radius:12px;margin:-6px;padding:6px;
-  transition:background .15s ease;
+  transition:opacity .15s ease;
 }
-a.middag:active{background:#F5F7F9}
+a.middag:active{opacity:.72}
 .middag-pil{
-  margin-left:auto;font-size:26px;color:var(--ink-soft);
-  line-height:1;flex-shrink:0;opacity:.5;
+  font-size:30px;color:var(--ink-soft);line-height:1;
+  flex-shrink:0;opacity:.45;align-self:center;
 }
+.middag-tekst{display:flex;align-items:center;gap:12px;padding-top:13px;flex-shrink:0}
+.middag-tekst > div{min-width:0;flex:1}
 .middag-lenke{color:inherit;text-decoration:underline;text-underline-offset:2px}
-.middag-ikon{font-size:38px;line-height:1;flex-shrink:0}
-.middag-bilde{
-  width:74px;height:74px;border-radius:14px;object-fit:cover;
-  flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.14);
+.middag-ikon{
+  flex:1 1 auto;min-height:90px;border-radius:14px;background:#F5F7F9;
+  display:flex;align-items:center;justify-content:center;font-size:56px;line-height:1;
 }
-.middag-navn{font-size:22px;font-weight:800;line-height:1.2;word-wrap:break-word}
-.middag-meta{font-size:12px;color:var(--ink-soft);margin-top:3px;font-weight:600}
+.middag-bilde{
+  width:100%;flex:1 1 auto;min-height:90px;
+  border-radius:14px;object-fit:cover;display:block;
+  box-shadow:0 2px 10px rgba(0,0,0,.14);
+}
+.middag-navn{
+  font-size:clamp(22px,2.6vw,34px);font-weight:800;line-height:1.15;
+  word-wrap:break-word;letter-spacing:-.01em;
+}
+.middag-meta{font-size:13px;color:var(--ink-soft);margin-top:4px;font-weight:600}
 .middag-flere{
   font-size:13px;color:var(--ink-soft);margin-top:9px;
   padding-top:9px;border-top:1px solid var(--line);
@@ -505,19 +521,21 @@ function normEpost(s){
 
 async function harTilgang(){
   let epost = '';
-  /* Access foerst — den vet hvem som slapp inn gjennom porten. */
+  /* Microsoft Graph foerst. Access-sesjonen kan henge igjen som forrige
+     bruker ved brukerbytte paa delt iPad — det var nettopp derfor navnet
+     viste feil person tidligere. Graph foelger den faktiske innloggingen. */
   try{
-    const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), {cache:'no-store'});
-    if(r.ok){
-      const d = await r.json();
-      epost = normEpost(d.email || '');
-    }
+    const me = await graph('/me');
+    epost = normEpost((me && (me.mail || me.userPrincipalName)) || '');
   }catch(e){}
-  /* Faller tilbake paa Microsoft-kontoen hvis Access ikke svarte. */
+  /* Access kun som reserve hvis Graph ikke svarte. */
   if(!epost){
     try{
-      const me = await graph('/me');
-      epost = normEpost((me && (me.mail || me.userPrincipalName)) || '');
+      const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), {cache:'no-store'});
+      if(r.ok){
+        const d = await r.json();
+        epost = normEpost(d.email || '');
+      }
     }catch(e){}
   }
   return { ok: DASH_TILGANG.indexOf(epost) !== -1, epost: epost };
@@ -920,11 +938,13 @@ async function tegnMiddag(retter){
     + (bilde
         ? '<img class="middag-bilde" src="' + esc(bilde) + '" alt="">'
         : '<div class="middag-ikon">🍽️</div>')
-    + '<div>'
-    +   '<div class="middag-navn">' + esc(forste.title || 'Uten navn') + '</div>'
-    +   (forste.servings ? '<div class="middag-meta">' + esc(forste.servings) + ' porsjoner</div>' : '')
+    + '<div class="middag-tekst">'
+    +   '<div>'
+    +     '<div class="middag-navn">' + esc(forste.title || 'Uten navn') + '</div>'
+    +     (forste.servings ? '<div class="middag-meta">' + esc(forste.servings) + ' porsjoner</div>' : '')
+    +   '</div>'
+    +   (lenke ? '<span class="middag-pil">›</span>' : '')
     + '</div>'
-    + (lenke ? '<span class="middag-pil">›</span>' : '')
     + (lenke ? '</a>' : '</div>');
 
   if(retter.length > 1){
