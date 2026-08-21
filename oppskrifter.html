@@ -975,6 +975,60 @@
   .plan-dish{ display:flex; align-items:center; gap:8px; }
   .plan-dish-name{ flex:1; font-size:15px; text-align:left; background:none; border:none; color:var(--ink); padding:0; }
   .plan-dish-rm{ background:none; border:none; color:var(--ink-soft); font-size:15px; padding:2px 6px; }
+
+  /* ---------- Seksjoner (deloppskrifter) ----------
+     En oppskrift kan deles i deler, f.eks. "kake" og "krem". Delen ligger som
+     et felt paa hver enkelt ingrediens og hvert steg, ikke som egen struktur.
+     Rader uten seksjon hoerer til en navnloes foerste seksjon uten overskrift,
+     saa gamle oppskrifter ser ut noeyaktig som foer. */
+  .sek-tittel{
+    position:sticky; top:var(--topbar-h, 60px); z-index:6;
+    margin:20px 0 8px; padding:9px 14px; border-radius:10px;
+    background:var(--ink); color:#FFFFFF;
+    font-family:'Archivo',sans-serif; font-size:14px; font-weight:800;
+    text-transform:uppercase; letter-spacing:0.1em;
+    box-shadow:0 2px 8px rgba(44,62,80,0.25);
+  }
+  .sek-tittel:first-child{ margin-top:2px; }
+  .shop-table tr.ing-seksjon td{
+    position:sticky; top:var(--topbar-h, 60px); z-index:6;
+    border-top:none; padding:14px 0 6px; background:var(--paper);
+  }
+  .shop-table tr.ing-seksjon:first-child td{ padding-top:2px; }
+  .shop-table tr.ing-seksjon span{
+    display:block; padding:9px 14px; border-radius:10px;
+    background:var(--ink); color:#FFFFFF;
+    font-family:'Archivo',sans-serif; font-size:14px; font-weight:800;
+    text-transform:uppercase; letter-spacing:0.1em;
+    box-shadow:0 2px 8px rgba(44,62,80,0.25);
+  }
+  .shop-table tr.ing-seksjon + tr td{ border-top:none; }
+
+  /* Seksjonsrad i redigeringsskjemaet */
+  .sec-row{ display:flex; gap:8px; align-items:center; margin:16px 0 8px; }
+  .sec-row input{
+    flex:1; min-width:0; padding:10px 12px; border-radius:10px;
+    border:2px solid var(--ink); background:#FFFFFF; color:var(--ink);
+    font-family:'Archivo',sans-serif; font-weight:800; font-size:14px;
+    text-transform:uppercase; letter-spacing:0.08em;
+  }
+
+  /* ---------- Landskap paa iPad: to kolonner ----------
+     Bruddpunktet henger paa BREDDE i tillegg til orientering, saa en telefon
+     i landskap ikke proever aa tegne to kolonner. */
+  @media (min-width:820px) and (orientation:landscape){
+    #view-detail #detail-photo-card{ display:none !important; }
+    #oppskrift-kolonner.tokolonner{ display:flex; gap:14px; align-items:flex-start; }
+    #oppskrift-kolonner.tokolonner > .tabpane{
+      display:block !important; flex:1 1 0; min-width:0;
+      max-height:calc(100vh - 170px); overflow-y:auto; overscroll-behavior:contain;
+    }
+    #view-detail #tab-list-btn, #view-detail #tab-steps-btn{ display:none; }
+  }
+  #tab-begge-btn{ display:none; }
+  @media (min-width:820px) and (orientation:landscape){
+    #tab-begge-btn{ display:flex; }
+  }
 </style>
 </head>
 <body>
@@ -1077,6 +1131,7 @@
       <div class="section-label">Ingredienser</div>
       <div id="ing-list"></div>
       <button class="add-row-btn" onclick="addIngredientRow()">+ Legg til ingrediens</button>
+      <button class="add-row-btn" onclick="addSectionRow('ing')">+ Ny seksjon (f.eks. «Krem»)</button>
 
       <div class="section-label">Allergener og næringsinnhold</div>
       <button type="button" class="btn btn-ghost" style="width:100%;" id="ai-review-btn" onclick="runAllergenNutritionReview()">🔎 AI-gjennomgang av allergener og næringsinnhold</button>
@@ -1098,6 +1153,7 @@
       <div class="section-label">Steg for steg</div>
       <div id="step-list"></div>
       <button class="add-row-btn" onclick="addStepRow()">+ Legg til steg</button>
+      <button class="add-row-btn" onclick="addSectionRow('step')">+ Ny seksjon (f.eks. «Krem»)</button>
 
       <div class="section-label">Tips</div>
       <div id="tips-list"></div>
@@ -1133,6 +1189,7 @@
       <div class="tabs">
         <button class="tab-btn active" id="tab-list-btn" onclick="switchTab('list')"><span class="tab-ikon">🥕</span><span class="tab-tekst">Ingred.</span></button>
         <button class="tab-btn" id="tab-steps-btn" onclick="switchTab('steps')"><span class="tab-ikon">📋</span><span class="tab-tekst">Steg</span></button>
+        <button class="tab-btn" id="tab-begge-btn" onclick="switchTab('begge')"><span class="tab-ikon">🍳</span><span class="tab-tekst">Oppskrift</span></button>
         <button class="tab-btn" id="tab-tips-btn" onclick="switchTab('tips')"><span class="tab-ikon">💡</span><span class="tab-tekst">Tips</span></button>
         <button class="tab-btn" id="tab-comments-btn" onclick="switchTab('comments')"><span class="tab-ikon">💬</span><span class="tab-tekst">Kokken</span></button>
         <button class="tab-btn" id="tab-rating-btn" onclick="switchTab('rating')"><span class="tab-ikon">⭐</span><span class="tab-tekst">Terning</span></button>
@@ -1147,6 +1204,7 @@
       </div>
     </div>
 
+    <div id="oppskrift-kolonner">
     <div class="tabpane active" id="tab-list">
       <div class="card-panel punched" style="padding-top:20px;">
         <div class="servings-bar">
@@ -1177,6 +1235,7 @@
         <div id="d-pinned-comments"></div>
         <div class="steps-all" id="d-steps-all"></div>
       </div>
+    </div>
     </div>
 
     <div class="tabpane" id="tab-tips">
@@ -2632,7 +2691,7 @@ function closeNewRecipeModal(){ closeModal('new-recipe'); }
 
 /* ---- Importer fra nettside ---- */
 
-const RECIPE_EXTRACT_SYSTEM = "You are extracting recipe data from text (possibly a full webpage dump, which may include navigation, ads, comments, related-recipe suggestions and other boilerplate - ignore all of that and find only the main recipe). Respond with ONLY a raw JSON object, no markdown code fences, no commentary before or after. Use exactly this shape: {\"title\": string, \"servings\": number, \"time\": string, \"ingredients\": [{\"amount\": number|null, \"unit\": string, \"name\": string, \"allergens\": string[], \"type\": string}], \"steps\": [string, ...], \"tips\": [string, ...], \"nutritionPerServing\": {\"energyKj\": number, \"energyKcal\": number, \"fat\": number, \"satFat\": number, \"carbs\": number, \"sugars\": number, \"fiber\": number, \"protein\": number, \"salt\": number}}. \"amount\" must be a plain number (use a decimal like 0.5, never a fraction like '1/2'); use null only when no quantity is given anywhere, and in that case put any free-text amount (e.g. 'etter smak') in \"unit\" instead. \"allergens\" should be an empty array unless allergens are explicitly stated. If the source text contains an existing nutrition/næringsinnhold table, extract its per-portion/per-serving column into \"nutritionPerServing\" (grams for everything except energy in kJ/kcal) - if the table only gives per-100g values with no clear per-portion figure, omit \"nutritionPerServing\" entirely rather than guessing a conversion. Put practical advice that is NOT part of the cooking sequence into  \"tips \" instead of  \"steps \" - substitutions, storage and freezing, what to serve alongside, shortcuts, and anything the source itself labels as a tip. One short sentence per tip. Use an empty array when the source has none. For each ingredient also set \"type\" to exactly one of these Norwegian shop categories: Frukt, Grønnsaker, Kjøtt, Fisk og sjømat, Meieri, Pålegg, Brød og bakevarer, Tørrvarer, Hermetikk, Krydder og saus, Frysevarer, Snacks, Drikke, Annet. Use Annet only when none fit. Keep all text in the same language as the source. If a field truly cannot be determined, use null/empty string/empty array as appropriate - never invent information that is not present in the source text.";
+const RECIPE_EXTRACT_SYSTEM = "You are extracting recipe data from text (possibly a full webpage dump, which may include navigation, ads, comments, related-recipe suggestions and other boilerplate - ignore all of that and find only the main recipe). Many recipes are built from several named parts - a cake with a separate frosting, a dish with its own sauce - and the source text almost always spells these out as headings. When you find them, copy the exact heading into \"section\" on every ingredient and every step that belongs to that part, and keep the parts in the order they appear. If the recipe has no such parts, set \"section\" to an empty string everywhere - never invent a heading. Respond with ONLY a raw JSON object, no markdown code fences, no commentary before or after. Use exactly this shape: {\"title\": string, \"servings\": number, \"time\": string, \"ingredients\": [{\"amount\": number|null, \"unit\": string, \"name\": string, \"allergens\": string[], \"type\": string, \"section\": string}], \"steps\": [{\"text\": string, \"section\": string}, ...], \"tips\": [string, ...], \"nutritionPerServing\": {\"energyKj\": number, \"energyKcal\": number, \"fat\": number, \"satFat\": number, \"carbs\": number, \"sugars\": number, \"fiber\": number, \"protein\": number, \"salt\": number}}. \"amount\" must be a plain number (use a decimal like 0.5, never a fraction like '1/2'); use null only when no quantity is given anywhere, and in that case put any free-text amount (e.g. 'etter smak') in \"unit\" instead. \"allergens\" should be an empty array unless allergens are explicitly stated. If the source text contains an existing nutrition/næringsinnhold table, extract its per-portion/per-serving column into \"nutritionPerServing\" (grams for everything except energy in kJ/kcal) - if the table only gives per-100g values with no clear per-portion figure, omit \"nutritionPerServing\" entirely rather than guessing a conversion. Put practical advice that is NOT part of the cooking sequence into  \"tips \" instead of  \"steps \" - substitutions, storage and freezing, what to serve alongside, shortcuts, and anything the source itself labels as a tip. One short sentence per tip. Use an empty array when the source has none. For each ingredient also set \"type\" to exactly one of these Norwegian shop categories: Frukt, Grønnsaker, Kjøtt, Fisk og sjømat, Meieri, Pålegg, Brød og bakevarer, Tørrvarer, Hermetikk, Krydder og saus, Frysevarer, Snacks, Drikke, Annet. Use Annet only when none fit. Keep all text in the same language as the source. If a field truly cannot be determined, use null/empty string/empty array as appropriate - never invent information that is not present in the source text.";
 
 // Alle tre AI-kallene (nettside, oppskriftskort, allergen/næring) går gjennom denne,
 // så modellnavn og feilhåndtering bare finnes ett sted. Returnerer ren tekst.
@@ -2750,7 +2809,7 @@ async function callRecipeExtractDelt(userText){
 
   const baresteps = await callClaudeText(
     RECIPE_EXTRACT_SYSTEM,
-    userText + '\n\nVIKTIG: Returner KUN fremgangsmåten denne gangen, som {"steps": [string, ...]}. Utelat alle andre felter.',
+    userText + '\n\nVIKTIG: Returner KUN fremgangsmåten denne gangen, som {"steps": [{"text": string, "section": string}, ...]}. Utelat alle andre felter.',
     4000);
   const del2 = JSON.parse(extractBalancedJsonObject(baresteps));
 
@@ -2764,12 +2823,18 @@ function applyParsedRecipeToForm(parsed){
   $('f-time').value = parsed.time || '';
   $('ing-list').innerHTML = '';
   (parsed.ingredients && parsed.ingredients.length ? parsed.ingredients : [{amount:null,unit:'',name:'',allergens:[]}])
-    .forEach(i => addIngredientRow({amount: i.amount == null ? '' : i.amount, unit: i.unit, name: i.name, allergens: i.allergens || []}));
+    .map(i => ({amount: i.amount == null ? '' : i.amount, unit: i.unit, name: i.name, allergens: i.allergens || [], section: i.section || ''}))
+    .forEach((i, idx, arr) => {
+      const forrige = idx ? (arr[idx-1].section || '') : null;
+      if((i.section || '') !== forrige && i.section) addSectionRow('ing', i.section);
+      addIngredientRow(i);
+    });
   lagreVaretyperFraImport(parsed.ingredients);
   $('step-list').innerHTML = '';
   if($('tips-list')) $('tips-list').innerHTML = '';
-  (parsed.steps && parsed.steps.length ? parsed.steps : [''])
-    .forEach(s => addStepRow(s));
+  fyllMedSeksjoner('step',
+    (parsed.steps && parsed.steps.length ? parsed.steps : ['']).map(normalizeStep),
+    s => addStepRow(s));
   if(Array.isArray(parsed.tips)) parsed.tips.filter(t => (t || '').trim()).forEach(t => addTipsRow(t));
   clearNutritionForm();
   if(parsed.nutritionPerServing) writeNutritionForm(parsed.nutritionPerServing);
@@ -2873,7 +2938,7 @@ $('physical-photo-input').addEventListener('change', async (e) => {
   e.target.value = '';
 });
 
-const PHYSICAL_EXTRACT_SYSTEM = "You are extracting recipe data from photographed recipe cards. Look carefully at all images provided - they may be the front and back of the same card. The back of the card usually has an ingredient/quantity table for different serving sizes, an allergen legend where ingredients have small footnote numbers (e.g. 'Hvetemel 13)') that map to a numbered list of allergens (e.g. '13) Gluten'), and often also a nutrition table ('Næringsinnhold') with a per-100g column and a per-portion column. Match each ingredient's footnote number(s) to the allergen legend to determine its allergens. One of the images (usually the front of the card) has a large photo of the finished dish. Respond with ONLY a raw JSON object, no markdown code fences, no commentary before or after. Use exactly this shape: {\"title\": string, \"servings\": number, \"time\": string, \"ingredients\": [{\"amount\": number|null, \"unit\": string, \"name\": string, \"allergens\": string[]}], \"steps\": [string, ...], \"mainPhoto\": {\"imageIndex\": number, \"rotationDegrees\": number, \"cropBox\": {\"x\": number, \"y\": number, \"width\": number, \"height\": number}}, \"nutritionPerServing\": {\"energyKj\": number, \"energyKcal\": number, \"fat\": number, \"satFat\": number, \"carbs\": number, \"sugars\": number, \"fiber\": number, \"protein\": number, \"salt\": number}}. If the card lists amounts for multiple serving sizes (e.g. a table with 2P and 4P columns), pick the smallest serving size shown and set \"servings\" to that number - use the amounts from that same column throughout. \"amount\" must be a plain number (use a decimal like 0.5, never a fraction like '1/2'); use null only when the card truly gives no quantity anywhere for that ingredient (e.g. genuinely 'salt etter smak' with no gram/spoon amount listed) - put 'etter smak' in \"unit\" in that case. Pantry-staple ingredients (salt, pepper, oil, sugar, flour, eggs and similar 'basisvarer') often DO have a specific amount listed in the back-of-card ingredient table even though they seem like staples - check that table carefully for each of them before deciding an ingredient has no amount; don't default to null just because an ingredient is a common pantry item. \"allergens\" should contain the plain allergen name(s) from the legend (e.g. [\"Gluten\", \"Hvete\"]) - use an empty array if the ingredient has no footnote. For \"mainPhoto\": \"imageIndex\" is the zero-based index (in the order the images were given to you) of the image containing the finished-dish photo. \"rotationDegrees\" must be exactly one of 0, 90, 180, or 270 - the clockwise rotation needed to make that image upright with text reading left-to-right. \"cropBox\" describes a tight crop around just the finished-dish photo (excluding logo, title text, and any ingredient icon row), as fractions of the UPRIGHT (already-rotated) image: x/y is the top-left corner, width/height is the size. If you cannot confidently identify a dish photo in any image, omit \"mainPhoto\" entirely. For \"nutritionPerServing\": if a nutrition table is visible, use its per-portion column (grams for everything except energy in kJ/kcal) - if only a per-100g column exists with no clear per-portion figure, omit \"nutritionPerServing\" entirely rather than guessing a conversion. Keep all text in the same language as the source images. If a field truly cannot be determined, use null/empty string/empty array as appropriate - never invent information that is not visible in the images.";
+const PHYSICAL_EXTRACT_SYSTEM = "You are extracting recipe data from photographed recipe cards. Look carefully at all images provided - they may be the front and back of the same card. The back of the card usually has an ingredient/quantity table for different serving sizes, an allergen legend where ingredients have small footnote numbers (e.g. 'Hvetemel 13)') that map to a numbered list of allergens (e.g. '13) Gluten'), and often also a nutrition table ('Næringsinnhold') with a per-100g column and a per-portion column. Match each ingredient's footnote number(s) to the allergen legend to determine its allergens. One of the images (usually the front of the card) has a large photo of the finished dish. Many recipes are built from several named parts - a cake with a separate frosting, a dish with its own sauce - and the source text almost always spells these out as headings. When you find them, copy the exact heading into \"section\" on every ingredient and every step that belongs to that part, and keep the parts in the order they appear. If the recipe has no such parts, set \"section\" to an empty string everywhere - never invent a heading. Respond with ONLY a raw JSON object, no markdown code fences, no commentary before or after. Use exactly this shape: {\"title\": string, \"servings\": number, \"time\": string, \"ingredients\": [{\"amount\": number|null, \"unit\": string, \"name\": string, \"allergens\": string[], \"section\": string}], \"steps\": [{\"text\": string, \"section\": string}, ...], \"mainPhoto\": {\"imageIndex\": number, \"rotationDegrees\": number, \"cropBox\": {\"x\": number, \"y\": number, \"width\": number, \"height\": number}}, \"nutritionPerServing\": {\"energyKj\": number, \"energyKcal\": number, \"fat\": number, \"satFat\": number, \"carbs\": number, \"sugars\": number, \"fiber\": number, \"protein\": number, \"salt\": number}}. If the card lists amounts for multiple serving sizes (e.g. a table with 2P and 4P columns), pick the smallest serving size shown and set \"servings\" to that number - use the amounts from that same column throughout. \"amount\" must be a plain number (use a decimal like 0.5, never a fraction like '1/2'); use null only when the card truly gives no quantity anywhere for that ingredient (e.g. genuinely 'salt etter smak' with no gram/spoon amount listed) - put 'etter smak' in \"unit\" in that case. Pantry-staple ingredients (salt, pepper, oil, sugar, flour, eggs and similar 'basisvarer') often DO have a specific amount listed in the back-of-card ingredient table even though they seem like staples - check that table carefully for each of them before deciding an ingredient has no amount; don't default to null just because an ingredient is a common pantry item. \"allergens\" should contain the plain allergen name(s) from the legend (e.g. [\"Gluten\", \"Hvete\"]) - use an empty array if the ingredient has no footnote. For \"mainPhoto\": \"imageIndex\" is the zero-based index (in the order the images were given to you) of the image containing the finished-dish photo. \"rotationDegrees\" must be exactly one of 0, 90, 180, or 270 - the clockwise rotation needed to make that image upright with text reading left-to-right. \"cropBox\" describes a tight crop around just the finished-dish photo (excluding logo, title text, and any ingredient icon row), as fractions of the UPRIGHT (already-rotated) image: x/y is the top-left corner, width/height is the size. If you cannot confidently identify a dish photo in any image, omit \"mainPhoto\" entirely. For \"nutritionPerServing\": if a nutrition table is visible, use its per-portion column (grams for everything except energy in kJ/kcal) - if only a per-100g column exists with no clear per-portion figure, omit \"nutritionPerServing\" entirely rather than guessing a conversion. Keep all text in the same language as the source images. If a field truly cannot be determined, use null/empty string/empty array as appropriate - never invent information that is not visible in the images.";
 
 async function submitPhysicalImport(){
   const statusEl = $('physical-import-status');
@@ -3079,7 +3144,7 @@ function addStepRow(data){
   stepPhotoState[stepId] = { result: stepData.photo || null };
 
   const list = $('step-list');
-  const num = list.children.length + 1;
+  const num = list.querySelectorAll('.step-row').length + 1;
   const wrap = document.createElement('div');
   wrap.className = 'step-row';
   wrap.dataset.stepId = stepId;
@@ -3092,6 +3157,7 @@ function addStepRow(data){
     </div>
     <div class="step-photo-panel" id="step-photo-panel-${stepId}" style="display:none;"></div>`;
   list.appendChild(wrap);
+  renumberSteps();
 }
 function removeStepRow(stepId){
   const row = document.querySelector(`.step-row[data-step-id="${stepId}"]`);
@@ -3101,7 +3167,16 @@ function removeStepRow(stepId){
   renumberSteps();
 }
 function renumberSteps(){
-  document.querySelectorAll('#step-list .step-num').forEach((el,i) => el.textContent = i+1);
+  /* Nummereringen starter paa 1 i hver seksjon. Uten seksjoner blir det
+     én sammenhengende rekke, akkurat som foer. */
+  const list = $('step-list');
+  if(!list) return;
+  let n = 0;
+  Array.from(list.children).forEach(rad => {
+    if(rad.classList.contains('sec-row')){ n = 0; return; }
+    const el = rad.querySelector('.step-num');
+    if(el){ n++; el.textContent = n; }
+  });
 }
 
 function updateStepPhotoToggleUI(stepId){
@@ -3925,7 +4000,18 @@ async function saveRecipe(){
     flashCategoryRequired();
     return;
   }
-  const ingredients = Array.from(document.querySelectorAll('#ing-list .ing-row')).map(row => {
+  /* Listene leses i DOM-rekkefoelge slik at en seksjonsrad gjelder for alle
+     radene under den, fram til neste seksjonsrad. */
+  let ingSeksjon = '';
+  const ingRader = [];
+  Array.from($('ing-list').children).forEach(rad => {
+    if(rad.classList.contains('sec-row')){
+      ingSeksjon = (rad.querySelector('.sec-name').value || '').trim();
+      return;
+    }
+    if(rad.classList.contains('ing-row')) ingRader.push({row: rad, section: ingSeksjon});
+  });
+  const ingredients = ingRader.map(({row, section}) => {
     const rawAmount = row.querySelector('.ing-amount').value.trim().replace(',', '.');
     const parsedAmount = rawAmount === '' ? null : parseFloat(rawAmount);
     const nutrition = readIngredientNutrition(row);
@@ -3935,15 +4021,25 @@ async function saveRecipe(){
       unit: row.querySelector('.ing-unit').value.trim(),
       name: row.querySelector('.ing-name').value.trim(),
       allergens: row.querySelector('.ing-allergens').value.split(',').map(a => a.trim()).filter(Boolean),
-      nutrition
+      nutrition,
+      section
     };
   }).filter(i => i.name);
 
-  const stepRows = Array.from(document.querySelectorAll('#step-list .step-row')).map(row => {
+  let stepSeksjon = '';
+  const stepRader = [];
+  Array.from($('step-list').children).forEach(rad => {
+    if(rad.classList.contains('sec-row')){
+      stepSeksjon = (rad.querySelector('.sec-name').value || '').trim();
+      return;
+    }
+    if(rad.classList.contains('step-row')) stepRader.push({row: rad, section: stepSeksjon});
+  });
+  const stepRows = stepRader.map(({row, section}) => {
     const text = row.querySelector('textarea').value.trim();
     const stepId = row.dataset.stepId;
     const state = stepPhotoState[stepId];
-    return {text, photo: (state && state.result) || null, stepId};
+    return {text, photo: (state && state.result) || null, stepId, section};
   }).filter(s => s.text);
   const tips = lesTipsRader();
 
@@ -3957,7 +4053,7 @@ async function saveRecipe(){
     baseServings,
     time: $('f-time').value.trim(),
     ingredients,
-    steps: stepRows.map(s => ({text: s.text, photo: s.photo})),
+    steps: stepRows.map(s => ({text: s.text, photo: s.photo, section: s.section || ''})),
     tips,
     tastings: editingRecipeId ? ((recipeCache[editingRecipeId] || {}).tastings || []) : [],
     chefComments: editingRecipeId ? ((recipeCache[editingRecipeId] || {}).chefComments || []) : [],
@@ -4419,15 +4515,23 @@ function renderIngredientViews(){
         <td class="name">${escapeHtml(i.name)}${(i.allergens && i.allergens.length) ? ` <button type="button" class="allergen-flag" onclick="visAllergener('${jsStr(i.name)}', '${jsStr(i.allergens.join(', '))}')">!</button>` : ''}</td>
         <td class="amt mono">${escapeHtml(scaledAmountLabel(i, factor))}${nutritionFlagHtml(i.nutrition, perPortionAmountLabel(i, r.baseServings))}</td>
       </tr>`;
-    const medIdx = r.ingredients.map((i, idx) => ({ i, idx, type: slaaOppVare(i.name).type || '' }));
-    const brukte = VARETYPER.filter(t => medIdx.some(x => x.type === t));
-    const bolker = brukte.map(t => ({ type: t, rader: medIdx.filter(x => x.type === t) }));
-    const uten = medIdx.filter(x => !VARETYPER.includes(x.type));
-    if(uten.length) bolker.push({ type: brukte.length ? 'Uten kategori' : '', rader: uten });
+    /* Seksjon ytterst, varetype inni. Uten seksjoner blir det bare
+       varetypebolkene, akkurat som foer. */
+    const varebolker = (medIdx) => {
+      const brukte = VARETYPER.filter(t => medIdx.some(x => x.type === t));
+      const bolker = brukte.map(t => ({ type: t, rader: medIdx.filter(x => x.type === t) }));
+      const uten = medIdx.filter(x => !VARETYPER.includes(x.type));
+      if(uten.length) bolker.push({ type: brukte.length ? 'Uten kategori' : '', rader: uten });
+      return bolker.map(b =>
+        (b.type ? `<tr class="ing-bolk"><td colspan="2"><span>${escapeHtml(b.type)}</span></td></tr>` : '')
+        + b.rader.map(x => rad(x.i, x.idx)).join('')
+      ).join('');
+    };
+    const medType = x => ({ i: x.x, idx: x.idx, type: slaaOppVare(x.x.name).type || '' });
 
-    shopBody.innerHTML = bolker.map(b =>
-      (b.type ? `<tr class="ing-bolk"><td colspan="2"><span>${escapeHtml(b.type)}</span></td></tr>` : '')
-      + b.rader.map(x => rad(x.i, x.idx)).join('')
+    shopBody.innerHTML = grupperISeksjoner(r.ingredients).map(sek =>
+      (sek.navn ? `<tr class="ing-seksjon"><td colspan="2"><span>${escapeHtml(sek.navn)}</span></td></tr>` : '')
+      + varebolker(sek.rader.map(medType))
     ).join('');
   }
 
@@ -4501,7 +4605,51 @@ function renderNutritionBox(r){
 }
 
 function normalizeStep(s){
-  return (typeof s === 'string') ? {text: s, photo: null} : (s || {text:'', photo:null});
+  if(typeof s === 'string') return {text: s, photo: null, section: ''};
+  const o = s || {};
+  return {text: o.text || '', photo: o.photo || null, section: o.section || ''};
+}
+
+/* ---------------- Seksjoner ----------------
+   Seksjonen ligger som felt paa hver rad. Rader grupperes fortloepende, saa
+   rekkefoelgen oppskriften selv har blir bevart. Er ingen seksjon satt, faar
+   man én navnloes bolk og alt ser ut som foer. */
+/* Fyller en editorliste og setter inn seksjonsskillere der seksjonen endrer seg. */
+function fyllMedSeksjoner(hvilken, liste, leggTilRad){
+  let forrige = null;
+  (liste || []).forEach(x => {
+    const navn = seksjonsNavn(x);
+    if(navn !== forrige){
+      if(navn) addSectionRow(hvilken, navn);
+      forrige = navn;
+    }
+    leggTilRad(x);
+  });
+}
+function seksjonsNavn(x){ return (x && x.section) ? String(x.section).trim() : ''; }
+function harSeksjoner(liste){ return (liste || []).some(x => seksjonsNavn(x)); }
+function grupperISeksjoner(liste){
+  const ut = [];
+  (liste || []).forEach((x, idx) => {
+    const navn = seksjonsNavn(x);
+    const siste = ut[ut.length - 1];
+    if(siste && siste.navn === navn) siste.rader.push({x, idx});
+    else ut.push({navn, rader: [{x, idx}]});
+  });
+  return ut;
+}
+
+/* Seksjonsrad i redigeringsskjemaet. Radene under den hoerer til seksjonen,
+   helt til neste seksjonsrad. Lagring leser listene i DOM-rekkefoelge. */
+function addSectionRow(hvilken, navn){
+  const list = $(hvilken === 'step' ? 'step-list' : 'ing-list');
+  const wrap = document.createElement('div');
+  wrap.className = 'sec-row';
+  wrap.innerHTML = `
+    <input class="sec-name" placeholder="Seksjonsnavn, f.eks. Krem" value="${escapeAttr(navn || '')}">
+    <button class="row-rm" onclick="this.closest('.sec-row').remove(); renumberSteps();">✕</button>`;
+  list.appendChild(wrap);
+  if(hvilken === 'step') renumberSteps();
 }
 function renderPinnedComments(){
   const r = recipeCache[currentRecipeId];
@@ -4547,15 +4695,20 @@ function renderSteps(){
   if(!r) return;
   renderPinnedComments();
   const steps = (r.steps.length ? r.steps : ['Ingen steg lagt inn ennå.']).map(normalizeStep);
-  $('d-steps-all').innerHTML = steps.map((s, i) => `
+  const blokk = (s, nr) => `
     <div class="step-block">
-      <div class="num">${i + 1}</div>
+      <div class="num">${nr}</div>
       <div class="step-block-body">
         ${s.photo ? `<img class="step-photo" src="${s.photo}" alt="">` : ''}
         <div class="txt">${escapeHtml(s.text)}</div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  /* Nummereringen starter paa 1 i hver seksjon, saa "steg 2 i kremen" er
+     entydig. Uten seksjoner blir det én rekke som foer. */
+  $('d-steps-all').innerHTML = grupperISeksjoner(steps).map(sek =>
+    (sek.navn ? `<div class="sek-tittel">${escapeHtml(sek.navn)}</div>` : '')
+    + `<div class="steps-all">` + sek.rader.map((x, n) => blokk(x.x, n + 1)).join('') + `</div>`
+  ).join('');
 }
 
 /* ---- Kokkens kommentar ---- */
@@ -4694,12 +4847,46 @@ function changeServings(dir){
   renderDetailStats();
 }
 
+/* Bruddpunktet henger paa bredde i tillegg til orientering, slik at en telefon
+   i landskap beholder én kolonne. */
+const LANDSKAP = window.matchMedia('(min-width:820px) and (orientation:landscape)');
+let sisteFane = 'list';
+
 function switchTab(which){
+  sisteFane = which;
+  const kol = $('oppskrift-kolonner');
+
+  if(LANDSKAP.matches){
+    /* Ingredienser og fremgangsmaate staar side om side. De to fanene er
+       erstattet av én knapp, ellers finnes det ingen vei tilbake fra Tips. */
+    if(which === 'list' || which === 'steps') which = 'begge';
+    const viserKolonner = (which === 'begge');
+    kol.classList.toggle('tokolonner', viserKolonner);
+    kol.style.display = viserKolonner ? '' : 'none';
+    ['tips', 'comments', 'rating'].forEach(t => {
+      $('tab-' + t).classList.toggle('active', t === which);
+    });
+    ['begge', 'list', 'steps', 'tips', 'comments', 'rating'].forEach(t => {
+      const b = $('tab-' + t + '-btn');
+      if(b) b.classList.toggle('active', t === which);
+    });
+    return;
+  }
+
+  kol.classList.remove('tokolonner');
+  kol.style.display = '';
+  if(which === 'begge') which = 'list';
   ['list', 'steps', 'tips', 'comments', 'rating'].forEach(t => {
     $('tab-' + t).classList.toggle('active', t === which);
     $('tab-' + t + '-btn').classList.toggle('active', t === which);
   });
 }
+
+/* Ved rotasjon tegnes fanene om, slik at man ikke blir staaende igjen med
+   en skjult fane etter at kolonnene er slaatt av eller paa. */
+LANDSKAP.addEventListener('change', () => {
+  if($('view-detail') && $('view-detail').classList.contains('active')) switchTab(sisteFane);
+});
 
 /* ---- Edit / delete ---- */
 async function editCurrentRecipe(){
@@ -4718,11 +4905,11 @@ async function editCurrentRecipe(){
   $('f-time').value = r.time || '';
 
   $('ing-list').innerHTML = '';
-  (r.ingredients.length ? r.ingredients : [{amount:'',unit:'',name:'',allergens:[]}]).forEach(i => addIngredientRow(i));
+  fyllMedSeksjoner('ing', (r.ingredients.length ? r.ingredients : [{amount:'',unit:'',name:'',allergens:[]}]), i => addIngredientRow(i));
 
   $('step-list').innerHTML = '';
   if($('tips-list')) $('tips-list').innerHTML = '';
-  (r.steps.length ? r.steps : ['']).forEach(s => addStepRow(s));
+  fyllMedSeksjoner('step', (r.steps.length ? r.steps : ['']).map(normalizeStep), s => addStepRow(s));
   (Array.isArray(r.tips) ? r.tips : []).forEach(t => addTipsRow(t));
 
   showView('view-add');
