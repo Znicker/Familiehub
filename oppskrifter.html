@@ -663,7 +663,8 @@
   .shop-table th:last-child, .shop-table td.amt{ text-align:right; }
   .shop-table td{ padding:14px 8px; border-top:1px solid var(--line); font-size:17px; line-height:1.3; vertical-align:middle; }
   .shop-table tr:first-child td{ border-top:1px solid var(--line); }
-  .shop-table td.amt{ font-family:'Archivo',sans-serif; font-weight:700; color:var(--ink); white-space:nowrap; }
+  .shop-table td.amt{ font-family:'Archivo',sans-serif; font-weight:700; color:var(--ink); white-space:nowrap; padding-left:12px; width:1%; }
+  .shop-table td.name{ word-break:break-word; }
   /* Samme kategoribånd som i ukemenyen, tilpasset tabellen */
   .shop-table tr.ing-bolk td{ border-top:none; padding:16px 0 6px; }
   .shop-table tr.ing-bolk:first-child td{ padding-top:4px; }
@@ -1016,17 +1017,49 @@
   /* ---------- Landskap paa iPad: to kolonner ----------
      Bruddpunktet henger paa BREDDE i tillegg til orientering, saa en telefon
      i landskap ikke proever aa tegne to kolonner. */
-  @media (min-width:820px) and (orientation:landscape){
-    #view-detail #detail-photo-card{ display:none !important; }
-    #oppskrift-kolonner.tokolonner{ display:flex; gap:14px; align-items:flex-start; }
-    #oppskrift-kolonner.tokolonner > .tabpane{
-      display:block !important; flex:1 1 0; min-width:0;
-      max-height:calc(100vh - 170px); overflow-y:auto; overscroll-behavior:contain;
+  @media (min-width:820px) and (min-height:600px) and (orientation:landscape){
+    /* main er laast til 520px for lesbar linjelengde i portrett. I landskap maa
+       detaljvisningen bryte ut av den rammen, ellers deler to kolonner 480px
+       mellom seg og teksten blir tre ord per linje. Bare denne ene visningen
+       utvides - forsiden, skjemaet og ukeplanen beholder 520px. */
+    #view-detail.active{
+      width:100vw;
+      margin-left:calc(50% - 50vw);
+      margin-right:calc(50% - 50vw);
+      padding:0 24px;
+      box-sizing:border-box;
     }
+    #view-detail #detail-photo-card{ display:none !important; }
+
+    #oppskrift-kolonner.tokolonner{
+      display:flex; gap:18px; align-items:flex-start;
+      max-width:1240px; margin:0 auto;
+    }
+    /* Ingredienslista er smal og tabellarisk, fremgangsmaaten er loepende tekst
+       og trenger mer plass. */
+    #oppskrift-kolonner.tokolonner > #tab-list{ flex:0 0 38%; }
+    #oppskrift-kolonner.tokolonner > #tab-steps{ flex:1 1 0; }
+    #oppskrift-kolonner.tokolonner > .tabpane{
+      display:block !important; min-width:0;
+      max-height:calc(100vh - 168px);
+      overflow-y:auto; overscroll-behavior:contain;
+      scrollbar-gutter:stable; scrollbar-width:thin;
+    }
+    #oppskrift-kolonner.tokolonner > .tabpane > .card-panel{ margin-top:0; }
+
+    /* Sticky-overskriftene ligger i en egen rullekasse her, ikke mot vinduet,
+       saa de fester seg paa null - ikke under toppbaren. */
+    #oppskrift-kolonner.tokolonner .sek-tittel,
+    #oppskrift-kolonner.tokolonner .shop-table tr.ing-seksjon td{ top:0; }
+
+    #view-detail .sticky-sub{ max-width:1240px; margin:0 auto; }
     #view-detail #tab-list-btn, #view-detail #tab-steps-btn{ display:none; }
+    #view-detail #tab-tips, #view-detail #tab-comments, #view-detail #tab-rating{
+      max-width:1240px; margin:0 auto;
+    }
   }
   #tab-begge-btn{ display:none; }
-  @media (min-width:820px) and (orientation:landscape){
+  @media (min-width:820px) and (min-height:600px) and (orientation:landscape){
     #tab-begge-btn{ display:flex; }
   }
 </style>
@@ -4849,7 +4882,7 @@ function changeServings(dir){
 
 /* Bruddpunktet henger paa bredde i tillegg til orientering, slik at en telefon
    i landskap beholder én kolonne. */
-const LANDSKAP = window.matchMedia('(min-width:820px) and (orientation:landscape)');
+const LANDSKAP = window.matchMedia('(min-width:820px) and (min-height:600px) and (orientation:landscape)');
 let sisteFane = 'list';
 
 function switchTab(which){
