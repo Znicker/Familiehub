@@ -320,8 +320,8 @@ a.middag:active{opacity:.72}
 /* "Middag" staar som liten merkelapp over rettens navn, ikke som egen
    overskriftsrad - det sparer en hel linje i et lavt kort. */
 .middag-merke{
-  font-size:var(--t-meta);font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--ink);margin-bottom:3px;
+  font-size:var(--t-meta);font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--ink);margin-bottom:5px;
 }
 .kort-middag{padding:14px 16px}
 /* Middagsnotat for dager uten noe i matplanen. */
@@ -348,7 +348,6 @@ a.middag:active{opacity:.72}
   font-size:var(--t-stor);font-weight:700;line-height:1.2;
   overflow-wrap:anywhere;letter-spacing:-.01em;
 }
-.middag-meta{font-size:var(--t-meta);color:var(--ink-soft);margin-top:4px;font-weight:600}
 .middag-flere{
   font-size:var(--t-meta);color:var(--ink-soft);margin-top:9px;
   padding-top:9px;border-top:1px solid var(--line);
@@ -1658,14 +1657,13 @@ async function tegnMiddag(retter){
   const lenke = forste.id ? 'oppskrifter.html?rett=' + encodeURIComponent(forste.id) : '';
 
   let html = (lenke ? '<a class="middag klikk" href="' + esc(lenke) + '">' : '<div class="middag">')
-    + (bilde
-        ? '<img class="middag-bilde" src="' + esc(bilde) + '" alt="">'
-        : '<div class="middag-ikon">🍽️</div>')
     + '<div class="middag-tekst">'
     +   '<div class="middag-merke">Middag</div>'
     +   '<div class="middag-navn">' + esc(forste.title || 'Uten navn') + '</div>'
-    +   (forste.servings ? '<div class="middag-meta">' + esc(forste.servings) + ' porsjoner</div>' : '')
     + '</div>'
+    + (bilde
+        ? '<img class="middag-bilde" src="' + esc(bilde) + '" alt="">'
+        : '<div class="middag-ikon">🍽️</div>')
     + (lenke ? '<span class="middag-pil">›</span>' : '')
     + (lenke ? '</a>' : '</div>');
 
