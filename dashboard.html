@@ -58,6 +58,19 @@ body{
 .merke-navn:not(:empty)::before{content:'\00b7';margin:0 5px;font-weight:600;color:var(--ink-soft)}
 
 .klokke{margin-left:18px;text-align:right;line-height:1}
+/* Synlig vei tilbake. Staar midt paa, rett under toppraden, saa den er
+   lett aa treffe uansett hvilket kort man nettopp sveipet i. */
+.til-idag{
+  align-self:center;flex-shrink:0;
+  border:1px solid var(--ink);background:var(--ink);color:#FFFFFF;
+  font-family:'Archivo',sans-serif;font-size:13px;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;
+  padding:9px 20px;border-radius:999px;cursor:pointer;
+  box-shadow:0 3px 12px rgba(44,62,80,.28);
+}
+.til-idag:active{transform:scale(.97)}
+.til-idag[hidden]{display:none}
+
 .vaer-sted{font-family:'IBM Plex Mono',monospace;
   font-size:11px;color:var(--ink-soft);opacity:.75;flex-shrink:0}
 
@@ -79,7 +92,17 @@ body{
   font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);
 }
 .vt-rad{display:flex;gap:2px;flex-shrink:0}
-.vt-dager{padding-left:16px;border-left:1px solid var(--line)}
+/* Timevinduet. Sveip flytter det seks timer om gangen. */
+.vt-timer{
+  display:flex;flex-direction:column;align-items:flex-start;gap:1px;
+  padding-left:16px;border-left:1px solid var(--line);
+  cursor:grab;user-select:none;
+}
+.vt-merke{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-soft);opacity:.7;padding-left:3px;
+}
+.vaer-stripe{cursor:grab}
 .vt-d{
   display:flex;flex-direction:column;align-items:center;gap:0;
   min-width:42px;padding:0 3px;
@@ -94,7 +117,7 @@ body{
 @media(max-width:1150px){ .vt-meta{display:none} }
 @media(max-width:900px){
   .vaer-stripe{gap:12px;margin:0}
-  .vt-dager{display:none}
+  .vt-timer{display:none}
   .hoyre > .kort:last-child{flex:1}
 }
 
@@ -346,6 +369,10 @@ input,select,textarea{font-size:16px}
       <div class="klokke-dato" id="klokkeDato">&nbsp;</div>
     </div>
   </div>
+
+  <button class="til-idag" id="tilIdag" onclick="tilbakeTilStandard()" hidden>
+    ‹ Tilbake til i dag
+  </button>
 
   <div class="rutenett">
 
@@ -918,6 +945,7 @@ async function hentVaer(){
   const url = 'https://api.open-meteo.com/v1/forecast'
     + '?latitude=' + posisjon.lat + '&longitude=' + posisjon.lon
     + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m'
+    + '&hourly=temperature_2m,weather_code'
     + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum'
     + '&timezone=Europe%2FOslo&forecast_days=5';
   const r = await fetch(url);
@@ -926,19 +954,57 @@ async function hentVaer(){
   return r.json();
 }
 
+/* Vaeret viser timer, ikke dager. Sveip flytter vinduet framover og
+   bakover i tid, saa man naar morgendagen uten et eget dagsvarsel. */
+let vaerSiste = null;
+let vaerOffset = 0;              /* i timer, alltid et multiplum av STEG */
+const VAER_STEG = 6;
+
 function tegnVaer(d){
+  vaerSiste = d;
+  vaerOffset = 0;
+  tegnVaerStripe();
+}
+
+function vaerForsteTime(){
+  if(!vaerSiste) return 0;
+  const naa = new Date();
+  const i = vaerSiste.hourly.time.findIndex(function(t){ return new Date(t) > naa; });
+  return i < 0 ? 0 : i;
+}
+
+function byttVaer(steg){
+  if(!vaerSiste) return;
+  const i0 = vaerForsteTime();
+  const maks = vaerSiste.hourly.time.length - i0 - VAER_STEG;
+  vaerOffset += steg * VAER_STEG;
+  if(vaerOffset < 0) vaerOffset = 0;
+  if(vaerOffset > maks) vaerOffset = Math.max(0, maks - (maks % VAER_STEG));
+  tegnVaerStripe();
+  visTilIdag();
+}
+
+function tegnVaerStripe(){
+  const d = vaerSiste;
+  if(!d) return;
   const n = d.current;
   const iv = vkode(n.weather_code);
 
-  const UKEDAG = ['Søn','Man','Tir','Ons','Tor','Fre','Lør'];
-  let dager = '';
-  for(let i = 1; i < d.daily.time.length; i++){
-    const dt = new Date(d.daily.time[i] + 'T12:00:00');
-    dager += '<span class="vt-d">'
-      + '<span class="vt-kl">' + UKEDAG[dt.getDay()] + '</span>'
-      + '<span class="vt-ik">' + vkode(d.daily.weather_code[i])[0] + '</span>'
-      + '<span class="vt-gr">' + rund(d.daily.temperature_2m_max[i]) + '°'
-      +   '<span class="vt-min">' + rund(d.daily.temperature_2m_min[i]) + '°</span></span>'
+  const i0 = vaerForsteTime() + vaerOffset;
+  let timer = '';
+  let dagMerke = '';
+  const idag = new Date().getDate();
+
+  for(let i = i0; i < i0 + VAER_STEG && i < d.hourly.time.length; i++){
+    const t = new Date(d.hourly.time[i]);
+    if(!dagMerke && t.getDate() !== idag){
+      const UKEDAG = ['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'];
+      dagMerke = (t.getDate() === idag + 1) ? 'i morgen' : UKEDAG[t.getDay()];
+    }
+    timer += '<span class="vt-d">'
+      + '<span class="vt-kl">' + String(t.getHours()).padStart(2,'0') + '</span>'
+      + '<span class="vt-ik">' + vkode(d.hourly.weather_code[i])[0] + '</span>'
+      + '<span class="vt-gr">' + rund(d.hourly.temperature_2m[i]) + '°</span>'
       + '</span>';
   }
 
@@ -958,7 +1024,10 @@ function tegnVaer(d){
     +   '<span>Fukt ' + n.relative_humidity_2m + ' %</span>'
     +   (regn > 0.05 ? '<span>' + regn.toFixed(1).replace('.', ',') + ' mm i dag</span>' : '')
     + '</span>'
-    + '<span class="vt-rad vt-dager">' + dager + '</span>';
+    + '<span class="vt-timer">'
+    +   (dagMerke ? '<span class="vt-merke">' + esc(dagMerke) + '</span>' : '')
+    +   '<span class="vt-rad">' + timer + '</span>'
+    + '</span>';
 
   $('vaerSted').textContent = posisjon.navn;
   $('vaerStripe').hidden = false;
@@ -1096,6 +1165,7 @@ async function tegnPlanPaaNytt(){
    I dag-boksen, flytter alle seg sammen - tre uavhengige dager side om
    side ville vaert umulig aa holde styr paa. */
 function settDagsTitler(){
+  visTilIdag();
   $('planTittel').textContent  = dagNavn();
   $('huskeTittel').textContent = dagOffset === 0 ? 'I dag' : dagNavn();
   $('middagTittel').textContent = dagOffset === 0 ? 'Dagens middag' : 'Middag';
@@ -1108,13 +1178,22 @@ const HVILE_MS = 3 * 60 * 1000;
 let hvileTimer = null;
 
 function erStandard(){
-  return dagOffset === 0 && $('detalj').hidden;
+  return dagOffset === 0 && vaerOffset === 0 && $('detalj').hidden;
+}
+/* Knappen dukker opp saa snart noe er flyttet fra standard, og forsvinner
+   naar alt er tilbake - da har den ingen jobb aa gjoere. */
+function visTilIdag(){
+  const b = $('tilIdag');
+  if(b) b.hidden = (dagOffset === 0 && vaerOffset === 0);
 }
 function tilbakeTilStandard(){
-  if(erStandard()) return;
   lukkDetalj();
+  const flyttet = (dagOffset !== 0);
   dagOffset = 0;
-  tegnPlanPaaNytt();
+  vaerOffset = 0;
+  tegnVaerStripe();
+  visTilIdag();
+  if(flyttet) tegnPlanPaaNytt();
 }
 function nullstillHvile(){
   clearTimeout(hvileTimer);
@@ -1140,11 +1219,13 @@ function tilDag(n){ dagOffset = n; tegnPlanPaaNytt(); }
 function kobleSveip(){
   ['plan', 'middag', 'huskeIdag'].forEach(function(id){
     const el = $(id);
-    if(el && el.closest('.kort')) sveipPaa(el.closest('.kort'));
+    if(el && el.closest('.kort')) sveipPaa(el.closest('.kort'), byttDag);
   });
+  /* Vaeret har sitt eget tidsvindu - det skal ikke flytte dagen. */
+  sveipPaa($('vaerStripe'), byttVaer);
 }
 
-function sveipPaa(kort){
+function sveipPaa(kort, handling){
   let x0 = 0, y0 = 0, aktiv = false;
 
   kort.addEventListener('touchstart', function(ev){
@@ -1162,7 +1243,7 @@ function sveipPaa(kort){
     const dy = t.clientY - y0;
     if(Math.abs(dx) < 60) return;                  /* for kort til aa vaere ment */
     if(Math.abs(dx) < Math.abs(dy) * 1.5) return;  /* mest loddrett = rulling */
-    byttDag(dx < 0 ? 1 : -1);                      /* dra mot venstre = framover */
+    handling(dx < 0 ? 1 : -1);                     /* dra mot venstre = framover */
   }, {passive:true});
 }
 
