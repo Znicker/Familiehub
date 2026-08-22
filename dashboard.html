@@ -26,6 +26,7 @@
   --t-brod:15px;
   --t-stor:20px;
   --t-display:46px;
+  --t-dagsnavn:18px;
   --t-pil:20px;
   --t-ikon:28px;
 
@@ -41,7 +42,7 @@
 @media(min-width:700px){
   :root{
     --t-etikett:12px; --t-meta:14px; --t-brod:17px; --t-stor:22px;
-    --t-display:60px; --t-pil:22px; --t-ikon:32px;
+    --t-display:60px; --t-dagsnavn:22px; --t-pil:22px; --t-ikon:32px;
   }
 }
 /* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen,
@@ -49,7 +50,7 @@
 @media(min-width:1300px){
   :root{
     --t-etikett:11px; --t-meta:13px; --t-brod:15px; --t-stor:20px;
-    --t-display:60px; --t-pil:20px; --t-ikon:28px;
+    --t-display:60px; --t-dagsnavn:20px; --t-pil:20px; --t-ikon:28px;
   }
 }
 
@@ -108,8 +109,8 @@ body{
 .sveipbar{touch-action:pan-y}
 
 .dag-navn{
-  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
-  letter-spacing:.12em;text-transform:uppercase;color:var(--ink);
+  font-family:'Archivo',sans-serif;font-size:var(--t-dagsnavn);font-weight:700;
+  letter-spacing:.04em;text-transform:uppercase;color:var(--ink);
 }
 .til-idag{
   flex-shrink:0;align-self:center;
@@ -211,8 +212,8 @@ body{
 }
 .kort-tittel{
   font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;letter-spacing:.12em;
-  color:var(--ink-soft);margin-bottom:12px;flex-shrink:0;
-  display:flex;align-items:baseline;gap:8px;
+  color:var(--ink);margin-bottom:12px;flex-shrink:0;
+  display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;
 }
 /* Bla mellom dager. Pilene er smaa - sveip er hovedveien. */
 .dag-piler{display:inline-flex;gap:2px;margin-left:6px;flex-shrink:0}
@@ -317,7 +318,7 @@ a.middag:active{opacity:.72}
    overskriftsrad - det sparer en hel linje i et lavt kort. */
 .middag-merke{
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--ink-soft);margin-bottom:3px;
+  color:var(--ink);margin-bottom:3px;
 }
 .kort-middag{padding:14px 16px}
 /* Middagsnotat for dager uten noe i matplanen. */
