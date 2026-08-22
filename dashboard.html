@@ -71,6 +71,10 @@ body{
 
 /* Dagen er overskriften paa plankortet. Den laa foer paa en egen rad over
    kortene - den raden er borte, og hoeyden gikk til huskeboksene. */
+/* Loddrett rulling er nettleserens, vannrett er sveipen vaar. Uten dette
+   avbryter nettleseren bevegelsen foer den rekker aa bli en sveip. */
+.sveipbar{touch-action:pan-y}
+
 .dag-navn{
   font-family:'Archivo',sans-serif;font-size:12px;font-weight:800;
   letter-spacing:.12em;text-transform:uppercase;color:var(--ink);
@@ -1478,26 +1482,40 @@ function kobleSveip(){
 
 function sveipPaa(kort, handling){
   if(!kort) return;
+  kort.classList.add('sveipbar');
   let x0 = 0, y0 = 0, aktiv = false;
 
-  /* Pointer-hendelser dekker baade finger og mus. Med touchstart/touchend
-     skjedde ingenting i en vanlig nettleser uten beroeringsemulering. */
-  kort.addEventListener('pointerdown', function(ev){
-    if(!ev.isPrimary){ aktiv = false; return; }
-    x0 = ev.clientX; y0 = ev.clientY; aktiv = true;
-  });
-
-  kort.addEventListener('pointerup', function(ev){
+  function start(x, y){ x0 = x; y0 = y; aktiv = true; }
+  function slutt(x, y){
     if(!aktiv) return;
     aktiv = false;
-    const dx = ev.clientX - x0;
-    const dy = ev.clientY - y0;
+    const dx = x - x0, dy = y - y0;
     if(Math.abs(dx) < 60) return;                  /* for kort til aa vaere ment */
     if(Math.abs(dx) < Math.abs(dy) * 1.5) return;  /* mest loddrett = rulling */
     handling(dx < 0 ? 1 : -1);                     /* dra mot venstre = framover */
-  });
+  }
 
-  kort.addEventListener('pointercancel', function(){ aktiv = false; });
+  /* Beroering: touchend fyres selv om nettleseren ruller underveis.
+     Pointer-hendelser blir avbrutt med pointercancel naar nettleseren
+     tar over bevegelsen, og duger derfor ikke alene. */
+  kort.addEventListener('touchstart', function(ev){
+    if(ev.touches.length !== 1){ aktiv = false; return; }
+    start(ev.touches[0].clientX, ev.touches[0].clientY);
+  }, {passive:true});
+  kort.addEventListener('touchend', function(ev){
+    const t = ev.changedTouches[0];
+    slutt(t.clientX, t.clientY);
+  }, {passive:true});
+
+  /* Mus: her finnes ingen touch-hendelser, saa pointer er eneste vei. */
+  kort.addEventListener('pointerdown', function(ev){
+    if(ev.pointerType !== 'mouse') return;
+    start(ev.clientX, ev.clientY);
+  });
+  kort.addEventListener('pointerup', function(ev){
+    if(ev.pointerType !== 'mouse') return;
+    slutt(ev.clientX, ev.clientY);
+  });
 }
 
 async function oppdaterAlt(manuelt){
@@ -1514,6 +1532,8 @@ async function oppdaterAlt(manuelt){
   }
 
   /* Hver del feiler for seg — vaeret skal ikke ryke fordi kalenderen gjoer det. */
+  /* Hvis noe her ryker, maa S.laster likevel nullstilles - ellers blir
+     hver senere oppdatering staaende og returnere med én gang. */
   const jobber = [
     hentPlan().then(tegnPlan).catch(function(e){
       $('plan').innerHTML = '<div class="tom feil">Kunne ikke hente planen: ' + esc(e.message) + '</div>';
@@ -1529,11 +1549,13 @@ async function oppdaterAlt(manuelt){
     }),
     lastHuske()
   ];
-  await Promise.all(jobber);
-
-  $('status').textContent = 'Sist oppdatert '
-    + new Date().toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
-  S.laster = false;
+  try{
+    await Promise.all(jobber);
+    $('status').textContent = 'Sist oppdatert '
+      + new Date().toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
+  } finally {
+    S.laster = false;
+  }
 }
 
 /* ============================================================
