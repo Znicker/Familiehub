@@ -339,6 +339,52 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
 body{touch-action:manipulation}
 input,select,textarea{font-size:16px}
+
+/* ---------- Huskeliste ---------- */
+.hu-ny{
+  margin-left:8px;border:1px solid var(--line);background:transparent;
+  color:var(--ink-soft);font-family:inherit;font-size:15px;font-weight:700;
+  line-height:1;width:22px;height:22px;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.hu-ny:active{background:rgba(44,62,80,.08)}
+.hu-rad{display:flex;align-items:flex-start;gap:9px;padding:7px 0}
+.hu-rad + .hu-rad{border-top:1px solid var(--line)}
+.hu-rad.forbi{opacity:.45}                 /* frist passert - blir staaende */
+.hu-strek{width:4px;border-radius:2px;align-self:stretch;min-height:20px;flex-shrink:0}
+.hu-inn{flex:1;min-width:0}
+.hu-topp{display:flex;align-items:baseline;gap:6px;cursor:default}
+.hu-topp[onclick]{cursor:pointer}
+.hu-tittel{font-weight:700;font-size:14px;line-height:1.3;overflow-wrap:anywhere}
+.hu-pil{color:var(--ink-soft);font-size:15px;line-height:1;transition:transform .15s ease}
+.hu-topp.apen .hu-pil{transform:rotate(90deg)}
+.hu-tekst{font-size:13px;color:var(--ink-soft);line-height:1.45;margin-top:4px;
+  white-space:pre-wrap;overflow-wrap:anywhere}
+.hu-av{font-size:11px;color:var(--ink-soft);opacity:.75;margin-top:2px}
+.hu-slett{
+  border:none;background:transparent;color:var(--ink-soft);opacity:.45;
+  font-size:17px;line-height:1;cursor:pointer;padding:0 2px;flex-shrink:0;
+}
+.hu-slett:active{opacity:1}
+
+.hu-skjema{display:flex;flex-direction:column;gap:7px;padding-bottom:10px;
+  margin-bottom:8px;border-bottom:1px solid var(--line)}
+.hu-felt{
+  font-family:'Archivo',sans-serif;font-size:16px;color:var(--ink);
+  border:1px solid var(--line);border-radius:9px;padding:7px 9px;
+  background:var(--paper);width:100%;box-sizing:border-box;
+}
+.hu-omr{resize:vertical;min-height:44px}
+.hu-rad2{display:flex;gap:7px}
+.hu-rad2 label,.hu-frist{flex:1;font-size:10px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px}
+.hu-knapper{display:flex;gap:7px;justify-content:flex-end}
+.hu-avbryt,.hu-lagre{
+  font-family:'Archivo',sans-serif;font-size:11px;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;padding:7px 14px;border-radius:999px;cursor:pointer;
+}
+.hu-avbryt{border:1px solid var(--line);background:transparent;color:var(--ink-soft)}
+.hu-lagre{border:1px solid var(--ink);background:var(--ink);color:#FFFFFF}
 </style>
 </head>
 <body>
@@ -400,14 +446,14 @@ input,select,textarea{font-size:16px}
       </div>
 
       <div class="kort" id="kortMerknader">
-        <div class="kort-tittel"><span>Merknader</span><span class="bi" id="huskeIdagBi"></span></div>
+        <div class="kort-tittel"><span>Merknader</span><span class="bi" id="huskeIdagBi"></span><button class="hu-ny" onclick="apneHuskeSkjema('dag')" aria-label="Ny merknad">+</button></div>
         <div class="kort-kropp" id="huskeIdag">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
       </div>
 
       <div class="kort" id="kortUken">
-        <div class="kort-tittel"><span>Denne uken</span><span class="bi" id="huskeUkenBi"></span></div>
+        <div class="kort-tittel"><span>Denne uken</span><span class="bi" id="huskeUkenBi"></span><button class="hu-ny" onclick="apneHuskeSkjema('uke')" aria-label="Ny merknad">+</button></div>
         <div class="kort-kropp" id="huskeUken">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
@@ -1093,6 +1139,192 @@ async function hentMiddag(){
   return uke[i.dagNr] || uke[String(i.dagNr)] || [];
 }
 
+/* ============================================================
+   Huskeliste – merknader med frist
+   Én KV-noekkel `fh:huskeliste`. Boksene foelger visningen: Merknader
+   viser punkter med frist paa dagen man ser paa, Denne uken viser
+   punkter for uka den dagen ligger i. Utgraaing maales mot ekte i dag,
+   ikke mot dagen man ser paa - ser du framover, staar alt normalt.
+   ============================================================ */
+const PERSONER = ['Familie', 'Magne', 'Nina', 'Emma', 'Andrea'];
+let huskeliste = null;
+let huskeSkjema = null;          /* 'dag' | 'uke' | null */
+
+function huskeFarge(navn){
+  const i = PERSONER.indexOf(navn);
+  return kalenderFarge(navn, i < 0 ? 0 : i);
+}
+function datoNokkel(d){
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+function ukeNokkel(d){
+  const i = isoUke(d);
+  return i.aar + '-W' + pad(i.uke);
+}
+function ukeAv(datotekst){
+  const b = String(datotekst || '').split('-');
+  if(b.length < 3) return '';
+  return ukeNokkel(new Date(+b[0], +b[1] - 1, +b[2]));
+}
+
+async function hentHuske(){
+  const r = await fetch('/api/data?key=huskeliste', {cache:'no-store'});
+  if(!r.ok) return [];
+  const txt = await r.text();
+  if(!txt) return [];
+  let d = JSON.parse(txt);
+  if(d && typeof d === 'object' && d.value !== undefined) d = d.value;
+  if(typeof d === 'string') d = JSON.parse(d);
+  return Array.isArray(d) ? d : [];
+}
+
+/* Les paa nytt foer skriving. Flere i familien kan skrive samtidig, og
+   KV er sist-skriving-vinner - da er vinduet i det minste kort. */
+async function endreHuske(endring){
+  const fersk = await hentHuske();
+  const ny = endring(fersk);
+  const r = await fetch('/api/data?key=huskeliste', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(ny)
+  });
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  huskeliste = ny;
+  tegnHuske();
+}
+
+function idag0(){
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+
+function huskeRad(m){
+  const forbi = m.frist && m.frist < datoNokkel(idag0());
+  const harTekst = !!(m.tekst || '').trim();
+  return '<div class="hu-rad' + (forbi ? ' forbi' : '') + '" data-id="' + esc(m.id) + '">'
+    +   '<span class="hu-strek" style="background:' + esc(huskeFarge(m.gjelder)) + '"></span>'
+    +   '<div class="hu-inn">'
+    +     '<div class="hu-topp"' + (harTekst ? ' onclick="vekslHuske(this)"' : '') + '>'
+    +       '<span class="hu-tittel">' + esc(m.overskrift || '') + '</span>'
+    +       (harTekst ? '<span class="hu-pil">›</span>' : '')
+    +     '</div>'
+    +     (harTekst ? '<div class="hu-tekst" hidden>' + esc(m.tekst) + '</div>' : '')
+    +     '<div class="hu-av">' + esc(m.gjelder || 'Familie')
+    +       (m.av ? ' · skrevet av ' + esc(m.av) : '') + '</div>'
+    +   '</div>'
+    +   '<button class="hu-slett" onclick="slettHuske(\'' + esc(m.id) + '\')" '
+    +     'aria-label="Slett">×</button>'
+    + '</div>';
+}
+
+function vekslHuske(topp){
+  const t = topp.parentNode.querySelector('.hu-tekst');
+  if(!t) return;
+  t.hidden = !t.hidden;
+  topp.classList.toggle('apen', !t.hidden);
+}
+
+function huskeSkjemaHtml(omfang){
+  const meg = (localStorage.getItem('fh_navn') || '').split(' ')[0] || '';
+  const valg = PERSONER.map(function(n){
+    return '<option value="' + esc(n) + '"' + (n === meg ? ' selected' : '') + '>' + esc(n) + '</option>';
+  }).join('');
+  const megValg = PERSONER.map(function(n){
+    return '<option value="' + esc(n) + '"' + (n === meg ? ' selected' : '') + '>' + esc(n) + '</option>';
+  }).join('');
+  return '<div class="hu-skjema">'
+    + '<input class="hu-felt" id="huOverskrift-' + omfang + '" placeholder="Overskrift" maxlength="80">'
+    + '<textarea class="hu-felt hu-omr" id="huTekst-' + omfang + '" rows="2" '
+    +   'placeholder="Utfyllende tekst (valgfritt)"></textarea>'
+    + '<div class="hu-rad2">'
+    +   '<label>Gjelder<select class="hu-felt" id="huGjelder-' + omfang + '">' + valg + '</select></label>'
+    +   '<label>Skrevet av<select class="hu-felt" id="huAv-' + omfang + '">' + megValg + '</select></label>'
+    + '</div>'
+    + '<label class="hu-frist">Frist<input class="hu-felt" type="date" id="huFrist-' + omfang + '" '
+    +   'value="' + datoNokkel(dagenViser()) + '"></label>'
+    + '<div class="hu-knapper">'
+    +   '<button class="hu-avbryt" onclick="lukkHuskeSkjema()">Avbryt</button>'
+    +   '<button class="hu-lagre" onclick="lagreHuske(\'' + omfang + '\')">Legg til</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function apneHuskeSkjema(omfang){
+  huskeSkjema = (huskeSkjema === omfang) ? null : omfang;
+  tegnHuske();
+  if(huskeSkjema){
+    const f = $('huOverskrift-' + huskeSkjema);
+    if(f) f.focus();
+  }
+}
+function lukkHuskeSkjema(){ huskeSkjema = null; tegnHuske(); }
+
+async function lagreHuske(omfang){
+  const o = ($('huOverskrift-' + omfang).value || '').trim();
+  if(!o){ $('huOverskrift-' + omfang).focus(); return; }
+  const ny = {
+    id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    overskrift: o,
+    tekst: ($('huTekst-' + omfang).value || '').trim(),
+    frist: $('huFrist-' + omfang).value || datoNokkel(dagenViser()),
+    omfang: omfang,
+    gjelder: $('huGjelder-' + omfang).value,
+    av: $('huAv-' + omfang).value,
+    laget: new Date().toISOString()
+  };
+  huskeSkjema = null;
+  try{
+    await endreHuske(function(liste){ return liste.concat([ny]); });
+  }catch(e){
+    alert('Fikk ikke lagret merknaden: ' + e.message);
+  }
+}
+
+async function slettHuske(id){
+  try{
+    await endreHuske(function(liste){
+      return liste.filter(function(m){ return m.id !== id; });
+    });
+  }catch(e){
+    alert('Fikk ikke slettet merknaden: ' + e.message);
+  }
+}
+
+function tegnHuske(){
+  const liste = huskeliste || [];
+  const dag = datoNokkel(dagenViser());
+  const uke = ukeNokkel(dagenViser());
+
+  const grupper = [
+    {omfang: 'dag', boks: 'huskeIdag', bi: 'huskeIdagBi',
+     treff: liste.filter(function(m){ return m.omfang !== 'uke' && m.frist === dag; })},
+    {omfang: 'uke', boks: 'huskeUken', bi: 'huskeUkenBi',
+     treff: liste.filter(function(m){ return m.omfang === 'uke' && ukeAv(m.frist) === uke; })}
+  ];
+
+  grupper.forEach(function(g){
+    g.treff.sort(function(a, b){ return (a.frist || '').localeCompare(b.frist || ''); });
+    const b = $(g.bi);
+    if(b) b.textContent = g.treff.length ? g.treff.length : '';
+    const boks = $(g.boks);
+    if(!boks) return;
+    boks.innerHTML =
+        (huskeSkjema === g.omfang ? huskeSkjemaHtml(g.omfang) : '')
+      + (g.treff.length
+          ? g.treff.map(huskeRad).join('')
+          : (huskeSkjema === g.omfang ? '' : '<div class="tom">Ingenting notert ennå.</div>'));
+  });
+}
+
+async function lastHuske(){
+  try{
+    huskeliste = await hentHuske();
+  }catch(e){
+    huskeliste = [];
+  }
+  tegnHuske();
+}
+
 async function tegnMiddag(retter){
   const boks = $('middag');
   if(!retter.length){
@@ -1156,6 +1388,7 @@ async function tegnPlanPaaNytt(){
   const mitt = ++tegneNr;
   lukkDetalj();
   settDagsTitler();
+  tegnHuske();                     /* boksene foelger dagen man ser paa */
   $('plan').innerHTML   = '<div class="tom">Henter …</div>';
   $('middag').innerHTML = '<div class="tom">Henter …</div>';
 
@@ -1201,6 +1434,7 @@ function visTilIdag(){
 }
 function tilbakeTilStandard(){
   lukkDetalj();
+  huskeSkjema = null;
   const flyttet = (dagOffset !== 0);
   dagOffset = 0;
   vaerOffset = 0;
@@ -1285,7 +1519,8 @@ async function oppdaterAlt(manuelt){
     }),
     hentMiddag().then(tegnMiddag).catch(function(e){
       $('middag').innerHTML = '<div class="tom feil">Kunne ikke hente matplanen.</div>';
-    })
+    }),
+    lastHuske()
   ];
   await Promise.all(jobber);
 
