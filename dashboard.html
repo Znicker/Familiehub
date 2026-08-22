@@ -57,7 +57,27 @@ body{
 .merke-navn{color:var(--ink);font-weight:800}
 .merke-navn:not(:empty)::before{content:'\00b7';margin:0 5px;font-weight:600;color:var(--ink-soft)}
 
-.klokke{margin-left:auto;text-align:right;line-height:1}
+.klokke{margin-left:18px;text-align:right;line-height:1}
+
+/* Vaeret i toppraden, mellom overskriften og klokka. Full melding
+   ligger sammenslaatt i et kort nederst, som aapnes ved trykk. */
+.vaer-topp{
+  display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0;
+  border:1px solid var(--line);background:var(--paper);border-radius:14px;
+  padding:8px 14px;cursor:pointer;font-family:inherit;color:inherit;
+}
+.vaer-topp.aapen{background:var(--bg-2)}
+.vaer-topp-ikon{font-size:26px;line-height:1}
+.vaer-topp-tall{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.vaer-topp-grad{font-size:22px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.vaer-topp-tekst{font-size:11px;color:var(--ink-soft);font-weight:600}
+.vaer-kort{flex-shrink:0;margin-top:16px}
+@media(max-width:560px){
+  .topp{flex-wrap:wrap}
+  .vaer-topp{order:3;margin-left:0;width:100%;justify-content:flex-start;padding:7px 12px}
+  .vaer-topp-ikon{font-size:22px}
+  .vaer-topp-grad{font-size:18px}
+}
 .klokke-tid{font-size:60px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .klokke-dato{font-size:14px;color:var(--ink-soft);font-weight:600;text-transform:capitalize;margin-top:4px}
 
@@ -300,6 +320,14 @@ input,select,textarea{font-size:16px}
         <span class="merke-sub" style="display:block">Dashboard<span class="merke-navn" id="brandNavn"></span></span>
       </span>
     </a>
+    <button class="vaer-topp" id="vaerTopp" onclick="vekslVaer()" hidden
+            aria-label="Vis værmelding">
+      <span class="vaer-topp-ikon" id="vaerToppIkon"></span>
+      <span class="vaer-topp-tall">
+        <span class="vaer-topp-grad" id="vaerToppGrad">--°</span>
+        <span class="vaer-topp-tekst" id="vaerToppTekst"></span>
+      </span>
+    </button>
     <div class="klokke">
       <div class="klokke-tid" id="klokkeTid">--:--</div>
       <div class="klokke-dato" id="klokkeDato">&nbsp;</div>
@@ -326,9 +354,16 @@ input,select,textarea{font-size:16px}
     <div class="hoyre">
 
       <div class="kort">
-        <div class="kort-tittel"><span>Været i dag</span><span class="bi" id="vaerSted">Arendal</span></div>
-        <div class="kort-kropp" id="vaer">
-          <div class="tom">Henter …</div>
+        <div class="kort-tittel"><span>I dag</span><span class="bi" id="huskeIdagBi"></span></div>
+        <div class="kort-kropp" id="huskeIdag">
+          <div class="tom">Ingenting notert ennå.</div>
+        </div>
+      </div>
+
+      <div class="kort">
+        <div class="kort-tittel"><span>Denne uken</span><span class="bi" id="huskeUkenBi"></span></div>
+        <div class="kort-kropp" id="huskeUken">
+          <div class="tom">Ingenting notert ennå.</div>
         </div>
       </div>
 
@@ -340,6 +375,11 @@ input,select,textarea{font-size:16px}
       </div>
 
     </div>
+  </div>
+
+  <div class="kort vaer-kort" id="vaerKort" hidden>
+    <div class="kort-tittel"><span>Værmelding</span><span class="bi" id="vaerSted">Arendal</span></div>
+    <div class="kort-kropp" id="vaer"><div class="tom">Henter …</div></div>
   </div>
 
   <div class="bunn">
@@ -911,6 +951,20 @@ function tegnVaer(d){
     +   '</div>'
     + '</div>'
     + '<div class="vaer-timer">' + timer + '</div>';
+
+  /* Kortversjon i toppraden. Hele meldingen ligger i kortet som
+     aapnes ved trykk. */
+  $('vaerToppIkon').textContent  = iv[0];
+  $('vaerToppGrad').textContent  = rund(n.temperature_2m) + '°';
+  $('vaerToppTekst').textContent = iv[1];
+  $('vaerTopp').hidden = false;
+}
+
+/* Vaermeldingen ligger sammenslaatt. Trykk paa temperaturen aapner den. */
+function vekslVaer(){
+  const k = $('vaerKort'), t = $('vaerTopp');
+  k.hidden = !k.hidden;
+  t.classList.toggle('aapen', !k.hidden);
 }
 
 /* ============================================================
