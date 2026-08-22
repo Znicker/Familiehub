@@ -181,9 +181,13 @@ body{
   font-size:var(--t-brod);font-weight:700;text-transform:uppercase;
   letter-spacing:.05em;line-height:1.2;
   /* "ARBEIDSOPPGAVER" i versaler med bokstavavstand er bredere enn en
-     flis paa telefon. Uten dette presser ordet rutenettsporet ut over
-     skjermkanten, og hele siden starter forskjovet. */
-  overflow-wrap:anywhere;hyphens:auto;max-width:100%;
+     flis paa telefon. Uten en bryteregel presser ordet rutenettsporet ut
+     over skjermkanten, og hele siden starter forskjovet.
+     MERK: her sto "overflow-wrap:anywhere", som bryter hvor som helst og
+     ogsaa naar det er plass - det ga "NEAM DASH-BOAR D". "break-word"
+     bryter bare naar ordet faktisk ikke faar plass, og lar hyphens:auto
+     dele paa stavelse foerst (html lang="no" er satt). */
+  overflow-wrap:break-word;hyphens:auto;max-width:100%;
 }
 .app.soon{opacity:.42}
 .app-badge{
