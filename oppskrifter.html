@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="no">
+<html lang="nb">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -8,6 +8,25 @@
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
   :root{
+    /* ---------- Typeskala ----------
+       Fem roller for tekst. Endre stoerrelsene HER, ikke nede i reglene.
+       Modus foelger skjermbredden av seg selv:
+         mobil  < 700px   kjapt, on the go
+         iPad   700-1300  display og betjening, leses paa avstand
+         PC     > 1300    oversikt, taaler tett informasjon
+       Merk: kjoekken-iPaden er primaerflaten for denne sida, og der er
+       broedteksten 17px - samme som fila hadde foer overalt.
+       Skjemafelt er BEVISST utenfor skalaen og staar paa faste verdier:
+       iOS Safari zoomer inn naar man trykker i et felt under 16px.
+       Samme skala som de andre filene - hold dem like. */
+    --t-etikett:11px;
+    --t-meta:13px;
+    --t-brod:15px;
+    --t-stor:20px;
+    --t-display:46px;
+    --t-pil:20px;
+    --t-ikon:28px;
+
     --bg-1: #F5F5F5;
     --bg-2: #FAFAFA;
     --bg-solid: #FFFFFF;
@@ -25,6 +44,21 @@
     --blue: #2E6FB7;
     --shadow: 0 2px 8px rgba(0,0,0,0.1);
     --radius: 16px;
+  }
+
+  /* iPad: kjoekkenbenken. Leses paa avstand, alt et hakk opp. */
+  @media(min-width:700px){
+    :root{
+      --t-etikett:12px; --t-meta:14px; --t-brod:17px; --t-stor:22px;
+      --t-display:60px; --t-pil:22px; --t-ikon:32px;
+    }
+  }
+  /* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen. */
+  @media(min-width:1300px){
+    :root{
+      --t-etikett:11px; --t-meta:13px; --t-brod:15px; --t-stor:20px;
+      --t-display:60px; --t-pil:20px; --t-ikon:28px;
+    }
   }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
@@ -48,7 +82,7 @@
     background-size: 5px 5px, auto, auto, auto, auto;
     background-attachment: fixed;
   }
-  h1,h2,h3{ font-family:'Archivo', sans-serif; margin:0; font-weight:800; letter-spacing:-0.01em; }
+  h1,h2,h3{ font-family:'Archivo', sans-serif; margin:0; font-weight:700; letter-spacing:-0.01em; }
   .mono{ font-family:'IBM Plex Mono', monospace; }
   button{ font-family:inherit; cursor:pointer; }
   input, textarea{ font-family:inherit; }
@@ -76,40 +110,40 @@
   .search-suggestions.active{ display:block; }
   .search-suggestions button{
     display:block; width:100%; text-align:left; background:none; border:none;
-    padding:10px 14px; font-size:15px; color:var(--ink); border-bottom:1px solid var(--line);
+    padding:10px 14px; font-size:var(--t-brod); color:var(--ink); border-bottom:1px solid var(--line);
   }
   .search-suggestions button:last-child{ border-bottom:none; }
   .search-suggestions button:active{ background:#F0F0F0; }
   .search-bar input{
     flex:1; min-width:0; padding:10px 12px; border-radius:999px; border:none;
-    background:#F5F5F5; color:var(--ink); font-size:15px;
+    background:#F5F5F5; color:var(--ink); font-size:var(--t-brod);
   }
   .search-bar input::placeholder{ color:#A0A0A0; }
   .search-icon-btn{
-    flex-shrink:0; width:32px; height:32px; border-radius:50%; font-size:15px; font-weight:800;
+    flex-shrink:0; width:32px; height:32px; border-radius:50%; font-size:var(--t-brod); font-weight:700;
     display:flex; align-items:center; justify-content:center; padding:0;
   }
   .search-icon-btn.include{ background:var(--lime); color:#FFFFFF; border:none; }
   .search-icon-btn.exclude{ background:none; color:var(--danger); border:2px solid var(--danger); }
-  .search-icon-btn.clear{ background:none; color:var(--ink-soft); border:2px solid var(--ink-soft); font-size:13px; }
+  .search-icon-btn.clear{ background:none; color:var(--ink-soft); border:2px solid var(--ink-soft); font-size:var(--t-meta); }
   .search-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; padding:0 20px; margin-bottom:2px; }
   .search-chips:empty{ margin-top:0; }
   .search-chip.exclude{ background:var(--danger); color:#fff; }
   .search-chip.exclude button{ background:rgba(255,255,255,0.2); color:#fff; }
-  .search-hint{ font-size:13px; color:var(--ink-soft); margin-top:8px; }
+  .search-hint{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:8px; }
 
   .category-picker{ display:flex; flex-wrap:wrap; gap:7px; margin:0 0 14px; border-radius:14px; padding:2px; transition:box-shadow .2s; }
   .category-picker.required-flash{ box-shadow:0 0 0 2.5px var(--danger); }
   .category-chip{
     background:none; border:1.5px solid var(--line); color:var(--ink-soft); border-radius:999px;
-    padding:7px 14px; font-size:15px; font-weight:600; font-family:'Archivo',sans-serif;
+    padding:7px 14px; font-size:var(--t-brod); font-weight:600; font-family:'Archivo',sans-serif;
   }
   .category-chip.active{ background:var(--lime); border-color:var(--lime); color:#FFFFFF; }
 
   .card-categories{ display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
   .cat-badge{
     background:var(--paper-soft); color:var(--ink-soft); border-radius:999px;
-    padding:2px 9px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
+    padding:2px 9px; font-size:var(--t-meta); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
   }
 
   .category-filter-row{
@@ -123,7 +157,7 @@
   }
   .category-filter-chip{
     flex-shrink:0; background:none; border:none; color:var(--ink-soft); border-radius:999px;
-    padding:5px 7px; font-size:13px; font-weight:700; font-family:'Archivo',sans-serif; letter-spacing:0;
+    padding:5px 7px; font-size:var(--t-meta); font-weight:700; font-family:'Archivo',sans-serif; letter-spacing:0;
   }
   .category-filter-chip.active{ background:var(--lime); color:#FFFFFF; }
 
@@ -134,11 +168,11 @@
     display:flex; align-items:center; justify-content:center;
     cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.15);
   }
-  .sort-fab{ font-size:18px; }
-  .new-fab{ font-size:26px; }
+  .sort-fab{ font-size:var(--t-pil); }
+  .new-fab{ font-size:var(--t-ikon); }
   .back-fab{
     position:fixed; left:20px; top:calc(22px + env(safe-area-inset-top)); z-index:25;
-    font-size:27px; font-weight:900; padding-bottom:3px;
+    font-size:var(--t-ikon); font-weight:700; padding-bottom:3px;
     -webkit-text-stroke:1px currentColor;   /* pilen er tynn i Archivo */
   }
   .new-fab:active, .sort-fab:active, .back-fab:active{ transform:scale(0.95); }
@@ -150,7 +184,7 @@
   .sort-fab-menu.active{ display:block; }
   .sort-fab-menu button{
     display:block; width:100%; text-align:left; background:none; border:none;
-    padding:10px 12px; font-size:13px; color:var(--ink); border-radius:8px; cursor:pointer;
+    padding:10px 12px; font-size:var(--t-meta); color:var(--ink); border-radius:8px; cursor:pointer;
   }
   .sort-fab-menu button:hover{ background:#F5F5F5; }
   .sort-fab-menu button.active{ background:var(--lime); color:#FFFFFF; }
@@ -158,13 +192,13 @@
   .rating-filter-bar{ margin-top:4px; padding:0 20px; margin-bottom:12px; display:flex; align-items:center; gap:12px; justify-content:center; }
   .rating-filter-row{ display:flex; align-items:center; gap:4px; flex-wrap:nowrap; margin:0; white-space:nowrap; }
   .rating-filter-label{
-    font-size:13px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.02em;
+    font-size:var(--t-meta); color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.02em;
     font-family:'IBM Plex Mono',monospace; flex-shrink:0; white-space:nowrap;
   }
-  .rating-filter-row .star-btn{ font-size:17px; padding:1px; }
+  .rating-filter-row .star-btn{ font-size:var(--t-brod); padding:1px; }
   .rating-filter-toggle{
     margin-left:auto; background:none; border:none; color:var(--ink);
-    border-radius:999px; padding:5px 12px; font-size:13px; font-family:'Archivo',sans-serif;
+    border-radius:999px; padding:5px 12px; font-size:var(--t-meta); font-family:'Archivo',sans-serif;
     font-weight:700; flex-shrink:0;
   }
   .rating-filter-toggle.active{ background:var(--lime); color:#FFFFFF; }
@@ -172,25 +206,25 @@
     margin-top:8px; background:#F5F5F5; border-radius:12px; padding:10px 12px; display:none;
   }
   .rating-person-check{
-    display:flex; align-items:center; gap:9px; padding:6px 2px; font-size:15px; color:var(--ink);
+    display:flex; align-items:center; gap:9px; padding:6px 2px; font-size:var(--t-brod); color:var(--ink);
   }
   .rating-person-check input{ width:17px; height:17px; accent-color:var(--lime); flex-shrink:0; }
   .rating-people-clear{
-    margin-top:4px; background:none; border:none; color:var(--lime); font-size:13px;
+    margin-top:4px; background:none; border:none; color:var(--lime); font-size:var(--t-meta);
     text-decoration:underline; padding:5px 2px; cursor:pointer;
   }
   .search-chip{
     display:inline-flex; align-items:center; gap:5px; background:var(--lime); color:#FFFFFF;
-    border-radius:999px; padding:5px 5px 5px 12px; font-size:13px; font-weight:700;
+    border-radius:999px; padding:5px 5px 5px 12px; font-size:var(--t-meta); font-weight:700;
     font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.01em;
   }
   .search-chip button{
     background:rgba(255,255,255,0.3); border:none; color:#FFFFFF; border-radius:50%;
     width:18px; height:18px; display:flex; align-items:center; justify-content:center;
-    font-size:13px; padding:0; flex-shrink:0;
+    font-size:var(--t-meta); padding:0; flex-shrink:0;
   }
   .topbar-back{
-    width:40px; height:40px; margin:-4px 0 -4px -8px; font-size:20px; background:none; border:none; color:var(--ink); cursor:pointer;
+    width:40px; height:40px; margin:-4px 0 -4px -8px; font-size:var(--t-pil); background:none; border:none; color:var(--ink); cursor:pointer;
   }
   .home-hero{
     display:flex; flex-direction:column; align-items:center; text-align:center;
@@ -203,11 +237,11 @@
   }
   .home-hero-icon img{ width:100%; height:auto; display:block; }
   .home-hero-title{
-    font-size:22.5px; font-weight:800; color:var(--ink); text-transform:uppercase;
+    font-size:var(--t-stor); font-weight:700; color:var(--ink); text-transform:uppercase;
     letter-spacing:0.05em; margin:0; line-height:1.2;
   }
   .home-hero-sub{
-    font-size:17px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.1em;
+    font-size:var(--t-brod); color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.1em;
     margin:3px 0 0; font-weight:600;
   }
   .topbar-brand{
@@ -216,7 +250,7 @@
     pointer-events:none;
   }
   .topbar h1{
-    font-size:17px; color:var(--paper); text-transform:uppercase; text-align:center;
+    font-size:var(--t-brod); color:var(--paper); text-transform:uppercase; text-align:center;
     letter-spacing:0.04em; line-height:1.15;
   }
   .topbar-home-actions{ display:flex; gap:4px; flex-shrink:0; margin-left:auto; }
@@ -234,17 +268,17 @@
 
   /* ---------- Home / recipe cards ---------- */
   .empty-state{ margin-top:60px; text-align:center; color:var(--ink-soft); }
-  .empty-state .big{ font-size:40px; display:block; margin-bottom:10px; }
+  .empty-state .big{ font-size:var(--t-ikon); display:block; margin-bottom:10px; }
   .index-footer{
     display:block; width:100%; margin:24px 20px 10px; padding:12px; text-align:center;
     background:none; border:1.5px dashed var(--line); border-radius:14px;
-    color:var(--ink-soft); font-size:13px; font-weight:700; font-family:'Archivo',sans-serif;
+    color:var(--ink-soft); font-size:var(--t-meta); font-weight:700; font-family:'Archivo',sans-serif;
     text-transform:uppercase; letter-spacing:0.02em;
   }
   .index-footer.active-mode{
     background:var(--lime); border-style:solid; border-color:var(--lime); color:#FFFFFF;
   }
-  .empty-state p{ margin:6px 0 0; font-size:17px; line-height:1.5; color:var(--ink-soft); }
+  .empty-state p{ margin:6px 0 0; font-size:var(--t-brod); line-height:1.5; color:var(--ink-soft); }
 
   .edit-badge{
     display:none;
@@ -254,7 +288,7 @@
   .card-wrap{ position:relative; }
   .delete-badge{
     position:absolute; top:-8px; left:-8px; width:26px; height:26px; border-radius:50%;
-    background:var(--danger); color:#fff; border:2px solid var(--bg-solid); font-size:18px; font-weight:700;
+    background:var(--danger); color:#fff; border:2px solid var(--bg-solid); font-size:var(--t-pil); font-weight:700;
     display:flex; align-items:center; justify-content:center; line-height:1; padding:0; z-index:2;
   }
   .recipe-card{
@@ -272,11 +306,11 @@
   .recipe-card .photo img{ width:100%; height:100%; object-fit:cover; display:block; }
   .recipe-card .body{ padding:14px 16px; flex:1; min-width:0; overflow:hidden; }
   .recipe-card h3{
-    font-size:19px; color:var(--ink); text-transform:uppercase; letter-spacing:-0.01em;
+    font-size:var(--t-stor); color:var(--ink); text-transform:uppercase; letter-spacing:-0.01em;
     /* Lange titler klippes etter to linjer så kortet holder høyden */
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
-  .recipe-card .meta{ margin-top:8px; font-size:15px; color:var(--ink-soft); font-family:'Archivo', sans-serif; }
+  .recipe-card .meta{ margin-top:8px; font-size:var(--t-brod); color:var(--ink-soft); font-family:'Archivo', sans-serif; }
   .recipe-card .meta span + span{ margin-left:10px; }
 
   /* ---------- Generic view control ---------- */
@@ -291,7 +325,7 @@
 
   /* ---------- Add / edit form ---------- */
   .section-label{
-    font-size:13px; text-transform:uppercase; letter-spacing:0.09em;
+    font-size:var(--t-meta); text-transform:uppercase; letter-spacing:0.09em;
     color:var(--lime-dark); font-weight:700; margin:22px 0 8px;
   }
   .photo-row{ display:flex; gap:10px; flex-wrap:wrap; }
@@ -303,9 +337,9 @@
     background:rgba(30,28,27,0.75); color:#fff;
     display:flex; align-items:center; justify-content:center;
   }
-  .thumb .rm{ top:2px; right:2px; width:20px; height:20px; font-size:15px; }
+  .thumb .rm{ top:2px; right:2px; width:20px; height:20px; font-size:var(--t-brod); }
   .add-photo-btn{
-    border:2px dashed var(--line); background:none; color:var(--lime-dark); font-size:26px;
+    border:2px dashed var(--line); background:none; color:var(--lime-dark); font-size:var(--t-ikon);
     display:flex; align-items:center; justify-content:center;
   }
   .detail-photo{
@@ -334,13 +368,13 @@
   .photo-editor-controls{ display:flex; align-items:center; gap:8px; margin-top:10px; }
   .photo-editor-controls .servings-btn{ width:34px; height:34px; }
   .photo-editor-rm{
-    background:none; border:1.5px solid var(--line); color:var(--ink); font-size:13px; font-weight:600;
+    background:none; border:1.5px solid var(--line); color:var(--ink); font-size:var(--t-meta); font-weight:600;
     padding:8px 14px; border-radius:999px;
   }
   .photo-editor-static{ position:relative; width:100%; border-radius:12px; overflow:hidden; margin-bottom:16px; }
   .photo-editor-static img{ width:100%; display:block; }
   .photo-editor-static.locked img{ aspect-ratio:4/3; object-fit:cover; }
-  .photo-editor-static .photo-editor-rm-static{ top:8px; right:8px; width:30px; height:30px; font-size:17px; }
+  .photo-editor-static .photo-editor-rm-static{ top:8px; right:8px; width:30px; height:30px; font-size:var(--t-brod); }
 
   /* ---------- Generic modal backdrop (used by the delete-confirm dialog) ---------- */
   .modal-backdrop{
@@ -351,7 +385,7 @@
   .btn{
     display:inline-flex; align-items:center; justify-content:center; gap:8px;
     padding:13px 18px; border-radius:999px; border:none;
-    font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
+    font-size:var(--t-brod); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
     font-family:'Archivo', sans-serif;
   }
   .btn-primary{ background:var(--blue); color:#fff; width:100%; margin-top:14px; }
@@ -361,7 +395,7 @@
   .btn-danger{ background:none; color:var(--danger); }
 
   .field{ margin-bottom:12px; }
-  .field label{ display:block; font-size:13px; color:var(--ink-soft); margin-bottom:4px; }
+  .field label{ display:block; font-size:var(--t-meta); color:var(--ink-soft); margin-bottom:4px; }
   .field input, .field textarea{
     width:100%; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line);
     background:#fff; font-size:17px; color:var(--ink);
@@ -378,12 +412,12 @@
   .ing-row .ing-name{ flex:1; }
   .ing-row .line2{ display:flex; gap:6px; margin-top:6px; align-items:center; }
   .ing-row .ing-allergens{
-    flex:1; width:auto; font-size:13px; padding:7px 10px;
+    flex:1; width:auto; font-size:var(--t-meta); padding:7px 10px;
     border-radius:8px; border:1.5px dashed var(--line); background:none;
   }
   .ing-nut-toggle{
     flex-shrink:0; width:30px; height:30px; border-radius:50%; border:1.5px dashed var(--line);
-    background:none; color:var(--ink-soft); font-size:13px; font-weight:700; font-family:'IBM Plex Mono',monospace;
+    background:none; color:var(--ink-soft); font-size:var(--t-meta); font-weight:700; font-family:'IBM Plex Mono',monospace;
   }
   .ing-nut-toggle.active{ background:var(--blue); border-color:var(--blue); color:#fff; }
   .ing-nut-editor{
@@ -391,43 +425,43 @@
     background:var(--paper-soft); border-radius:10px; padding:10px;
   }
   .ing-nut-field label{
-    display:block; font-size:13px; color:var(--ink-soft); text-transform:uppercase;
+    display:block; font-size:var(--t-meta); color:var(--ink-soft); text-transform:uppercase;
     letter-spacing:0.02em; margin-bottom:2px; line-height:1.2;
   }
   .ing-nut-field input{
-    width:100%; padding:7px 8px; font-size:13px; border-radius:7px; border:1.5px solid var(--line); background:#fff;
+    width:100%; padding:7px 8px; font-size:var(--t-meta); border-radius:7px; border:1.5px solid var(--line); background:#fff;
   }
-  .row-rm{ background:none; border:none; color:var(--ink-soft); font-size:18px; padding:4px; flex-shrink:0; }
+  .row-rm{ background:none; border:none; color:var(--ink-soft); font-size:var(--t-pil); padding:4px; flex-shrink:0; }
 
   .step-row{ margin-bottom:10px; }
   .step-row-line1{ display:flex; gap:8px; align-items:flex-start; }
   .step-num{
     width:26px; height:26px; border-radius:50%; background:var(--lime); color:#FFFFFF;
-    font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:700;
+    font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); font-weight:700;
     display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:8px;
   }
   .step-row textarea{ flex:1; }
   .step-photo-toggle{
     background:none; border:1.5px solid var(--line); color:var(--ink-soft); border-radius:8px;
-    font-size:17px; width:36px; height:36px; flex-shrink:0; margin-top:1px; padding:0;
+    font-size:var(--t-brod); width:36px; height:36px; flex-shrink:0; margin-top:1px; padding:0;
     display:flex; align-items:center; justify-content:center;
   }
   .step-photo-toggle.active{ background:var(--blue); border-color:#20447F; color:#fff; }
   .step-photo-panel{
     margin:8px 0 4px 34px; padding:12px; background:var(--paper-soft); border-radius:10px;
   }
-  .lim-hint{ font-size:13px; color:var(--ink-soft); margin:7px 0 0; text-align:center; }
+  .lim-hint{ font-size:var(--t-meta); color:var(--ink-soft); margin:7px 0 0; text-align:center; }
   .step-photo-hent{
     width:100%; padding:13px; border-radius:10px; border:2px dashed var(--line);
     background:none; color:var(--lime-dark);
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:700;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
   }
   .step-photo-valgt img{ width:100%; max-height:190px; object-fit:cover; border-radius:10px; display:block; }
   .step-photo-knapper{ display:flex; gap:8px; margin-top:8px; }
   .step-photo-knapper button{
     flex:1; padding:9px; border-radius:9px; border:1.5px solid var(--line);
     background:var(--paper); color:var(--ink);
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:700;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
   }
   .step-photo-knapper button.fjern{ color:var(--danger); border-color:var(--danger); }
   .step-photo-thumbs{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
@@ -440,12 +474,12 @@
 
   .add-row-btn{
     background:none; border:1.5px dashed var(--line); color:var(--lime-dark);
-    border-radius:10px; padding:9px; width:100%; font-size:15px; font-weight:700;
+    border-radius:10px; padding:9px; width:100%; font-size:var(--t-brod); font-weight:700;
     margin-top:2px; text-transform:uppercase; letter-spacing:0.03em;
   }
 
   .status-msg{
-    margin-top:14px; padding:12px 14px; border-radius:10px; font-size:15px; line-height:1.5;
+    margin-top:14px; padding:12px 14px; border-radius:10px; font-size:var(--t-brod); line-height:1.5;
   }
   .status-msg.loading{ background:var(--blue-light); color:#1E3E70; }
   .status-msg.error{ background:#F4DCD5; color:var(--danger); }
@@ -461,51 +495,51 @@
   /* ---------- Recipe detail ---------- */
   .detail-header{ position:relative; }
   .detail-header .title-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:36px; }
-  .detail-header h2{ font-size:22px; color:var(--ink); line-height:1.18; text-transform:uppercase; }
+  .detail-header h2{ font-size:var(--t-stor); color:var(--ink); line-height:1.18; text-transform:uppercase; }
   .detail-header .actions{ display:flex; gap:0; flex-shrink:0; }
   .sticky-sub .detail-header .title-row{ gap:12px; }
   .sticky-sub .detail-header .icon-btn{ padding:5px; }
-  .sticky-sub .detail-header .icon-btn svg, .sticky-sub .detail-header .icon-btn{ font-size:17px; }
+  .sticky-sub .detail-header .icon-btn svg, .sticky-sub .detail-header .icon-btn{ font-size:var(--t-brod); }
 
   .detail-header .icon-btn{ color:var(--ink-soft); }
   .detail-header .icon-btn:active{ background:rgba(30,28,27,0.06); }
   .detail-stats-row{
     display:flex; align-items:center; flex-wrap:wrap; gap:10px;
-    margin-top:8px; font-size:15px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;
+    margin-top:8px; font-size:var(--t-brod); color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;
   }
   .detail-stats-row .stat{ display:flex; align-items:center; gap:5px; white-space:nowrap; }
   .detail-stats-row .stat-divider{ width:1px; height:14px; background:var(--line); flex-shrink:0; }
 
   .star-btn{
-    background:none; border:none; padding:2px; font-size:23px; line-height:1;
+    background:none; border:none; padding:2px; font-size:var(--t-stor); line-height:1;
     color:#D0D0D0; cursor:pointer;
   }
   .star-btn.filled{ color:#D9A441; }
   .star-btn:active{ transform:scale(0.9); }
   .card-rating{ display:inline-flex; gap:1px; }
-  .mini-star{ color:var(--line); font-size:13px; }
+  .mini-star{ color:var(--line); font-size:var(--t-meta); }
   .card-rating.big{ gap:0px; vertical-align:-2px; }
-  .card-rating.big .mini-star{ font-size:21px; -webkit-text-stroke:0.7px currentColor; }
-  .card-rating-count{ font-size:15px; color:var(--ink-soft); font-family:'Archivo',sans-serif; margin-left:4px; }
-  .rating-count{ font-size:13px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; }
+  .card-rating.big .mini-star{ font-size:var(--t-stor); -webkit-text-stroke:0.7px currentColor; }
+  .card-rating-count{ font-size:var(--t-brod); color:var(--ink-soft); font-family:'Archivo',sans-serif; margin-left:4px; }
+  .rating-count{ font-size:var(--t-meta); color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; }
 
   .tasting-person-row{
     display:flex; align-items:center; justify-content:space-between;
     padding:9px 0; border-bottom:1px solid var(--line);
   }
   .tasting-person-row:first-child{ padding-top:0; }
-  .tasting-person-name{ font-size:15px; color:var(--ink); font-weight:600; }
+  .tasting-person-name{ font-size:var(--t-brod); color:var(--ink); font-weight:600; }
 
   .tasting-guest-row{
     display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line);
   }
   .tasting-guest-row input{
     flex:1; min-width:0; padding:9px 10px; border-radius:8px; border:1.5px solid var(--line);
-    font-size:15px; background:#fff; color:var(--ink);
+    font-size:var(--t-brod); background:#fff; color:var(--ink);
   }
-  .tasting-person-stars .star-btn, .tasting-guest-row .star-btn{ font-size:19px; padding:1px; }
+  .tasting-person-stars .star-btn, .tasting-guest-row .star-btn{ font-size:var(--t-stor); padding:1px; }
   .rm-guest-btn{
-    background:none; border:none; color:var(--danger); font-size:18px; padding:4px; flex-shrink:0;
+    background:none; border:none; color:var(--danger); font-size:var(--t-pil); padding:4px; flex-shrink:0;
   }
 
   .tasting-entry{
@@ -514,25 +548,25 @@
   .tasting-entry-head{
     display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;
   }
-  .tasting-entry-date{ font-size:15px; font-weight:700; color:var(--ink); text-transform:uppercase; letter-spacing:0.02em; }
+  .tasting-entry-date{ font-size:var(--t-brod); font-weight:700; color:var(--ink); text-transform:uppercase; letter-spacing:0.02em; }
   .tasting-entry-avg{ display:flex; align-items:center; gap:6px; }
   .tasting-entry-people{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
   .tasting-chip{
     background:#fff; border:1px solid var(--line); border-radius:999px; padding:4px 10px;
-    font-size:13px; color:var(--ink); display:inline-flex; align-items:center; gap:4px;
+    font-size:var(--t-meta); color:var(--ink); display:inline-flex; align-items:center; gap:4px;
   }
-  .tasting-entry-notes{ margin-top:10px; font-size:15px; color:var(--ink-soft); line-height:1.5; }
+  .tasting-entry-notes{ margin-top:10px; font-size:var(--t-brod); color:var(--ink-soft); line-height:1.5; }
   .important-comment{ border:2px solid #D9A441; }
   .important-badge{
-    font-size:13px; font-weight:700; color:#7A4E00; background:var(--mustard-light);
+    font-size:var(--t-meta); font-weight:700; color:#7A4E00; background:var(--mustard-light);
     padding:3px 9px; border-radius:999px; text-transform:uppercase; letter-spacing:0.02em; white-space:nowrap;
   }
   .pinned-comment{
     background:var(--mustard-light); border-radius:12px; padding:12px 14px; margin-bottom:14px;
-    font-size:15px; color:#4A3300; line-height:1.5;
+    font-size:var(--t-brod); color:#4A3300; line-height:1.5;
   }
   .pinned-comment .pinned-comment-head{
-    display:flex; align-items:center; gap:6px; font-weight:700; font-size:13px;
+    display:flex; align-items:center; gap:6px; font-weight:700; font-size:var(--t-meta);
     text-transform:uppercase; letter-spacing:0.02em; margin-bottom:5px; color:#7A4E00;
   }
   .mini-star.filled{ color:#D9A441; }
@@ -540,10 +574,10 @@
   .sticky-sub .card-panel.detail-header{
     padding:14px 16px 12px 28px; margin:8px 0 0;
   }
-  .sticky-sub .detail-header h2{ font-size:17px; line-height:1.15; }
-  .sticky-sub .detail-stats-row{ margin-top:2px; font-size:13px; gap:8px; }
-  .sticky-sub .detail-stats-row .star-btn{ font-size:17px; padding:1px; }
-  .sticky-sub .detail-stats-row .rating-count{ font-size:13px; }
+  .sticky-sub .detail-header h2{ font-size:var(--t-brod); line-height:1.15; }
+  .sticky-sub .detail-stats-row{ margin-top:2px; font-size:var(--t-meta); gap:8px; }
+  .sticky-sub .detail-stats-row .star-btn{ font-size:var(--t-brod); padding:1px; }
+  .sticky-sub .detail-stats-row .rating-count{ font-size:var(--t-meta); }
   .sticky-sub .tabs{ margin:8px 0 4px; padding:3px; }
   /* Fem faner på én linje: ikonet bærer betydningen, teksten bekrefter den.
      Da holder det med en smal fane uten at skriften må krympes. */
@@ -552,9 +586,9 @@
     flex:1 1 0; min-width:0; padding:7px 2px;
     display:flex; flex-direction:column; align-items:center; gap:2px;
   }
-  .sticky-sub .tab-ikon{ font-size:17px; line-height:1; }
+  .sticky-sub .tab-ikon{ font-size:var(--t-brod); line-height:1; }
   .sticky-sub .tab-tekst{
-    font-size:11.5px; font-weight:700; line-height:1.1;
+    font-size:var(--t-etikett); font-weight:700; line-height:1.1;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
   }
 
@@ -563,83 +597,83 @@
   }
   .tab-btn{
     flex:1; border:none; background:none; padding:10px; border-radius:999px;
-    font-size:15px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.02em;
+    font-size:var(--t-brod); font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.02em;
     font-family:'Archivo', sans-serif;
   }
   .tab-btn.active{ background:var(--lime); color:#FFFFFF; }
 
   .tabpane{ display:none; }
   .tabpane.active{ display:block; }
-  .ing-empty{ text-align:center; color:var(--ink-soft); font-size:15px; padding:10px 0; grid-column:1/-1; }
+  .ing-empty{ text-align:center; color:var(--ink-soft); font-size:var(--t-brod); padding:10px 0; grid-column:1/-1; }
 
   /* Servings scaler */
   .servings-bar{
     display:flex; align-items:center; justify-content:center; gap:14px;
     margin-bottom:16px; padding-bottom:16px; border-bottom:1px dashed var(--line);
   }
-  .servings-bar .lbl{ font-size:13px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-weight:600; }
+  .servings-bar .lbl{ font-size:var(--t-meta); text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-weight:600; }
   .servings-btn{
     width:30px; height:30px; border-radius:50%; border:1.5px solid var(--line); background:#fff;
-    color:var(--ink); font-size:17px; font-weight:700; display:flex; align-items:center; justify-content:center;
+    color:var(--ink); font-size:var(--t-brod); font-weight:700; display:flex; align-items:center; justify-content:center;
     padding:0; line-height:1;
   }
   .servings-btn:active{ background:var(--lime); border-color:var(--lime-dark); color:#FFFFFF; }
-  .servings-count{ font-family:'Archivo',sans-serif; font-weight:800; font-size:19px; min-width:20px; text-align:center; }
+  .servings-count{ font-family:'Archivo',sans-serif; font-weight:700; font-size:var(--t-stor); min-width:20px; text-align:center; }
 
   /* Allergen summary */
   .allergen-summary{
     margin-top:16px; padding-top:14px; border-top:1px dashed var(--line);
   }
   .allergen-summary .lbl{
-    font-size:13px; text-transform:uppercase; letter-spacing:0.07em; color:var(--danger);
+    font-size:var(--t-meta); text-transform:uppercase; letter-spacing:0.07em; color:var(--danger);
     font-weight:700; margin-bottom:8px; display:block;
   }
   .allergen-pills{ display:flex; flex-wrap:wrap; gap:6px; }
   .allergen-pill{
-    background:var(--mustard-light); color:#5C3A0E; font-size:13px; font-weight:600;
+    background:var(--mustard-light); color:#5C3A0E; font-size:var(--t-meta); font-weight:600;
     padding:5px 11px; border-radius:999px; cursor:pointer;
     border:none; font-family:'Archivo',sans-serif;
   }
   .allergen-flag{
     display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px;
-    border-radius:50%; background:var(--danger); color:#fff; font-size:13px; font-weight:800;
+    border-radius:50%; background:var(--danger); color:#fff; font-size:var(--t-meta); font-weight:700;
     margin-left:4px; vertical-align:middle; line-height:1;
     border:none; padding:0; font-family:inherit; cursor:pointer;
   }
   .nutrition-flag{
     display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px;
     border-radius:50%; border:1.3px solid var(--blue); color:var(--blue); background:none;
-    font-size:13px; font-weight:800; margin-left:5px; cursor:help; vertical-align:middle; line-height:1;
+    font-size:var(--t-meta); font-weight:700; margin-left:5px; cursor:help; vertical-align:middle; line-height:1;
     opacity:0.75;
   }
   .nutrition-form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
   .nutrition-form-grid .field{ margin-bottom:10px; }
-  .nutrition-form-grid label{ font-size:13px; }
+  .nutrition-form-grid label{ font-size:var(--t-meta); }
 
   .nutrition-box{
     margin-top:14px; background:var(--paper-soft); border-radius:12px; padding:12px 16px 4px;
   }
   .nutrition-box .lbl{
-    font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;
+    font-size:var(--t-meta); font-weight:700; text-transform:uppercase; letter-spacing:0.03em;
     color:var(--ink-soft); margin-bottom:8px; display:block;
   }
-  .nutrition-box .disclaimer{ font-size:13px; color:var(--ink-soft); font-style:italic; margin:4px 0 10px; }
+  .nutrition-box .disclaimer{ font-size:var(--t-meta); color:var(--ink-soft); font-style:italic; margin:4px 0 10px; }
   .nutrition-table{ width:100%; border-collapse:collapse; }
-  .nutrition-table td{ padding:6px 0; font-size:15px; border-bottom:1px solid var(--line); }
+  .nutrition-table td{ padding:6px 0; font-size:var(--t-brod); border-bottom:1px solid var(--line); }
   .nutrition-table td:last-child{ text-align:right; font-family:'IBM Plex Mono',monospace; }
   .nutrition-table tr:last-child td{ border-bottom:none; }
   .nutrition-diff-box{
     margin-top:10px; background:var(--paper-soft); border-radius:12px; padding:12px 14px;
   }
-  .nutrition-diff-box .nutrition-table td{ padding:5px 6px 5px 0; font-size:13px; }
+  .nutrition-diff-box .nutrition-table td{ padding:5px 6px 5px 0; font-size:var(--t-meta); }
   .ing-conflict-row{
     background:#fff; border-radius:10px; padding:10px 12px; margin-bottom:8px; border:1px solid var(--line);
   }
-  .ing-conflict-row.resolved{ padding:8px 12px; font-size:13px; color:var(--ink-soft); }
-  .ing-conflict-head{ font-size:15px; font-weight:700; color:var(--ink); }
-  .ing-conflict-type{ font-weight:400; color:var(--ink-soft); font-size:13px; text-transform:none; }
-  .ing-conflict-vals{ display:flex; flex-direction:column; gap:2px; margin-top:4px; font-size:13px; color:var(--ink-soft); }
-  .nutrition-table tr.sub td:first-child{ padding-left:14px; color:var(--ink-soft); font-size:13px; }
+  .ing-conflict-row.resolved{ padding:8px 12px; font-size:var(--t-meta); color:var(--ink-soft); }
+  .ing-conflict-head{ font-size:var(--t-brod); font-weight:700; color:var(--ink); }
+  .ing-conflict-type{ font-weight:400; color:var(--ink-soft); font-size:var(--t-meta); text-transform:none; }
+  .ing-conflict-vals{ display:flex; flex-direction:column; gap:2px; margin-top:4px; font-size:var(--t-meta); color:var(--ink-soft); }
+  .nutrition-table tr.sub td:first-child{ padding-left:14px; color:var(--ink-soft); font-size:var(--t-meta); }
 
   /* All steps, always visible */
   .steps-all{ display:flex; flex-direction:column; }
@@ -647,21 +681,21 @@
   .step-block:last-child{ border-bottom:none; padding-bottom:2px; }
   .step-block .num{
     width:28px; height:28px; border-radius:50%; background:var(--lime); color:#FFFFFF;
-    font-family:'Archivo',sans-serif; font-weight:800; font-size:15px;
+    font-family:'Archivo',sans-serif; font-weight:700; font-size:var(--t-brod);
     display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;
   }
   .step-block .step-block-body{ flex:1; min-width:0; }
-  .step-block .txt{ font-size:17px; line-height:1.55; padding-top:3px; }
+  .step-block .txt{ font-size:var(--t-brod); line-height:1.55; padding-top:3px; }
   .step-photo{ display:block; width:100%; max-height:220px; object-fit:cover; border-radius:10px; margin-bottom:8px; }
 
   /* Shopping list table */
   .shop-table{ width:100%; border-collapse:collapse; margin-top:2px; }
   .shop-table th{
-    text-align:left; font-size:13px; text-transform:uppercase; letter-spacing:0.06em;
-    color:var(--ink-soft); padding:0 8px 9px; font-weight:800;
+    text-align:left; font-size:var(--t-meta); text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--ink-soft); padding:0 8px 9px; font-weight:700;
   }
   .shop-table th:last-child, .shop-table td.amt{ text-align:right; }
-  .shop-table td{ padding:14px 8px; border-top:1px solid var(--line); font-size:17px; line-height:1.3; vertical-align:middle; }
+  .shop-table td{ padding:14px 8px; border-top:1px solid var(--line); font-size:var(--t-brod); line-height:1.3; vertical-align:middle; }
   .shop-table tr:first-child td{ border-top:1px solid var(--line); }
   .shop-table td.amt{ font-family:'Archivo',sans-serif; font-weight:700; color:var(--ink); white-space:nowrap; padding-left:12px; width:1%; }
   .shop-table td.name{ word-break:break-word; }
@@ -671,7 +705,7 @@
   .shop-table tr.ing-bolk span{
     display:block; padding:8px 14px; border-radius:9px;
     background:var(--lime-dark); color:#FFFFFF;
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:800;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
     box-shadow:0 2px 6px rgba(56,142,60,0.28);
   }
@@ -681,7 +715,7 @@
     background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow);
     padding:20px; margin-top:16px; text-align:center;
   }
-  .confirm-box p{ font-size:15px; color:var(--ink-soft); margin:0 0 14px; }
+  .confirm-box p{ font-size:var(--t-brod); color:var(--ink-soft); margin:0 0 14px; }
   .confirm-box .row{ display:flex; gap:10px; }
 
   /* ---------- Ukeplanlegging ---------- */
@@ -699,7 +733,7 @@
   .bottom-bar > *{ pointer-events:auto; }
   .plan-fab, .plan-menu-fab{
     position:relative; width:48px; height:48px; border-radius:50%;
-    background:var(--lime); color:#FFFFFF; border:none; padding:0; font-size:20px;
+    background:var(--lime); color:#FFFFFF; border:none; padding:0; font-size:var(--t-pil);
     display:flex; align-items:center; justify-content:center;
     cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.15);
   }
@@ -709,7 +743,7 @@
   .plan-fab-plus{
     position:absolute; right:-3px; bottom:-3px; width:20px; height:20px; border-radius:50%;
     background:var(--blue); color:#fff; border:2px solid var(--bg-solid);
-    font-size:15px; font-weight:700; line-height:16px; text-align:center;
+    font-size:var(--t-brod); font-weight:700; line-height:16px; text-align:center;
   }
   .plan-menu-fab{ background:var(--blue); }
   /* Ligger i forhold til knapperaden, så den følger med når raden fester seg */
@@ -718,9 +752,9 @@
     display:flex; align-items:center; gap:2px;
     background:var(--paper); border:1px solid var(--line); border-radius:999px;
     padding:2px 4px; box-shadow:0 4px 12px rgba(0,0,0,0.15);
-    font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink);
+    font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); color:var(--ink);
   }
-  .plan-week-line button{ background:none; border:none; color:var(--ink); font-size:17px; line-height:1; padding:3px 8px; }
+  .plan-week-line button{ background:none; border:none; color:var(--ink); font-size:var(--t-brod); line-height:1; padding:3px 8px; }
   .plan-week-line span{ min-width:66px; text-align:center; }
   /* Bare uke-linja følger menymodus. Knappene står alltid. */
   .bottom-bar:not(.open) .plan-week-line{ display:none; }
@@ -729,19 +763,19 @@
   .plan-target{
     display:flex; align-items:center; gap:10px; margin:8px 20px 4px;
     background:var(--blue); color:#fff; border-radius:12px; padding:11px 14px;
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:700;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
     box-shadow:0 4px 12px rgba(0,0,0,0.15);
   }
   .plan-target span{ flex:1; }
   .plan-target button{
     background:rgba(255,255,255,0.22); border:none; color:#fff; border-radius:999px;
-    padding:6px 13px; font-family:'Archivo',sans-serif; font-size:13px; font-weight:700;
+    padding:6px 13px; font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
   }
   /* Legg-til-knapp i hver dagrute i ukemenyen */
   .plan-day-add{
     align-self:flex-start; background:none; border:1.5px dashed var(--line);
     color:var(--lime-dark); border-radius:8px; padding:5px 11px;
-    font-family:'Archivo',sans-serif; font-size:13px; font-weight:700;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
   }
   .plan-marks{
     position:absolute; top:-9px; left:-8px; z-index:2;
@@ -751,16 +785,16 @@
   .plan-day-badge{
     background:var(--blue); color:#fff; border:2px solid var(--bg-solid);
     border-radius:999px; padding:3px 10px; line-height:1.2;
-    font-family:'Archivo',sans-serif; font-size:13px; font-weight:700; white-space:nowrap;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700; white-space:nowrap;
     box-shadow:0 2px 6px rgba(0,0,0,0.18);
   }
   .plan-times{
     display:block; margin-top:6px; font-family:'Archivo',sans-serif;
-    font-size:15px; color:var(--ink-soft);
+    font-size:var(--t-brod); color:var(--ink-soft);
   }
   .plan-badge{
     width:26px; height:26px; border-radius:50%; flex-shrink:0;
-    background:var(--lime); color:#fff; border:2px solid var(--bg-solid); font-size:18px; font-weight:700;
+    background:var(--lime); color:#fff; border:2px solid var(--bg-solid); font-size:var(--t-pil); font-weight:700;
     display:flex; align-items:center; justify-content:center; line-height:1; padding:0;
   }
   .plan-badge.valgt{ background:var(--danger); }
@@ -770,13 +804,13 @@
   }
   .serv-picker button{
     width:34px; height:34px; border-radius:50%; border:1.5px solid var(--line);
-    background:var(--paper); color:var(--ink); font-size:19px; line-height:1; padding:0;
+    background:var(--paper); color:var(--ink); font-size:var(--t-stor); line-height:1; padding:0;
   }
   .serv-picker-val{
     min-width:118px; text-align:center; font-family:'Archivo',sans-serif;
-    font-size:15px; font-weight:700; color:var(--ink);
+    font-size:var(--t-brod); font-weight:700; color:var(--ink);
   }
-  .serv-picker-val small{ display:block; font-weight:400; font-size:13px; color:var(--ink-soft); }
+  .serv-picker-val small{ display:block; font-weight:400; font-size:var(--t-meta); color:var(--ink-soft); }
   /* Flytende melding som ikke blokkerer noe */
   /* Fanger opp trykk mens en handling pågår, så man ikke rekker å trykke to ganger */
   .busy-overlay{ display:none; position:fixed; inset:0; z-index:200; background:transparent; }
@@ -793,7 +827,7 @@
     bottom:calc(28px + env(safe-area-inset-bottom));
     z-index:300;   /* over både modaler (100) og arbeidslokket (200) */
     background:var(--ink); color:var(--paper); border-radius:14px;
-    padding:14px 22px; font-size:17px; font-family:'Archivo',sans-serif; font-weight:700;
+    padding:14px 22px; font-size:var(--t-brod); font-family:'Archivo',sans-serif; font-weight:700;
     box-shadow:0 8px 26px rgba(0,0,0,0.4); max-width:86vw; text-align:center; line-height:1.35;
     opacity:0; transition:opacity 0.18s ease;
   }
@@ -805,12 +839,12 @@
     display:flex; justify-content:space-between; align-items:center; gap:10px;
     width:100%; padding:11px 14px; border-radius:10px;
     border:1.5px solid var(--line); background:var(--paper); color:var(--ink);
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:700;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
   }
   .day-picker-grid button.valgt{ border-color:var(--danger); color:var(--danger); }
   .day-picker-grid button.valgt .day-count{ color:var(--danger); }
   .day-picker-grid button .day-count{
-    font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:400; color:var(--ink-soft);
+    font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); font-weight:400; color:var(--ink-soft);
   }
   /* Ukevelger på toppen av ukemeny-siden */
   .plan-nav{
@@ -818,14 +852,14 @@
     background:var(--paper-soft); border-radius:999px; padding:4px; margin-bottom:16px;
   }
   .plan-nav button{
-    background:none; border:none; color:var(--ink); font-size:20px; line-height:1;
+    background:none; border:none; color:var(--ink); font-size:var(--t-pil); line-height:1;
     padding:6px 16px; border-radius:999px;
   }
   .plan-nav-label{
     flex:1; text-align:center; font-family:'IBM Plex Mono',monospace;
-    font-size:15px; font-weight:700; color:var(--ink);
+    font-size:var(--t-brod); font-weight:700; color:var(--ink);
   }
-  .plan-nav-label small{ display:block; font-weight:400; font-size:13px; color:var(--ink-soft); }
+  .plan-nav-label small{ display:block; font-weight:400; font-size:var(--t-meta); color:var(--ink-soft); }
 
   /* Uka som loddrette dagkort - lesbart på telefon uten sideveis rulling */
   .plan-day-card{
@@ -836,18 +870,18 @@
   .plan-day-card.today{ border-color:var(--lime); border-width:2px; }
   .plan-day-card.empty{ background:none; border-style:dashed; }
   .plan-day-label{
-    flex:0 0 74px; font-family:'Archivo',sans-serif; font-size:13px;
+    flex:0 0 74px; font-family:'Archivo',sans-serif; font-size:var(--t-meta);
     color:var(--ink-soft); letter-spacing:0.02em; padding-top:2px;
   }
   .plan-day-label b{
-    display:block; font-size:17px; font-weight:800; color:var(--ink);
+    display:block; font-size:var(--t-brod); font-weight:700; color:var(--ink);
     text-transform:uppercase; letter-spacing:0.03em; margin-bottom:1px;
   }
   .plan-day-list{ flex:1; display:flex; flex-direction:column; gap:7px; min-width:0; }
   .plan-col-dish{ display:flex; align-items:flex-start; gap:6px; }
-  .plan-col-dish .plan-dish-name{ font-size:17px; font-weight:600; line-height:1.3; }
+  .plan-col-dish .plan-dish-name{ font-size:var(--t-brod); font-weight:600; line-height:1.3; }
   .plan-dish-serv{
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:600; color:var(--ink-soft);
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:600; color:var(--ink-soft);
     white-space:nowrap; padding-top:3px;
   }
 
@@ -856,12 +890,12 @@
   .ing-toolbar button{
     background:var(--paper-soft); border:1px solid var(--line); color:var(--ink);
     border-radius:999px; padding:7px 14px; font-family:'Archivo',sans-serif;
-    font-size:13px; font-weight:700;
+    font-size:var(--t-meta); font-weight:700;
   }
   .ing-toolbar button.active{ background:var(--lime); border-color:var(--lime); color:#FFFFFF; }
   .ing-toolbar button.primary{ background:var(--blue); border-color:var(--blue); color:#FFFFFF; }
   .ing-toolbar button:disabled{ opacity:0.4; }
-  .ing-grip{ flex-shrink:0; padding:2px 6px 2px 0; color:var(--line); font-size:17px; }
+  .ing-grip{ flex-shrink:0; padding:2px 6px 2px 0; color:var(--line); font-size:var(--t-brod); }
   /* pan-y: loddrett rulling fungerer som normalt, dra tar først over ved langt trykk */
   .plan-ing-row{ position:relative; touch-action:pan-y; user-select:none; cursor:grab; }
   .plan-ing-row.ing-armed{ background:rgba(46,111,183,0.08); border-radius:8px; }
@@ -877,35 +911,35 @@
   }
   .ing-merge-src{
     display:flex; justify-content:space-between; gap:10px;
-    padding:8px 0; border-bottom:1px dashed var(--line); font-size:15px;
+    padding:8px 0; border-bottom:1px dashed var(--line); font-size:var(--t-brod);
   }
   .ing-merge-src:last-of-type{ border-bottom:none; }
-  .ing-merge-src .amt{ font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft); }
+  .ing-merge-src .amt{ font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); color:var(--ink-soft); }
   .ing-merge-fields{ display:flex; gap:8px; margin:12px 0 4px; }
   .ing-merge-fields select{
     flex:1; border:1.5px solid var(--line); border-radius:9px; padding:10px;
-    font-family:'Archivo',sans-serif; font-size:15px; background:#fff; color:var(--ink);
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); background:#fff; color:var(--ink);
   }
   .ing-merge-fields input{
     border:1.5px solid var(--line); border-radius:9px; padding:10px;
-    font-family:'Archivo',sans-serif; font-size:15px; background:#fff; color:var(--ink); min-width:0;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); background:#fff; color:var(--ink); min-width:0;
   }
   #ing-merge-amount{ width:88px; }
   #ing-merge-unit{ width:88px; }
   #ing-merge-name{ flex:1; }
   .ing-row-actions{ display:flex; gap:2px; flex-shrink:0; }
   .ing-row-actions button{
-    background:none; border:none; color:var(--ink-soft); font-size:15px; padding:2px 6px;
+    background:none; border:none; color:var(--ink-soft); font-size:var(--t-brod); padding:2px 6px;
   }
   .kat-rad{
     display:flex; align-items:center; gap:10px;
     padding:9px 0; border-bottom:1px dashed var(--line);
   }
   .kat-rad:last-child{ border-bottom:none; }
-  .kat-rad .navn{ flex:1; font-size:15px; min-width:0; word-break:break-word; }
+  .kat-rad .navn{ flex:1; font-size:var(--t-brod); min-width:0; word-break:break-word; }
   .kat-rad select{
     flex:0 0 150px; border:1.5px solid var(--line); border-radius:9px; padding:8px;
-    font-family:'Archivo',sans-serif; font-size:15px; background:#fff; color:var(--ink);
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); background:#fff; color:var(--ink);
   }
   .ing-review-row{
     display:flex; align-items:flex-start; gap:9px;
@@ -913,17 +947,17 @@
   }
   .ing-review-row:last-of-type{ border-bottom:none; }
   .ing-review-row input{ width:20px; height:20px; margin-top:2px; flex-shrink:0; accent-color:var(--lime); }
-  .ing-review-row .navn{ flex:1; font-size:15px; min-width:0; }
-  .ing-review-row .kilde{ display:block; font-size:13px; color:var(--ink-soft); margin-top:2px; }
+  .ing-review-row .navn{ flex:1; font-size:var(--t-brod); min-width:0; }
+  .ing-review-row .kilde{ display:block; font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; }
   .ing-review-row .amt{
-    font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft);
+    font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); color:var(--ink-soft);
     white-space:nowrap; text-align:right;
   }
   /* Basisvarene er ikke noe man handler etter, så båndet er dempet */
   .ing-basis-head{
     margin:30px 0 8px; padding:9px 14px; border-radius:9px;
     background:var(--paper-soft); color:var(--ink-soft);
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:800;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
     border:1px solid var(--line);
   }
@@ -934,48 +968,48 @@
   .ing-type-head{
     margin:26px 0 8px; padding:9px 14px; border-radius:9px;
     background:var(--lime-dark); color:#FFFFFF;
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:800;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
     box-shadow:0 2px 6px rgba(56,142,60,0.28);
   }
   .ing-type-head:first-of-type{ margin-top:12px; }
-  .ing-fotnote{ font-size:13px; color:var(--ink-soft); margin-top:10px; }
+  .ing-fotnote{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:10px; }
   /* Ingrediensfanen */
   .plan-ing-row{
     display:flex; justify-content:space-between; align-items:baseline; gap:12px;
     padding:13px 0; border-bottom:1px solid var(--line);
   }
   .plan-ing-row:last-child{ border-bottom:none; }
-  .plan-ing-name{ flex:1; font-size:17px; font-weight:600; line-height:1.3; color:var(--ink); }
+  .plan-ing-name{ flex:1; font-size:var(--t-brod); font-weight:600; line-height:1.3; color:var(--ink); }
   /* Mengdene sto i fastbreddeskrift og dempet grått - ryddig som tabell, men tungt
      å lese som liste. Nå samme skrift som resten, i full farge og halvfet.
      Høyrestillingen holder kolonnen ordnet uten at skriften må ha fast bredde. */
   .plan-ing-amt{
-    font-family:'Archivo',sans-serif; font-size:17px; font-weight:700; color:var(--ink);
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700; color:var(--ink);
     white-space:nowrap; text-align:right;
   }
   /* Tips-fanen manglet stiler helt */
   .tips-rad{
     display:flex; gap:11px; align-items:flex-start; padding:14px 0;
-    border-bottom:1px solid var(--line); font-size:17px; line-height:1.4;
+    border-bottom:1px solid var(--line); font-size:var(--t-brod); line-height:1.4;
   }
   .tips-rad:last-child{ border-bottom:none; }
-  .tips-ikon{ flex-shrink:0; font-size:17px; }
+  .tips-ikon{ flex-shrink:0; font-size:var(--t-brod); }
   .plan-week-block{ margin-bottom:26px; }
   .plan-week-head{
-    font-family:'IBM Plex Mono',monospace; font-size:13px; text-transform:uppercase;
+    font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); text-transform:uppercase;
     letter-spacing:0.04em; color:var(--ink-soft); margin-bottom:8px;
   }
   .plan-day-row{ display:flex; gap:10px; padding:10px 0; border-bottom:1px dashed var(--line); }
   .plan-day-row:last-child{ border-bottom:none; }
   .plan-day-name{
     flex-shrink:0; width:74px; font-family:'IBM Plex Mono',monospace;
-    font-size:13px; color:var(--ink-soft); padding-top:3px;
+    font-size:var(--t-meta); color:var(--ink-soft); padding-top:3px;
   }
   .plan-day-dishes{ flex:1; display:flex; flex-direction:column; gap:6px; }
   .plan-dish{ display:flex; align-items:center; gap:8px; }
-  .plan-dish-name{ flex:1; font-size:15px; text-align:left; background:none; border:none; color:var(--ink); padding:0; }
-  .plan-dish-rm{ background:none; border:none; color:var(--ink-soft); font-size:15px; padding:2px 6px; }
+  .plan-dish-name{ flex:1; font-size:var(--t-brod); text-align:left; background:none; border:none; color:var(--ink); padding:0; }
+  .plan-dish-rm{ background:none; border:none; color:var(--ink-soft); font-size:var(--t-brod); padding:2px 6px; }
 
   /* ---------- Seksjoner (deloppskrifter) ----------
      En oppskrift kan deles i deler, f.eks. "kake" og "krem". Delen ligger som
@@ -986,7 +1020,7 @@
     position:sticky; top:var(--topbar-h, 60px); z-index:6;
     margin:20px 0 8px; padding:9px 14px; border-radius:10px;
     background:var(--ink); color:#FFFFFF;
-    font-family:'Archivo',sans-serif; font-size:14px; font-weight:800;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
     text-transform:uppercase; letter-spacing:0.1em;
     box-shadow:0 2px 8px rgba(44,62,80,0.25);
   }
@@ -999,7 +1033,7 @@
   .shop-table tr.ing-seksjon span{
     display:block; padding:9px 14px; border-radius:10px;
     background:var(--ink); color:#FFFFFF;
-    font-family:'Archivo',sans-serif; font-size:14px; font-weight:800;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
     text-transform:uppercase; letter-spacing:0.1em;
     box-shadow:0 2px 8px rgba(44,62,80,0.25);
   }
@@ -1010,7 +1044,7 @@
   .sec-row input{
     flex:1; min-width:0; padding:10px 12px; border-radius:10px;
     border:2px solid var(--ink); background:#FFFFFF; color:var(--ink);
-    font-family:'Archivo',sans-serif; font-weight:800; font-size:14px;
+    font-family:'Archivo',sans-serif; font-weight:700; font-size:14px;
     text-transform:uppercase; letter-spacing:0.08em;
   }
 
@@ -1084,14 +1118,14 @@
        er nok paa skjermen om gangen. Ingredienslista foelger med et hakk, saa
        kolonnene ikke ser ubeslektede ut. */
     #oppskrift-kolonner.tokolonner #tab-steps .step-block .txt{
-      font-size:21px; line-height:1.6;
+      font-size:var(--t-stor); line-height:1.6;
     }
     #oppskrift-kolonner.tokolonner #tab-steps .step-block{ padding:18px 0; gap:16px; }
     #oppskrift-kolonner.tokolonner #tab-steps .step-block .num{
-      width:34px; height:34px; font-size:18px;
+      width:34px; height:34px; font-size:var(--t-brod);
     }
-    #oppskrift-kolonner.tokolonner #tab-steps .section-label{ font-size:15px; }
-    #oppskrift-kolonner.tokolonner #tab-list .shop-table td{ font-size:18px; }
+    #oppskrift-kolonner.tokolonner #tab-steps .section-label{ font-size:var(--t-brod); }
+    #oppskrift-kolonner.tokolonner #tab-list .shop-table td{ font-size:var(--t-brod); }
 
     #view-detail #tab-list-btn, #view-detail #tab-steps-btn{ display:none; }
     #view-detail #tab-tips, #view-detail #tab-comments, #view-detail #tab-rating{
@@ -1221,7 +1255,7 @@ input,select,textarea{font-size:16px}
       <div class="section-label">Allergener og næringsinnhold</div>
       <button type="button" class="btn btn-ghost" style="width:100%;" id="ai-review-btn" onclick="runAllergenNutritionReview()">🔎 AI-gjennomgang av allergener og næringsinnhold</button>
       <div id="ai-review-status"></div>
-      <p style="font-size:13px; color:var(--ink-soft); margin:10px 0 8px;">Næringsinnhold per porsjon (fylles inn automatisk over, eller skriv inn selv - f.eks. fra en næringstabell på pakken):</p>
+      <p style="font-size:var(--t-meta); color:var(--ink-soft); margin:10px 0 8px;">Næringsinnhold per porsjon (fylles inn automatisk over, eller skriv inn selv - f.eks. fra en næringstabell på pakken):</p>
       <div class="nutrition-form-grid">
         <div class="field"><label>Energi (kJ)</label><input type="number" id="nut-energy-kj" step="any" placeholder="F.eks. 535" onchange="checkTotalNutritionConsistency()"></div>
         <div class="field"><label>Energi (kcal)</label><input type="number" id="nut-energy-kcal" step="any" placeholder="F.eks. 127" onchange="checkTotalNutritionConsistency()"></div>
@@ -1376,11 +1410,11 @@ input,select,textarea{font-size:16px}
 <div class="modal-backdrop" id="export-name-modal">
   <div class="confirm-box" style="max-width:400px; margin:0; width:100%; text-align:left;">
     <p style="text-align:center; font-weight:700; color:var(--ink); margin:0 0 4px;">Lagre sikkerhetskopi</p>
-    <p style="text-align:center; font-size:13px; color:var(--ink-soft); margin:0 0 14px;">Gi filen et navn du kjenner igjen.</p>
+    <p style="text-align:center; font-size:var(--t-meta); color:var(--ink-soft); margin:0 0 14px;">Gi filen et navn du kjenner igjen.</p>
     <div class="ing-merge-fields">
       <input id="export-name" placeholder="filnavn">
     </div>
-    <p style="font-size:13px; color:var(--ink-soft); margin:4px 0 14px;">.json legges til automatisk.</p>
+    <p style="font-size:var(--t-meta); color:var(--ink-soft); margin:4px 0 14px;">.json legges til automatisk.</p>
     <div class="row" style="display:flex; gap:8px;">
       <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('export-name')">Avbryt</button>
       <button class="btn btn-primary" style="flex:1;" onclick="closeModal('export-name'); exportBackup();">Last ned</button>
@@ -1391,7 +1425,7 @@ input,select,textarea{font-size:16px}
 <div class="modal-backdrop" id="avvist-modal">
   <div class="confirm-box" style="max-width:420px; margin:0; width:100%; text-align:left;">
     <p style="text-align:center; font-weight:700; color:var(--ink); margin:0 0 4px;">Avviste forslag</p>
-    <p style="text-align:center; font-size:13px; color:var(--ink-soft); margin:0 0 10px;">
+    <p style="text-align:center; font-size:var(--t-meta); color:var(--ink-soft); margin:0 0 10px;">
       Hak av de som likevel kan være samme vare.
     </p>
     <button class="btn btn-ghost" style="width:100%; margin-bottom:10px;" onclick="velgAlleAvviste()">Velg alle</button>
@@ -1406,7 +1440,7 @@ input,select,textarea{font-size:16px}
 <div class="modal-backdrop" id="kategori-modal">
   <div class="confirm-box" style="max-width:420px; margin:0; width:100%; text-align:left;">
     <p style="text-align:center; font-weight:700; color:var(--ink); margin:0 0 4px;">Kategoriser varer</p>
-    <p style="text-align:center; font-size:13px; color:var(--ink-soft); margin:0 0 14px;">
+    <p style="text-align:center; font-size:var(--t-meta); color:var(--ink-soft); margin:0 0 14px;">
       Kategorien lagres i varekatalogen og gjelder for alltid.
     </p>
     <div id="kategori-liste" style="max-height:52vh; overflow-y:auto;"></div>
@@ -1430,7 +1464,7 @@ input,select,textarea{font-size:16px}
       <input id="ing-review-unit" placeholder="Enhet">
       <span style="flex:1"></span>
     </div>
-    <p id="ing-review-amount-note" style="font-size:13px; color:var(--ink-soft); margin:2px 0 0;">
+    <p id="ing-review-amount-note" style="font-size:var(--t-meta); color:var(--ink-soft); margin:2px 0 0;">
       Mengden gjelder denne uka. La den stå tom for å beholde det utregnede.
     </p>
     <div class="row" style="display:flex; gap:8px; margin-top:12px;">
@@ -1454,11 +1488,11 @@ input,select,textarea{font-size:16px}
       <input id="ing-merge-unit" placeholder="Enhet">
       <span style="flex:1"></span>
     </div>
-    <label style="display:flex; align-items:center; gap:9px; margin:12px 0 6px; font-size:15px;">
+    <label style="display:flex; align-items:center; gap:9px; margin:12px 0 6px; font-size:var(--t-brod);">
       <input type="checkbox" id="ing-merge-basis" style="width:20px; height:20px; accent-color:var(--lime);">
       Basisvare - vis uten mengde
     </label>
-    <p style="font-size:13px; color:var(--ink-soft); margin:6px 0 14px;">Navnet lagres i varekatalogen og gjelder alle uker. Mengden gjelder bare denne uka; la den stå tom for å beholde de opprinnelige.</p>
+    <p style="font-size:var(--t-meta); color:var(--ink-soft); margin:6px 0 14px;">Navnet lagres i varekatalogen og gjelder alle uker. Mengden gjelder bare denne uka; la den stå tom for å beholde de opprinnelige.</p>
     <div class="row" style="display:flex; gap:10px;">
       <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('ing-merge')">Avbryt</button>
       <button class="btn btn-primary" style="flex:1;" onclick="confirmIngMerge()">Slå sammen</button>
@@ -1505,7 +1539,7 @@ input,select,textarea{font-size:16px}
 
     <div id="import-web-step-paste">
       <p style="font-weight:700; color:var(--ink); margin:0 0 8px;">Importer fra nettside</p>
-      <p style="font-size:15px; color:var(--ink-soft); margin:0 0 10px;">Kopiér oppskriftsteksten fra nettsiden (ingredienser og fremgangsmåte) og lim den inn her, så fyller AI-en ut feltene automatisk.</p>
+      <p style="font-size:var(--t-brod); color:var(--ink-soft); margin:0 0 10px;">Kopiér oppskriftsteksten fra nettsiden (ingredienser og fremgangsmåte) og lim den inn her, så fyller AI-en ut feltene automatisk.</p>
       <textarea id="import-web-text" rows="8" style="width:100%; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line); font-size:15px; font-family:inherit; color:var(--ink);"></textarea>
       <div id="import-web-paste-status"></div>
       <div class="row" style="margin-top:14px;">
@@ -1520,7 +1554,7 @@ input,select,textarea{font-size:16px}
 <div class="modal-backdrop" id="physical-import-modal">
   <div class="confirm-box" style="max-width:440px; margin:0; width:100%; text-align:left; max-height:82vh; overflow-y:auto;">
     <p style="font-weight:700; color:var(--ink); margin:0 0 8px;">Fra fysisk oppskrift</p>
-    <p style="font-size:15px; color:var(--ink-soft); margin:0 0 10px;">Ta bilde av oppskriftskortet (gjerne forside og bakside), så leser AI-en det og fyller ut feltene automatisk.</p>
+    <p style="font-size:var(--t-brod); color:var(--ink-soft); margin:0 0 10px;">Ta bilde av oppskriftskortet (gjerne forside og bakside), så leser AI-en det og fyller ut feltene automatisk.</p>
     <div class="photo-row" id="physical-photo-row">
       <button type="button" class="add-photo-btn" id="physical-add-photo-btn" onclick="$('physical-photo-input').click()">＋</button>
     </div>
@@ -1544,7 +1578,7 @@ input,select,textarea{font-size:16px}
       </div>
       <div class="field" style="margin-bottom:0;">
         <label>Ukedag</label>
-        <div id="tasting-weekday" style="padding:11px 12px; font-size:17px; color:var(--ink);"></div>
+        <div id="tasting-weekday" style="padding:11px 12px; font-size:var(--t-brod); color:var(--ink);"></div>
       </div>
     </div>
 
@@ -1586,7 +1620,7 @@ input,select,textarea{font-size:16px}
       </div>
       <div class="field" style="margin-bottom:0;">
         <label>Ukedag</label>
-        <div id="comment-weekday" style="padding:11px 12px; font-size:17px; color:var(--ink);"></div>
+        <div id="comment-weekday" style="padding:11px 12px; font-size:var(--t-brod); color:var(--ink);"></div>
       </div>
     </div>
 
@@ -1600,7 +1634,7 @@ input,select,textarea{font-size:16px}
 
     <div class="field" style="display:flex; align-items:center; gap:9px;">
       <input type="checkbox" id="comment-important" style="width:19px; height:19px; accent-color:var(--lime-dark); flex-shrink:0;" onchange="commentDraft.important = this.checked">
-      <label style="margin:0; font-size:15px; color:var(--ink);" for="comment-important">Veldig viktig kommentar <span style="color:var(--ink-soft); font-size:13px;">(vises øverst under Steg for steg)</span></label>
+      <label style="margin:0; font-size:var(--t-brod); color:var(--ink);" for="comment-important">Veldig viktig kommentar <span style="color:var(--ink-soft); font-size:var(--t-meta);">(vises øverst under Steg for steg)</span></label>
     </div>
 
     <div class="field">
@@ -1672,12 +1706,12 @@ input,select,textarea{font-size:16px}
     </div>
 
     <div id="restore-backup-paste" style="display:block;">
-      <p style="font-size:15px; color:var(--ink-soft); margin:0 0 10px;">Lim inn innholdet fra oppskrifter-backup.json her:</p>
+      <p style="font-size:var(--t-brod); color:var(--ink-soft); margin:0 0 10px;">Lim inn innholdet fra oppskrifter-backup.json her:</p>
       <textarea id="restore-backup-text" rows="8" style="width:100%; padding:11px 12px; border-radius:10px; border:1px solid var(--line); font-size:15px; font-family:'IBM Plex Mono',monospace; color:var(--ink);"></textarea>
     </div>
 
     <div id="restore-backup-file" style="display:none;">
-      <p style="font-size:15px; color:var(--ink-soft); margin:0 0 10px;">Velg en backup.json-fil:</p>
+      <p style="font-size:var(--t-brod); color:var(--ink-soft); margin:0 0 10px;">Velg en backup.json-fil:</p>
       <input type="file" id="restore-backup-file-input" accept=".json" onchange="visValgtBackupFil()" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:8px;">
       <div id="restore-backup-file-status" style="margin-top:8px;"></div>
     </div>
@@ -3907,7 +3941,7 @@ function nutritionSummaryText(n){
 function renderIngredientConflictsBox(){
   if(pendingIngredientConflicts.length === 0) return '';
   return `<div class="nutrition-diff-box">
-    <p style="margin:0 0 8px; font-size:13px; color:var(--ink-soft);">Noen ingredienser har allerede data som skiller seg fra AI-forslaget. Velg hva som skal beholdes for hver:</p>
+    <p style="margin:0 0 8px; font-size:var(--t-meta); color:var(--ink-soft);">Noen ingredienser har allerede data som skiller seg fra AI-forslaget. Velg hva som skal beholdes for hver:</p>
     ${pendingIngredientConflicts.map((c, idx) => `
       <div class="ing-conflict-row" id="ing-conflict-${idx}">
         <div class="ing-conflict-head">${escapeHtml(c.name)} <span class="ing-conflict-type">${c.type === 'allergens' ? 'allergener' : 'næringsinnhold'}</span></div>
@@ -3916,8 +3950,8 @@ function renderIngredientConflictsBox(){
           <span>AI: ${escapeHtml(c.newText)}</span>
         </div>
         <div class="row" style="margin-top:6px;">
-          <button type="button" class="btn btn-ghost" style="padding:6px 10px; font-size:13px;" onclick="resolveIngredientConflict(${idx}, false)">Behold mine</button>
-          <button type="button" class="btn btn-primary" style="padding:6px 10px; font-size:13px; margin-top:0;" onclick="resolveIngredientConflict(${idx}, true)">Bruk AI</button>
+          <button type="button" class="btn btn-ghost" style="padding:6px 10px; font-size:var(--t-meta);" onclick="resolveIngredientConflict(${idx}, false)">Behold mine</button>
+          <button type="button" class="btn btn-primary" style="padding:6px 10px; font-size:var(--t-meta); margin-top:0;" onclick="resolveIngredientConflict(${idx}, true)">Bruk AI</button>
         </div>
       </div>
     `).join('')}
@@ -3949,7 +3983,7 @@ function checkTotalNutritionConsistency(){
   if(diff <= tolerance){ statusEl.innerHTML = ''; return; }
   statusEl.innerHTML = `
     <div class="nutrition-diff-box">
-      <p style="margin:0 0 8px; font-size:13px; color:var(--ink-soft);">
+      <p style="margin:0 0 8px; font-size:var(--t-meta); color:var(--ink-soft);">
         Summen av det du har lagt inn per ingrediens gir <strong>${formatAmt(sum.energyKcal)} kcal</strong> per porsjon,
         men totalfeltet sier <strong>${formatAmt(current.energyKcal)} kcal</strong>. Vil du bruke summen fra ingrediensene, eller beholde din egen totalverdi?
       </p>
@@ -4001,22 +4035,22 @@ function applyOrConfirmNutrition(newValues, filledAllergens, filledNutrition){
 
   const bulkButtonsHtml = (nutritionConflictCount > 0 || allergenConflictCount > 0) ? `
     <div class="nutrition-diff-box">
-      <p style="margin:0 0 8px; font-size:13px; color:var(--ink-soft); font-weight:700;">Rask avgjørelse for alle avvik samlet:</p>
+      <p style="margin:0 0 8px; font-size:var(--t-meta); color:var(--ink-soft); font-weight:700;">Rask avgjørelse for alle avvik samlet:</p>
       <div class="row" style="flex-wrap:wrap; gap:8px;">
         ${nutritionConflictCount > 0 ? `
-          <button type="button" class="btn btn-ghost" style="padding:8px 12px; font-size:13px;" onclick="bulkResolveNutrition(false)">Bruk nåværende næringsinnhold (${nutritionConflictCount})</button>
-          <button type="button" class="btn btn-primary" style="padding:8px 12px; font-size:13px; margin-top:0;" onclick="bulkResolveNutrition(true)">Bruk AI næringsinnhold (${nutritionConflictCount})</button>
+          <button type="button" class="btn btn-ghost" style="padding:8px 12px; font-size:var(--t-meta);" onclick="bulkResolveNutrition(false)">Bruk nåværende næringsinnhold (${nutritionConflictCount})</button>
+          <button type="button" class="btn btn-primary" style="padding:8px 12px; font-size:var(--t-meta); margin-top:0;" onclick="bulkResolveNutrition(true)">Bruk AI næringsinnhold (${nutritionConflictCount})</button>
         ` : ''}
         ${allergenConflictCount > 0 ? `
-          <button type="button" class="btn btn-ghost" style="padding:8px 12px; font-size:13px;" onclick="bulkResolveAllergens(false)">Bruk nåværende allergener (${allergenConflictCount})</button>
-          <button type="button" class="btn btn-primary" style="padding:8px 12px; font-size:13px; margin-top:0;" onclick="bulkResolveAllergens(true)">Bruk AI allergener (${allergenConflictCount})</button>
+          <button type="button" class="btn btn-ghost" style="padding:8px 12px; font-size:var(--t-meta);" onclick="bulkResolveAllergens(false)">Bruk nåværende allergener (${allergenConflictCount})</button>
+          <button type="button" class="btn btn-primary" style="padding:8px 12px; font-size:var(--t-meta); margin-top:0;" onclick="bulkResolveAllergens(true)">Bruk AI allergener (${allergenConflictCount})</button>
         ` : ''}
       </div>
     </div>` : '';
 
   const totalConflictsHtml = totalConflicts.length ? `
     <div class="nutrition-diff-box">
-      <p style="margin:0 0 8px; font-size:13px; color:var(--ink-soft);">Disse feltene i det totale næringsinnholdet har allerede en annen verdi. Velg hva som skal beholdes:</p>
+      <p style="margin:0 0 8px; font-size:var(--t-meta); color:var(--ink-soft);">Disse feltene i det totale næringsinnholdet har allerede en annen verdi. Velg hva som skal beholdes:</p>
       ${totalConflicts.map((c, idx) => `
         <div class="ing-conflict-row" id="total-conflict-${idx}">
           <div class="ing-conflict-head">${escapeHtml(NUTRITION_LABELS[c.key])}</div>
@@ -4025,8 +4059,8 @@ function applyOrConfirmNutrition(newValues, filledAllergens, filledNutrition){
             <span>AI: ${formatAmt(c.newVal)}</span>
           </div>
           <div class="row" style="margin-top:6px;">
-            <button type="button" class="btn btn-ghost" style="padding:6px 10px; font-size:13px;" onclick="resolveTotalConflict(${idx}, false)">Behold min</button>
-            <button type="button" class="btn btn-primary" style="padding:6px 10px; font-size:13px; margin-top:0;" onclick="resolveTotalConflict(${idx}, true)">Bruk AI</button>
+            <button type="button" class="btn btn-ghost" style="padding:6px 10px; font-size:var(--t-meta);" onclick="resolveTotalConflict(${idx}, false)">Behold min</button>
+            <button type="button" class="btn btn-primary" style="padding:6px 10px; font-size:var(--t-meta); margin-top:0;" onclick="resolveTotalConflict(${idx}, true)">Bruk AI</button>
           </div>
         </div>
       `).join('')}
@@ -4302,7 +4336,7 @@ const ENTRY_TYPES = {
     syncsRating: false, rerender: () => { renderCommentsList(); renderSteps(); }
   }
 };
-const ENTRY_BTN_STYLE = 'background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:15px; padding:4px 8px;';
+const ENTRY_BTN_STYLE = 'background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:var(--t-brod); padding:4px 8px;';
 
 function formatEntryDate(dateStr){
   const d = new Date((dateStr || '') + 'T00:00:00');
@@ -4569,7 +4603,7 @@ function renderTastingsList(){
   wrap.innerHTML = tastings.map((t, idx) => {
     const list = t.ratings || [];
     const avg = list.length ? list.reduce((s, x) => s + x.stars, 0) / list.length : 0;
-    const chefsLabel = t.chefs && t.chefs.length ? `<div class="tasting-entry-chefs" style="font-size:15px; color:var(--ink-soft); margin:6px 0;">Kokker: ${escapeHtml(t.chefs.join(', '))}</div>` : '';
+    const chefsLabel = t.chefs && t.chefs.length ? `<div class="tasting-entry-chefs" style="font-size:var(--t-brod); color:var(--ink-soft); margin:6px 0;">Kokker: ${escapeHtml(t.chefs.join(', '))}</div>` : '';
     return `
       <div class="tasting-entry">
         <div class="tasting-entry-head">
@@ -5593,7 +5627,7 @@ function ingAmountHtml(row){
 
 async function renderPlanIngredientsTab(){
   const el = $('plan-tab-ing');
-  el.innerHTML = `<p style="font-size:15px; color:var(--ink-soft);">Henter ingredienser ...</p>`;
+  el.innerHTML = `<p style="font-size:var(--t-brod); color:var(--ink-soft);">Henter ingredienser ...</p>`;
   const { grupper, dishes, missing } = await collectWeekIngredients();
 
   if(!dishes.length){
@@ -5646,7 +5680,7 @@ async function renderPlanIngredientsTab(){
   const harEndringer = ed.removed.length > 0 || Object.keys(ed.amounts).length > 0;
 
   el.innerHTML = `
-    <p style="font-size:13px; color:var(--ink-soft); margin:0 0 12px;">
+    <p style="font-size:var(--t-meta); color:var(--ink-soft); margin:0 0 12px;">
       Fra ${dishes.length} rett${dishes.length > 1 ? 'er' : ''} i uke ${planWeek.week}, skalert til porsjonene du planla.
     </p>
     <div class="ing-toolbar">
@@ -5665,12 +5699,12 @@ async function renderPlanIngredientsTab(){
       ).join(''); })()}
     ${basis.length ? `<div class="ing-basis-head">Basisvarer - antas å finnes hjemme</div>
        ${basis.map((r, i) => rad(r, vanlige.length + i)).join('')}` : ''}
-    ${missing ? `<p style="font-size:13px; color:var(--ink-soft); margin-top:14px;">${missing} rett${missing > 1 ? 'er' : ''} kunne ikke lastes, og mangler i listen.</p>` : ''}
+    ${missing ? `<p style="font-size:var(--t-meta); color:var(--ink-soft); margin-top:14px;">${missing} rett${missing > 1 ? 'er' : ''} kunne ikke lastes, og mangler i listen.</p>` : ''}
     ${alle.some(r => r.raw.size > 1) ? '<p class="ing-fotnote">* slått sammen fra flere ingredienser</p>' : ''}
     <button type="button" class="btn btn-primary" style="width:100%; margin-top:18px;" onclick="tilHandlelista()">
       🛒 Legg ingrediensene i handlelista
     </button>
-    <p style="font-size:13px; color:var(--ink-soft); margin-top:14px;">Hold inne på en ingrediens og dra den oppå en annen for å slå dem sammen. Sammenslåingen huskes for alle uker.</p>`;
+    <p style="font-size:var(--t-meta); color:var(--ink-soft); margin-top:14px;">Hold inne på en ingrediens og dra den oppå en annen for å slå dem sammen. Sammenslåingen huskes for alle uker.</p>`;
 
   oppdaterKandidatTall();   // ser på hele kokeboka, så den kjøres i bakgrunnen
 }
@@ -5956,12 +5990,12 @@ function visNesteKandidat(){
     const deler = Object.entries(r.byUnit).filter(([, v]) => v)
       .map(([u, v]) => `${formatAmt(v)}${u ? ' ' + u : ''}`);
     $('ing-review-body').innerHTML = `
-      <p style="text-align:center; font-size:15px; color:var(--ink-soft); margin:0 0 12px;">
+      <p style="text-align:center; font-size:var(--t-brod); color:var(--ink-soft); margin:0 0 12px;">
         Denne varen står i flere måleenheter denne uka. Hva vil du handle?
       </p>
       <div class="ing-review-row"><span class="navn">${escapeHtml(r.name)}</span>
         <span class="amt">${escapeHtml(deler.join('  +  '))}</span></div>
-      <p style="font-size:13px; color:var(--ink-soft); margin:10px 0 0;">
+      <p style="font-size:var(--t-meta); color:var(--ink-soft); margin:10px 0 0;">
         ${reviewKandidater.length} sak${reviewKandidater.length > 1 ? 'er' : ''} igjen
       </p>`;
     $('ing-review-name').value = r.name;
@@ -5983,7 +6017,7 @@ function visNesteKandidat(){
   const iUka = rader.some(r => currentIngRows.some(c => c.key === r.key));
 
   $('ing-review-body').innerHTML = `
-    <p style="text-align:center; font-size:15px; color:var(--ink-soft); margin:0 0 12px;">
+    <p style="text-align:center; font-size:var(--t-brod); color:var(--ink-soft); margin:0 0 12px;">
       Hak av de som er samme vare.
     </p>
     ${rader.map(r => `
@@ -5994,7 +6028,7 @@ function visNesteKandidat(){
         </span>
         <span class="amt">${escapeHtml(reviewMengde(r))}</span>
       </label>`).join('')}
-    <p style="font-size:13px; color:var(--ink-soft); margin:10px 0 0;">
+    <p style="font-size:var(--t-meta); color:var(--ink-soft); margin:10px 0 0;">
       ${reviewKandidater.length} gruppe${reviewKandidater.length > 1 ? 'r' : ''} igjen
     </p>`;
 
