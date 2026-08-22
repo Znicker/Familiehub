@@ -58,15 +58,22 @@ body{
 .merke-navn:not(:empty)::before{content:'\00b7';margin:0 5px;font-weight:600;color:var(--ink-soft)}
 
 .klokke{margin-left:18px;text-align:right;line-height:1}
-/* Synlig vei tilbake. Staar midt paa, rett under toppraden, saa den er
-   lett aa treffe uansett hvilket kort man nettopp sveipet i. */
+/* Dagen staar sentralt over kortene, med veien tilbake ved siden av. */
+.dag-linje{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  flex-shrink:0;min-height:34px;
+}
+.dag-navn{
+  font-family:'Archivo',sans-serif;font-size:15px;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink);
+}
 .til-idag{
-  align-self:center;flex-shrink:0;
+  flex-shrink:0;
   border:1px solid var(--ink);background:var(--ink);color:#FFFFFF;
-  font-family:'Archivo',sans-serif;font-size:13px;font-weight:800;
+  font-family:'Archivo',sans-serif;font-size:11px;font-weight:800;
   letter-spacing:.06em;text-transform:uppercase;
-  padding:9px 20px;border-radius:999px;cursor:pointer;
-  box-shadow:0 3px 12px rgba(44,62,80,.28);
+  padding:6px 14px;border-radius:999px;cursor:pointer;
+  box-shadow:0 2px 8px rgba(44,62,80,.24);
 }
 .til-idag:active{transform:scale(.97)}
 .til-idag[hidden]{display:none}
@@ -164,13 +171,6 @@ body{
   font-size:19px;line-height:1;padding:0 7px;border-radius:8px;font-family:inherit;
 }
 .dag-pil:active{background:rgba(44,62,80,.08)}
-.dag-idag{
-  border:1px solid var(--line);background:transparent;color:var(--ink-soft);
-  font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;padding:3px 9px;border-radius:999px;cursor:pointer;
-  flex-shrink:0;
-}
-.dag-idag:active{background:rgba(44,62,80,.08)}
 .kort-tittel .bi{margin-left:auto;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:11px}
 .kort-kropp{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 /* Middagskortet skal fylle hoeyden: kroppen maa ikke rulle, den skal
@@ -370,16 +370,18 @@ input,select,textarea{font-size:16px}
     </div>
   </div>
 
-  <button class="til-idag" id="tilIdag" onclick="tilbakeTilStandard()" hidden>
-    ‹ Tilbake til i dag
-  </button>
+  <div class="dag-linje">
+    <span class="dag-navn" id="dagLabel">I dag</span>
+    <button class="til-idag" id="tilIdag" onclick="tilbakeTilStandard()" hidden>
+      ‹ Tilbake til i dag
+    </button>
+  </div>
 
   <div class="rutenett">
 
     <div class="kort">
       <div class="kort-tittel">
-        <span id="planTittel">Dagens plan</span>
-        <button class="dag-idag" id="planIdag" onclick="tilDag(0)" hidden>I dag</button>
+        <span>Dagens plan</span>
         <span class="bi" id="planBi"></span>
         <span class="dag-piler">
           <button class="dag-pil" onclick="byttDag(-1)" aria-label="Forrige dag">&#8249;</button>
@@ -394,7 +396,7 @@ input,select,textarea{font-size:16px}
     <div class="hoyre">
 
       <div class="kort">
-        <div class="kort-tittel"><span id="huskeTittel">I dag</span><span class="bi" id="huskeIdagBi"></span></div>
+        <div class="kort-tittel"><span>Merknader</span><span class="bi" id="huskeIdagBi"></span></div>
         <div class="kort-kropp" id="huskeIdag">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
@@ -408,7 +410,7 @@ input,select,textarea{font-size:16px}
       </div>
 
       <div class="kort">
-        <div class="kort-tittel"><span id="middagTittel">Dagens middag</span></div>
+        <div class="kort-tittel"><span>Middag</span></div>
         <div class="kort-kropp" id="middag">
           <div class="tom">Henter …</div>
         </div>
@@ -718,13 +720,12 @@ function dagenViser(){
 }
 
 function dagNavn(){
-  if(dagOffset === 0) return 'Dagens plan';
+  if(dagOffset === 0) return 'I dag';
   if(dagOffset === 1) return 'I morgen';
   if(dagOffset === -1) return 'I går';
   const d = dagenViser();
-  const dag = d.toLocaleDateString('no-NO', {weekday:'long'});
-  return dag.charAt(0).toUpperCase() + dag.slice(1)
-       + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + '.';
+  const tekst = d.toLocaleDateString('no-NO', {weekday:'long', day:'numeric', month:'long'});
+  return tekst.charAt(0).toUpperCase() + tekst.slice(1);
 }
 
 async function hentPlan(){
@@ -1166,10 +1167,7 @@ async function tegnPlanPaaNytt(){
    side ville vaert umulig aa holde styr paa. */
 function settDagsTitler(){
   visTilIdag();
-  $('planTittel').textContent  = dagNavn();
-  $('huskeTittel').textContent = dagOffset === 0 ? 'I dag' : dagNavn();
-  $('middagTittel').textContent = dagOffset === 0 ? 'Dagens middag' : 'Middag';
-  $('planIdag').hidden = (dagOffset === 0);
+  $('dagLabel').textContent = dagNavn();
 }
 
 /* Skjermen staar framme hele dagen. Har noen bladd seg fram i tid og gaatt
@@ -1212,7 +1210,6 @@ function byttDag(steg){
   if(dagOffset >  180) dagOffset =  180;
   tegnPlanPaaNytt();
 }
-function tilDag(n){ dagOffset = n; tegnPlanPaaNytt(); }
 
 /* Sveip paa plankortet. Utslaget maa vaere tydelig vannrett, ellers ville
    vanlig loddrett rulling i lista utloest et dagbytte. */
