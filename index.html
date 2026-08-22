@@ -147,15 +147,6 @@ body{
 /* Maa staa ETTER 1000px-regelen for aa vinne. Den gamle toklonners-regelen
    laa foer den og ble overstyrt, saa telefonen fikk tre smale fliser. */
 @media(max-width:700px){ .apps{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px} }
-/* Telefon i landskap: ca. 840x390. Tre kolonner gir da fliser paa 260px,
-   hoeyere enn det som er synlig. Kvadratet slippes naar hoeyden er knapp,
-   og flisen blir bare saa hoey som innholdet krever. Samme betingelse som
-   landskapsregelen i oppskrifter.html, av samme grunn. */
-@media(max-height:600px){
-  .app{aspect-ratio:auto}
-  .app-icon{width:auto;height:54px;max-width:none}
-  .app{padding:14px 10px 12px}
-}
 .panel-apper{position:relative}
 .app{min-width:0}
 
@@ -179,6 +170,16 @@ body{
   overflow:hidden;margin-bottom:12px;
 }
 .app-icon img{width:100%;height:auto;display:block}
+
+/* Telefon i landskap: ca. 840x390. Kvadratiske fliser blir da hoeyere enn
+   det synlige omraadet. Kvadratet slippes naar hoeyden er knapp, og flisen
+   blir bare saa hoey som innholdet krever.
+   MERK: denne blokka MAA staa etter .app og .app-icon over. Laa den foer,
+   ble den stille overstyrt av dem - lik spesifisitet, siste regel vinner. */
+@media(max-height:600px){
+  .app{aspect-ratio:auto;padding:14px 10px 12px}
+  .app-icon{width:auto;height:54px;max-width:none}
+}
 /* Dashboard-flisen: profilbildet fyller sirkelen. Har brukeren ikke
    satt bilde i Microsoft, viser vi forbokstaven i stedet for en tom ring. */
 .dash-icon{
