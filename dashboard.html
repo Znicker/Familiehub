@@ -14,6 +14,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
+  /* ---------- Typeskala ----------
+     Fem roller for tekst. Endre stoerrelsene HER, ikke nede i reglene.
+     Modus foelger skjermbredden av seg selv:
+       mobil  < 700px   kjapt, on the go
+       iPad   700-1300  display og betjening, leses paa avstand
+       PC     > 1300    oversikt, taaler tett informasjon
+     Ikoner og piler er glyffer, ikke tekst, og har egen skala. */
+  --t-etikett:11px;
+  --t-meta:13px;
+  --t-brod:15px;
+  --t-stor:20px;
+  --t-display:46px;
+  --t-pil:20px;
+  --t-ikon:28px;
+
   --ink:#2C3E50;
   --ink-soft:#7A8899;
   --paper:#FFFFFF;
@@ -21,6 +36,23 @@
   --lime:#C8E64B;
   --blaa:#4A7FA8;
 }
+
+/* iPad: leses paa avstand, alt et hakk opp */
+@media(min-width:700px){
+  :root{
+    --t-etikett:12px; --t-meta:14px; --t-brod:17px; --t-stor:22px;
+    --t-display:60px; --t-pil:22px; --t-ikon:32px;
+  }
+}
+/* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen,
+   men klokka blir staaende stor. */
+@media(min-width:1300px){
+  :root{
+    --t-etikett:11px; --t-meta:13px; --t-brod:15px; --t-stor:20px;
+    --t-display:60px; --t-pil:20px; --t-ikon:28px;
+  }
+}
+
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
@@ -52,9 +84,9 @@ body{
   box-shadow:0 3px 12px rgba(0,0,0,.16);flex-shrink:0;
 }
 .merke-ikon img{width:100%;height:auto;display:block}
-.merke-tittel{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;line-height:1.15}
-.merke-sub{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-top:2px}
-.merke-navn{color:var(--ink);font-weight:800}
+.merke-tittel{font-size:var(--t-stor);font-weight:700;text-transform:uppercase;letter-spacing:.05em;line-height:1.15}
+.merke-sub{font-size:var(--t-etikett);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-top:2px}
+.merke-navn{color:var(--ink);font-weight:700}
 .merke-navn:not(:empty)::before{content:'\00b7';margin:0 5px;font-weight:600;color:var(--ink-soft)}
 
 .klokke{margin-left:18px;text-align:right;line-height:1}
@@ -63,7 +95,7 @@ body{
 .detaljkort{flex:1 1 auto;min-height:0}
 .detalj-lukk{
   margin-left:auto;border:none;background:transparent;color:var(--ink-soft);
-  font-size:22px;line-height:1;cursor:pointer;padding:0 4px;border-radius:8px;
+  font-size:var(--t-pil);line-height:1;cursor:pointer;padding:0 4px;border-radius:8px;
 }
 .detalj-lukk:active{background:rgba(44,62,80,.08)}
 .plan-rad.valgt{box-shadow:inset 0 0 0 2px rgba(44,62,80,.45)}
@@ -76,13 +108,13 @@ body{
 .sveipbar{touch-action:pan-y}
 
 .dag-navn{
-  font-family:'Archivo',sans-serif;font-size:12px;font-weight:800;
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
   letter-spacing:.12em;text-transform:uppercase;color:var(--ink);
 }
 .til-idag{
   flex-shrink:0;align-self:center;
   border:1px solid var(--ink);background:var(--ink);color:#FFFFFF;
-  font-family:'Archivo',sans-serif;font-size:10px;font-weight:800;
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
   letter-spacing:.06em;text-transform:uppercase;
   padding:4px 11px;border-radius:999px;cursor:pointer;
   box-shadow:0 2px 8px rgba(44,62,80,.24);
@@ -92,7 +124,7 @@ body{
 
 /* Stedsnavnet hoerer til vaeret, ikke til klokka. */
 .vaer-sted{
-  font-family:'Archivo',sans-serif;font-size:16px;font-weight:700;
+  font-family:'Archivo',sans-serif;font-size:var(--t-brod);font-weight:700;
   color:var(--ink-soft);flex-shrink:0;letter-spacing:.01em;
 }
 
@@ -105,13 +137,13 @@ body{
   margin-left:auto;margin-right:auto;
 }
 .vt-naa{display:flex;align-items:center;gap:12px;flex-shrink:0}
-.vt-ikon{font-size:34px;line-height:1}
+.vt-ikon{font-size:var(--t-ikon);line-height:1}
 .vt-naa-tall{display:flex;flex-direction:column;line-height:1.15}
-.vt-grad{font-size:26px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.vt-tekst{font-size:12px;color:var(--ink-soft);font-weight:600}
+.vt-grad{font-size:var(--t-stor);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.vt-tekst{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
 .vt-meta{
   display:flex;flex-direction:column;gap:2px;flex-shrink:0;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);
 }
 .vt-rad{display:flex;gap:2px;flex-shrink:0}
 /* Timevinduet. Sveip flytter det seks timer om gangen. */
@@ -121,7 +153,7 @@ body{
   cursor:grab;user-select:none;
 }
 .vt-merke{
-  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);letter-spacing:.1em;
   text-transform:uppercase;color:var(--ink-soft);opacity:.7;padding-left:3px;
 }
 .vaer-stripe{cursor:grab}
@@ -129,10 +161,10 @@ body{
   display:flex;flex-direction:column;align-items:center;gap:0;
   min-width:42px;padding:0 3px;
 }
-.vt-kl{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft)}
-.vt-ingen{font-size:13px;color:var(--ink-soft);font-style:italic}
-.vt-ik{font-size:17px;line-height:1.25}
-.vt-gr{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.vt-kl{font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft)}
+.vt-ingen{font-size:var(--t-meta);color:var(--ink-soft);font-style:italic}
+.vt-ik{font-size:var(--t-brod);line-height:1.25}
+.vt-gr{font-size:var(--t-meta);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .vt-min{color:var(--ink-soft);font-weight:600;margin-left:3px}
 
 
@@ -149,8 +181,8 @@ body{
 @media(max-width:560px){
   .topp{flex-wrap:wrap}
 }
-.klokke-tid{font-size:60px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.klokke-dato{font-size:14px;color:var(--ink-soft);font-weight:600;text-transform:capitalize;margin-top:4px}
+.klokke-tid{font-size:var(--t-display);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.klokke-dato{font-size:var(--t-brod);color:var(--ink-soft);font-weight:600;text-transform:capitalize;margin-top:4px}
 
 /* ---------- Rutenett ---------- */
 .rutenett{
@@ -178,7 +210,7 @@ body{
   min-height:0;
 }
 .kort-tittel{
-  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;
+  font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;letter-spacing:.12em;
   color:var(--ink-soft);margin-bottom:12px;flex-shrink:0;
   display:flex;align-items:baseline;gap:8px;
 }
@@ -186,17 +218,17 @@ body{
 .dag-piler{display:inline-flex;gap:2px;margin-left:6px;flex-shrink:0}
 .dag-pil{
   border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
-  font-size:19px;line-height:1;padding:0 7px;border-radius:8px;font-family:inherit;
+  font-size:var(--t-pil);line-height:1;padding:0 7px;border-radius:8px;font-family:inherit;
 }
 .dag-pil:active{background:rgba(44,62,80,.08)}
-.kort-tittel .bi{margin-left:auto;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:11px}
+.kort-tittel .bi{margin-left:auto;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:var(--t-etikett)}
 .kort-kropp{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 /* Middagskortet skal fylle hoeyden: kroppen maa ikke rulle, den skal
    strekke innholdet i stedet, ellers har bildet ingen plass aa vokse i. */
 #middag{overflow:hidden;display:flex;flex-direction:column}
 .kort-kropp::-webkit-scrollbar{width:0;background:transparent}
 
-.tom{color:var(--ink-soft);font-size:14px;padding:6px 0}
+.tom{color:var(--ink-soft);font-size:var(--t-brod);padding:6px 0}
 
 /* ---------- Dagsplan ---------- */
 /* Hele foeringen fylles med kalenderfargen. Fyll og rammefarge settes i JS. */
@@ -208,20 +240,20 @@ body{
 
 /* Fra-klokkeslett oeverst, til-klokkeslett under. */
 .plan-tid{
-  font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;
+  font-size:var(--t-brod);font-weight:700;font-variant-numeric:tabular-nums;
   width:46px;flex-shrink:0;padding-top:1px;line-height:1.25;
 }
 .plan-til{
-  display:block;font-size:12px;font-weight:600;
+  display:block;font-size:var(--t-meta);font-weight:600;
   color:var(--ink-soft);opacity:.85;
 }
-.plan-tid.hel{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.plan-tid.hel{font-size:var(--t-etikett);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
 
 .plan-inn{min-width:0;flex:1}
-.plan-tittel{font-size:15px;font-weight:600;line-height:1.3;word-wrap:break-word}
-.plan-meta{font-size:12px;color:var(--ink-soft);margin-top:2px}
+.plan-tittel{font-size:var(--t-brod);font-weight:600;line-height:1.3;word-wrap:break-word}
+.plan-meta{font-size:var(--t-meta);color:var(--ink-soft);margin-top:2px}
 .plan-rad.forbi{opacity:.42}
-.plan-rad.naa .plan-tittel{font-weight:800}
+.plan-rad.naa .plan-tittel{font-weight:700}
 .plan-rad.naa .plan-tid{color:var(--blaa)}
 .plan-rad{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .plan-rad:active{filter:brightness(.96)}
@@ -239,19 +271,19 @@ body{
 .detalj-topp{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .detalj-prikk{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .detalj-kal{
-  font-size:11px;font-weight:700;text-transform:uppercase;
+  font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;
   letter-spacing:.1em;color:var(--ink-soft);
 }
-.detalj-tittel{font-size:23px;font-weight:800;line-height:1.25;padding-right:30px}
-.detalj-tid{font-size:15px;font-weight:600;color:var(--blaa);margin-top:6px;font-variant-numeric:tabular-nums}
-.detalj-linje{font-size:14px;margin-top:12px;line-height:1.4}
+.detalj-tittel{font-size:var(--t-stor);font-weight:700;line-height:1.25;padding-right:30px}
+.detalj-tid{font-size:var(--t-brod);font-weight:600;color:var(--blaa);margin-top:6px;font-variant-numeric:tabular-nums}
+.detalj-linje{font-size:var(--t-brod);margin-top:12px;line-height:1.4}
 .detalj-linje span{
-  display:block;font-size:10px;font-weight:700;text-transform:uppercase;
+  display:block;font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;
   letter-spacing:.1em;color:var(--ink-soft);margin-bottom:2px;
 }
 .detalj-notat{
   margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
-  font-size:14px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;
+  font-size:var(--t-brod);line-height:1.5;white-space:pre-wrap;word-wrap:break-word;
 }
 .detalj-notat.tom{color:var(--ink-soft);font-style:italic}
 
@@ -272,32 +304,32 @@ a.middag{
 }
 a.middag:active{opacity:.72}
 .middag-pil{
-  font-size:26px;color:var(--ink-soft);line-height:1;
+  font-size:var(--t-pil);color:var(--ink-soft);line-height:1;
   flex-shrink:0;opacity:.45;align-self:center;
 }
 .middag-tekst{flex:1 1 auto;min-width:0}
 .middag-lenke{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .middag-ikon{
   width:62px;height:62px;flex:0 0 62px;border-radius:14px;background:#F5F7F9;
-  display:flex;align-items:center;justify-content:center;font-size:28px;line-height:1;
+  display:flex;align-items:center;justify-content:center;font-size:var(--t-ikon);line-height:1;
 }
 /* "Middag" staar som liten merkelapp over rettens navn, ikke som egen
    overskriftsrad - det sparer en hel linje i et lavt kort. */
 .middag-merke{
-  font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  font-size:var(--t-etikett);font-weight:700;letter-spacing:.12em;text-transform:uppercase;
   color:var(--ink-soft);margin-bottom:3px;
 }
 .kort-middag{padding:14px 16px}
 /* Middagsnotat for dager uten noe i matplanen. */
 .mid-tom{cursor:pointer;display:flex;align-items:baseline;gap:8px}
 .mid-legg{
-  font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;text-transform:uppercase;
   color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;
   padding:2px 9px;flex-shrink:0;margin-left:auto;
 }
 .mid-tom:active .mid-legg{background:rgba(44,62,80,.08)}
 .mid-notat{
-  font-size:15px;font-weight:600;line-height:1.35;cursor:pointer;
+  font-size:var(--t-brod);font-weight:600;line-height:1.35;cursor:pointer;
   white-space:pre-wrap;overflow-wrap:anywhere;
 }
 .mid-notat:active{opacity:.7}
@@ -309,23 +341,23 @@ a.middag:active{opacity:.72}
   box-shadow:0 2px 10px rgba(0,0,0,.14);
 }
 .middag-navn{
-  font-size:clamp(16px,1.5vw,21px);font-weight:800;line-height:1.2;
+  font-size:var(--t-stor);font-weight:700;line-height:1.2;
   overflow-wrap:anywhere;letter-spacing:-.01em;
 }
-.middag-meta{font-size:13px;color:var(--ink-soft);margin-top:4px;font-weight:600}
+.middag-meta{font-size:var(--t-meta);color:var(--ink-soft);margin-top:4px;font-weight:600}
 .middag-flere{
-  font-size:13px;color:var(--ink-soft);margin-top:9px;
+  font-size:var(--t-meta);color:var(--ink-soft);margin-top:9px;
   padding-top:9px;border-top:1px solid var(--line);
 }
 
 /* ---------- Bunn ---------- */
 .bunn{
   display:flex;align-items:center;gap:14px;flex-shrink:0;
-  font-size:11px;color:var(--ink-soft);font-weight:600;
+  font-size:var(--t-etikett);color:var(--ink-soft);font-weight:600;
 }
 .bunn .knapp{
   margin-left:auto;background:none;border:1px solid var(--line);
-  color:var(--ink-soft);font-family:inherit;font-size:11px;font-weight:700;
+  color:var(--ink-soft);font-family:inherit;font-size:var(--t-etikett);font-weight:700;
   padding:7px 14px;border-radius:999px;cursor:pointer;letter-spacing:.05em;
   text-transform:uppercase;
 }
@@ -344,9 +376,9 @@ a.middag:active{opacity:.72}
   box-shadow:0 4px 20px rgba(0,0,0,.14);border:none;cursor:pointer;
 }
 .port-ikon img{width:100%;height:auto;display:block}
-.port-note{font-size:13px;color:var(--ink-soft);font-weight:600;max-width:340px;text-align:center;padding:0 20px}
+.port-note{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600;max-width:340px;text-align:center;padding:0 20px}
 .port-hjem{
-  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;letter-spacing:.06em;
   color:var(--ink-soft);text-decoration:none;border:1px solid var(--line);
   padding:9px 18px;border-radius:999px;background:var(--paper);
 }
@@ -356,7 +388,6 @@ a.middag:active{opacity:.72}
   .rutenett{grid-template-columns:1fr;grid-template-rows:1.3fr 1fr}
   .hoyre{flex-direction:row}
   .hoyre .kort{flex:1}
-  .klokke-tid{font-size:46px}
 }
 
 /* ---------- Laast ramme ----------
@@ -372,7 +403,7 @@ input,select,textarea{font-size:16px}
 /* ---------- Huskeliste ---------- */
 .hu-ny{
   margin-left:8px;border:1px solid var(--line);background:transparent;
-  color:var(--ink-soft);font-family:inherit;font-size:15px;font-weight:700;
+  color:var(--ink-soft);font-family:inherit;font-size:var(--t-brod);font-weight:700;
   line-height:1;width:22px;height:22px;border-radius:50%;cursor:pointer;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
@@ -388,7 +419,7 @@ input,select,textarea{font-size:16px}
 .hu-verkt{display:flex;gap:2px;flex-shrink:0}
 .hu-knapp{
   border:none;background:transparent;color:var(--ink-soft);opacity:.5;
-  font-size:14px;line-height:1;cursor:pointer;padding:1px 3px;border-radius:6px;
+  font-size:var(--t-brod);line-height:1;cursor:pointer;padding:1px 3px;border-radius:6px;
 }
 .hu-knapp:active{opacity:1;background:rgba(44,62,80,.08)}
 .hu-inn{flex:1;min-width:0}
@@ -397,13 +428,13 @@ input,select,textarea{font-size:16px}
 /* Bokstavmerket, likt kalenderappens .pu-ini */
 .ini{
   width:19px;height:19px;border-radius:50%;color:#FFFFFF;flex-shrink:0;
-  font-family:'Archivo',sans-serif;font-size:11px;font-weight:800;
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
   display:flex;align-items:center;justify-content:center;line-height:1;
 }
 .plan-rad .ini{margin-top:1px}
-.hu-tittel{flex:1;min-width:0;font-weight:700;font-size:14px;line-height:1.3;
+.hu-tittel{flex:1;min-width:0;font-weight:700;font-size:var(--t-brod);line-height:1.3;
   overflow-wrap:anywhere}
-.hu-pil{color:var(--ink-soft);font-size:15px;line-height:1;flex-shrink:0;opacity:.6}
+.hu-pil{color:var(--ink-soft);font-size:var(--t-brod);line-height:1;flex-shrink:0;opacity:.6}
 
 /* Boble for én merknad. Fyll og rammefarge settes i JS. */
 .hu-boble-bak{position:fixed;inset:0;z-index:60;background:transparent}
@@ -419,14 +450,14 @@ input,select,textarea{font-size:16px}
 .hu-boble[hidden]{display:none}
 .hub-lukk{
   position:absolute;top:8px;right:10px;border:none;background:transparent;
-  color:var(--ink-soft);font-size:20px;line-height:1;cursor:pointer;padding:2px 4px;
+  color:var(--ink-soft);font-size:var(--t-pil);line-height:1;cursor:pointer;padding:2px 4px;
 }
-.hub-tittel{font-size:16px;font-weight:800;line-height:1.25;padding-right:22px;
+.hub-tittel{font-size:var(--t-brod);font-weight:700;line-height:1.25;padding-right:22px;
   overflow-wrap:anywhere}
-.hub-tekst{font-size:14px;line-height:1.5;margin-top:8px;white-space:pre-wrap;
+.hub-tekst{font-size:var(--t-brod);line-height:1.5;margin-top:8px;white-space:pre-wrap;
   overflow-wrap:anywhere}
 .hub-tekst.tom{color:var(--ink-soft);font-style:italic}
-.hub-meta{font-size:11px;color:var(--ink-soft);margin-top:12px;padding-top:9px;
+.hub-meta{font-size:var(--t-etikett);color:var(--ink-soft);margin-top:12px;padding-top:9px;
   border-top:1px solid rgba(44,62,80,.14);display:flex;align-items:center;gap:6px}
 .hub-prikk{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
@@ -440,11 +471,11 @@ input,select,textarea{font-size:16px}
 }
 .hu-omr{resize:vertical;min-height:130px;line-height:1.45}
 .hu-rad2{display:flex;gap:7px}
-.hu-rad2 label,.hu-frist{flex:1;font-size:10px;font-weight:700;letter-spacing:.08em;
+.hu-rad2 label,.hu-frist{flex:1;font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px}
 .hu-knapper{display:flex;gap:7px;justify-content:flex-end}
 .hu-avbryt,.hu-lagre{
-  font-family:'Archivo',sans-serif;font-size:11px;font-weight:800;letter-spacing:.06em;
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;letter-spacing:.06em;
   text-transform:uppercase;padding:7px 14px;border-radius:999px;cursor:pointer;
 }
 .hu-avbryt{border:1px solid var(--line);background:transparent;color:var(--ink-soft)}
