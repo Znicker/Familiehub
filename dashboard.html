@@ -354,11 +354,13 @@ input,select,textarea{font-size:16px}
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
 .hu-ny:active{background:rgba(44,62,80,.08)}
+/* Raden viser bare overskriften. Alt annet ligger i boblen. */
 .hu-rad{
-  display:flex;align-items:flex-start;gap:9px;
-  padding:8px 10px;margin-bottom:6px;
+  display:flex;align-items:center;gap:8px;
+  padding:9px 10px;margin-bottom:6px;cursor:pointer;
   border:1px solid transparent;border-radius:11px;
 }
+.hu-rad:active{filter:brightness(.96)}
 .hu-rad.forbi{opacity:.45}                 /* frist passert - blir staaende */
 .hu-verkt{display:flex;gap:2px;flex-shrink:0}
 .hu-knapp{
@@ -369,12 +371,31 @@ input,select,textarea{font-size:16px}
 .hu-inn{flex:1;min-width:0}
 .hu-topp{display:flex;align-items:baseline;gap:6px;cursor:default}
 .hu-topp[onclick]{cursor:pointer}
-.hu-tittel{font-weight:700;font-size:14px;line-height:1.3;overflow-wrap:anywhere}
-.hu-pil{color:var(--ink-soft);font-size:15px;line-height:1;transition:transform .15s ease}
-.hu-topp.apen .hu-pil{transform:rotate(90deg)}
-.hu-tekst{font-size:13px;color:var(--ink-soft);line-height:1.45;margin-top:4px;
-  white-space:pre-wrap;overflow-wrap:anywhere}
-.hu-av{font-size:11px;color:var(--ink-soft);opacity:.75;margin-top:2px}
+.hu-tittel{flex:1;min-width:0;font-weight:700;font-size:14px;line-height:1.3;
+  overflow-wrap:anywhere}
+.hu-pil{color:var(--ink-soft);font-size:15px;line-height:1;flex-shrink:0;opacity:.6}
+
+/* Boble for én merknad. Fyll og rammefarge settes i JS. */
+.hu-boble-bak{position:fixed;inset:0;z-index:60;background:transparent}
+.hu-boble{
+  position:fixed;z-index:61;width:min(340px,86vw);
+  border:1px solid transparent;border-radius:16px;padding:16px 18px 14px;
+  box-shadow:0 18px 44px rgba(44,62,80,.26);
+  backdrop-filter:saturate(1.6) blur(2px);
+}
+.hu-boble[hidden]{display:none}
+.hub-lukk{
+  position:absolute;top:8px;right:10px;border:none;background:transparent;
+  color:var(--ink-soft);font-size:20px;line-height:1;cursor:pointer;padding:2px 4px;
+}
+.hub-tittel{font-size:16px;font-weight:800;line-height:1.25;padding-right:22px;
+  overflow-wrap:anywhere}
+.hub-tekst{font-size:14px;line-height:1.5;margin-top:8px;white-space:pre-wrap;
+  overflow-wrap:anywhere;max-height:44vh;overflow-y:auto}
+.hub-tekst.tom{color:var(--ink-soft);font-style:italic}
+.hub-meta{font-size:11px;color:var(--ink-soft);margin-top:12px;padding-top:9px;
+  border-top:1px solid rgba(44,62,80,.14);display:flex;align-items:center;gap:6px}
+.hub-prikk{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
 
 .hu-skjema{display:flex;flex-direction:column;gap:7px;padding-bottom:10px;
@@ -424,6 +445,12 @@ input,select,textarea{font-size:16px}
       <div class="klokke-tid" id="klokkeTid">--:--</div>
       <div class="klokke-dato" id="klokkeDato">&nbsp;</div>
     </div>
+  </div>
+
+  <div class="hu-boble-bak" id="huBobleBak" hidden onclick="lukkHuskeBoble()"></div>
+  <div class="hu-boble" id="huBoble" hidden>
+    <button class="hub-lukk" onclick="lukkHuskeBoble()" aria-label="Lukk">×</button>
+    <div id="huBobleInn"></div>
   </div>
 
   <div class="rutenett">
@@ -891,9 +918,14 @@ function tegnPlan(res){
    det ut fra. */
 const HOYRE_KORT = ['kortMerknader', 'kortUken', 'kortMiddag'];
 
+let detaljIndeks = null;
+
 function visDetalj(i){
+  /* Trykk paa samme avtale igjen lukker den. */
+  if(detaljIndeks === i && !$('detalj').hidden){ lukkDetalj(); return; }
   const e = dagensAvtaler[i];
   if(!e) return;
+  detaljIndeks = i;
 
   const tid = e.heleDagen ? 'Hele dagen' : kl(e.start) + '–' + kl(e.slutt);
 
@@ -922,6 +954,7 @@ function visDetalj(i){
 }
 
 function lukkDetalj(){
+  detaljIndeks = null;
   if($('detalj')) $('detalj').hidden = true;
   HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = false; });
   Array.from(document.querySelectorAll('.plan-rad.valgt'))
@@ -1230,31 +1263,73 @@ function idag0(){
 function huskeRad(m){
   const forbi = m.frist && m.frist < datoNokkel(idag0());
   const harTekst = !!(m.tekst || '').trim();
+  /* Bare overskriften staar i lista - plassen er knapp. Resten kommer i
+     boblen ved trykk. */
   return '<div class="hu-rad' + (forbi ? ' forbi' : '') + '" data-id="' + esc(m.id) + '"'
-    +     ' style="' + fyll(huskeFarge(m.gjelder)) + '">'
-    +   '<div class="hu-inn">'
-    +     '<div class="hu-topp"' + (harTekst ? ' onclick="vekslHuske(this)"' : '') + '>'
-    +       '<span class="hu-tittel">' + esc(m.overskrift || '') + '</span>'
-    +       (harTekst ? '<span class="hu-pil">›</span>' : '')
-    +     '</div>'
-    +     (harTekst ? '<div class="hu-tekst" hidden>' + esc(m.tekst) + '</div>' : '')
-    +     '<div class="hu-av">' + esc(m.gjelder || 'Familie')
-    +       (m.av ? ' · skrevet av ' + esc(m.av) : '') + '</div>'
-    +   '</div>'
+    +     ' style="' + fyll(huskeFarge(m.gjelder)) + '"'
+    +     ' onclick="vekslHuskeBoble(\'' + esc(m.id) + '\', event)">'
+    +   '<span class="hu-tittel">' + esc(m.overskrift || '') + '</span>'
+    +   (harTekst ? '<span class="hu-pil">›</span>' : '')
     +   '<div class="hu-verkt">'
-    +     '<button class="hu-knapp" onclick="rediger(\'' + esc(m.id) + '\')" '
+    +     '<button class="hu-knapp" onclick="event.stopPropagation(); rediger(\'' + esc(m.id) + '\')" '
     +       'aria-label="Endre">✎</button>'
-    +     '<button class="hu-knapp" onclick="slettHuske(\'' + esc(m.id) + '\')" '
+    +     '<button class="hu-knapp" onclick="event.stopPropagation(); slettHuske(\'' + esc(m.id) + '\')" '
     +       'aria-label="Slett">×</button>'
     +   '</div>'
     + '</div>';
 }
 
-function vekslHuske(topp){
-  const t = topp.parentNode.querySelector('.hu-tekst');
-  if(!t) return;
-  t.hidden = !t.hidden;
-  topp.classList.toggle('apen', !t.hidden);
+/* ---------------- Boble for én merknad ----------------
+   Trykk paa samme rad igjen lukker. Trykk utenfor lukker. Escape lukker. */
+let huBobleId = null;
+
+function vekslHuskeBoble(id, ev){
+  if(ev) ev.stopPropagation();
+  if(huBobleId === id){ lukkHuskeBoble(); return; }
+  const m = (huskeliste || []).find(function(x){ return x.id === id; });
+  if(!m) return;
+
+  const farge = huskeFarge(m.gjelder);
+  const frist = m.frist
+    ? new Date(m.frist + 'T12:00:00').toLocaleDateString('no-NO',
+        {weekday:'long', day:'numeric', month:'long'})
+    : '';
+  $('huBobleInn').innerHTML =
+      '<div class="hub-tittel">' + esc(m.overskrift || '') + '</div>'
+    + ((m.tekst || '').trim()
+        ? '<div class="hub-tekst">' + esc(m.tekst) + '</div>'
+        : '<div class="hub-tekst tom">Ingen utfyllende tekst.</div>')
+    + '<div class="hub-meta">'
+    +   '<span class="hub-prikk" style="background:' + esc(farge) + '"></span>'
+    +   esc(m.gjelder || 'Familie')
+    +   (frist ? ' · frist ' + esc(frist) : '')
+    +   (m.av ? ' · skrevet av ' + esc(m.av) : '')
+    + '</div>';
+
+  const b = $('huBoble');
+  b.style.cssText = fyll(farge);
+  b.hidden = false;
+  $('huBobleBak').hidden = false;
+  huBobleId = id;
+
+  /* Ankre boblen ved raden, men hold den innenfor skjermen. */
+  const rad = document.querySelector('.hu-rad[data-id="' + id + '"]');
+  const r = rad ? rad.getBoundingClientRect() : null;
+  const bb = b.getBoundingClientRect();
+  const marg = 12;
+  let venstre = r ? (r.left - bb.width - 14) : (innerWidth/2 - bb.width/2);
+  if(venstre < marg) venstre = r ? Math.min(r.right + 14, innerWidth - bb.width - marg) : marg;
+  venstre = Math.max(marg, Math.min(venstre, innerWidth - bb.width - marg));
+  let topp = r ? (r.top - 6) : (innerHeight/2 - bb.height/2);
+  topp = Math.max(marg, Math.min(topp, innerHeight - bb.height - marg));
+  b.style.left = Math.round(venstre) + 'px';
+  b.style.top  = Math.round(topp) + 'px';
+}
+
+function lukkHuskeBoble(){
+  huBobleId = null;
+  if($('huBoble')) $('huBoble').hidden = true;
+  if($('huBobleBak')) $('huBobleBak').hidden = true;
 }
 
 function huskeSkjemaHtml(omfang){
@@ -1362,6 +1437,7 @@ function tegnHuske(){
 }
 function tegnHuskeInner(){
   const liste = huskeliste || [];
+  lukkHuskeBoble();          /* lista tegnes om - boblen ville pekt paa ingenting */
   const dag = datoNokkel(dagenViser());
   const uke = ukeNokkel(dagenViser());
 
@@ -1505,6 +1581,7 @@ function visTilIdag(){
 }
 function tilbakeTilStandard(){
   lukkDetalj();
+  lukkHuskeBoble();
   huskeSkjema = null;
   const flyttet = (dagOffset !== 0);
   dagOffset = 0;
@@ -1517,6 +1594,17 @@ function nullstillHvile(){
   clearTimeout(hvileTimer);
   hvileTimer = setTimeout(tilbakeTilStandard, HVILE_MS);
 }
+/* Trykk et annet sted paa siden lukker det som staar aapent. Trykk inne i
+   detaljkortet eller paa en avtalerad regnes ikke som utenfor. */
+function kobleLukking(){
+  document.addEventListener('pointerdown', function(ev){
+    const t = ev.target;
+    if(huBobleId && !t.closest('.hu-boble') && !t.closest('.hu-rad')) lukkHuskeBoble();
+    if($('detalj') && !$('detalj').hidden
+       && !t.closest('#detalj') && !t.closest('.plan-rad')) lukkDetalj();
+  });
+}
+
 function kobleHvile(){
   ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function(h){
     document.addEventListener(h, nullstillHvile, {passive:true});
@@ -1709,6 +1797,7 @@ async function oppdaterAlt(manuelt){
   }
 
   kobleSveip();
+  kobleLukking();
   kobleHvile();
 
   /* Skjermen staar paa hele dagen — hold den fersk. Blar noen fram i tid,
@@ -1717,7 +1806,9 @@ async function oppdaterAlt(manuelt){
 })();
 
 document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape' && $('detalj') && !$('detalj').hidden) lukkDetalj();
+  if(e.key !== 'Escape') return;
+  if(huBobleId) lukkHuskeBoble();
+  if($('detalj') && !$('detalj').hidden) lukkDetalj();
 });
 
 document.addEventListener('visibilitychange', function(){
