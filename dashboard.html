@@ -1147,6 +1147,7 @@ async function hentMiddag(){
    ikke mot dagen man ser paa - ser du framover, staar alt normalt.
    ============================================================ */
 const PERSONER = ['Familie', 'Magne', 'Nina', 'Emma', 'Andrea'];
+const pad = function(n){ return String(n).padStart(2, '0'); };
 let huskeliste = null;
 let huskeSkjema = null;          /* 'dag' | 'uke' | null */
 
@@ -1291,6 +1292,10 @@ async function slettHuske(id){
 }
 
 function tegnHuske(){
+  try{ tegnHuskeInner(); }
+  catch(e){ console.error('Huskelista kunne ikke tegnes:', e); }
+}
+function tegnHuskeInner(){
   const liste = huskeliste || [];
   const dag = datoNokkel(dagenViser());
   const uke = ukeNokkel(dagenViser());
@@ -1472,25 +1477,27 @@ function kobleSveip(){
 }
 
 function sveipPaa(kort, handling){
+  if(!kort) return;
   let x0 = 0, y0 = 0, aktiv = false;
 
-  kort.addEventListener('touchstart', function(ev){
-    if(ev.touches.length !== 1){ aktiv = false; return; }
-    x0 = ev.touches[0].clientX;
-    y0 = ev.touches[0].clientY;
-    aktiv = true;
-  }, {passive:true});
+  /* Pointer-hendelser dekker baade finger og mus. Med touchstart/touchend
+     skjedde ingenting i en vanlig nettleser uten beroeringsemulering. */
+  kort.addEventListener('pointerdown', function(ev){
+    if(!ev.isPrimary){ aktiv = false; return; }
+    x0 = ev.clientX; y0 = ev.clientY; aktiv = true;
+  });
 
-  kort.addEventListener('touchend', function(ev){
+  kort.addEventListener('pointerup', function(ev){
     if(!aktiv) return;
     aktiv = false;
-    const t = ev.changedTouches[0];
-    const dx = t.clientX - x0;
-    const dy = t.clientY - y0;
+    const dx = ev.clientX - x0;
+    const dy = ev.clientY - y0;
     if(Math.abs(dx) < 60) return;                  /* for kort til aa vaere ment */
     if(Math.abs(dx) < Math.abs(dy) * 1.5) return;  /* mest loddrett = rulling */
     handling(dx < 0 ? 1 : -1);                     /* dra mot venstre = framover */
-  }, {passive:true});
+  });
+
+  kort.addEventListener('pointercancel', function(){ aktiv = false; });
 }
 
 async function oppdaterAlt(manuelt){
@@ -1605,7 +1612,8 @@ async function oppdaterAlt(manuelt){
     }
   }).catch(function(){});
 
-  await oppdaterAlt(false);
+  try{ await oppdaterAlt(false); }
+  catch(e){ console.error('Første oppdatering feilet:', e); }
 
   /* Spoer om posisjon foerst naar skjermen staar der — da kommer
      tillatelsesdialogen oppaa noe ferdig, ikke en tom side. Skjer bare
