@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="no">
+<html lang="nb">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -13,11 +13,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 :root{
+  /* ---------- Typeskala ----------
+     Fem roller for tekst, pluss en sjette for kalenderrutene.
+     Modus foelger skjermbredden av seg selv:
+       mobil  < 700px   kjapt, on the go
+       iPad   700-1300  display og betjening, leses paa avstand
+       PC     > 1300    oversikt, taaler tett informasjon
+     --t-rute er tekst inne i rutenettet: ukedagsforkortelser, ukenummer,
+     helgemerker, initialer og chips. Den finnes fordi maaneds- og
+     ukevisningen har celler med fast hoeyde - rundes den opp til
+     etikettstoerrelse, flyter innholdet ut av cellene.
+     Samme skala som de andre filene - hold dem like. */
+  --t-rute:10px;
+  --t-etikett:11px;
+  --t-meta:13px;
+  --t-brod:15px;
+  --t-stor:20px;
+  --t-display:46px;
+  --t-pil:20px;
+  --t-ikon:28px;
+
   --bg-1:#F5F5F5; --bg-2:#FAFAFA; --paper:#FFFFFF;
   --ink:#2C3E50; --ink-soft:#5A6C7D;
   --line:rgba(44,62,80,.10);
   --grid:rgba(44,62,80,.20);
   --shadow:0 2px 10px rgba(0,0,0,.08);
+}
+/* iPad: leses paa avstand, alt et hakk opp */
+@media(min-width:700px){
+  :root{
+    --t-rute:11px; --t-etikett:12px; --t-meta:14px; --t-brod:17px;
+    --t-stor:22px; --t-display:60px; --t-pil:22px; --t-ikon:32px;
+  }
+}
+/* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen. */
+@media(min-width:1300px){
+  :root{
+    --t-rute:10px; --t-etikett:11px; --t-meta:13px; --t-brod:15px;
+    --t-stor:20px; --t-display:60px; --t-pil:20px; --t-ikon:28px;
+  }
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
@@ -48,20 +82,20 @@ body{
   box-shadow:0 3px 12px rgba(0,0,0,.26);
 }
 .brand-icon img{width:100%;height:auto;display:block}
-.brand-title{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;line-height:1.15}
+.brand-title{font-size:var(--t-stor);font-weight:700;text-transform:uppercase;letter-spacing:.05em;line-height:1.15}
 .brand-sub{
-  font-size:11px;color:var(--ink-soft);text-transform:uppercase;
+  font-size:var(--t-etikett);color:var(--ink-soft);text-transform:uppercase;
   letter-spacing:.1em;font-weight:600;margin-top:2px;
 }
-.brand-navn{color:var(--ink);font-weight:800}
+.brand-navn{color:var(--ink);font-weight:700}
 .brand-navn:not(:empty)::before{content:'\00b7';margin:0 5px;font-weight:600;color:var(--ink-soft)}
 .top-right{margin-left:auto;display:flex;align-items:center;gap:14px}
-.who{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-align:right;line-height:1.45}
-.who b{display:block;font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);font-weight:700}
+.who{font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);text-align:right;line-height:1.45}
+.who b{display:block;font-family:'Archivo',sans-serif;font-size:var(--t-brod);color:var(--ink);font-weight:700}
 
 /* ---------- Knapper ---------- */
 .btn{
-  font-family:'Archivo',sans-serif;font-size:12px;font-weight:700;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
   text-transform:uppercase;letter-spacing:.08em;
   background:var(--paper);border:1px solid var(--line);border-radius:999px;
   padding:9px 18px;color:var(--ink);cursor:pointer;
@@ -69,8 +103,8 @@ body{
 }
 .btn:active{transform:scale(.97)}
 @media(hover:hover){.btn:hover{box-shadow:var(--shadow)}}
-.btn.ghost{background:none;color:var(--ink-soft);font-size:11px;padding:6px 14px}
-.btn.big{padding:14px 30px;font-size:14px;background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.ghost{background:none;color:var(--ink-soft);font-size:var(--t-etikett);padding:6px 14px}
+.btn.big{padding:14px 30px;font-size:var(--t-brod);background:var(--ink);color:#fff;border-color:var(--ink)}
 
 /* ---------- Hovedrutenett ---------- */
 .grid{
@@ -87,8 +121,8 @@ body{
   box-shadow:var(--shadow);
 }
 .panel-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-shrink:0}
-.panel-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-soft)}
-.panel-note{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);opacity:.75}
+.panel-title{font-size:var(--t-meta);font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-soft)}
+.panel-note{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);opacity:.75}
 
 .cal-panel{display:flex;flex-direction:column;min-height:0}
 .side{display:flex;flex-direction:column;gap:14px;min-height:0}
@@ -100,14 +134,14 @@ body{
 /* ---------- Månedsnavigasjon ---------- */
 .mnav{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-bottom:12px;flex-shrink:0}
 .mnav-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.mnav-title{font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.mnav-title{font-size:var(--t-stor);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .mnav-btns{margin-left:auto;display:flex;gap:8px}
 .mnav-btns button{
   height:34px;min-width:34px;padding:0 12px;border-radius:999px;
   border:1px solid var(--line);background:var(--bg-2);color:var(--ink);
-  font-family:'Archivo',sans-serif;font-size:15px;cursor:pointer;line-height:1;
+  font-family:'Archivo',sans-serif;font-size:var(--t-brod);cursor:pointer;line-height:1;
 }
-.mnav-btns button.txt{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.mnav-btns button.txt{font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
 .mnav-btns button:active{transform:scale(.94)}
 
 /* ---------- Kalenderrutenett ---------- */
@@ -121,7 +155,7 @@ body{
 }
 .cal-dow{
   background:var(--bg-2);
-  text-align:center;font-size:11px;font-weight:700;
+  text-align:center;font-size:var(--t-etikett);font-weight:700;
   color:var(--ink-soft);text-transform:uppercase;letter-spacing:.1em;
   padding:8px 0;
 }
@@ -134,7 +168,7 @@ body{
 .cal-cell.blank{background:var(--bg-2);cursor:default}
 .cal-wk{
   background:var(--bg-2);display:flex;align-items:center;justify-content:center;
-  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-rute);color:var(--ink-soft);
 }
 .uke.endag .uke-row{min-height:74px}
 
@@ -142,13 +176,13 @@ body{
 .cal-cell.helligdag{background:rgba(180,68,58,.09)}
 .cal-cell.helligdag.sel{background:var(--ink)}
 .cal-helg{
-  font-size:9px;font-weight:700;line-height:1.05;color:#B4443A;
+  font-size:var(--t-rute);font-weight:700;line-height:1.05;color:#B4443A;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;
 }
 .cal-cell.sel .cal-helg{color:#F3B0A8}
 .uke-dcol.helligdag,.uke-cell.helligdag,.tg-dcol.helligdag{background:rgba(180,68,58,.08)}
 .uke-helg,.tg-helg{
-  font-size:9px;font-weight:700;color:#B4443A;line-height:1.1;margin-top:1px;
+  font-size:var(--t-rute);font-weight:700;color:#B4443A;line-height:1.1;margin-top:1px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px;
 }
 .plan-helg{color:#B4443A;font-weight:700}
@@ -158,35 +192,35 @@ body{
 .cal-cell.sel:hover{background:var(--ink)}
 .cal-cell.sel .cal-num,.cal-cell.sel .cal-ev,
 .cal-cell.sel .cal-ev-t,.cal-cell.sel .cal-more{color:#fff}
-.cal-num{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;flex-shrink:0}
+.cal-num{font-size:var(--t-brod);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;flex-shrink:0}
 .cal-cell.weekend .cal-num{color:var(--ink-soft)}
 
 .cal-evs{display:flex;flex-direction:column;gap:3px;overflow:hidden;min-height:0}
 .cal-ev{
   font-family:'Archivo',sans-serif;
-  font-size:12px;font-weight:600;line-height:1.28;
+  font-size:var(--t-etikett);font-weight:600;line-height:1.28;
   display:flex;gap:5px;align-items:flex-start;
 }
 .cal-ev-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
 .cal-ev-x{min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .cal-ev-t{font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums;margin-right:3px}
-.cal-more{font-size:11px;font-weight:700;color:var(--ink-soft);letter-spacing:.03em;padding-left:11px}
+.cal-more{font-size:var(--t-etikett);font-weight:700;color:var(--ink-soft);letter-spacing:.03em;padding-left:11px}
 
 /* ---------- Avtaleliste ---------- */
 .ev{display:flex;gap:12px;padding:11px 0}
 .ev:first-child{padding-top:0}
 .ev + .ev{border-top:1px solid var(--line)}
 .ev-time{
-  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-meta);color:var(--ink-soft);
   min-width:48px;padding-top:2px;font-variant-numeric:tabular-nums;line-height:1.5;
 }
 .ev-body{flex:1;min-width:0}
-.ev-title{font-size:15px;font-weight:700;line-height:1.35}
-.ev-meta{font-size:12px;color:var(--ink-soft);margin-top:3px;font-weight:500}
+.ev-title{font-size:var(--t-brod);font-weight:700;line-height:1.35}
+.ev-meta{font-size:var(--t-meta);color:var(--ink-soft);margin-top:3px;font-weight:500}
 .ev-who{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
 
 /* ---------- Kalenderfiltre ---------- */
-.cal-row{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;cursor:pointer}
+.cal-row{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:var(--t-brod);cursor:pointer}
 .cal-row + .cal-row{border-top:1px solid var(--line)}
 .cal-row.off{opacity:.38}
 .cal-swatch{width:12px;height:12px;border-radius:50%;flex-shrink:0}
@@ -202,10 +236,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .cal-palett .farge:active{transform:scale(.88)}
 .cal-palett .farge.valgt{box-shadow:0 0 0 2px var(--ink)}
 .cal-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cal-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft)}
+.cal-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft)}
 .cal-toggle{
   margin-top:8px;padding-top:8px;border-top:1px solid var(--line);
-  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;letter-spacing:.06em;
   color:var(--ink-soft);cursor:pointer;background:none;border:none;
   font-family:'Archivo',sans-serif;text-align:left;width:100%;
 }
@@ -232,10 +266,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .tg-dcol.sel{background:#EDF1F4;box-shadow:inset 0 -3px 0 var(--ink)}
 .tg-dow{
-  font-size:10px;font-weight:700;text-transform:uppercase;
+  font-size:var(--t-rute);font-weight:700;text-transform:uppercase;
   letter-spacing:.1em;color:var(--ink-soft);
 }
-.tg-dnum{font-size:18px;font-weight:800;line-height:1.25;font-variant-numeric:tabular-nums}
+.tg-dnum{font-size:var(--t-stor);font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
 
 .tg-all{
   background:var(--bg-2);border-bottom:1px solid var(--grid);flex-shrink:0;
@@ -243,13 +277,13 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .tg-all-lab{
   border-right:1px solid var(--grid);
-  font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  font-size:var(--t-rute);font-weight:700;letter-spacing:.08em;text-transform:uppercase;
   color:var(--ink-soft);padding:7px 6px 0;text-align:right;
 }
 .tg-all-col{border-left:1px solid var(--grid);padding:5px 4px;display:flex;flex-direction:column;gap:3px}
 .tg-all-col:first-of-type{border-left:none}
 .tg-chip{
-  font-size:11px;font-weight:700;color:#fff;border-radius:5px;
+  font-size:var(--t-etikett);font-weight:700;color:#fff;border-radius:5px;
   padding:3px 6px;cursor:pointer;line-height:1.3;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
@@ -259,7 +293,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .tg-gut{position:relative;border-right:1px solid var(--grid)}
 .tg-gut span{
   position:absolute;right:7px;transform:translateY(-50%);
-  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-rute);color:var(--ink-soft);
 }
 .tg-col{position:relative;border-left:1px solid var(--grid)}
 .tg-col:first-of-type{border-left:none}
@@ -269,9 +303,9 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   cursor:pointer;color:#fff;box-shadow:0 1px 3px rgba(44,62,80,.22);
   border-left:3px solid rgba(255,255,255,.45);
 }
-.tg-ev-t{font-size:10px;font-weight:700;opacity:.88;font-variant-numeric:tabular-nums}
-.tg-ev-n{font-size:12px;font-weight:700;line-height:1.25}
-.tg-ev-w{font-size:10.5px;opacity:.85;margin-top:1px;line-height:1.2}
+.tg-ev-t{font-size:var(--t-rute);font-weight:700;opacity:.88;font-variant-numeric:tabular-nums}
+.tg-ev-n{font-size:var(--t-etikett);font-weight:700;line-height:1.25}
+.tg-ev-w{font-size:var(--t-rute);opacity:.85;margin-top:1px;line-height:1.2}
 .tg-naa{position:absolute;left:0;right:0;height:2px;background:#B4443A;z-index:4;pointer-events:none}
 .tg-naa::before{
   content:'';position:absolute;left:-4px;top:-3px;
@@ -281,7 +315,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* Visningsvelger */
 .seg{display:flex;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;padding:2px}
 .seg button{
-  font-family:'Archivo',sans-serif;font-size:11px;font-weight:700;
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
   text-transform:uppercase;letter-spacing:.07em;
   border:none;background:none;color:var(--ink-soft);
   padding:7px 14px;border-radius:999px;cursor:pointer;
@@ -289,7 +323,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .seg button.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 4px rgba(44,62,80,.14)}
 
 /* ---------- Meldinger ---------- */
-.msg{font-size:14px;color:var(--ink-soft);padding:8px 0;line-height:1.55}
+.msg{font-size:var(--t-brod);color:var(--ink-soft);padding:8px 0;line-height:1.55}
 .msg.err{color:#B4443A}
 
 /* ---------- Dialogvindu ---------- */
@@ -315,23 +349,23 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .boble[data-side="opp"]::after{bottom:-6px;left:var(--peker,24px)}
 .boble-lukk{
   position:absolute;top:9px;right:11px;background:none;border:none;
-  font-size:24px;line-height:1;color:var(--ink-soft);cursor:pointer;
+  font-size:var(--t-pil);line-height:1;color:var(--ink-soft);cursor:pointer;
   padding:2px 7px;font-family:inherit;
 }
 .boble-topp{display:flex;align-items:center;gap:7px;margin-bottom:8px}
 .boble-prikk{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.boble-kal{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
-.boble-tittel{font-size:18px;font-weight:800;line-height:1.25;padding-right:26px}
-.boble-tid{font-size:14px;font-weight:600;color:#4A7FA8;margin-top:4px;font-variant-numeric:tabular-nums}
-.boble-sted{font-size:13px;color:var(--ink-soft);margin-top:5px}
+.boble-kal{font-size:var(--t-rute);font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+.boble-tittel{font-size:var(--t-stor);font-weight:700;line-height:1.25;padding-right:26px}
+.boble-tid{font-size:var(--t-brod);font-weight:600;color:#4A7FA8;margin-top:4px;font-variant-numeric:tabular-nums}
+.boble-sted{font-size:var(--t-meta);color:var(--ink-soft);margin-top:5px}
 .boble-notat{
   margin-top:13px;padding-top:12px;border-top:1px solid var(--line);
-  font-size:14px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;
+  font-size:var(--t-brod);line-height:1.5;white-space:pre-wrap;word-wrap:break-word;
 }
 .boble-notat.ingen{color:var(--ink-soft);font-style:italic}
 .boble-knapp{
   margin-top:15px;width:100%;background:var(--ink);color:#fff;border:none;
-  border-radius:999px;padding:11px;font-family:inherit;font-size:13px;
+  border-radius:999px;padding:11px;font-family:inherit;font-size:var(--t-meta);
   font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;
 }
 .boble-knapp:active{opacity:.85}
@@ -351,11 +385,11 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   display:flex;align-items:center;gap:12px;
   padding:18px 20px 14px;border-bottom:1px solid var(--line);flex-shrink:0;
 }
-.dlg-title{font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.dlg-title{font-size:var(--t-brod);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
 .dlg-x{
   margin-left:auto;width:32px;height:32px;border-radius:50%;
   border:1px solid var(--line);background:var(--bg-2);color:var(--ink-soft);
-  font-size:17px;line-height:1;cursor:pointer;
+  font-size:var(--t-pil);line-height:1;cursor:pointer;
 }
 .dlg-body{padding:18px 20px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .dlg-foot{
@@ -367,12 +401,12 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .fld{margin-bottom:14px}
 .fld:last-child{margin-bottom:0}
 .fld label{
-  display:block;font-size:11px;font-weight:700;text-transform:uppercase;
+  display:block;font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;
   letter-spacing:.1em;color:var(--ink-soft);margin-bottom:6px;
 }
 .fld input[type=text],.fld input[type=date],.fld input[type=time],
 .fld select,.fld textarea{
-  width:100%;font-family:'Archivo',sans-serif;font-size:15px;color:var(--ink);
+  width:100%;font-family:'Archivo',sans-serif;font-size:var(--t-brod);color:var(--ink);
   background:var(--bg-2);border:1px solid var(--line);border-radius:10px;
   padding:11px 12px;-webkit-appearance:none;appearance:none;
 }
@@ -383,9 +417,9 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .fld-row{display:flex;gap:10px}
 .fld-row > *{flex:1;min-width:0}
-.chk{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600}
+.chk{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:var(--t-brod);font-weight:600}
 .chk input{width:20px;height:20px;accent-color:var(--ink);cursor:pointer}
-.dlg-msg{font-size:13px;color:#B4443A;line-height:1.5;margin-top:12px}
+.dlg-msg{font-size:var(--t-meta);color:#B4443A;line-height:1.5;margin-top:12px}
 .dlg-msg[hidden]{display:none}
 
 .btn.solid{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -404,15 +438,15 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   margin:0 auto 20px;box-shadow:0 3px 12px rgba(0,0,0,.18);
 }
 .gate-icon img{width:100%;height:auto;display:block}
-.gate h2{font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
-.gate p{font-size:14px;color:var(--ink-soft);margin:12px auto 26px;line-height:1.6}
-.gate small{display:block;margin-top:22px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);opacity:.8;line-height:1.7}
+.gate h2{font-size:var(--t-stor);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.gate p{font-size:var(--t-brod);color:var(--ink-soft);margin:12px auto 26px;line-height:1.6}
+.gate small{display:block;margin-top:22px;font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);opacity:.8;line-height:1.7}
 
 /* ---------- Bunn ---------- */
 footer{
   flex-shrink:0;padding-top:10px;border-top:1px solid var(--line);
   display:flex;align-items:center;gap:14px;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);
 }
 footer .btn{margin-left:auto}
 
@@ -421,7 +455,7 @@ footer .btn{margin-left:auto}
 .uke-head{display:grid;background:var(--bg-2);border-bottom:1px solid var(--grid);flex-shrink:0}
 .uke-corner{
   border-right:1px solid var(--grid);display:flex;align-items:center;gap:6px;
-  padding:0 10px;font-size:10px;font-weight:700;letter-spacing:.06em;
+  padding:0 10px;font-size:var(--t-rute);font-weight:700;letter-spacing:.06em;
   text-transform:uppercase;color:var(--ink-soft);
 }
 .uke-dcol{
@@ -435,8 +469,8 @@ footer .btn{margin-left:auto}
   display:inline-block;min-width:26px;padding:1px 6px;
 }
 .uke-dcol.sel{background:#EDF1F4;box-shadow:inset 0 -3px 0 var(--ink)}
-.uke-dow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
-.uke-dnum{font-size:17px;font-weight:800;line-height:1.25;font-variant-numeric:tabular-nums}
+.uke-dow{font-size:var(--t-rute);font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+.uke-dnum{font-size:var(--t-stor);font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
 
 .uke-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
 .uke-row{display:grid;border-bottom:1px solid var(--line);min-height:58px}
@@ -447,7 +481,7 @@ footer .btn{margin-left:auto}
 }
 .uke-swatch{width:11px;height:11px;border-radius:50%;flex-shrink:0}
 .uke-navn{
-  font-size:13px;font-weight:700;line-height:1.2;overflow:hidden;
+  font-size:var(--t-meta);font-weight:700;line-height:1.2;overflow:hidden;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
 }
 .uke-cell{
@@ -459,17 +493,17 @@ footer .btn{margin-left:auto}
 .uke-cell.idag{background:rgba(184,217,71,.12)}
 .uke-chip{
   color:#fff;border-radius:7px;padding:4px 7px;cursor:pointer;
-  font-size:12px;font-weight:700;line-height:1.28;overflow:hidden;
+  font-size:var(--t-etikett);font-weight:700;line-height:1.28;overflow:hidden;
   box-shadow:0 1px 2px rgba(44,62,80,.18);
 }
 .uke-chip.hel{border-left:3px solid rgba(255,255,255,.5)}
-.uke-chip-t{font-variant-numeric:tabular-nums;opacity:.9;margin-right:5px;font-size:11px}
+.uke-chip-t{font-variant-numeric:tabular-nums;opacity:.9;margin-right:5px;font-size:var(--t-etikett)}
 
 /* ---------- Heldags / fleredags bånd (måned) ---------- */
 .cal-bars{display:flex;flex-direction:column;gap:2px;margin:0 -7px 3px}
 .cal-band{
   height:16px;display:flex;align-items:center;color:#fff;
-  font-size:11px;font-weight:700;line-height:1;padding:0 6px;
+  font-size:var(--t-etikett);font-weight:700;line-height:1;padding:0 6px;
   overflow:hidden;white-space:nowrap;
 }
 .cal-band.tom{background:transparent!important}
@@ -480,7 +514,7 @@ footer .btn{margin-left:auto}
 /* ---------- Heldags / fleredags bånd (uke) ---------- */
 .uke-band{
   margin:0 -5px 0;padding:5px 7px;color:#fff;
-  font-size:12px;font-weight:700;line-height:1.2;
+  font-size:var(--t-etikett);font-weight:700;line-height:1.2;
   overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;
 }
 .uke-band.s{border-top-left-radius:7px;border-bottom-left-radius:7px}
@@ -489,8 +523,8 @@ footer .btn{margin-left:auto}
 /* ---------- Planvisning (Dagsplan / Ukeplan) ---------- */
 .plan{flex:1;min-height:0;overflow-y:auto;padding:2px 2px 8px}
 .plan-dhead{
-  font-family:'Archivo',sans-serif;font-weight:800;text-transform:uppercase;
-  letter-spacing:.05em;font-size:13px;color:var(--ink);
+  font-family:'Archivo',sans-serif;font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;font-size:var(--t-meta);color:var(--ink);
   padding:12px 4px 8px;position:sticky;top:0;background:var(--paper);z-index:1;
 }
 .plan-sec.idag .plan-dhead{box-shadow:inset 3px 0 0 #b8d947;padding-left:9px}
@@ -503,28 +537,28 @@ footer .btn{margin-left:auto}
 }
 @media(hover:hover){.plan-item:hover{background:#F5F7F4}}
 .plan-time{
-  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);
   min-width:48px;text-align:right;line-height:1.35;font-variant-numeric:tabular-nums;flex-shrink:0;
 }
 .plan-main{min-width:0;flex:1}
-.plan-title{font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;line-height:1.25;overflow-wrap:anywhere}
-.plan-meta{font-size:12px;color:var(--ink-soft);margin-top:3px}
+.plan-title{font-family:'Archivo',sans-serif;font-weight:700;font-size:var(--t-brod);line-height:1.25;overflow-wrap:anywhere}
+.plan-meta{font-size:var(--t-etikett);color:var(--ink-soft);margin-top:3px}
 .plan-note{
-  font-size:13px;line-height:1.4;color:var(--ink);margin-top:7px;white-space:pre-wrap;overflow-wrap:anywhere;
+  font-size:var(--t-meta);line-height:1.4;color:var(--ink);margin-top:7px;white-space:pre-wrap;overflow-wrap:anywhere;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 .plan-item.open .plan-note{-webkit-line-clamp:unset;overflow:visible}
 .plan-item.har-note .plan-note{position:relative}
 .plan-item.har-note::after{
-  content:'\2304';color:var(--ink-soft);font-size:15px;line-height:1;
+  content:'\2304';color:var(--ink-soft);font-size:var(--t-brod);line-height:1;
   align-self:center;flex-shrink:0;margin-left:2px;transition:transform .15s ease;
 }
 .plan-item.har-note.open::after{transform:rotate(180deg)}
-.plan-tom{color:var(--ink-soft);font-size:13px;padding:2px 4px 12px}
+.plan-tom{color:var(--ink-soft);font-size:var(--t-meta);padding:2px 4px 12px}
 
 /* Notat i uke-brikker (Uke + Plan) */
 .uke-chip-note{
-  margin-top:3px;font-size:11px;font-weight:600;line-height:1.3;color:#fff;opacity:.92;
+  margin-top:3px;font-size:var(--t-etikett);font-weight:600;line-height:1.3;color:#fff;opacity:.92;
   white-space:pre-wrap;overflow-wrap:anywhere;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
@@ -532,7 +566,7 @@ footer .btn{margin-left:auto}
 
 /* Notat i måned-ruter (Måned + Plan) — én linje */
 .cal-ev-note{
-  font-family:'Archivo',sans-serif;font-size:10px;font-weight:600;line-height:1.2;
+  font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:600;line-height:1.2;
   color:var(--ink-soft);margin:-1px 0 2px 11px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
@@ -542,13 +576,13 @@ footer .btn{margin-left:auto}
 /* ---------- Kalendervelger (dropdown i topplinjen) ---------- */
 .caldrop{position:relative}
 .caldrop-btn{
-  font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
   border:1px solid var(--line);background:var(--paper);color:var(--ink);
   padding:9px 14px;border-radius:999px;cursor:pointer;
   display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
 }
 .caldrop-btn:active{transform:scale(.98)}
-.caldrop-car{font-size:11px;color:var(--ink-soft);font-weight:700}
+.caldrop-car{font-size:var(--t-etikett);color:var(--ink-soft);font-weight:700}
 .caldrop-panel{
   position:absolute;top:calc(100% + 8px);right:0;z-index:55;
   background:var(--paper);border:1px solid var(--line);border-radius:14px;
@@ -574,13 +608,13 @@ footer .btn{margin-left:auto}
   box-shadow:0 20px 50px rgba(44,62,80,.32);
 }
 .dagpop-head{
-  padding:15px 18px 12px;font-size:13px;font-weight:800;
+  padding:15px 18px 12px;font-size:var(--t-meta);font-weight:700;
   text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--line);
 }
 .dagpop-ny{
   margin:12px 14px 4px;padding:12px;border:none;border-radius:11px;
   background:var(--ink);color:#fff;font-family:'Archivo',sans-serif;
-  font-size:14px;font-weight:700;cursor:pointer;text-align:center;
+  font-size:var(--t-brod);font-weight:700;cursor:pointer;text-align:center;
 }
 .dagpop-ny:active{transform:scale(.98)}
 .dagpop-liste{padding:4px 8px 12px;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -593,11 +627,11 @@ footer .btn{margin-left:auto}
 .dagpop-ev:active{background:var(--bg-2)}
 .dagpop-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .dagpop-tid{
-  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);
   min-width:40px;font-variant-numeric:tabular-nums;
 }
 .dagpop-navn{
-  font-size:14px;font-weight:600;line-height:1.3;overflow:hidden;
+  font-size:var(--t-brod);font-weight:600;line-height:1.3;overflow:hidden;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
 }
 
@@ -633,9 +667,7 @@ footer .btn{margin-left:auto}
   .side-day,.side-cals{flex:none}
   .side .scroll{overflow:visible}
   .brand-icon{width:46px;height:46px;padding:6px}
-  .brand-title{font-size:18px}
   .who{display:none}
-  .cal-ev{font-size:11px}
   .cal-cell{padding:5px}
   .tg{min-height:72dvh}
   .uke-lab{position:sticky;left:0;z-index:2}
@@ -663,15 +695,15 @@ footer .btn{margin-left:auto}
   .pu-topp{display:flex;align-items:center;gap:5px;margin-bottom:2px}
   .pu-ini{
     width:16px;height:16px;border-radius:50%;color:#fff;flex-shrink:0;
-    font-family:'Archivo',sans-serif;font-size:10px;font-weight:800;
+    font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
     display:flex;align-items:center;justify-content:center;line-height:1;
   }
   .pu-tid{
-    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink);
+    font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink);
     font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.75;
   }
   .pu-tittel{
-    font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;
+    font-family:'Archivo',sans-serif;font-weight:700;font-size:var(--t-meta);
     line-height:1.25;overflow-wrap:anywhere;
   }
   /* Liten prikk = det finnes sted eller notat aa se i boblen. */
@@ -681,9 +713,9 @@ footer .btn{margin-left:auto}
   /* Kollisjon: to avtaler ligger oppaa hverandre i tid. Markeres med en solid
      ring i personens egen farge, ikke med stiplet ramme. */
   .pu-ev.kollisjon .pu-tid{font-weight:700;color:var(--ink)}
-  .pu.endag .pu-tittel{font-size:15px}
-  .pu.endag .pu-tid{font-size:13px}
-  .pu.endag .pu-ini{width:19px;height:19px;font-size:12px}
+  .pu.endag .pu-tittel{font-size:var(--t-brod)}
+  .pu.endag .pu-tid{font-size:var(--t-meta)}
+  .pu.endag .pu-ini{width:19px;height:19px;font-size:var(--t-etikett)}
   @media(hover:hover){ .pu-ev:hover{filter:brightness(.96)} }
 
 /* ---------- Laast ramme ----------
