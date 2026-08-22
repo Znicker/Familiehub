@@ -307,10 +307,7 @@ a.middag{
   transition:opacity .15s ease;
 }
 a.middag:active{opacity:.72}
-.middag-pil{
-  font-size:var(--t-pil);color:var(--ink-soft);line-height:1;
-  flex-shrink:0;opacity:.45;align-self:center;
-}
+
 .middag-tekst{flex:1 1 auto;min-width:0}
 .middag-lenke{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .middag-ikon{
@@ -319,11 +316,8 @@ a.middag:active{opacity:.72}
 }
 /* "Middag" staar som liten merkelapp over rettens navn, ikke som egen
    overskriftsrad - det sparer en hel linje i et lavt kort. */
-.middag-merke{
-  font-size:var(--t-meta);font-weight:700;text-transform:uppercase;letter-spacing:.1em;
-  color:var(--ink);margin-bottom:5px;
-}
-.kort-middag{padding:14px 16px}
+
+.kort-middag{padding:18px 20px}
 /* Middagsnotat for dager uten noe i matplanen. */
 .mid-tom{cursor:pointer;display:flex;align-items:baseline;gap:8px}
 .mid-legg{
@@ -345,8 +339,8 @@ a.middag:active{opacity:.72}
   box-shadow:0 2px 10px rgba(0,0,0,.14);
 }
 .middag-navn{
-  font-size:var(--t-stor);font-weight:700;line-height:1.2;
-  overflow-wrap:anywhere;letter-spacing:-.01em;
+  font-size:var(--t-brod);font-weight:700;line-height:1.3;
+  overflow-wrap:anywhere;
 }
 .middag-flere{
   font-size:var(--t-meta);color:var(--ink-soft);margin-top:9px;
@@ -1630,7 +1624,7 @@ async function tegnMiddag(retter){
   if(!retter.length){
     const notat = middagNotat();
     if(middagRedig){
-      boks.innerHTML = '<div class="middag-merke">Middag</div>'
+      boks.innerHTML = '<div class="kort-tittel"><span>Middag</span></div>'
         + '<textarea class="hu-felt mid-felt" id="middagFelt" rows="2" '
         +   'placeholder="Hva blir det til middag?">' + esc(notat) + '</textarea>'
         + '<div class="hu-knapper" style="margin-top:7px">'
@@ -1639,7 +1633,7 @@ async function tegnMiddag(retter){
         + '</div>';
       return;
     }
-    boks.innerHTML = '<div class="middag-merke">Middag</div>'
+    boks.innerHTML = '<div class="kort-tittel"><span>Middag</span></div>'
       + (notat
           ? '<div class="mid-notat" onclick="apneMiddagNotat()">' + esc(notat) + '</div>'
           : '<div class="tom mid-tom" onclick="apneMiddagNotat()">'
@@ -1656,15 +1650,14 @@ async function tegnMiddag(retter){
      ingenting aa lenke til, og da lar vi kortet vaere som foer. */
   const lenke = forste.id ? 'oppskrifter.html?rett=' + encodeURIComponent(forste.id) : '';
 
-  let html = (lenke ? '<a class="middag klikk" href="' + esc(lenke) + '">' : '<div class="middag">')
+  let html = '<div class="kort-tittel"><span>Middag</span></div>'
+    + (lenke ? '<a class="middag klikk" href="' + esc(lenke) + '">' : '<div class="middag">')
     + '<div class="middag-tekst">'
-    +   '<div class="middag-merke">Middag</div>'
     +   '<div class="middag-navn">' + esc(forste.title || 'Uten navn') + '</div>'
     + '</div>'
     + (bilde
         ? '<img class="middag-bilde" src="' + esc(bilde) + '" alt="">'
         : '<div class="middag-ikon">🍽️</div>')
-    + (lenke ? '<span class="middag-pil">›</span>' : '')
     + (lenke ? '</a>' : '</div>');
 
   if(retter.length > 1){
