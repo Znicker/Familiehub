@@ -298,9 +298,12 @@ body{
 /* Lite bilde til venstre, navnet ved siden av. Middagen er ett kort med
    ett navn og trenger ikke en stor plakat. */
 .middag{
-  display:flex;flex-direction:row;align-items:center;gap:14px;
+  display:flex;flex-direction:row;align-items:flex-start;gap:14px;
   min-height:0;
 }
+/* Overskriften staar inne i raden, saa bildet naar opp paa hoeyde med den.
+   Da trenger den ikke luften den har i de andre kortene. */
+.middag .kort-tittel{margin-bottom:6px}
 a.middag{
   text-decoration:none;color:inherit;
   -webkit-tap-highlight-color:transparent;
@@ -1650,9 +1653,9 @@ async function tegnMiddag(retter){
      ingenting aa lenke til, og da lar vi kortet vaere som foer. */
   const lenke = forste.id ? 'oppskrifter.html?rett=' + encodeURIComponent(forste.id) : '';
 
-  let html = '<div class="kort-tittel"><span>Middag</span></div>'
-    + (lenke ? '<a class="middag klikk" href="' + esc(lenke) + '">' : '<div class="middag">')
+  let html = (lenke ? '<a class="middag klikk" href="' + esc(lenke) + '">' : '<div class="middag">')
     + '<div class="middag-tekst">'
+    +   '<div class="kort-tittel"><span>Middag</span></div>'
     +   '<div class="middag-navn">' + esc(forste.title || 'Uten navn') + '</div>'
     + '</div>'
     + (bilde
