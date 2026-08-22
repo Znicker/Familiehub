@@ -88,9 +88,6 @@ body{
 .vt-gr{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 .vt-min{color:var(--ink-soft);font-weight:600;margin-left:3px}
 
-/* Middagen er ett kort med ett navn - den trenger ikke en tredjedel av
-   hoeyden. En fjerdedel holder, resten gaar til huskeboksene. */
-.hoyre > .kort:last-child{flex:0 0 25%;min-height:0}
 .middag-bilde{max-height:100%;object-fit:cover}
 
 @media(max-width:900px){
@@ -117,8 +114,10 @@ body{
   min-height:0;
 }
 .hoyre{display:flex;flex-direction:column;gap:16px;min-height:0}
-.hoyre > .kort:first-child{flex:0 0 auto}      /* vaeret: naturlig hoeyde */
-.hoyre > .kort:last-child{flex:1 1 auto}       /* middagen: resten */
+/* Hoeyrekolonnen er I dag, Denne uken og Middag. Reglene under stammet fra
+   da vaeret laa oeverst her, og ga middagen all resthoeyden. */
+.hoyre > .kort{flex:1 1 0;min-height:0}
+.hoyre > .kort:last-child{flex:0 0 25%}        /* middagen: en fjerdedel */
 
 .kort{
   background:var(--paper);
@@ -344,6 +343,8 @@ input,select,textarea{font-size:16px}
       <div class="klokke-dato" id="klokkeDato">&nbsp;</div>
     </div>
   </div>
+
+  <div class="vaer-stripe" id="vaerStripe" hidden></div>
 
   <div class="rutenett">
 
