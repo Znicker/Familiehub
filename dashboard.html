@@ -124,9 +124,13 @@ body{
 
 /* Stedsnavnet hoerer til vaeret, ikke til klokka. */
 .vaer-sted{
-  font-family:'Archivo',sans-serif;font-size:var(--t-brod);font-weight:700;
+  font-family:'Archivo',sans-serif;font-size:var(--t-stor);font-weight:700;
   color:var(--ink-soft);flex-shrink:0;letter-spacing:.01em;
+  display:flex;align-items:center;gap:6px;
 }
+/* Naala foelger skriftstoerrelsen, saa den holder proporsjonen i alle tre modus. */
+.sted-ikon{width:.8em;height:.8em;flex-shrink:0;opacity:.75}
+.sted-ikon[hidden]{display:none}
 
 /* Vaerstripe under toppraden: naa, noekkeltall, seks timer og fire dager.
    Det er god plass i bredden, saa alt staar framme uten aa maatte trykkes fram. */
@@ -504,7 +508,15 @@ input,select,textarea{font-size:16px}
       </span>
     </a>
     <div class="vaer-stripe" id="vaerStripe" hidden></div>
-    <div class="vaer-sted" id="vaerSted"></div>
+    <div class="vaer-sted">
+      <svg class="sted-ikon" id="stedIkon" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+           stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/>
+        <circle cx="12" cy="10" r="3"/>
+      </svg>
+      <span id="vaerSted"></span>
+    </div>
     <div class="klokke">
       <div class="klokke-tid" id="klokkeTid">--:--</div>
       <div class="klokke-dato" id="klokkeDato">&nbsp;</div>
@@ -584,6 +596,13 @@ input,select,textarea{font-size:16px}
    ============================================================ */
 
 const $ = function(id){ return document.getElementById(id); };
+
+/* Stedsnavnet skrives ett sted, saa naala foelger med av seg selv.
+   Uten sted (feilmelding) skal naala vekk - ellers peker den paa ingenting. */
+function settSted(navn, harSted){
+  const s = $('vaerSted'); if(s) s.textContent = navn;
+  const i = $('stedIkon');  if(i) i.hidden = !harSted;
+}
 
 const STED = { navn:'Arendal', lat:58.4614, lon:8.7724 };
 const TZ   = 'Europe/Oslo';
@@ -1101,7 +1120,7 @@ async function hentVaer(){
     + '&timezone=Europe%2FOslo&forecast_days=5';
   const r = await fetch(url);
   if(!r.ok) throw new Error('HTTP ' + r.status);
-  $('vaerSted').textContent = posisjon.navn;
+  settSted(posisjon.navn, true);
   return r.json();
 }
 
@@ -1139,7 +1158,7 @@ function tegnVaerStripe(){
   if(i0 < 0){
     stripe.innerHTML = '<span class="vt-ingen">Ingen værmelding så langt fram</span>';
     stripe.hidden = false;
-    $('vaerSted').textContent = posisjon.navn;
+    settSted(posisjon.navn, true);
     return;
   }
 
@@ -1188,7 +1207,7 @@ function tegnVaerStripe(){
     + '</span>'
     + '<span class="vt-timer"><span class="vt-rad">' + timer + '</span></span>';
 
-  $('vaerSted').textContent = posisjon.navn;
+  settSted(posisjon.navn, true);
   stripe.hidden = false;
 }
 
@@ -1853,7 +1872,7 @@ async function oppdaterAlt(manuelt){
       /* Vaeret bor i toppstripa naa. Feiler det, skjuler vi stripa i
          stedet for aa la den staa med gamle tall. */
       $('vaerStripe').hidden = true;
-      $('vaerSted').textContent = 'været utilgjengelig';
+      settSted('været utilgjengelig', false);
     }),
     hentMiddag().then(tegnMiddag).catch(function(e){
       $('middag').innerHTML = '<div class="tom feil">Kunne ikke hente matplanen.</div>';
