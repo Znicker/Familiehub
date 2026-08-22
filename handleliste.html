@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="no">
+<html lang="nb">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -8,6 +8,22 @@
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
   :root{
+    /* ---------- Typeskala ----------
+       Fem roller for tekst. Endre stoerrelsene HER, ikke nede i reglene.
+       Modus foelger skjermbredden av seg selv:
+         mobil  < 700px   kjapt, on the go
+         iPad   700-1300  display og betjening, leses paa avstand
+         PC     > 1300    oversikt, taaler tett informasjon
+       Ikoner og piler er glyffer, ikke tekst, og har egen skala.
+       Samme skala som dashboard.html og index.html - hold dem like. */
+    --t-etikett:11px;
+    --t-meta:13px;
+    --t-brod:15px;
+    --t-stor:20px;
+    --t-display:46px;
+    --t-pil:20px;
+    --t-ikon:28px;
+
     --bg-1: #F5F5F5;
     --bg-2: #FAFAFA;
     --bg-solid: #FFFFFF;
@@ -24,6 +40,21 @@
     --danger: #A64D3C;
     --shadow: 0 2px 8px rgba(0,0,0,0.1);
     --radius: 16px;
+  }
+
+  /* iPad: leses paa avstand, alt et hakk opp */
+  @media(min-width:700px){
+    :root{
+      --t-etikett:12px; --t-meta:14px; --t-brod:17px; --t-stor:22px;
+      --t-display:60px; --t-pil:22px; --t-ikon:32px;
+    }
+  }
+  /* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen. */
+  @media(min-width:1300px){
+    :root{
+      --t-etikett:11px; --t-meta:13px; --t-brod:15px; --t-stor:20px;
+      --t-display:60px; --t-pil:20px; --t-ikon:28px;
+    }
   }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
@@ -43,7 +74,7 @@
     background-size: 5px 5px, auto, auto, auto, auto;
     background-attachment: fixed;
   }
-  h1,h2,h3{ font-family:'Archivo', sans-serif; margin:0; font-weight:800; letter-spacing:-0.01em; }
+  h1,h2,h3{ font-family:'Archivo', sans-serif; margin:0; font-weight:700; letter-spacing:-0.01em; }
   .mono{ font-family:'IBM Plex Mono', monospace; }
   button{ font-family:inherit; cursor:pointer; }
   input, textarea, select{ font-family:inherit; }
@@ -72,7 +103,7 @@
   .icon-btn .badge{
     position:absolute; transform:translate(11px,-11px);
     min-width:17px; height:17px; border-radius:999px; padding:0 4px;
-    background:var(--danger); color:#fff; font-size:10.5px; font-weight:700;
+    background:var(--danger); color:#fff; font-size:var(--t-etikett); font-weight:700;
     display:none; align-items:center; justify-content:center;
     font-family:'IBM Plex Mono', monospace;
   }
@@ -85,34 +116,34 @@
   .par-navn{
     display:block; width:100%; text-align:left; padding:11px 13px; margin-bottom:7px;
     border:1.5px solid var(--line); border-radius:10px; background:var(--paper-soft);
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:600; color:var(--ink);
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:600; color:var(--ink);
   }
   .par-navn.valgt{
     border-color:var(--lime-dark); background:var(--lime-dark); color:#FFFFFF;
   }
-  .par-hint{ font-size:13px; color:var(--ink-soft); margin:0 0 10px; }
+  .par-hint{ font-size:var(--t-meta); color:var(--ink-soft); margin:0 0 10px; }
   .klynge-rad{
     display:flex; align-items:center; gap:10px; padding:9px 2px;
     border-bottom:1px solid var(--line);
   }
   .klynge-rad:last-of-type{ border-bottom:none; }
   .klynge-rad input{ width:18px; height:18px; accent-color:var(--lime); flex-shrink:0; }
-  .klynge-navn{ flex:1; min-width:0; font-size:15px; word-break:break-word; }
+  .klynge-navn{ flex:1; min-width:0; font-size:var(--t-brod); word-break:break-word; }
   .klynge-mengde{
-    font-family:'Archivo',sans-serif; font-size:13px; font-weight:700;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
     color:var(--ink-soft); white-space:nowrap; flex-shrink:0;
   }
   .klynge-rad.av .klynge-navn{ color:var(--ink-soft); text-decoration:line-through; }
   .klynge-rad.av .klynge-mengde{ opacity:0.4; }
   .par-sikker{
-    display:inline-block; font-size:11px; font-weight:800; text-transform:uppercase;
+    display:inline-block; font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
     letter-spacing:0.07em; padding:3px 8px; border-radius:999px; margin-bottom:9px;
     background:var(--paper-soft); color:var(--ink-soft);
   }
   .par-sikker.hoy{ background:var(--lime-dark); color:#fff; }
   .par-valg{ display:flex; gap:8px; margin-top:4px; }
   .par-valg button{
-    flex:1; border:none; border-radius:999px; padding:10px; font-size:13px; font-weight:700;
+    flex:1; border:none; border-radius:999px; padding:10px; font-size:var(--t-meta); font-weight:700;
     font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.02em;
   }
   .par-ja{ background:var(--lime); color:#fff; }
@@ -123,10 +154,10 @@
     border-bottom:1px solid var(--line);
   }
   .type-rad:last-child{ border-bottom:none; }
-  .type-rad .navn{ flex:1; min-width:0; font-size:15px; word-break:break-word; }
+  .type-rad .navn{ flex:1; min-width:0; font-size:var(--t-brod); word-break:break-word; }
   .type-rad select{
     flex:0 0 150px; border:1.5px solid var(--line); border-radius:9px; padding:8px;
-    font-family:'Archivo',sans-serif; font-size:13px; background:#fff; color:var(--ink);
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); background:#fff; color:var(--ink);
   }
 
   .trash-row{
@@ -135,19 +166,19 @@
   }
   .trash-row:last-child{ border-bottom:none; }
   .trash-body{ flex:1; min-width:0; }
-  .trash-name{ font-size:17px; font-weight:600; line-height:1.3; color:var(--ink); }
-  .trash-meta{ font-size:13px; color:var(--ink-soft); margin-top:2px; }
+  .trash-name{ font-size:var(--t-brod); font-weight:600; line-height:1.3; color:var(--ink); }
+  .trash-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; }
   .trash-back{
-    border:none; border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:700;
+    border:none; border-radius:999px; padding:7px 13px; font-size:var(--t-meta); font-weight:700;
     font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.02em;
     background:var(--lime); color:#fff; flex-shrink:0;
   }
   .topbar-back{
-    width:40px; height:40px; margin:-4px 0 -4px -8px; font-size:20px;
+    width:40px; height:40px; margin:-4px 0 -4px -8px; font-size:var(--t-pil);
     background:none; border:none; color:var(--ink); cursor:pointer;
   }
   .topbar h1{
-    font-size:15px; color:var(--ink); text-transform:uppercase; text-align:center;
+    font-size:var(--t-brod); color:var(--ink); text-transform:uppercase; text-align:center;
     letter-spacing:0.04em; line-height:1.15;
   }
 
@@ -165,11 +196,11 @@
   }
   .home-hero-icon img{ width:100%; height:auto; display:block; }
   .home-hero-title{
-    font-size:22.5px; font-weight:800; color:var(--ink); text-transform:uppercase;
+    font-size:var(--t-stor); font-weight:700; color:var(--ink); text-transform:uppercase;
     letter-spacing:0.05em; margin:0; line-height:1.2;
   }
   .home-hero-sub{
-    font-size:15px; color:var(--ink-soft); text-transform:uppercase;
+    font-size:var(--t-meta); color:var(--ink-soft); text-transform:uppercase;
     letter-spacing:0.1em; margin:3px 0 0; font-weight:600;
   }
 
@@ -189,16 +220,16 @@
     background:var(--paper-soft); border-radius:999px; padding:4px; margin:16px 0 4px;
   }
   .week-nav button{
-    background:none; border:none; color:var(--ink); font-size:20px; line-height:1;
+    background:none; border:none; color:var(--ink); font-size:var(--t-pil); line-height:1;
     padding:6px 16px; border-radius:999px;
   }
   .week-nav button:active{ background:rgba(0,0,0,0.06); }
   .week-label{
     flex:1; text-align:center; font-family:'IBM Plex Mono', monospace;
-    font-size:13px; font-weight:700; color:var(--ink);
+    font-size:var(--t-meta); font-weight:700; color:var(--ink);
   }
   .week-label small{
-    display:block; font-weight:400; font-size:11px; color:var(--ink-soft);
+    display:block; font-weight:400; font-size:var(--t-etikett); color:var(--ink-soft);
   }
   .week-today{ display:none; }
 
@@ -211,13 +242,13 @@
   }
   .store-group:first-child .store-header{ margin-top:12px; }
   .store-header:active{ background:#20447F; }
-  .store-header .caret{ font-size:11px; color:#FFFFFF; width:12px; flex-shrink:0; opacity:0.8; }
+  .store-header .caret{ font-size:var(--t-etikett); color:#FFFFFF; width:12px; flex-shrink:0; opacity:0.8; }
   .store-header h3{
-    flex:1; font-family:'Archivo',sans-serif; font-size:15px; font-weight:800;
+    flex:1; font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
     color:#FFFFFF; text-transform:uppercase; letter-spacing:0.09em;
   }
   .store-count{
-    font-family:'Archivo',sans-serif; font-size:12.5px; font-weight:700;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
     color:#FFFFFF; opacity:0.85; flex-shrink:0;
   }
   .store-group.collapsed .store-body{ display:none; }
@@ -226,7 +257,7 @@
   .category-header{
     margin:26px 0 8px; padding:9px 14px; border-radius:9px;
     background:var(--lime-dark); color:#FFFFFF;
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:800;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
     box-shadow:0 2px 6px rgba(56,142,60,0.28);
   }
@@ -246,7 +277,7 @@
   .done-wrap .item-row.checked{ opacity:1; }
   .item-store, .item-move{
     background:none; border:none; color:var(--ink-soft); padding:4px 5px;
-    font-size:14px; flex-shrink:0; line-height:1; opacity:0.55;
+    font-size:var(--t-brod); flex-shrink:0; line-height:1; opacity:0.55;
   }
   .item-store:active{ color:var(--blue); opacity:1; }
   .item-move:active{ color:var(--lime-dark); opacity:1; }
@@ -255,7 +286,7 @@
   .done-divider{
     margin:30px 0 8px; padding:9px 14px; border-radius:9px;
     background:var(--paper-soft); border:1px solid var(--line); color:var(--ink-soft);
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:800;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
   }
   .done-wrap{ opacity:0.6; }
@@ -264,39 +295,39 @@
 
   .btn-quiet{
     display:block; width:100%; background:none; border:none; padding:12px 10px;
-    color:var(--ink-soft); font-family:'Archivo',sans-serif; font-size:13px; font-weight:600;
+    color:var(--ink-soft); font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:600;
     text-transform:none; letter-spacing:0; text-decoration:underline; text-underline-offset:3px;
   }
   .btn-quiet:active{ color:var(--ink); }
   .item-body{ flex:1; min-width:0; }
-  .item-name{ font-size:17px; font-weight:600; line-height:1.3; color:var(--ink); }
-  .item-meta{ font-size:13px; color:var(--ink-soft); margin-top:2px; line-height:1.3; }
+  .item-name{ font-size:var(--t-brod); font-weight:600; line-height:1.3; color:var(--ink); }
+  .item-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; line-height:1.3; }
   /* Mengden er ofte det viktigste på linja ved hylla - full farge, ikke grå */
   .item-qty{
-    font-family:'Archivo',sans-serif; font-size:17px; font-weight:700;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
     color:var(--ink); white-space:nowrap; text-align:right; flex-shrink:0;
   }
   .vare-stjerne{ color:var(--lime-dark); font-weight:700; margin-left:4px; }
   .liste-fotnote{
-    font-size:13px; color:var(--ink-soft); margin:14px 0 0; padding-top:2px;
+    font-size:var(--t-meta); color:var(--ink-soft); margin:14px 0 0; padding-top:2px;
   }
   /* Dempet bånd - basisvarer er ikke noe man handler etter */
   .basis-band{
     margin:26px 0 8px; padding:9px 14px; border-radius:9px;
     background:var(--paper-soft); color:var(--ink-soft); border:1px solid var(--line);
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:800;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
   }
   .item-row.checked .item-qty{ color:var(--ink-soft); }
   .item-btn{
     background:none; border:none; color:var(--ink-soft); padding:4px 6px;
-    font-size:15px; flex-shrink:0;
+    font-size:var(--t-brod); flex-shrink:0;
   }
   .item-btn:active{ color:var(--danger); }
 
   .empty-state{ margin-top:60px; text-align:center; color:var(--ink-soft); }
-  .empty-state .big{ font-size:40px; display:block; margin-bottom:10px; }
-  .empty-state p{ margin:6px 0 0; font-size:15px; line-height:1.5; color:var(--ink-soft); }
+  .empty-state .big{ font-size:var(--t-ikon); display:block; margin-bottom:10px; }
+  .empty-state p{ margin:6px 0 0; font-size:var(--t-brod); line-height:1.5; color:var(--ink-soft); }
 
   /* ---------- Bottom bar ---------- */
   .bottom-bar{
@@ -308,7 +339,7 @@
   .bottom-bar > *{ pointer-events:auto; }
   .new-fab, .inbox-fab{
     position:relative; width:48px; height:48px; border-radius:50%;
-    background:var(--lime); color:#FFFFFF; border:none; padding:0; font-size:20px;
+    background:var(--lime); color:#FFFFFF; border:none; padding:0; font-size:var(--t-pil);
     display:flex; align-items:center; justify-content:center;
     box-shadow:0 4px 12px rgba(0,0,0,0.15);
   }
@@ -317,7 +348,7 @@
   .inbox-badge{
     position:absolute; right:-3px; bottom:-3px; min-width:20px; height:20px; border-radius:999px;
     background:var(--danger); color:#fff; border:2px solid var(--bg-solid);
-    font-size:11px; font-weight:700; line-height:1; padding:0 3px;
+    font-size:var(--t-etikett); font-weight:700; line-height:1; padding:0 3px;
     display:none; align-items:center; justify-content:center;
   }
   .inbox-badge.active{ display:flex; }
@@ -326,7 +357,7 @@
   .btn{
     display:inline-flex; align-items:center; justify-content:center; gap:8px;
     padding:13px 18px; border-radius:999px; border:none;
-    font-size:14.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
+    font-size:var(--t-brod); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
     font-family:'Archivo', sans-serif;
   }
   .btn-primary{ background:var(--blue); color:#fff; width:100%; margin-top:14px; }
@@ -338,15 +369,15 @@
 
   .field{ margin-bottom:12px; }
   .field label{
-    display:block; font-size:13px; color:var(--ink-soft); margin-bottom:4px;
+    display:block; font-size:var(--t-meta); color:var(--ink-soft); margin-bottom:4px;
   }
   .field input, .field textarea, .field select{
     width:100%; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line);
-    background:#fff; font-size:15px; color:var(--ink);
+    background:#fff; font-size:var(--t-brod); color:var(--ink);
   }
   .field textarea{ resize:vertical; min-height:56px; }
-  .field-hint{ font-size:11.5px; color:var(--lime-dark); margin:4px 0 0; font-weight:600; }
-  .field-note{ font-size:11.5px; color:var(--ink-soft); margin:4px 0 0; }
+  .field-hint{ font-size:var(--t-etikett); color:var(--lime-dark); margin:4px 0 0; font-weight:600; }
+  .field-note{ font-size:var(--t-etikett); color:var(--ink-soft); margin:4px 0 0; }
   .new-value{ margin-top:8px; }
 
   /* ---------- Tabs ---------- */
@@ -356,7 +387,7 @@
   }
   .tab-btn{
     flex:1; border:none; background:none; padding:10px; border-radius:999px;
-    font-size:13px; font-weight:700; color:var(--ink-soft);
+    font-size:var(--t-meta); font-weight:700; color:var(--ink-soft);
     text-transform:uppercase; letter-spacing:0.02em; font-family:'Archivo', sans-serif;
   }
   .tab-btn.active{ background:var(--lime); color:#FFFFFF; }
@@ -369,8 +400,8 @@
     padding:11px 2px; border-bottom:1px solid var(--line);
   }
   .sum-row:last-child{ border-bottom:none; }
-  .sum-label{ font-size:13px; color:var(--ink-soft); }
-  .sum-value{ font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; color:var(--ink); }
+  .sum-label{ font-size:var(--t-meta); color:var(--ink-soft); }
+  .sum-value{ font-family:'IBM Plex Mono',monospace; font-size:var(--t-brod); font-weight:600; color:var(--ink); }
 
   /* ---------- Inbox ---------- */
   .inbox-item{
@@ -379,10 +410,10 @@
     display:flex; align-items:center; gap:10px;
   }
   .inbox-item-body{ flex:1; min-width:0; }
-  .inbox-item-name{ font-weight:600; color:var(--blue); font-size:14.5px; }
-  .inbox-item-meta{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .inbox-item-name{ font-weight:600; color:var(--blue); font-size:var(--t-brod); }
+  .inbox-item-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; }
   .inbox-item-btn{
-    border:none; border-radius:999px; padding:8px 14px; font-size:12.5px; font-weight:700;
+    border:none; border-radius:999px; padding:8px 14px; font-size:var(--t-meta); font-weight:700;
     font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.03em;
     background:var(--lime); color:#fff; flex-shrink:0;
   }
@@ -403,7 +434,7 @@
     position:fixed; left:50%; transform:translateX(-50%);
     bottom:150px; z-index:500; max-width:88%;
     background:var(--ink); color:#fff; border-radius:10px;
-    padding:11px 16px; font-size:13px; font-weight:600;
+    padding:11px 16px; font-size:var(--t-meta); font-weight:600;
     box-shadow:0 4px 14px rgba(0,0,0,0.25); display:none;
   }
   .toast.active{ display:block; }
@@ -412,14 +443,14 @@
     max-width:400px; width:100%; box-shadow:0 8px 24px rgba(0,0,0,0.2);
     max-height:88vh; overflow-y:auto;
   }
-  .modal-card h3{ margin:0 0 4px; font-size:16px; }
-  .modal-card .lead{ font-size:13px; color:var(--ink-soft); margin:0 0 16px; }
+  .modal-card h3{ margin:0 0 4px; font-size:var(--t-brod); }
+  .modal-card .lead{ font-size:var(--t-meta); color:var(--ink-soft); margin:0 0 16px; }
   .modal-actions{ display:flex; gap:8px; margin-top:16px; }
   .modal-actions .btn{ flex:1; margin-top:0; }
 
   /* ---------- Import ---------- */
   .pick-group{
-    font-size:11.5px; text-transform:uppercase; letter-spacing:0.09em;
+    font-size:var(--t-etikett); text-transform:uppercase; letter-spacing:0.09em;
     color:var(--lime-dark); font-weight:700; margin:16px 0 7px;
   }
   .pick-group:first-child{ margin-top:4px; }
@@ -429,16 +460,16 @@
     border-radius:10px; margin-bottom:6px;
   }
   .pick-row input{ width:18px; height:18px; accent-color:var(--lime); flex-shrink:0; }
-  .pick-title{ flex:1; min-width:0; font-size:14px; font-weight:500; }
-  .pick-serv{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); flex-shrink:0; }
+  .pick-title{ flex:1; min-width:0; font-size:var(--t-brod); font-weight:500; }
+  .pick-serv{ font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); color:var(--ink-soft); flex-shrink:0; }
   .import-error{
     background:#F7E9E6; border:1px solid var(--danger); color:var(--danger);
-    border-radius:10px; padding:10px 12px; font-size:12.5px; margin:0 0 12px;
+    border-radius:10px; padding:10px 12px; font-size:var(--t-meta); margin:0 0 12px;
   }
   .file-btn{
     display:block; width:100%; text-align:center; padding:12px;
     border:1.5px dashed var(--line); border-radius:12px; background:none;
-    color:var(--ink-soft); font-size:13px; font-weight:700;
+    color:var(--ink-soft); font-size:var(--t-meta); font-weight:700;
     font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.03em;
     margin-bottom:12px;
   }
@@ -2649,10 +2680,10 @@ function tegnOmrade(omrade, c){
     c.innerHTML = omrade === 'mat'
       ? '<div class="empty-state"><span class="big">🛒</span>' +
         '<p>Ingen varer i uke ' + viewWeek + '.</p>' +
-        '<p style="font-size:13px;">Legg til en vare, eller hent ingredienser fra Oppskriftsboka.</p></div>'
+        '<p style="font-size:var(--t-meta);">Legg til en vare, eller hent ingredienser fra Oppskriftsboka.</p></div>'
       : '<div class="empty-state"><span class="big">🔧</span>' +
         '<p>Ingen andre behov i uke ' + viewWeek + '.</p>' +
-        '<p style="font-size:13px;">Jernvare, verktøy, interiør – alt som ikke er mat.</p></div>';
+        '<p style="font-size:var(--t-meta);">Jernvare, verktøy, interiør – alt som ikke er mat.</p></div>';
     return;
   }
 
