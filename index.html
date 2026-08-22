@@ -14,11 +14,43 @@
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 :root{
+  /* ---------- Typeskala ----------
+     Fem roller for tekst. Endre stoerrelsene HER, ikke nede i reglene.
+     Modus foelger skjermbredden av seg selv:
+       mobil  < 700px   kjapt, on the go
+       iPad   700-1300  display og betjening, leses paa avstand
+       PC     > 1300    oversikt, taaler tett informasjon
+     Ikoner og piler er glyffer, ikke tekst, og har egen skala.
+     Samme skala som dashboard.html - hold dem like. */
+  --t-etikett:11px;
+  --t-meta:13px;
+  --t-brod:15px;
+  --t-stor:20px;
+  --t-display:46px;
+  --t-pil:20px;     /* ikke i bruk her - beholdt saa skalaen er lik i alle fem filene */
+  --t-ikon:28px;
+
   --bg-1:#F5F5F5; --bg-2:#FAFAFA; --paper:#FFFFFF;
   --ink:#2C3E50; --ink-soft:#5A6C7D;
   --line:rgba(44,62,80,.10);
   --shadow:0 2px 10px rgba(0,0,0,.08);
   --shadow-lift:0 14px 30px rgba(44,62,80,.16);
+}
+
+/* iPad: leses paa avstand, alt et hakk opp */
+@media(min-width:700px){
+  :root{
+    --t-etikett:12px; --t-meta:14px; --t-brod:17px; --t-stor:22px;
+    --t-display:60px; --t-pil:22px; --t-ikon:32px;
+  }
+}
+/* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen,
+   men klokka blir staaende stor. */
+@media(min-width:1300px){
+  :root{
+    --t-etikett:11px; --t-meta:13px; --t-brod:15px; --t-stor:20px;
+    --t-display:60px; --t-pil:20px; --t-ikon:28px;
+  }
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;min-height:100%}
@@ -44,20 +76,20 @@ body{
 }
 .brand-icon img{width:100%;height:auto;display:block}
 .brand-title{
-  font-size:22.5px;font-weight:800;text-transform:uppercase;
+  font-size:var(--t-stor);font-weight:700;text-transform:uppercase;
   letter-spacing:.05em;line-height:1.2;
 }
 .brand-sub{
-  font-size:13px;color:var(--ink-soft);text-transform:uppercase;
+  font-size:var(--t-etikett);color:var(--ink-soft);text-transform:uppercase;
   letter-spacing:.1em;font-weight:600;margin-top:2px;
 }
 .clock{margin-left:auto;text-align:right;line-height:1}
 .clock-time{
-  font-size:52px;font-weight:800;letter-spacing:-.01em;
+  font-size:var(--t-display);font-weight:700;letter-spacing:-.01em;
   font-variant-numeric:tabular-nums;
 }
 .clock-date{
-  font-size:15px;color:var(--ink-soft);font-weight:600;
+  font-size:var(--t-brod);color:var(--ink-soft);font-weight:600;
   text-transform:uppercase;letter-spacing:.08em;margin-top:6px;
 }
 
@@ -74,14 +106,13 @@ body{
 @media(max-width:560px){
   .top{gap:10px;padding-bottom:14px;margin-bottom:18px;flex-wrap:wrap}
   .brand{flex-shrink:1;min-width:0;gap:10px}
-  .brand-title{font-size:17px;letter-spacing:.03em}
-  .brand-sub{font-size:11px;letter-spacing:.06em}
+  .brand-title{letter-spacing:.03em}
+  .brand-sub{letter-spacing:.06em}
   .clock{min-width:0;flex-shrink:0}
-  .clock-time{font-size:30px}
-  .clock-date{font-size:10px;margin-top:3px;letter-spacing:.05em}
+  .clock-date{margin-top:3px;letter-spacing:.05em}
   /* Vaerknappen legger seg paa egen linje under merket og klokka. */
   .apps{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  .app-name{font-size:14px;letter-spacing:.02em}
+  .app-name{letter-spacing:.02em}
   .app-icon{width:64px;height:64px;margin-bottom:9px}
   .app{padding:16px 8px 14px}
   .panel{padding:16px;border-radius:16px}
@@ -96,12 +127,12 @@ body{
   display:flex;align-items:baseline;gap:10px;margin-bottom:16px;
 }
 .panel-title{
-  font-size:13px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.12em;color:var(--ink-soft);
+  font-size:var(--t-meta);font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--ink);
 }
 .panel-note{
   margin-left:auto;font-family:'IBM Plex Mono',monospace;
-  font-size:11px;color:var(--ink-soft);opacity:.75;
+  font-size:var(--t-etikett);color:var(--ink-soft);opacity:.75;
 }
 
 /* ---------- Snarveier ---------- */
@@ -143,11 +174,11 @@ body{
   background-size:cover;background-position:center;
 }
 .dash-initial{
-  font-size:34px;font-weight:800;color:#7A8899;line-height:1;
+  font-size:var(--t-ikon);font-weight:700;color:#7A8899;line-height:1;
 }
 .dash-icon.har-bilde .dash-initial{display:none}
 .app-name{
-  font-size:17px;font-weight:800;text-transform:uppercase;
+  font-size:var(--t-brod);font-weight:700;text-transform:uppercase;
   letter-spacing:.05em;line-height:1.2;
   /* "ARBEIDSOPPGAVER" i versaler med bokstavavstand er bredere enn en
      flis paa telefon. Uten dette presser ordet rutenettsporet ut over
@@ -157,13 +188,13 @@ body{
 .app.soon{opacity:.42}
 .app-badge{
   margin-top:6px;font-family:'IBM Plex Mono',monospace;
-  font-size:10px;letter-spacing:.08em;color:var(--ink-soft);
+  font-size:var(--t-etikett);letter-spacing:.08em;color:var(--ink-soft);
   text-transform:uppercase;
 }
 
 /* ---------- Vær ---------- */
 
-.msg{font-size:14px;color:var(--ink-soft);padding:8px 0;line-height:1.5}
+.msg{font-size:var(--t-brod);color:var(--ink-soft);padding:8px 0;line-height:1.5}
 .msg.err{color:#B4443A}
 
 /* ---------- Bunn ---------- */
@@ -186,10 +217,10 @@ body{
 }
 #port .ikon img{width:100%;height:auto;display:block}
 #port h1{
-  font-size:23px;font-weight:800;text-transform:uppercase;
+  font-size:var(--t-stor);font-weight:700;text-transform:uppercase;
   letter-spacing:.05em;line-height:1.2;
 }
-#port p{font-size:14px;color:var(--ink-soft);line-height:1.6;margin:14px auto 26px}
+#port p{font-size:var(--t-brod);color:var(--ink-soft);line-height:1.6;margin:14px auto 26px}
 #port .logginn{
   display:flex;align-items:center;justify-content:center;
   width:58px;height:58px;margin:6px auto 0;
@@ -202,27 +233,27 @@ body{
 #port .logginn svg{display:block}
 #port small{
   display:block;margin-top:24px;font-family:'IBM Plex Mono',monospace;
-  font-size:11px;color:var(--ink-soft);line-height:1.7;
+  font-size:var(--t-etikett);color:var(--ink-soft);line-height:1.7;
 }
 #port small.feil{color:#B4443A}
 .ut{
-  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);
   background:none;border:1px solid var(--line);border-radius:999px;
   padding:6px 14px;color:var(--ink-soft);cursor:pointer;
 }
 .bruker{
-  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);
   color:var(--ink-soft);text-align:right;line-height:1.5;
 }
-.bruker b{display:block;font-family:'Archivo',sans-serif;font-size:13px;color:var(--ink);font-weight:700}
+.bruker b{display:block;font-family:'Archivo',sans-serif;font-size:var(--t-meta);color:var(--ink);font-weight:700}
 
 footer{
   margin-top:26px;padding-top:16px;border-top:1px solid var(--line);
   display:flex;align-items:center;gap:14px;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);
 }
 .refresh{
-  margin-left:auto;font-family:inherit;font-size:11px;
+  margin-left:auto;font-family:inherit;font-size:var(--t-etikett);
   background:none;border:1px solid var(--line);border-radius:999px;
   padding:6px 14px;color:var(--ink-soft);cursor:pointer;
 }
