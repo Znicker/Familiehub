@@ -66,7 +66,7 @@ body{
   font-size:22px;line-height:1;cursor:pointer;padding:0 4px;border-radius:8px;
 }
 .detalj-lukk:active{background:rgba(44,62,80,.08)}
-.plan-rad.valgt{background:rgba(44,62,80,.06);border-radius:10px}
+.plan-rad.valgt{box-shadow:inset 0 0 0 2px rgba(44,62,80,.45)}
 .hoyre > .kort[hidden]{display:none}
 
 /* Dagen er overskriften paa plankortet. Den laa foer paa en egen rad over
@@ -195,17 +195,19 @@ body{
 .tom{color:var(--ink-soft);font-size:14px;padding:6px 0}
 
 /* ---------- Dagsplan ---------- */
+/* Hele foeringen fylles med kalenderfargen. Fyll og rammefarge settes i JS. */
 .plan-rad{
-  display:flex;align-items:flex-start;gap:12px;
-  padding:9px 0;border-top:1px solid var(--line);
+  display:flex;align-items:flex-start;gap:11px;
+  padding:9px 11px;margin-bottom:6px;
+  border:1px solid transparent;border-radius:11px;
 }
-.plan-rad:first-child{border-top:none;padding-top:0}
+
 .plan-tid{
   font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;
   width:52px;flex-shrink:0;padding-top:1px;
 }
 .plan-tid.hel{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
-.plan-strek{width:4px;border-radius:2px;align-self:stretch;flex-shrink:0;min-height:20px}
+
 .plan-inn{min-width:0;flex:1}
 .plan-tittel{font-size:15px;font-weight:600;line-height:1.3;word-wrap:break-word}
 .plan-meta{font-size:12px;color:var(--ink-soft);margin-top:2px}
@@ -213,7 +215,7 @@ body{
 .plan-rad.naa .plan-tittel{font-weight:800}
 .plan-rad.naa .plan-tid{color:var(--blaa)}
 .plan-rad{cursor:pointer;-webkit-tap-highlight-color:transparent}
-.plan-rad:active{background:#F7F9FA}
+.plan-rad:active{filter:brightness(.96)}
 .plan-notatprikk{
   font-size:8px;color:var(--ink-soft);flex-shrink:0;
   align-self:center;opacity:.55;
@@ -352,10 +354,18 @@ input,select,textarea{font-size:16px}
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
 .hu-ny:active{background:rgba(44,62,80,.08)}
-.hu-rad{display:flex;align-items:flex-start;gap:9px;padding:7px 0}
-.hu-rad + .hu-rad{border-top:1px solid var(--line)}
+.hu-rad{
+  display:flex;align-items:flex-start;gap:9px;
+  padding:8px 10px;margin-bottom:6px;
+  border:1px solid transparent;border-radius:11px;
+}
 .hu-rad.forbi{opacity:.45}                 /* frist passert - blir staaende */
-.hu-strek{width:4px;border-radius:2px;align-self:stretch;min-height:20px;flex-shrink:0}
+.hu-verkt{display:flex;gap:2px;flex-shrink:0}
+.hu-knapp{
+  border:none;background:transparent;color:var(--ink-soft);opacity:.5;
+  font-size:14px;line-height:1;cursor:pointer;padding:1px 3px;border-radius:6px;
+}
+.hu-knapp:active{opacity:1;background:rgba(44,62,80,.08)}
 .hu-inn{flex:1;min-width:0}
 .hu-topp{display:flex;align-items:baseline;gap:6px;cursor:default}
 .hu-topp[onclick]{cursor:pointer}
@@ -365,11 +375,7 @@ input,select,textarea{font-size:16px}
 .hu-tekst{font-size:13px;color:var(--ink-soft);line-height:1.45;margin-top:4px;
   white-space:pre-wrap;overflow-wrap:anywhere}
 .hu-av{font-size:11px;color:var(--ink-soft);opacity:.75;margin-top:2px}
-.hu-slett{
-  border:none;background:transparent;color:var(--ink-soft);opacity:.45;
-  font-size:17px;line-height:1;cursor:pointer;padding:0 2px;flex-shrink:0;
-}
-.hu-slett:active{opacity:1}
+
 
 .hu-skjema{display:flex;flex-direction:column;gap:7px;padding-bottom:10px;
   margin-bottom:8px;border-bottom:1px solid var(--line)}
@@ -378,7 +384,7 @@ input,select,textarea{font-size:16px}
   border:1px solid var(--line);border-radius:9px;padding:7px 9px;
   background:var(--paper);width:100%;box-sizing:border-box;
 }
-.hu-omr{resize:vertical;min-height:44px}
+.hu-omr{resize:vertical;min-height:130px;line-height:1.45}
 .hu-rad2{display:flex;gap:7px}
 .hu-rad2 label,.hu-frist{flex:1;font-size:10px;font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px}
@@ -860,11 +866,11 @@ function tegnPlan(res){
     const paagaar = dagOffset === 0 && !e.heleDagen && e.start <= naa && e.slutt > naa;
     const meta = [e.sted, e.kalender].filter(Boolean).join(' · ');
     return '<div class="plan-rad' + (forbi ? ' forbi' : '') + (paagaar ? ' naa' : '') + '"'
+      + ' style="' + fyll(e.farge) + '"'
       + ' onclick="visDetalj(' + i + ')" role="button" tabindex="0">'
       + '<div class="plan-tid' + (e.heleDagen ? ' hel' : '') + '">'
       +   (e.heleDagen ? 'Hele<br>dagen' : esc(kl(e.start)))
       + '</div>'
-      + '<div class="plan-strek" style="background:' + e.farge + '"></div>'
       + '<div class="plan-inn">'
       +   '<div class="plan-tittel">' + esc(e.tittel) + '</div>'
       +   (meta ? '<div class="plan-meta">' + esc(meta) + '</div>' : '')
@@ -1155,6 +1161,24 @@ const pad = function(n){ return String(n).padStart(2, '0'); };
 let huskeliste = null;
 let huskeSkjema = null;          /* 'dag' | 'uke' | null */
 
+/* Kalenderfargen som gjennomsiktig fyll bak hele foeringen. Teksten blir
+   staaende moerk mot en lys tone av personens egen farge. */
+function rgbAv(hex){
+  const h = String(hex || '').replace('#', '').trim();
+  const full = h.length === 3 ? h[0]+h[0]+h[1]+h[1]+h[2]+h[2] : h;
+  if(!/^[0-9a-fA-F]{6}$/.test(full)) return {r:44, g:62, b:80};
+  return { r: parseInt(full.slice(0,2),16),
+           g: parseInt(full.slice(2,4),16),
+           b: parseInt(full.slice(4,6),16) };
+}
+function dus(hex, a){
+  const c = rgbAv(hex);
+  return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')';
+}
+function fyll(hex){
+  return 'background:' + dus(hex, .16) + ';border-color:' + dus(hex, .34);
+}
+
 function huskeFarge(navn){
   const i = PERSONER.indexOf(navn);
   return kalenderFarge(navn, i < 0 ? 0 : i);
@@ -1206,8 +1230,8 @@ function idag0(){
 function huskeRad(m){
   const forbi = m.frist && m.frist < datoNokkel(idag0());
   const harTekst = !!(m.tekst || '').trim();
-  return '<div class="hu-rad' + (forbi ? ' forbi' : '') + '" data-id="' + esc(m.id) + '">'
-    +   '<span class="hu-strek" style="background:' + esc(huskeFarge(m.gjelder)) + '"></span>'
+  return '<div class="hu-rad' + (forbi ? ' forbi' : '') + '" data-id="' + esc(m.id) + '"'
+    +     ' style="' + fyll(huskeFarge(m.gjelder)) + '">'
     +   '<div class="hu-inn">'
     +     '<div class="hu-topp"' + (harTekst ? ' onclick="vekslHuske(this)"' : '') + '>'
     +       '<span class="hu-tittel">' + esc(m.overskrift || '') + '</span>'
@@ -1217,8 +1241,12 @@ function huskeRad(m){
     +     '<div class="hu-av">' + esc(m.gjelder || 'Familie')
     +       (m.av ? ' · skrevet av ' + esc(m.av) : '') + '</div>'
     +   '</div>'
-    +   '<button class="hu-slett" onclick="slettHuske(\'' + esc(m.id) + '\')" '
-    +     'aria-label="Slett">×</button>'
+    +   '<div class="hu-verkt">'
+    +     '<button class="hu-knapp" onclick="rediger(\'' + esc(m.id) + '\')" '
+    +       'aria-label="Endre">✎</button>'
+    +     '<button class="hu-knapp" onclick="slettHuske(\'' + esc(m.id) + '\')" '
+    +       'aria-label="Slett">×</button>'
+    +   '</div>'
     + '</div>';
 }
 
@@ -1231,55 +1259,88 @@ function vekslHuske(topp){
 
 function huskeSkjemaHtml(omfang){
   const meg = (localStorage.getItem('fh_navn') || '').split(' ')[0] || '';
-  const valg = PERSONER.map(function(n){
-    return '<option value="' + esc(n) + '"' + (n === meg ? ' selected' : '') + '>' + esc(n) + '</option>';
-  }).join('');
-  const megValg = PERSONER.map(function(n){
-    return '<option value="' + esc(n) + '"' + (n === meg ? ' selected' : '') + '>' + esc(n) + '</option>';
-  }).join('');
+  /* Redigering: samme skjema, fylt ut med det som staar der fra foer. */
+  const m = huskeSkjema && huskeSkjema.id
+    ? (huskeliste || []).find(function(x){ return x.id === huskeSkjema.id; })
+    : null;
+  const valgt = function(felt, standard){
+    return m ? (m[felt] || standard) : standard;
+  };
+  const liste = function(felt, standard){
+    return PERSONER.map(function(n){
+      return '<option value="' + esc(n) + '"'
+        + (n === valgt(felt, standard) ? ' selected' : '') + '>' + esc(n) + '</option>';
+    }).join('');
+  };
   return '<div class="hu-skjema">'
-    + '<input class="hu-felt" id="huOverskrift-' + omfang + '" placeholder="Overskrift" maxlength="80">'
-    + '<textarea class="hu-felt hu-omr" id="huTekst-' + omfang + '" rows="2" '
-    +   'placeholder="Utfyllende tekst (valgfritt)"></textarea>'
+    + '<input class="hu-felt" id="huOverskrift-' + omfang + '" placeholder="Overskrift" '
+    +   'maxlength="80" value="' + esc(m ? (m.overskrift || '') : '') + '">'
+    + '<textarea class="hu-felt hu-omr" id="huTekst-' + omfang + '" rows="6" '
+    +   'placeholder="Utfyllende tekst (valgfritt)">' + esc(m ? (m.tekst || '') : '') + '</textarea>'
     + '<div class="hu-rad2">'
-    +   '<label>Gjelder<select class="hu-felt" id="huGjelder-' + omfang + '">' + valg + '</select></label>'
-    +   '<label>Skrevet av<select class="hu-felt" id="huAv-' + omfang + '">' + megValg + '</select></label>'
+    +   '<label>Gjelder<select class="hu-felt" id="huGjelder-' + omfang + '">'
+    +     liste('gjelder', 'Familie') + '</select></label>'
+    +   '<label>Skrevet av<select class="hu-felt" id="huAv-' + omfang + '">'
+    +     liste('av', meg) + '</select></label>'
     + '</div>'
     + '<label class="hu-frist">Frist<input class="hu-felt" type="date" id="huFrist-' + omfang + '" '
-    +   'value="' + datoNokkel(dagenViser()) + '"></label>'
+    +   'value="' + esc(m ? (m.frist || '') : datoNokkel(dagenViser())) + '"></label>'
     + '<div class="hu-knapper">'
     +   '<button class="hu-avbryt" onclick="lukkHuskeSkjema()">Avbryt</button>'
-    +   '<button class="hu-lagre" onclick="lagreHuske(\'' + omfang + '\')">Legg til</button>'
+    +   '<button class="hu-lagre" onclick="lagreHuske(\'' + omfang + '\')">'
+    +     (m ? 'Lagre' : 'Legg til') + '</button>'
     + '</div>'
     + '</div>';
 }
 
 function apneHuskeSkjema(omfang){
-  huskeSkjema = (huskeSkjema === omfang) ? null : omfang;
+  const apen = huskeSkjema && huskeSkjema.omfang === omfang && !huskeSkjema.id;
+  huskeSkjema = apen ? null : {omfang: omfang, id: null};
   tegnHuske();
   if(huskeSkjema){
-    const f = $('huOverskrift-' + huskeSkjema);
+    const f = $('huOverskrift-' + omfang);
     if(f) f.focus();
   }
 }
+
+/* Endre et punkt: skjemaet aapnes i samme boks, fylt ut. */
+function rediger(id){
+  const m = (huskeliste || []).find(function(x){ return x.id === id; });
+  if(!m) return;
+  const omfang = (m.omfang === 'uke') ? 'uke' : 'dag';
+  huskeSkjema = {omfang: omfang, id: id};
+  tegnHuske();
+  const f = $('huOverskrift-' + omfang);
+  if(f) f.focus();
+}
+
 function lukkHuskeSkjema(){ huskeSkjema = null; tegnHuske(); }
 
 async function lagreHuske(omfang){
   const o = ($('huOverskrift-' + omfang).value || '').trim();
   if(!o){ $('huOverskrift-' + omfang).focus(); return; }
-  const ny = {
-    id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+  const felter = {
     overskrift: o,
     tekst: ($('huTekst-' + omfang).value || '').trim(),
     frist: $('huFrist-' + omfang).value || datoNokkel(dagenViser()),
     omfang: omfang,
     gjelder: $('huGjelder-' + omfang).value,
-    av: $('huAv-' + omfang).value,
-    laget: new Date().toISOString()
+    av: $('huAv-' + omfang).value
   };
+  const endrerId = huskeSkjema && huskeSkjema.id;
   huskeSkjema = null;
   try{
-    await endreHuske(function(liste){ return liste.concat([ny]); });
+    await endreHuske(function(liste){
+      if(endrerId){
+        return liste.map(function(m){
+          return m.id === endrerId ? Object.assign({}, m, felter, {endret: new Date().toISOString()}) : m;
+        });
+      }
+      return liste.concat([Object.assign({
+        id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        laget: new Date().toISOString()
+      }, felter)]);
+    });
   }catch(e){
     alert('Fikk ikke lagret merknaden: ' + e.message);
   }
@@ -1318,10 +1379,11 @@ function tegnHuskeInner(){
     const boks = $(g.boks);
     if(!boks) return;
     boks.innerHTML =
-        (huskeSkjema === g.omfang ? huskeSkjemaHtml(g.omfang) : '')
+        (huskeSkjema && huskeSkjema.omfang === g.omfang ? huskeSkjemaHtml(g.omfang) : '')
       + (g.treff.length
           ? g.treff.map(huskeRad).join('')
-          : (huskeSkjema === g.omfang ? '' : '<div class="tom">Ingenting notert ennå.</div>'));
+          : (huskeSkjema && huskeSkjema.omfang === g.omfang
+              ? '' : '<div class="tom">Ingenting notert ennå.</div>'));
   });
 }
 
