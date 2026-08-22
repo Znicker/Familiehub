@@ -202,9 +202,14 @@ body{
   border:1px solid transparent;border-radius:11px;
 }
 
+/* Fra-klokkeslett oeverst, til-klokkeslett under. */
 .plan-tid{
   font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;
-  width:52px;flex-shrink:0;padding-top:1px;
+  width:46px;flex-shrink:0;padding-top:1px;line-height:1.25;
+}
+.plan-til{
+  display:block;font-size:12px;font-weight:600;
+  color:var(--ink-soft);opacity:.85;
 }
 .plan-tid.hel{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
 
@@ -371,17 +376,27 @@ input,select,textarea{font-size:16px}
 .hu-inn{flex:1;min-width:0}
 .hu-topp{display:flex;align-items:baseline;gap:6px;cursor:default}
 .hu-topp[onclick]{cursor:pointer}
+/* Bokstavmerket, likt kalenderappens .pu-ini */
+.ini{
+  width:19px;height:19px;border-radius:50%;color:#FFFFFF;flex-shrink:0;
+  font-family:'Archivo',sans-serif;font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.plan-rad .ini{margin-top:1px}
 .hu-tittel{flex:1;min-width:0;font-weight:700;font-size:14px;line-height:1.3;
   overflow-wrap:anywhere}
 .hu-pil{color:var(--ink-soft);font-size:15px;line-height:1;flex-shrink:0;opacity:.6}
 
 /* Boble for én merknad. Fyll og rammefarge settes i JS. */
 .hu-boble-bak{position:fixed;inset:0;z-index:60;background:transparent}
+/* Boblen tar den plassen innholdet trenger, men aldri mer enn halve
+   skjermen i hver retning. */
 .hu-boble{
-  position:fixed;z-index:61;width:min(340px,86vw);
+  position:fixed;z-index:61;
+  width:max-content;min-width:240px;max-width:min(50vw,560px);
+  max-height:50vh;overflow-y:auto;overscroll-behavior:contain;
   border:1px solid transparent;border-radius:16px;padding:16px 18px 14px;
-  box-shadow:0 18px 44px rgba(44,62,80,.26);
-  backdrop-filter:saturate(1.6) blur(2px);
+  box-shadow:0 18px 44px rgba(44,62,80,.28);
 }
 .hu-boble[hidden]{display:none}
 .hub-lukk{
@@ -391,7 +406,7 @@ input,select,textarea{font-size:16px}
 .hub-tittel{font-size:16px;font-weight:800;line-height:1.25;padding-right:22px;
   overflow-wrap:anywhere}
 .hub-tekst{font-size:14px;line-height:1.5;margin-top:8px;white-space:pre-wrap;
-  overflow-wrap:anywhere;max-height:44vh;overflow-y:auto}
+  overflow-wrap:anywhere}
 .hub-tekst.tom{color:var(--ink-soft);font-style:italic}
 .hub-meta{font-size:11px;color:var(--ink-soft);margin-top:12px;padding-top:9px;
   border-top:1px solid rgba(44,62,80,.14);display:flex;align-items:center;gap:6px}
@@ -891,13 +906,17 @@ function tegnPlan(res){
   boks.innerHTML = avtaler.map(function(e, i){
     const forbi = dagOffset === 0 && !e.heleDagen && e.slutt < naa;
     const paagaar = dagOffset === 0 && !e.heleDagen && e.start <= naa && e.slutt > naa;
-    const meta = [e.sted, e.kalender].filter(Boolean).join(' · ');
+    /* Kalendernavnet er ute - initialen sier hvem det gjelder. Stedet blir. */
+    const meta = e.sted || '';
     return '<div class="plan-rad' + (forbi ? ' forbi' : '') + (paagaar ? ' naa' : '') + '"'
       + ' style="' + fyll(e.farge) + '"'
       + ' onclick="visDetalj(' + i + ')" role="button" tabindex="0">'
       + '<div class="plan-tid' + (e.heleDagen ? ' hel' : '') + '">'
-      +   (e.heleDagen ? 'Hele<br>dagen' : esc(kl(e.start)))
+      +   (e.heleDagen
+            ? 'Hele<br>dagen'
+            : esc(kl(e.start)) + '<span class="plan-til">' + esc(kl(e.slutt)) + '</span>')
       + '</div>'
+      + initial(e.kalender, e.farge)
       + '<div class="plan-inn">'
       +   '<div class="plan-tittel">' + esc(e.tittel) + '</div>'
       +   (meta ? '<div class="plan-meta">' + esc(meta) + '</div>' : '')
@@ -1208,8 +1227,24 @@ function dus(hex, a){
   const c = rgbAv(hex);
   return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')';
 }
+/* Samme bokstavmerke som i kalenderappen: forbokstaven i kalendernavnet,
+   i full farge. Fargefyllet bak foeringen er dust, saa merket er det som
+   gjoer hvem det gjelder lesbart paa avstand. */
+function initial(navn, farge){
+  const b = (navn || '?').trim().charAt(0).toUpperCase();
+  return '<span class="ini" style="background:' + esc(farge) + '" title="' + esc(navn || '') + '">'
+    + esc(b) + '</span>';
+}
+
 function fyll(hex){
   return 'background:' + dus(hex, .16) + ';border-color:' + dus(hex, .34);
+}
+/* Samme tone som fyll(), men ugjennomsiktig - fargen blandes inn i hvitt i
+   stedet for aa legges oppaa. Brukes der noe ligger over annet innhold. */
+function tett(hex, a){
+  const c = rgbAv(hex);
+  const m = function(v){ return Math.round(255 + (v - 255) * a); };
+  return 'rgb(' + m(c.r) + ',' + m(c.g) + ',' + m(c.b) + ')';
 }
 
 function huskeFarge(navn){
@@ -1268,6 +1303,7 @@ function huskeRad(m){
   return '<div class="hu-rad' + (forbi ? ' forbi' : '') + '" data-id="' + esc(m.id) + '"'
     +     ' style="' + fyll(huskeFarge(m.gjelder)) + '"'
     +     ' onclick="vekslHuskeBoble(\'' + esc(m.id) + '\', event)">'
+    +   initial(m.gjelder, huskeFarge(m.gjelder))
     +   '<span class="hu-tittel">' + esc(m.overskrift || '') + '</span>'
     +   (harTekst ? '<span class="hu-pil">›</span>' : '')
     +   '<div class="hu-verkt">'
@@ -1307,7 +1343,8 @@ function vekslHuskeBoble(id, ev){
     + '</div>';
 
   const b = $('huBoble');
-  b.style.cssText = fyll(farge);
+  b.style.background  = tett(farge, .14);
+  b.style.borderColor = tett(farge, .42);
   b.hidden = false;
   $('huBobleBak').hidden = false;
   huBobleId = id;
