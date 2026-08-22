@@ -284,6 +284,20 @@ a.middag:active{opacity:.72}
   color:var(--ink-soft);margin-bottom:3px;
 }
 .kort-middag{padding:14px 16px}
+/* Middagsnotat for dager uten noe i matplanen. */
+.mid-tom{cursor:pointer;display:flex;align-items:baseline;gap:8px}
+.mid-legg{
+  font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;
+  padding:2px 9px;flex-shrink:0;margin-left:auto;
+}
+.mid-tom:active .mid-legg{background:rgba(44,62,80,.08)}
+.mid-notat{
+  font-size:15px;font-weight:600;line-height:1.35;cursor:pointer;
+  white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.mid-notat:active{opacity:.7}
+.mid-felt{min-height:56px;resize:vertical}
 .kort-middag .kort-kropp{overflow:visible}
 .middag-bilde{
   width:62px;height:62px;flex:0 0 62px;
@@ -393,8 +407,8 @@ input,select,textarea{font-size:16px}
    skjermen i hver retning. */
 .hu-boble{
   position:fixed;z-index:61;
-  width:max-content;min-width:240px;max-width:min(50vw,560px);
-  max-height:50vh;overflow-y:auto;overscroll-behavior:contain;
+  width:max-content;min-width:240px;max-width:min(64vw,720px);
+  max-height:68vh;overflow-y:auto;overscroll-behavior:contain;
   border:1px solid transparent;border-radius:16px;padding:16px 18px 14px;
   box-shadow:0 18px 44px rgba(44,62,80,.28);
 }
@@ -1475,6 +1489,7 @@ function tegnHuske(){
 function tegnHuskeInner(){
   const liste = huskeliste || [];
   lukkHuskeBoble();          /* lista tegnes om - boblen ville pekt paa ingenting */
+  middagRedig = false;       /* et halvskrevet notat hoerer til dagen det ble aapnet paa */
   const dag = datoNokkel(dagenViser());
   const uke = ukeNokkel(dagenViser());
 
@@ -1500,6 +1515,64 @@ function tegnHuskeInner(){
   });
 }
 
+/* ---------------- Middagsnotat ----------------
+   Fri tekst per dato, for dager uten noe i matplanen - "rester" eller
+   "pizza fra fryseren". Egen KV-noekkel, saa matplanen fra Matlaging
+   ikke roeres. */
+let middagNotater = null;
+let middagRedig = false;
+
+async function hentMiddagNotat(){
+  const r = await fetch('/api/data?key=middagnotat', {cache:'no-store'});
+  if(!r.ok) return {};
+  const txt = await r.text();
+  if(!txt) return {};
+  let d = JSON.parse(txt);
+  if(d && typeof d === 'object' && d.value !== undefined) d = d.value;
+  if(typeof d === 'string') d = JSON.parse(d);
+  return (d && typeof d === 'object' && !Array.isArray(d)) ? d : {};
+}
+
+async function lastMiddagNotat(){
+  try{ middagNotater = await hentMiddagNotat(); }
+  catch(e){ middagNotater = {}; }
+}
+
+function middagNotat(){
+  return (middagNotater || {})[datoNokkel(dagenViser())] || '';
+}
+
+function apneMiddagNotat(){
+  middagRedig = true;
+  tegnMiddag(sisteRetter || []);
+  const f = $('middagFelt');
+  if(f){ f.focus(); f.select(); }
+}
+function lukkMiddagNotat(){
+  middagRedig = false;
+  tegnMiddag(sisteRetter || []);
+}
+
+async function lagreMiddagNotat(){
+  const tekst = ($('middagFelt').value || '').trim();
+  const dato = datoNokkel(dagenViser());
+  middagRedig = false;
+  try{
+    const fersk = await hentMiddagNotat();
+    if(tekst) fersk[dato] = tekst; else delete fersk[dato];
+    const r = await fetch('/api/data?key=middagnotat', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(fersk)
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    middagNotater = fersk;
+  }catch(e){
+    alert('Fikk ikke lagret middagsnotatet: ' + e.message);
+  }
+  tegnMiddag(sisteRetter || []);
+}
+
 async function lastHuske(){
   try{
     huskeliste = await hentHuske();
@@ -1509,13 +1582,30 @@ async function lastHuske(){
   tegnHuske();
 }
 
+let sisteRetter = [];
+
 async function tegnMiddag(retter){
   const boks = $('middag');
+  sisteRetter = retter || [];
+
   if(!retter.length){
+    const notat = middagNotat();
+    if(middagRedig){
+      boks.innerHTML = '<div class="middag-merke">Middag</div>'
+        + '<textarea class="hu-felt mid-felt" id="middagFelt" rows="2" '
+        +   'placeholder="Hva blir det til middag?">' + esc(notat) + '</textarea>'
+        + '<div class="hu-knapper" style="margin-top:7px">'
+        +   '<button class="hu-avbryt" onclick="lukkMiddagNotat()">Avbryt</button>'
+        +   '<button class="hu-lagre" onclick="lagreMiddagNotat()">Lagre</button>'
+        + '</div>';
+      return;
+    }
     boks.innerHTML = '<div class="middag-merke">Middag</div>'
-      + '<div class="tom">'
-      + (dagOffset === 0 ? 'Ingenting planlagt i dag.' : 'Ingenting planlagt denne dagen.')
-      + '</div>';
+      + (notat
+          ? '<div class="mid-notat" onclick="apneMiddagNotat()">' + esc(notat) + '</div>'
+          : '<div class="tom mid-tom" onclick="apneMiddagNotat()">'
+            + (dagOffset === 0 ? 'Ingenting planlagt i dag.' : 'Ingenting planlagt denne dagen.')
+            + '<span class="mid-legg">Skriv inn</span></div>');
     return;
   }
   const forste = retter[0];
@@ -1734,7 +1824,8 @@ async function oppdaterAlt(manuelt){
     hentMiddag().then(tegnMiddag).catch(function(e){
       $('middag').innerHTML = '<div class="tom feil">Kunne ikke hente matplanen.</div>';
     }),
-    lastHuske()
+    lastHuske(),
+    lastMiddagNotat()
   ];
   try{
     await Promise.all(jobber);
