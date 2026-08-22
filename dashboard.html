@@ -59,6 +59,16 @@ body{
 
 .klokke{margin-left:18px;text-align:right;line-height:1}
 /* Dagen staar sentralt over kortene, med veien tilbake ved siden av. */
+/* Detaljkortet fyller hoeyrekolonnen naar en avtale er valgt. */
+.detaljkort{flex:1 1 auto;min-height:0}
+.detalj-lukk{
+  margin-left:auto;border:none;background:transparent;color:var(--ink-soft);
+  font-size:22px;line-height:1;cursor:pointer;padding:0 4px;border-radius:8px;
+}
+.detalj-lukk:active{background:rgba(44,62,80,.08)}
+.plan-rad.valgt{background:rgba(44,62,80,.06);border-radius:10px}
+.hoyre > .kort[hidden]{display:none}
+
 .dag-linje{
   display:flex;align-items:center;justify-content:center;gap:14px;
   flex-shrink:0;min-height:34px;
@@ -206,23 +216,10 @@ body{
 }
 
 /* ---------- Detaljer ---------- */
-.detalj-bak{position:fixed;inset:0;z-index:60;background:rgba(44,62,80,.18)}
-.detalj{
-  position:fixed;z-index:61;
-  background:var(--paper);border-radius:18px;
-  padding:22px 24px 24px;
-  width:min(380px,calc(100vw - 32px));
-  box-shadow:0 12px 40px rgba(0,0,0,.24);
-}
 /* Panelet scroller ikke — innholdet gjoer det, slik at krysset blir staaende. */
 #detaljInn{
   max-height:min(64vh,470px);overflow-y:auto;
   -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
-}
-.detalj-lukk{
-  position:absolute;top:14px;right:16px;
-  background:none;border:none;font-size:28px;line-height:1;
-  color:var(--ink-soft);cursor:pointer;padding:4px 8px;font-family:inherit;
 }
 .detalj-topp{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .detalj-prikk{width:10px;height:10px;border-radius:50%;flex-shrink:0}
@@ -346,11 +343,6 @@ input,select,textarea{font-size:16px}
   <a class="port-hjem" id="portHjem" href="./index.html" hidden>Til forsiden</a>
 </div>
 
-<div class="detalj-bak" id="detaljBak" hidden onclick="lukkDetalj()"></div>
-<div class="detalj" id="detalj" hidden>
-  <button class="detalj-lukk" id="detaljLukk" onclick="lukkDetalj()" aria-label="Lukk">×</button>
-  <div id="detaljInn"></div>
-</div>
 
 <div class="skjerm" id="skjerm">
 
@@ -395,21 +387,29 @@ input,select,textarea{font-size:16px}
 
     <div class="hoyre">
 
-      <div class="kort">
+      <div class="kort detaljkort" id="detalj" hidden>
+        <div class="kort-tittel">
+          <span>Avtalen</span>
+          <button class="detalj-lukk" onclick="lukkDetalj()" aria-label="Lukk">×</button>
+        </div>
+        <div class="kort-kropp" id="detaljInn"></div>
+      </div>
+
+      <div class="kort" id="kortMerknader">
         <div class="kort-tittel"><span>Merknader</span><span class="bi" id="huskeIdagBi"></span></div>
         <div class="kort-kropp" id="huskeIdag">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
       </div>
 
-      <div class="kort">
+      <div class="kort" id="kortUken">
         <div class="kort-tittel"><span>Denne uken</span><span class="bi" id="huskeUkenBi"></span></div>
         <div class="kort-kropp" id="huskeUken">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
       </div>
 
-      <div class="kort">
+      <div class="kort" id="kortMiddag">
         <div class="kort-tittel"><span>Middag</span></div>
         <div class="kort-kropp" id="middag">
           <div class="tom">Henter …</div>
@@ -712,7 +712,6 @@ function htmlTilTekst(innhold, type){
 
 /* Hvilken dag planen viser. 0 = i dag, -1 = i gaar, 1 = i morgen. */
 let dagOffset = 0;
-let planLaster = false;
 
 function dagenViser(){
   const n = new Date();
@@ -808,7 +807,7 @@ function tegnPlan(res){
     const paagaar = dagOffset === 0 && !e.heleDagen && e.start <= naa && e.slutt > naa;
     const meta = [e.sted, e.kalender].filter(Boolean).join(' · ');
     return '<div class="plan-rad' + (forbi ? ' forbi' : '') + (paagaar ? ' naa' : '') + '"'
-      + ' onclick="visDetalj(' + i + ', event)" role="button" tabindex="0">'
+      + ' onclick="visDetalj(' + i + ')" role="button" tabindex="0">'
       + '<div class="plan-tid' + (e.heleDagen ? ' hel' : '') + '">'
       +   (e.heleDagen ? 'Hele<br>dagen' : esc(kl(e.start)))
       + '</div>'
@@ -828,7 +827,12 @@ function tegnPlan(res){
 }
 
 /* ---- Detaljer for én avtale, som en boble ved siden av raden ---- */
-function visDetalj(i, klikk){
+/* Avtalen tar over hele hoeyrekolonnen i stedet for aa legge seg som en
+   boble oppaa. Da kan notatet vaere langt uten aa dekke planen man leser
+   det ut fra. */
+const HOYRE_KORT = ['kortMerknader', 'kortUken', 'kortMiddag'];
+
+function visDetalj(i){
   const e = dagensAvtaler[i];
   if(!e) return;
 
@@ -847,32 +851,23 @@ function visDetalj(i, klikk){
     ? '<div class="detalj-notat">' + esc(e.notat) + '</div>'
     : '<div class="detalj-notat tom">Ingen notater.</div>';
 
-  const b = $('detalj');
   $('detaljInn').innerHTML = html;
-  $('detaljBak').hidden = false;
-  b.hidden = false;
+  $('detalj').hidden = false;
+  HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = true; });
 
-  /* Plasser boblen ved raden, og hold den innenfor skjermen. */
-  const mål = (klikk && (klikk.currentTarget || klikk.target)) || null;
-  const r = mål && mål.getBoundingClientRect ? mål.getBoundingClientRect() : null;
-  const bb = b.getBoundingClientRect();
-  const marg = 12;
-
-  let venstre = r ? (r.right + 12) : (innerWidth/2 - bb.width/2);
-  if(venstre + bb.width > innerWidth - marg){
-    venstre = r ? Math.max(marg, r.left - bb.width - 12) : marg;
-  }
-  venstre = Math.max(marg, Math.min(venstre, innerWidth - bb.width - marg));
-
-  let topp = r ? (r.top + r.height/2 - bb.height/2) : (innerHeight/2 - bb.height/2);
-  topp = Math.max(marg, Math.min(topp, innerHeight - bb.height - marg));
-
-  b.style.left = Math.round(venstre) + 'px';
-  b.style.top  = Math.round(topp) + 'px';
+  /* Marker raden som er valgt, saa det er tydelig hva kolonnen viser. */
+  Array.from(document.querySelectorAll('.plan-rad')).forEach(function(r, n){
+    r.classList.toggle('valgt', n === i);
+  });
+  visTilIdag();
 }
+
 function lukkDetalj(){
-  $('detalj').hidden = true;
-  $('detaljBak').hidden = true;
+  if($('detalj')) $('detalj').hidden = true;
+  HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = false; });
+  Array.from(document.querySelectorAll('.plan-rad.valgt'))
+    .forEach(function(r){ r.classList.remove('valgt'); });
+  if(typeof visTilIdag === 'function') visTilIdag();
 }
 
 /* ============================================================
@@ -1104,7 +1099,9 @@ async function tegnMiddag(retter){
     return;
   }
   const forste = retter[0];
+  const mitt = tegneNr;
   const bilder = await hentBildeIndeks();
+  if(mitt !== tegneNr) return;              /* dagen ble byttet mens bildene lastet */
   const bilde = forste.id && bilder[forste.id];
   /* Trykk gaar rett til oppskriften i Matlaging. Uten id har vi
      ingenting aa lenke til, og da lar vi kortet vaere som foer. */
@@ -1144,22 +1141,35 @@ function visNavn(fulltNavn){
 
 /* Bare planen hentes paa nytt ved dagbytte - vaeret og middagen gjelder
    fortsatt i dag, og skal ikke blinke fordi man blar. */
+/* Hver tegning faar sitt eget nummer. Sveiper man raskt, blir svar fra en
+   eldre tegning forkastet naar de kommer inn - foer laa det en sperre her
+   som droppet den nye tegningen i stedet, saa middagen ble staaende igjen
+   paa gaarsdagen. */
+let tegneNr = 0;
+
 async function tegnPlanPaaNytt(){
-  if(planLaster) return;
-  planLaster = true;
+  const mitt = ++tegneNr;
   lukkDetalj();
   settDagsTitler();
   $('plan').innerHTML   = '<div class="tom">Henter …</div>';
   $('middag').innerHTML = '<div class="tom">Henter …</div>';
+
   await Promise.all([
-    hentPlan().then(tegnPlan).catch(function(e){
+    hentPlan().then(function(r){
+      if(mitt !== tegneNr) return;          /* overhalt av en nyere sveip */
+      tegnPlan(r);
+    }).catch(function(e){
+      if(mitt !== tegneNr) return;
       $('plan').innerHTML = '<div class="tom feil">Kunne ikke hente planen: ' + esc(e.message) + '</div>';
     }),
-    hentMiddag().then(tegnMiddag).catch(function(){
+    hentMiddag().then(function(r){
+      if(mitt !== tegneNr) return;
+      return tegnMiddag(r);
+    }).catch(function(){
+      if(mitt !== tegneNr) return;
       $('middag').innerHTML = '<div class="tom feil">Kunne ikke hente matplanen.</div>';
     })
   ]);
-  planLaster = false;
 }
 
 /* Dagen er felles for hele skjermen. Sveiper man i planen, middagen eller
@@ -1375,7 +1385,7 @@ async function oppdaterAlt(manuelt){
 })();
 
 document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape' && !$('detalj').hidden) lukkDetalj();
+  if(e.key === 'Escape' && $('detalj') && !$('detalj').hidden) lukkDetalj();
 });
 
 document.addEventListener('visibilitychange', function(){
