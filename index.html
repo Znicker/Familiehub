@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Familie Hub">
@@ -64,6 +64,23 @@ body{
 /* ---------- Rutenett ---------- */
 .grid{display:grid;grid-template-columns:2fr 1fr;gap:22px;align-items:start}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+/* ---------- Telefon ----------
+   .top er en flex-rad der .brand hadde flex-shrink:0 og aldri ga etter,
+   mens klokka er 52px og datoen staar i versaler med luft mellom. Til
+   sammen bredere enn en telefonskjerm - derfor startet siden forskjovet. */
+@media(max-width:560px){
+  .top{gap:10px;padding-bottom:14px;margin-bottom:18px}
+  .brand{flex-shrink:1;min-width:0;gap:10px}
+  .brand-title{font-size:17px;letter-spacing:.03em}
+  .brand-sub{font-size:11px;letter-spacing:.06em}
+  .clock{min-width:0;flex-shrink:0}
+  .clock-time{font-size:32px}
+  .clock-date{font-size:10px;margin-top:3px;letter-spacing:.05em}
+  .apps{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .panel{padding:16px;border-radius:16px}
+  .grid{gap:16px}
+}
 
 .panel{
   background:var(--paper);border-radius:18px;padding:22px;
@@ -217,6 +234,16 @@ footer{
   padding:6px 14px;color:var(--ink-soft);cursor:pointer;
 }
 .refresh:active{background:var(--bg-1)}
+
+/* ---------- Laast ramme ----------
+   Siden skal ikke kunne dras sidelengs eller zoomes ved uhell.
+   Merk: iOS Safari overstyrer user-scalable og slipper knipezoom likevel -
+   det som faktisk virker er touch-action mot dobbelttrykk, og 16px i
+   skjemafelt saa iOS ikke zoomer inn naar man trykker i dem. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+body{touch-action:manipulation}
+input,select,textarea{font-size:16px}
 </style>
 </head>
 <body>

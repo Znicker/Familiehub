@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Familie Hub">
@@ -87,6 +87,20 @@ body{
   color:var(--ink-soft);margin-bottom:12px;flex-shrink:0;
   display:flex;align-items:baseline;gap:8px;
 }
+/* Bla mellom dager. Pilene er smaa - sveip er hovedveien. */
+.dag-piler{display:inline-flex;gap:2px;margin-left:6px;flex-shrink:0}
+.dag-pil{
+  border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
+  font-size:19px;line-height:1;padding:0 7px;border-radius:8px;font-family:inherit;
+}
+.dag-pil:active{background:rgba(44,62,80,.08)}
+.dag-idag{
+  border:1px solid var(--line);background:transparent;color:var(--ink-soft);
+  font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;padding:3px 9px;border-radius:999px;cursor:pointer;
+  flex-shrink:0;
+}
+.dag-idag:active{background:rgba(44,62,80,.08)}
 .kort-tittel .bi{margin-left:auto;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:11px}
 .kort-kropp{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 /* Middagskortet skal fylle hoeyden: kroppen maa ikke rulle, den skal
@@ -248,6 +262,16 @@ a.middag:active{opacity:.72}
   .hoyre .kort{flex:1}
   .klokke-tid{font-size:46px}
 }
+
+/* ---------- Laast ramme ----------
+   Siden skal ikke kunne dras sidelengs eller zoomes ved uhell.
+   Merk: iOS Safari overstyrer user-scalable og slipper knipezoom likevel -
+   det som faktisk virker er touch-action mot dobbelttrykk, og 16px i
+   skjemafelt saa iOS ikke zoomer inn naar man trykker i dem. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+body{touch-action:manipulation}
+input,select,textarea{font-size:16px}
 </style>
 </head>
 <body>
@@ -286,8 +310,13 @@ a.middag:active{opacity:.72}
 
     <div class="kort">
       <div class="kort-tittel">
-        <span>Dagens plan</span>
+        <span id="planTittel">Dagens plan</span>
+        <button class="dag-idag" id="planIdag" onclick="tilDag(0)" hidden>I dag</button>
         <span class="bi" id="planBi"></span>
+        <span class="dag-piler">
+          <button class="dag-pil" onclick="byttDag(-1)" aria-label="Forrige dag">&#8249;</button>
+          <button class="dag-pil" onclick="byttDag(1)" aria-label="Neste dag">&#8250;</button>
+        </span>
       </div>
       <div class="kort-kropp" id="plan">
         <div class="tom">Henter …</div>
@@ -604,9 +633,27 @@ function htmlTilTekst(innhold, type){
   }
 }
 
+/* Hvilken dag planen viser. 0 = i dag, -1 = i gaar, 1 = i morgen. */
+let dagOffset = 0;
+let planLaster = false;
+
+function dagenViser(){
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate() + dagOffset);
+}
+
+function dagNavn(){
+  if(dagOffset === 0) return 'Dagens plan';
+  if(dagOffset === 1) return 'I morgen';
+  if(dagOffset === -1) return 'I går';
+  const d = dagenViser();
+  const dag = d.toLocaleDateString('no-NO', {weekday:'long'});
+  return dag.charAt(0).toUpperCase() + dag.slice(1)
+       + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + '.';
+}
+
 async function hentPlan(){
-  const naa = new Date();
-  const start = new Date(naa.getFullYear(), naa.getMonth(), naa.getDate());
+  const start = dagenViser();
   const slutt = new Date(start.getTime() + 86400000);
 
   const kal = await graph('/me/calendars?$top=50');
@@ -665,19 +712,25 @@ function tegnPlan(res){
   const avtaler = res.avtaler;
   dagensAvtaler = avtaler;
 
+  $('planTittel').textContent = dagNavn();
+  $('planIdag').hidden = (dagOffset === 0);
+
   $('planBi').textContent = avtaler.length
     ? avtaler.length + (avtaler.length === 1 ? ' avtale' : ' avtaler')
     : '';
 
   if(!avtaler.length){
-    boks.innerHTML = '<div class="tom">Ingen avtaler i dag.</div>';
+    boks.innerHTML = '<div class="tom">'
+      + (dagOffset === 0 ? 'Ingen avtaler i dag.' : 'Ingen avtaler denne dagen.')
+      + '</div>';
     return;
   }
 
-  const naa = new Date();
+  /* "Naa" og "forbi" gir bare mening for dagen i dag. */
+  const naa = dagOffset === 0 ? new Date() : new Date(8640000000000000);
   boks.innerHTML = avtaler.map(function(e, i){
-    const forbi = !e.heleDagen && e.slutt < naa;
-    const paagaar = !e.heleDagen && e.start <= naa && e.slutt > naa;
+    const forbi = dagOffset === 0 && !e.heleDagen && e.slutt < naa;
+    const paagaar = dagOffset === 0 && !e.heleDagen && e.start <= naa && e.slutt > naa;
     const meta = [e.sted, e.kalender].filter(Boolean).join(' · ');
     return '<div class="plan-rad' + (forbi ? ' forbi' : '') + (paagaar ? ' naa' : '') + '"'
       + ' onclick="visDetalj(' + i + ', event)" role="button" tabindex="0">'
@@ -968,6 +1021,57 @@ function visNavn(fulltNavn){
   if(el) el.textContent = String(fulltNavn || '').trim().split(/\s+/)[0] || '';
 }
 
+/* Bare planen hentes paa nytt ved dagbytte - vaeret og middagen gjelder
+   fortsatt i dag, og skal ikke blinke fordi man blar. */
+async function tegnPlanPaaNytt(){
+  if(planLaster) return;
+  planLaster = true;
+  lukkDetalj();
+  $('planTittel').textContent = dagNavn();
+  $('planIdag').hidden = (dagOffset === 0);
+  $('plan').innerHTML = '<div class="tom">Henter …</div>';
+  try{
+    tegnPlan(await hentPlan());
+  }catch(e){
+    $('plan').innerHTML = '<div class="tom feil">Kunne ikke hente planen: ' + esc(e.message) + '</div>';
+  }
+  planLaster = false;
+}
+
+function byttDag(steg){
+  dagOffset += steg;
+  if(dagOffset < -180) dagOffset = -180;   /* en grense, saa man ikke blar seg bort */
+  if(dagOffset >  180) dagOffset =  180;
+  tegnPlanPaaNytt();
+}
+function tilDag(n){ dagOffset = n; tegnPlanPaaNytt(); }
+
+/* Sveip paa plankortet. Utslaget maa vaere tydelig vannrett, ellers ville
+   vanlig loddrett rulling i lista utloest et dagbytte. */
+function kobleSveip(){
+  const kort = $('plan') && $('plan').closest('.kort');
+  if(!kort) return;
+  let x0 = 0, y0 = 0, aktiv = false;
+
+  kort.addEventListener('touchstart', function(ev){
+    if(ev.touches.length !== 1){ aktiv = false; return; }
+    x0 = ev.touches[0].clientX;
+    y0 = ev.touches[0].clientY;
+    aktiv = true;
+  }, {passive:true});
+
+  kort.addEventListener('touchend', function(ev){
+    if(!aktiv) return;
+    aktiv = false;
+    const t = ev.changedTouches[0];
+    const dx = t.clientX - x0;
+    const dy = t.clientY - y0;
+    if(Math.abs(dx) < 60) return;                  /* for kort til aa vaere ment */
+    if(Math.abs(dx) < Math.abs(dy) * 1.5) return;  /* mest loddrett = rulling */
+    byttDag(dx < 0 ? 1 : -1);                      /* dra mot venstre = framover */
+  }, {passive:true});
+}
+
 async function oppdaterAlt(manuelt){
   if(S.laster) return;
   /* Ikke tegn planen om igjen under beina paa noen som leser detaljer —
@@ -977,6 +1081,7 @@ async function oppdaterAlt(manuelt){
   if(manuelt){
     $('status').textContent = 'Oppdaterer …';
     lukkDetalj();
+    dagOffset = 0;           /* en manuell oppdatering betyr "vis meg naa" */
     bildeIndeks = null;      /* hent bildene på nytt ved manuell oppdatering */
   }
 
@@ -1086,8 +1191,11 @@ async function oppdaterAlt(manuelt){
     });
   }
 
-  /* Skjermen staar paa hele dagen — hold den fersk. */
-  setInterval(function(){ if(!document.hidden) oppdaterAlt(false); }, 5*60*1000);
+  kobleSveip();
+
+  /* Skjermen staar paa hele dagen — hold den fersk. Blar noen fram i tid,
+     skal ikke den automatiske oppdateringen dra dem tilbake. */
+  setInterval(function(){ if(!document.hidden && dagOffset === 0) oppdaterAlt(false); }, 5*60*1000);
 })();
 
 document.addEventListener('keydown', function(e){

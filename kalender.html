@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Kalender">
@@ -685,6 +685,16 @@ footer .btn{margin-left:auto}
   .pu.endag .pu-tid{font-size:13px}
   .pu.endag .pu-ini{width:19px;height:19px;font-size:12px}
   @media(hover:hover){ .pu-ev:hover{filter:brightness(.96)} }
+
+/* ---------- Laast ramme ----------
+   Siden skal ikke kunne dras sidelengs eller zoomes ved uhell.
+   Merk: iOS Safari overstyrer user-scalable og slipper knipezoom likevel -
+   det som faktisk virker er touch-action mot dobbelttrykk, og 16px i
+   skjemafelt saa iOS ikke zoomer inn naar man trykker i dem. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+body{touch-action:manipulation}
+input,select,textarea{font-size:16px}
 </style>
 </head>
 <body>
