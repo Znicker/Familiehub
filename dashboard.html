@@ -90,8 +90,11 @@ body{
 .til-idag:active{transform:scale(.97)}
 .til-idag[hidden]{display:none}
 
-.vaer-sted{font-family:'IBM Plex Mono',monospace;
-  font-size:11px;color:var(--ink-soft);opacity:.75;flex-shrink:0}
+/* Stedsnavnet hoerer til vaeret, ikke til klokka. */
+.vaer-sted{
+  font-family:'Archivo',sans-serif;font-size:16px;font-weight:700;
+  color:var(--ink-soft);flex-shrink:0;letter-spacing:.01em;
+}
 
 /* Vaerstripe under toppraden: naa, noekkeltall, seks timer og fire dager.
    Det er god plass i bredden, saa alt staar framme uten aa maatte trykkes fram. */
@@ -127,6 +130,7 @@ body{
   min-width:42px;padding:0 3px;
 }
 .vt-kl{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft)}
+.vt-ingen{font-size:13px;color:var(--ink-soft);font-style:italic}
 .vt-ik{font-size:17px;line-height:1.25}
 .vt-gr{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .vt-min{color:var(--ink-soft);font-weight:600;margin-left:3px}
@@ -1075,83 +1079,91 @@ async function hentVaer(){
   return r.json();
 }
 
-/* Vaeret viser timer, ikke dager. Sveip flytter vinduet framover og
-   bakover i tid, saa man naar morgendagen uten et eget dagsvarsel. */
+/* Vaeret foelger dagen man ser paa. Sveip hvor som helst - ogsaa i
+   vaerstripa - flytter hele skjermen til samme dag. Meldingen rekker fem
+   doegn; utenfor det staar stripa tom. */
 let vaerSiste = null;
-let vaerOffset = 0;              /* i timer, alltid et multiplum av STEG */
-const VAER_STEG = 6;
 
 function tegnVaer(d){
   vaerSiste = d;
-  vaerOffset = 0;
   tegnVaerStripe();
 }
 
-function vaerForsteTime(){
-  if(!vaerSiste) return 0;
-  const naa = new Date();
-  const i = vaerSiste.hourly.time.findIndex(function(t){ return new Date(t) > naa; });
-  return i < 0 ? 0 : i;
-}
-
-function byttVaer(steg){
-  if(!vaerSiste) return;
-  const i0 = vaerForsteTime();
-  const maks = vaerSiste.hourly.time.length - i0 - VAER_STEG;
-  vaerOffset += steg * VAER_STEG;
-  if(vaerOffset < 0) vaerOffset = 0;
-  if(vaerOffset > maks) vaerOffset = Math.max(0, maks - (maks % VAER_STEG));
-  tegnVaerStripe();
-  visTilIdag();
+/* Foerste time som skal vises: naa-timen i dag, ellers morgenen den dagen. */
+function vaerStart(){
+  if(!vaerSiste) return -1;
+  const t = vaerSiste.hourly.time;
+  if(dagOffset === 0){
+    const naa = new Date();
+    const i = t.findIndex(function(x){ return new Date(x) > naa; });
+    return i < 0 ? 0 : i;
+  }
+  const mal = datoNokkel(dagenViser());
+  const i = t.findIndex(function(x){ return x.slice(0, 10) === mal && x.slice(11, 13) === '08'; });
+  if(i >= 0) return i;
+  return t.findIndex(function(x){ return x.slice(0, 10) === mal; });
 }
 
 function tegnVaerStripe(){
   const d = vaerSiste;
   if(!d) return;
-  const n = d.current;
-  const iv = vkode(n.weather_code);
+  const stripe = $('vaerStripe');
+  const i0 = vaerStart();
 
-  const i0 = vaerForsteTime() + vaerOffset;
+  if(i0 < 0){
+    stripe.innerHTML = '<span class="vt-ingen">Ingen værmelding så langt fram</span>';
+    stripe.hidden = false;
+    $('vaerSted').textContent = posisjon.navn;
+    return;
+  }
+
+  const VINDU = 6;
   let timer = '';
-  let dagMerke = '';
-  const idag = new Date().getDate();
-
-  for(let i = i0; i < i0 + VAER_STEG && i < d.hourly.time.length; i++){
+  for(let i = i0; i < i0 + VINDU && i < d.hourly.time.length; i++){
     const t = new Date(d.hourly.time[i]);
-    if(!dagMerke && t.getDate() !== idag){
-      const UKEDAG = ['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'];
-      dagMerke = (t.getDate() === idag + 1) ? 'i morgen' : UKEDAG[t.getDay()];
-    }
     timer += '<span class="vt-d">'
-      + '<span class="vt-kl">' + String(t.getHours()).padStart(2,'0') + '</span>'
+      + '<span class="vt-kl">' + pad(t.getHours()) + '</span>'
       + '<span class="vt-ik">' + vkode(d.hourly.weather_code[i])[0] + '</span>'
       + '<span class="vt-gr">' + rund(d.hourly.temperature_2m[i]) + '°</span>'
       + '</span>';
   }
 
-  const regn = d.daily.precipitation_sum[0];
+  /* I dag: naa-tallene. Andre dager: doegnets spenn. */
+  const dagIdx = d.daily.time.indexOf(datoNokkel(dagenViser()));
+  let ikon, tekst, stort, under;
+  if(dagOffset === 0){
+    const n = d.current;
+    const iv = vkode(n.weather_code);
+    ikon = iv[0]; tekst = iv[1];
+    stort = rund(n.temperature_2m) + '°';
+    under = 'Føles som ' + rund(n.apparent_temperature) + '°'
+          + ' · Vind ' + rund(n.wind_speed_10m) + ' km/t';
+  } else if(dagIdx >= 0){
+    const iv = vkode(d.daily.weather_code[dagIdx]);
+    ikon = iv[0]; tekst = iv[1];
+    stort = rund(d.daily.temperature_2m_max[dagIdx]) + '°';
+    under = 'Lavest ' + rund(d.daily.temperature_2m_min[dagIdx]) + '°';
+  } else {
+    ikon = '·'; tekst = ''; stort = '–'; under = '';
+  }
+  const regn = dagIdx >= 0 ? d.daily.precipitation_sum[dagIdx] : 0;
 
-  $('vaerStripe').innerHTML =
+  stripe.innerHTML =
       '<span class="vt-naa">'
-    +   '<span class="vt-ikon">' + iv[0] + '</span>'
+    +   '<span class="vt-ikon">' + ikon + '</span>'
     +   '<span class="vt-naa-tall">'
-    +     '<span class="vt-grad">' + rund(n.temperature_2m) + '°</span>'
-    +     '<span class="vt-tekst">' + esc(iv[1]) + '</span>'
+    +     '<span class="vt-grad">' + stort + '</span>'
+    +     '<span class="vt-tekst">' + esc(tekst) + '</span>'
     +   '</span>'
     + '</span>'
     + '<span class="vt-meta">'
-    +   '<span>Føles som ' + rund(n.apparent_temperature) + '°</span>'
-    +   '<span>Vind ' + rund(n.wind_speed_10m) + ' km/t</span>'
-    +   '<span>Fukt ' + n.relative_humidity_2m + ' %</span>'
-    +   (regn > 0.05 ? '<span>' + regn.toFixed(1).replace('.', ',') + ' mm i dag</span>' : '')
+    +   (under ? '<span>' + esc(under) + '</span>' : '')
+    +   (regn > 0.05 ? '<span>' + regn.toFixed(1).replace('.', ',') + ' mm nedbør</span>' : '')
     + '</span>'
-    + '<span class="vt-timer">'
-    +   (dagMerke ? '<span class="vt-merke">' + esc(dagMerke) + '</span>' : '')
-    +   '<span class="vt-rad">' + timer + '</span>'
-    + '</span>';
+    + '<span class="vt-timer"><span class="vt-rad">' + timer + '</span></span>';
 
   $('vaerSted').textContent = posisjon.navn;
-  $('vaerStripe').hidden = false;
+  stripe.hidden = false;
 }
 
 /* ============================================================
@@ -1663,6 +1675,7 @@ async function tegnPlanPaaNytt(){
   lukkDetalj();
   settDagsTitler();
   tegnHuske();                     /* boksene foelger dagen man ser paa */
+  tegnVaerStripe();                /* det samme gjoer vaeret */
   $('plan').innerHTML   = '<div class="tom">Henter …</div>';
   $('middag').innerHTML = '<div class="tom">Henter …</div>';
 
@@ -1698,13 +1711,13 @@ const HVILE_MS = 3 * 60 * 1000;
 let hvileTimer = null;
 
 function erStandard(){
-  return dagOffset === 0 && vaerOffset === 0 && $('detalj').hidden;
+  return dagOffset === 0 && $('detalj').hidden;
 }
 /* Knappen dukker opp saa snart noe er flyttet fra standard, og forsvinner
    naar alt er tilbake - da har den ingen jobb aa gjoere. */
 function visTilIdag(){
   const b = $('tilIdag');
-  if(b) b.hidden = (dagOffset === 0 && vaerOffset === 0);
+  if(b) b.hidden = (dagOffset === 0);
 }
 function tilbakeTilStandard(){
   lukkDetalj();
@@ -1712,7 +1725,6 @@ function tilbakeTilStandard(){
   huskeSkjema = null;
   const flyttet = (dagOffset !== 0);
   dagOffset = 0;
-  vaerOffset = 0;
   tegnVaerStripe();
   visTilIdag();
   if(flyttet) tegnPlanPaaNytt();
@@ -1754,7 +1766,7 @@ function kobleSveip(){
     if(el && el.closest('.kort')) sveipPaa(el.closest('.kort'), byttDag);
   });
   /* Vaeret har sitt eget tidsvindu - det skal ikke flytte dagen. */
-  sveipPaa($('vaerStripe'), byttVaer);
+  sveipPaa($('vaerStripe'), byttDag);
 }
 
 function sveipPaa(kort, handling){
