@@ -114,11 +114,10 @@ body{
 }
 .til-idag{
   flex-shrink:0;align-self:center;
-  border:1px solid var(--ink);background:var(--ink);color:#FFFFFF;
-  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
+  border:1px solid var(--line);background:transparent;color:var(--ink-soft);
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:600;
   letter-spacing:.06em;text-transform:uppercase;
-  padding:4px 11px;border-radius:999px;cursor:pointer;
-  box-shadow:0 2px 8px rgba(44,62,80,.24);
+  padding:5px 12px;border-radius:999px;cursor:pointer;
 }
 .til-idag:active{transform:scale(.97)}
 .til-idag[hidden]{display:none}
@@ -216,13 +215,17 @@ body{
   display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;
 }
 /* Bla mellom dager. Pilene er smaa - sveip er hovedveien. */
-.dag-piler{display:inline-flex;gap:2px;margin-left:6px;flex-shrink:0}
+.dag-piler{display:inline-flex;gap:2px;margin-left:auto;flex-shrink:0}
 .dag-pil{
   border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
   font-size:var(--t-pil);line-height:1;padding:0 7px;border-radius:8px;font-family:inherit;
 }
 .dag-pil:active{background:rgba(44,62,80,.08)}
-.kort-tittel .bi{margin-left:auto;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:var(--t-etikett)}
+/* iPad: skjermen betjenes med finger, og sveip gjoer samme jobb.
+   Mobil beholder dem som reserve, PC trenger dem (mus, ingen sveip). */
+@media(min-width:700px) and (max-width:1300px){
+  .dag-piler{display:none}
+}
 .kort-kropp{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 /* Middagskortet skal fylle hoeyden: kroppen maa ikke rulle, den skal
    strekke innholdet i stedet, ellers har bildet ingen plass aa vokse i. */
@@ -403,7 +406,7 @@ input,select,textarea{font-size:16px}
 
 /* ---------- Huskeliste ---------- */
 .hu-ny{
-  margin-left:8px;border:1px solid var(--line);background:transparent;
+  margin-left:auto;border:1px solid var(--line);background:transparent;
   color:var(--ink-soft);font-family:inherit;font-size:var(--t-brod);font-weight:700;
   line-height:1;width:22px;height:22px;border-radius:50%;cursor:pointer;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
@@ -524,9 +527,8 @@ input,select,textarea{font-size:16px}
       <div class="kort-tittel">
         <span class="dag-navn" id="dagLabel">I dag</span>
         <button class="til-idag" id="tilIdag" onclick="tilbakeTilStandard()" hidden>
-          ‹ Tilbake til i dag
+          Tilbake til i dag
         </button>
-        <span class="bi" id="planBi"></span>
         <span class="dag-piler">
           <button class="dag-pil" onclick="byttDag(-1)" aria-label="Forrige dag">&#8249;</button>
           <button class="dag-pil" onclick="byttDag(1)" aria-label="Neste dag">&#8250;</button>
@@ -548,14 +550,14 @@ input,select,textarea{font-size:16px}
       </div>
 
       <div class="kort" id="kortMerknader">
-        <div class="kort-tittel"><span>Merknader</span><span class="bi" id="huskeIdagBi"></span><button class="hu-ny" onclick="apneHuskeSkjema('dag')" aria-label="Ny merknad">+</button></div>
+        <div class="kort-tittel"><span>Merknader</span><button class="hu-ny" onclick="apneHuskeSkjema('dag')" aria-label="Ny merknad">+</button></div>
         <div class="kort-kropp" id="huskeIdag">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
       </div>
 
       <div class="kort" id="kortUken">
-        <div class="kort-tittel"><span>Denne uken</span><span class="bi" id="huskeUkenBi"></span><button class="hu-ny" onclick="apneHuskeSkjema('uke')" aria-label="Ny merknad">+</button></div>
+        <div class="kort-tittel"><span>Denne uken</span><button class="hu-ny" onclick="apneHuskeSkjema('uke')" aria-label="Ny merknad">+</button></div>
         <div class="kort-kropp" id="huskeUken">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
@@ -939,10 +941,6 @@ function tegnPlan(res){
   dagensAvtaler = avtaler;
 
   settDagsTitler();
-
-  $('planBi').textContent = avtaler.length
-    ? avtaler.length + (avtaler.length === 1 ? ' avtale' : ' avtaler')
-    : '';
 
   if(!avtaler.length){
     boks.innerHTML = '<div class="tom">'
@@ -1538,16 +1536,14 @@ function tegnHuskeInner(){
   const uke = ukeNokkel(dagenViser());
 
   const grupper = [
-    {omfang: 'dag', boks: 'huskeIdag', bi: 'huskeIdagBi',
+    {omfang: 'dag', boks: 'huskeIdag',
      treff: liste.filter(function(m){ return m.omfang !== 'uke' && m.frist === dag; })},
-    {omfang: 'uke', boks: 'huskeUken', bi: 'huskeUkenBi',
+    {omfang: 'uke', boks: 'huskeUken',
      treff: liste.filter(function(m){ return m.omfang === 'uke' && ukeAv(m.frist) === uke; })}
   ];
 
   grupper.forEach(function(g){
     g.treff.sort(function(a, b){ return (a.frist || '').localeCompare(b.frist || ''); });
-    const b = $(g.bi);
-    if(b) b.textContent = g.treff.length ? g.treff.length : '';
     const boks = $(g.boks);
     if(!boks) return;
     boks.innerHTML =
