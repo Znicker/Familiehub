@@ -297,12 +297,12 @@
   }
   .steg-knapper{ display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
 
-  .rediger-hjoerne{ display:flex; align-items:flex-start; gap:8px; }
+  .rediger-hjoerne{ display:flex; align-items:flex-start; gap:16px; }
   /* Folder seg ut under knappen. Slett bor her, ikke ved siden av tittelen -
      en sletteknapp skal ikke ligge under tommelen ved et uhell. */
   /* To knapper stablet til venstre for Ferdig - ingen utfellingsmeny.
      Da er alt synlig samtidig, og ingenting maa aapnes for aa oppdages. */
-  .rediger-valg{ display:flex; flex-direction:column; gap:4px; align-items:flex-end; }
+  .rediger-valg{ display:flex; flex-direction:column; gap:5px; align-items:center; }
   .rediger-valg[hidden]{ display:none; }
   .rediger-valg-knapp{
     border:none; border-radius:8px; padding:5px 11px; color:#fff; cursor:pointer;
@@ -879,19 +879,20 @@
     font-family:'Archivo', sans-serif;
   }
   .tab-btn.active{ background:var(--lime); color:#FFFFFF; }
-  /* I redigeringsmodus faar fanene med redigerbart innhold okerfargen, saa
-     man ser hvor man kan gjoere noe uten aa proeve seg fram. */
+  /* I redigeringsmodus faar fanene med redigerbart innhold samme duse
+     okerflate som stegene under - skriftfargen staar urort, saa den
+     valgte fanen ser ut som den alltid har gjort. */
   body.steg-redigeres #tab-begge-btn,
   body.steg-redigeres #tab-steps-btn,
   body.steg-redigeres #tab-tips-btn,
   body.steg-redigeres #tab-comments-btn,
-  body.steg-redigeres #tab-rating-btn{ color:var(--handling-endre); }
+  body.steg-redigeres #tab-rating-btn{ background:#FBF3E4; }
   body.steg-redigeres #tab-begge-btn.active,
   body.steg-redigeres #tab-steps-btn.active,
   body.steg-redigeres #tab-tips-btn.active,
   body.steg-redigeres #tab-comments-btn.active,
   body.steg-redigeres #tab-rating-btn.active{
-    background:var(--handling-endre); color:#FFFFFF;
+    background:var(--lime); color:#FFFFFF;
   }
   /* Ingredienser redigeres i skjemaet, ikke her. */
   body.steg-redigeres #tab-list-btn{ opacity:.4; pointer-events:none; }
