@@ -161,6 +161,29 @@
   .category-filter-chip.active{ background:var(--lime); color:#FFFFFF; }
 
   /* Flytende runde knapper: ny oppskrift, sortering og tilbake */
+  /* Sortering: eget hjoerne, likt uansett skjermformat. Egne klassenavn
+   (.sorter-flyt / .sorter-knapp) fordi den skal kunne loeftes rett ut i
+   fellesfila og gjenbrukes paa de andre sidene under 7.3. */
+  .sorter-flyt{
+    position:fixed; z-index:26;
+    right:20px; bottom:calc(24px + env(safe-area-inset-bottom));
+  }
+  /* Bare paa forsiden: i en aapen oppskrift eller i skjemaet finnes det
+     ingenting aa sortere. :has() ser om forsiden er den aktive visningen -
+     'vis-detalj'-klassen alene duger ikke, den settes ikke for skjemaet. */
+  .sorter-flyt{ display:none; }
+  body:has(#view-home.view.active) .sorter-flyt{ display:block; }
+  .sorter-knapp{
+    width:48px; height:48px; border-radius:50%;
+    background:var(--paper); color:var(--ink);
+    border:1px solid var(--line); padding:0; font-size:var(--t-pil);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 6px 22px rgba(44,62,80,.14);
+  }
+  .sorter-knapp:active{ transform:scale(0.95); background:var(--blue-light); }
+  /* Menyen aapner oppover og forankres i hoeyre kant, som knappen. */
+  .sorter-flyt .sort-fab-menu{ left:auto; right:0; transform:none; }
+
   .new-fab, .sort-fab, .back-fab{
     width:44px; height:44px; border-radius:50%;
     background:transparent; color:var(--ink-soft); border:none; padding:0;
@@ -1179,22 +1202,33 @@
     align-items:start;
   }
   #view-home .home-hero  { grid-column:1 / -1; grid-row:1; }
-  #view-home .sticky-sub { grid-column:1; grid-row:3; position:static; }
+  #view-home .sticky-sub { position:static; }
   #view-home .plan-target{ grid-column:2; grid-row:2; margin:8px 0 4px; }
-  #view-home #home-content{ grid-column:2; grid-row:3 / span 3; min-width:0; }
+  #view-home #home-content{ grid-column:2; grid-row:3; min-width:0; }
+
+  /* Spalten staar i ro mens oppskriftene ruller. sticky, ikke fast hoeyde
+     med egen rulling: blir den en dag hoeyere enn skjermen - flere
+     kategorier - foelger den med i stedet for aa lage en rullelist inni
+     en app som ellers ikke har noen. align-self:start kreves for at
+     sticky skal virke i et rutenett. */
+  #view-home .home-side{
+    grid-column:1; grid-row:2 / span 2;
+    position:sticky; top:12px; align-self:start; min-width:0;
+  }
 
   /* Maaltidstypene som liste med avkrysning. Filteret har alltid vaert
      flervalg - som knapper paa rad leste det som "velg én". Boksene sier
      det koden faktisk gjoer. Annet-knappen forsvinner: i en liste er det
      plass til alle kategoriene. */
+  /* To kolonner, ikke én: ti avkrysninger under hverandre ble for hoeyt
+     for en liggende skjerm. Hovedkategoriene fyller foerste kolonne. */
   #view-home .category-filter-row{
-    flex-direction:column; flex-wrap:nowrap; gap:0;
-    align-items:stretch; padding:6px 4px 0; margin-top:8px;
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:0 8px; padding:6px 4px 0; margin-top:8px;
   }
   #view-home .category-filter-row .annet-knapp{ display:none; }
   #view-home .category-under{
-    display:flex; flex-direction:column; gap:0;
-    margin:0; padding:0; border:none;
+    display:contents;   /* boksene blir egne ruter i samme rutenett */
   }
   #view-home .category-filter-chip{
     display:flex; align-items:center; gap:9px;
@@ -1235,7 +1269,6 @@
   }
   #view-home .fab-pill .new-fab{ background:none; color:var(--lime); }
   #view-home .plan-fab-plus{ right:auto; bottom:auto; left:26px; top:22px; }
-  #view-home .sort-fab-menu{ left:0; transform:none; min-width:100%; }
   #view-home .plan-week-line{ left:0; transform:none; }
 
   /* Ingen fast knapperad aa rulle klar av lenger. */
@@ -1271,6 +1304,10 @@ input,select,textarea{font-size:16px}
       <p class="home-hero-sub">Matlaging</p>
       <p class="home-hero-sub" id="innlogget-navn" style="font-weight:600"></p>
     </div>
+    <!-- Venstrespalten i landskap: filtre og knapper hoerer sammen og skal
+         staa i ro mens oppskriftene ruller. I portrett er dette bare en
+         vanlig div - knapperaden er fixed der og bryr seg ikke om den. -->
+    <div class="home-side">
     <div class="sticky-sub">
       <div class="search-bar">
         <input type="text" id="search-input" placeholder="Søk på ingredienser eller allergener..." oninput="onSearchInput()" onkeydown="handleSearchKeydown(event)" onfocus="ensureAllRecipesLoaded()" onblur="$('search-suggestions').classList.remove('active')" autocomplete="off">
@@ -1294,14 +1331,10 @@ input,select,textarea{font-size:16px}
         </div>
       </div>
     </div>
-    <div class="plan-target" id="plan-target-banner" style="display:none;"></div>
-    <div id="home-content"></div>
-
     <!-- Knapperad nederst: sortering, kalendermodus og ukemeny -->
     <div class="bottom-bar" id="bottom-bar">
       <div class="fab-pill">
         <button type="button" class="new-fab" onclick="openNewRecipeModal()" title="Ny oppskrift">+<span class="fab-tekst">Ny oppskrift</span></button>
-        <button type="button" class="sort-fab" id="sort-fab" onclick="toggleSortMenu()" title="Sortering">⇅<span class="fab-tekst">Sortering</span></button>
         <button type="button" class="plan-fab" id="plan-fab" onclick="togglePlanMode()" title="Legg retter i ukemenyen">📋<span class="plan-fab-plus">+</span><span class="fab-tekst">Legg i ukemeny</span></button>
         <button type="button" class="plan-menu-fab" onclick="openPlanView()" title="Åpne ukemenyen">📋<span class="fab-tekst">Åpne ukemeny</span></button>
       </div>
@@ -1310,6 +1343,16 @@ input,select,textarea{font-size:16px}
         <span id="plan-week-label">Uke –</span>
         <button type="button" onclick="stepPlanWeek(1)" title="Neste uke">›</button>
       </div>
+    </div>
+    </div>
+    <div class="plan-target" id="plan-target-banner" style="display:none;"></div>
+    <div id="home-content"></div>
+
+    <!-- Sortering staar for seg nede til hoeyre, likt i alle oppsett.
+         Egen klasse og eget hjoerne saa den kan flyttes rett ut i
+         fellesfila under 7.3 og gjenbrukes paa de andre sidene. -->
+    <div class="sorter-flyt" id="sorter-flyt">
+      <button type="button" class="sorter-knapp" id="sort-fab" onclick="toggleSortMenu()" title="Sortering">⇅</button>
       <div class="sort-fab-menu" id="sort-fab-menu">
         <button onclick="setSortMode('rating-desc'); toggleSortMenu();" class="active">Vurdering ↓</button>
         <button onclick="setSortMode('rating-asc'); toggleSortMenu();">Vurdering ↑</button>
