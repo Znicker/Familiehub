@@ -149,7 +149,8 @@
     padding:0 20px; justify-content:center;
   }
   .category-filter-row::-webkit-scrollbar{ display:none; }
-  .category-under{
+  .category-under{ display:none; }
+  .category-under.apen{
     flex-basis:100%; display:flex; gap:6px; flex-wrap:wrap;
     margin-top:6px; padding-top:8px; border-top:1px dashed var(--line);
   }
@@ -742,6 +743,8 @@
   /* Fire loese sirkler la seg oppaa innholdet og leste som fire ting.
      Samlet i én pille leser de som ett verktoeysett, og pillen har egen
      bakgrunn saa teksten under ikke skinner gjennom. */
+  /* Knappene har ord, men bare der det er plass til dem - se landskapsblokka. */
+  .fab-tekst{ display:none; }
   .fab-pill{
     display:inline-flex; align-items:center; gap:4px;
     background:var(--paper); border:1px solid var(--line);
@@ -1166,33 +1169,73 @@
 @media (min-width:820px) and (min-height:600px) and (orientation:landscape){
   main{ max-width:1240px; }
 
+  /* Overskriften er sidas identitet, ikke en del av filterpanelet.
+     Den spenner over begge spaltene og staar sentrert oeverst. */
   #view-home.view.active{
     display:grid;
     grid-template-columns:320px minmax(0,1fr);
-    grid-template-rows:auto auto 1fr auto;
+    grid-template-rows:auto auto auto 1fr auto;
     column-gap:26px;
     align-items:start;
   }
-  #view-home .home-hero  { grid-column:1; grid-row:1; }
-  #view-home .sticky-sub { grid-column:1; grid-row:2; position:static; }
-  #view-home .plan-target{ grid-column:2; grid-row:1; margin:8px 0 4px; }
-  #view-home #home-content{ grid-column:2; grid-row:2 / span 3; min-width:0; }
+  #view-home .home-hero  { grid-column:1 / -1; grid-row:1; }
+  #view-home .sticky-sub { grid-column:1; grid-row:3; position:static; }
+  #view-home .plan-target{ grid-column:2; grid-row:2; margin:8px 0 4px; }
+  #view-home #home-content{ grid-column:2; grid-row:3 / span 3; min-width:0; }
 
-  /* Filtrene var midtstilte fordi de laa paa tvers av hele siden.
-     I en smal venstrespalte leser de bedre venstrestilt. */
-  #view-home .category-filter-row,
-  #view-home .rating-filter-bar{ justify-content:flex-start; padding:0 4px; }
-  #view-home .rating-filter-bar{ flex-wrap:wrap; }
-
-  /* Knappene slutter aa flyte. De hoerer i venstrespalten, ikke oppaa
-     oppskriftene - det var den egentlige plagen med dem. */
-  #view-home .bottom-bar{
-    grid-column:1; grid-row:3;
-    position:relative; inset:auto; padding:0;
-    justify-content:flex-start; margin-top:14px;
+  /* Maaltidstypene som liste med avkrysning. Filteret har alltid vaert
+     flervalg - som knapper paa rad leste det som "velg én". Boksene sier
+     det koden faktisk gjoer. Annet-knappen forsvinner: i en liste er det
+     plass til alle kategoriene. */
+  #view-home .category-filter-row{
+    flex-direction:column; flex-wrap:nowrap; gap:0;
+    align-items:stretch; padding:6px 4px 0; margin-top:8px;
   }
-  #view-home .fab-pill{ margin-left:0; }
-  #view-home .sort-fab-menu{ left:0; transform:none; }
+  #view-home .category-filter-row .annet-knapp{ display:none; }
+  #view-home .category-under{
+    display:flex; flex-direction:column; gap:0;
+    margin:0; padding:0; border:none;
+  }
+  #view-home .category-filter-chip{
+    display:flex; align-items:center; gap:9px;
+    text-align:left; padding:8px; border-radius:10px;
+    background:none; color:var(--ink); font-size:var(--t-brod);
+  }
+  #view-home .category-filter-chip::before{
+    content:''; width:18px; height:18px; flex-shrink:0;
+    border:1.5px solid var(--line); border-radius:5px; background:var(--paper);
+  }
+  #view-home .category-filter-chip.active{ background:none; color:var(--ink); }
+  #view-home .category-filter-chip.active::before{
+    background:var(--lime); border-color:var(--lime);
+  }
+
+  #view-home .rating-filter-bar{
+    justify-content:flex-start; padding:0 8px; flex-wrap:wrap; margin-top:10px;
+  }
+
+  /* Knappene slutter aa flyte og faar ord. To av dem var samme ikon -
+     ingen kunne se forskjell paa "legg i ukemenyen" og "aapne ukemenyen". */
+  #view-home .bottom-bar{
+    grid-column:1; grid-row:4;
+    position:relative; inset:auto; padding:0;
+    justify-content:flex-start; margin-top:18px;
+  }
+  #view-home .fab-pill{
+    flex-direction:column; align-items:stretch; gap:2px;
+    width:100%; margin-left:0; border-radius:14px; padding:6px;
+  }
+  #view-home .fab-pill button{
+    width:auto; height:auto; border-radius:10px;
+    justify-content:flex-start; gap:11px; padding:11px 12px;
+  }
+  #view-home .fab-tekst{
+    display:block; font-family:'Archivo',sans-serif; font-weight:700;
+    font-size:var(--t-brod); white-space:nowrap;
+  }
+  #view-home .fab-pill .new-fab{ background:none; color:var(--lime); }
+  #view-home .plan-fab-plus{ right:auto; bottom:auto; left:26px; top:22px; }
+  #view-home .sort-fab-menu{ left:0; transform:none; min-width:100%; }
   #view-home .plan-week-line{ left:0; transform:none; }
 
   /* Ingen fast knapperad aa rulle klar av lenger. */
@@ -1257,10 +1300,10 @@ input,select,textarea{font-size:16px}
     <!-- Knapperad nederst: sortering, kalendermodus og ukemeny -->
     <div class="bottom-bar" id="bottom-bar">
       <div class="fab-pill">
-        <button type="button" class="new-fab" onclick="openNewRecipeModal()" title="Ny oppskrift">+</button>
-        <button type="button" class="sort-fab" id="sort-fab" onclick="toggleSortMenu()" title="Sortering">⇅</button>
-        <button type="button" class="plan-fab" id="plan-fab" onclick="togglePlanMode()" title="Legg retter i ukemenyen">📋<span class="plan-fab-plus">+</span></button>
-        <button type="button" class="plan-menu-fab" onclick="openPlanView()" title="Åpne ukemenyen">📋</button>
+        <button type="button" class="new-fab" onclick="openNewRecipeModal()" title="Ny oppskrift">+<span class="fab-tekst">Ny oppskrift</span></button>
+        <button type="button" class="sort-fab" id="sort-fab" onclick="toggleSortMenu()" title="Sortering">⇅<span class="fab-tekst">Sortering</span></button>
+        <button type="button" class="plan-fab" id="plan-fab" onclick="togglePlanMode()" title="Legg retter i ukemenyen">📋<span class="plan-fab-plus">+</span><span class="fab-tekst">Legg i ukemeny</span></button>
+        <button type="button" class="plan-menu-fab" onclick="openPlanView()" title="Åpne ukemenyen">📋<span class="fab-tekst">Åpne ukemeny</span></button>
       </div>
       <div class="plan-week-line">
         <button type="button" onclick="stepPlanWeek(-1)" title="Forrige uke">‹</button>
@@ -2571,10 +2614,13 @@ function renderCategoryFilterRow(){
   if(!wrap) return;
   const chip = cat => `<button type="button" class="category-filter-chip ${categoryFilterSelected.has(cat) ? 'active' : ''}" onclick="toggleCategoryFilter('${cat}')">${cat}</button>`;
   const annetValgt = ANNET_KATEGORIER.some(c => categoryFilterSelected.has(c));
+  /* Undergruppa tegnes alltid. Om den vises avgjoeres av klassen 'apen'
+     i portrett, og av landskapsblokka i CSS - som viser alle kategoriene
+     og skjuler Annet-knappen helt. Da slipper vi to JS-tilstander. */
   wrap.innerHTML =
     HOVEDKATEGORIER.map(chip).join('') +
-    `<button type="button" class="category-filter-chip ${annetValgt ? 'active' : ''}" onclick="toggleAnnetMeny()">Annet ${annetApen ? '▴' : '▾'}</button>` +
-    (annetApen ? `<div class="category-under">${ANNET_KATEGORIER.map(chip).join('')}</div>` : '');
+    `<button type="button" class="category-filter-chip annet-knapp ${annetValgt ? 'active' : ''}" onclick="toggleAnnetMeny()">Annet ${annetApen ? '▴' : '▾'}</button>` +
+    `<div class="category-under ${annetApen ? 'apen' : ''}">${ANNET_KATEGORIER.map(chip).join('')}</div>`;
 }
 function toggleAnnetMeny(){
   annetApen = !annetApen;
