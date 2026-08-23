@@ -44,6 +44,11 @@
     /* Mild flate for grupperingsbokser. Egen variabel, ikke --blue-light:
        den betyr "valgt" (sortering, suksess), og en boks skal ikke se
        ut som et valg. Navnet er ment aa overleve flyttingen til 7.3. */
+    /* Opprett-handlinger: fylt flate i denne tonen. Regelen er "fylt flate
+       = denne skaper noe, tekst uten flate = denne tar deg et sted".
+       Egen farge fordi aksenten allerede betyr "valgt". */
+    --handling-ny: #6E9B4E;
+    --handling-ny-moerk: #5C8340;
     --boks-mild: #EDF3F8;
     --boks-kant: #DCE6EF;
     --mustard-light: #F0D9A6;
@@ -1398,7 +1403,7 @@
   #view-home .uke-flyt{
     position:static; inset:auto; align-items:stretch; gap:2px;
     background:var(--boks-mild); border:1px solid var(--boks-kant);
-    border-bottom:none; border-radius:14px 14px 0 0; padding:6px 6px 0;
+    border-bottom:none; border-radius:14px 14px 0 0; padding:6px 6px 2px;
   }
   #view-home .uke-knapp{
     background:none; border:none; box-shadow:none; color:var(--lime);
@@ -1414,7 +1419,7 @@
     display:flex; position:relative; inset:auto; padding:0;
     justify-content:flex-start; margin-top:0;
   }
-  #view-home .fab-pill{ border-radius:0 0 14px 14px; border-top:none; padding:0 6px 6px; }
+  #view-home .fab-pill{ border-radius:0 0 14px 14px; border-top:none; padding:2px 6px 6px; }
   /* Knappen nederst i lista hoerer bare til portrett. */
   #view-home .ny-oppskrift-bunn{ display:none; }
 
@@ -1437,7 +1442,15 @@
     display:block; font-family:'Archivo',sans-serif; font-weight:700;
     font-size:var(--t-brod); white-space:nowrap;
   }
-  #view-home .fab-pill .new-fab{ background:none; color:var(--lime); }
+  /* Fylt flate = denne skaper noe. De to over er tekst uten flate, og
+     tar deg et sted. Da trengs ingen skillestrek - flaten skiller selv. */
+  #view-home .fab-pill .new-fab{
+    background:var(--handling-ny); color:#FFFFFF;
+    justify-content:center; gap:0;
+  }
+  #view-home .fab-pill .new-fab:active{ background:var(--handling-ny-moerk); }
+  /* Plusstegnet ga knappen en tredje venstrekant. Teksten sier det selv. */
+  #view-home .ny-plus{ display:none; }
   #view-home .plan-fab-plus{ right:auto; bottom:auto; left:26px; top:22px; }
   #view-home .plan-week-line{ left:0; transform:none; }
 
@@ -1521,7 +1534,7 @@ input,select,textarea{font-size:16px}
 
     <div class="bottom-bar" id="bottom-bar">
       <div class="fab-pill">
-        <button type="button" class="new-fab" onclick="openNewRecipeModal()" title="Ny oppskrift">+<span class="fab-tekst">Ny oppskrift</span></button>
+        <button type="button" class="new-fab" onclick="openNewRecipeModal()" title="Ny oppskrift"><span class="ny-plus">+</span><span class="fab-tekst">Ny oppskrift</span></button>
       </div>
       <div class="plan-week-line">
         <button type="button" onclick="stepPlanWeek(-1)" title="Forrige uke">‹</button>
