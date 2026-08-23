@@ -128,7 +128,6 @@
   }
   .search-icon-btn.include{ background:var(--lime); color:#FFFFFF; border:none; }
   .search-icon-btn.exclude{ background:none; color:var(--danger); border:2px solid var(--danger); }
-  .search-icon-btn.clear{ background:none; color:var(--ink-soft); border:2px solid var(--ink-soft); font-size:var(--t-meta); }
   .search-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; padding:0 20px; margin-bottom:2px; }
   .search-chips:empty{ margin-top:0; }
   .search-chip.exclude{ background:var(--danger); color:#fff; }
@@ -169,6 +168,17 @@
   /* Sortering: eget hjoerne, likt uansett skjermformat. Egne klassenavn
    (.sorter-flyt / .sorter-knapp) fordi den skal kunne loeftes rett ut i
    fellesfila og gjenbrukes paa de andre sidene under 7.3. */
+  /* Erstatter soeppelboette-ikonet i soekefeltet. Full bredde, dempet -
+     den skal vaere lett aa finne, ikke lett aa treffe ved uhell. */
+  .nullstill-knapp{
+    display:none; width:100%; margin-top:10px;
+    background:none; border:1px solid var(--boks-kant); border-radius:10px;
+    color:var(--ink-soft); font-family:'Archivo',sans-serif;
+    font-size:var(--t-meta); font-weight:700; padding:9px 12px;
+    letter-spacing:.04em; cursor:pointer;
+  }
+  .nullstill-knapp:active{ background:var(--blue-light); }
+
   .sorter-flyt{
     position:fixed; z-index:26;
     right:20px; bottom:calc(24px + env(safe-area-inset-bottom));
@@ -1254,14 +1264,25 @@
      brukes den milde flaten. */
   #view-home .search-bar,
   #view-home .category-filter-row,
-  #view-home .rating-filter-bar,
   #view-home .fab-pill{
     background:var(--boks-mild); border:1px solid var(--boks-kant);
     border-radius:14px; margin:0 0 10px; width:100%;
   }
   #view-home .search-bar{ padding:9px 10px; }
   #view-home .search-bar input{ background:transparent; }
-  #view-home .category-filter-row{ padding:10px 8px; }
+
+  /* Kategorier og vurdering er begge filtre og hoerer i samme boks.
+     Kategoriboksen mister bunnen, vurderingsraden toppen - sammen ser de
+     ut som én. */
+  #view-home .category-filter-row{
+    padding:10px 8px 4px; margin-bottom:0;
+    border-bottom:none; border-radius:14px 14px 0 0;
+  }
+  #view-home .rating-filter-bar{
+    background:var(--boks-mild); border:1px solid var(--boks-kant);
+    border-top:none; border-radius:0 0 14px 14px;
+    margin:0 0 10px; width:100%;
+  }
 
   /* "Min. vurdering" er overfloedig - fem stjerner ved siden av en knapp
      forklarer seg selv. Plassen gaar til stjernene i stedet. */
@@ -1272,6 +1293,7 @@
   #view-home .rating-filter-row{ width:100%; gap:8px; }
   #view-home .rating-filter-row .star-btn{ font-size:var(--t-stor); padding:2px; }
   #view-home .rating-filter-toggle{ font-size:var(--t-brod); padding:6px 12px; }
+  #view-home .nullstill-knapp{ display:block; }
 
   /* Knappene slutter aa flyte og faar ord. To av dem var samme ikon -
      ingen kunne se forskjell paa "legg i ukemenyen" og "aapne ukemenyen". */
@@ -1336,10 +1358,9 @@ input,select,textarea{font-size:16px}
     <div class="home-side">
     <div class="sticky-sub">
       <div class="search-bar">
-        <input type="text" id="search-input" placeholder="Søk på ingredienser eller allergener..." oninput="onSearchInput()" onkeydown="handleSearchKeydown(event)" onfocus="ensureAllRecipesLoaded()" onblur="$('search-suggestions').classList.remove('active')" autocomplete="off">
+        <input type="text" id="search-input" placeholder="Søk" oninput="onSearchInput()" onkeydown="handleSearchKeydown(event)" onfocus="ensureAllRecipesLoaded()" onblur="$('search-suggestions').classList.remove('active')" autocomplete="off">
         <button type="button" class="search-icon-btn include" onclick="lockSearchTerm('include')" title="Inkluder">✓</button>
         <button type="button" class="search-icon-btn exclude" onclick="lockSearchTerm('exclude')" title="Unngå">✕</button>
-        <button type="button" class="search-icon-btn clear" onclick="clearSearch()" title="Tøm søk">🗑</button>
         <div class="search-suggestions" id="search-suggestions"></div>
       </div>
       <div class="search-chips" id="search-chips"></div>
@@ -1355,6 +1376,7 @@ input,select,textarea{font-size:16px}
         <div class="rating-people-panel" id="rating-people-panel" style="display:none;">
           <div id="rating-people-list"></div>
         </div>
+        <button type="button" class="nullstill-knapp" onclick="clearSearch()">Nullstill søk og filtre</button>
       </div>
     </div>
     <!-- Knapperad nederst: sortering, kalendermodus og ukemeny -->
