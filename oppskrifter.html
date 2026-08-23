@@ -53,6 +53,11 @@
        sett lik ut ved siden av Slett i samme meny. */
     --handling-endre: #B8873A;
     --handling-endre-moerk: #9E7230;
+    /* Paa tvers av apper - sender noe til en annen del av hubben.
+       Ikke en femte handlingstype, men en annen kategori: de fire andre
+       gjoer noe HER, denne flytter noe DIT. */
+    --handling-tvers: #7A5EA8;
+    --handling-tvers-moerk: #664D8F;
     --boks-mild: #EDF3F8;
     --boks-kant: #DCE6EF;
     --mustard-light: #F0D9A6;
@@ -133,10 +138,13 @@
   .search-bar input::placeholder{ color:#A0A0A0; }
   /* Hake og kryss sa ikke hva de gjorde. Ord i de fargene som allerede
      betyr noe: gronn tar med, rod holder unna. */
+  /* Stablet, ikke ved siden av hverandre: to ord paa rad ved siden av
+     soekefeltet stjeler bredden feltet trenger. */
+  .soek-valg{ display:flex; flex-direction:column; gap:3px; flex-shrink:0; }
   .search-icon-btn{
-    flex-shrink:0; border:none; border-radius:8px; padding:6px 11px; color:#fff;
-    font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
-    letter-spacing:.04em; cursor:pointer; white-space:nowrap;
+    border:none; border-radius:6px; padding:3px 8px; color:#fff;
+    font-family:'Archivo',sans-serif; font-size:10px; font-weight:700;
+    letter-spacing:.03em; cursor:pointer; white-space:nowrap; line-height:1.5;
   }
   .search-icon-btn.include{ background:var(--handling-ny); }
   .search-icon-btn.include:active{ background:var(--handling-ny-moerk); }
@@ -237,7 +245,6 @@
   }
   /* Samme okerskjaer paa Tips, Kokken og Vurdering naar modusen staar paa,
      saa det er ett tydelig signal om hvor man er - ikke tre ulike. */
-  body.steg-redigeres .card-panel.detail-header,
   body.steg-redigeres #tab-tips .card-panel,
   body.steg-redigeres #tab-comments .card-panel,
   body.steg-redigeres #tab-rating .card-panel{
@@ -324,12 +331,22 @@
   /* Sletting hoerer nederst, langt fra alt annet - ikke i samme hjoerne
      som Lagre. */
   .tittel-felt{
-    width:100%; background:var(--paper); border:1px solid #EBDCC0;
+    width:100%; background:#FBF3E4; border:1px solid #EBDCC0;
     border-radius:10px; padding:8px 11px;
     font-family:'Archivo',sans-serif; font-size:var(--t-stor); font-weight:700;
     text-transform:uppercase; letter-spacing:-.01em; color:var(--ink);
   }
   .tittel-felt[hidden]{ display:none; }
+
+  /* Lilla = gaar paa tvers av apper. De andre fargene gjoer noe her;
+     denne flytter noe til handlelista. */
+  .til-handleliste{
+    display:block; width:100%; margin:16px 0 4px;
+    background:var(--handling-tvers); color:#fff; border:none; border-radius:12px;
+    padding:13px 16px; cursor:pointer;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
+  }
+  .til-handleliste:active{ background:var(--handling-tvers-moerk); }
 
   .slett-oppskrift{
     display:block; width:100%; margin:26px 0 10px;
@@ -713,7 +730,15 @@
   .ing-nut-field input{
     width:100%; padding:7px 8px; font-size:var(--t-meta); border-radius:7px; border:1.5px solid var(--line); background:#fff;
   }
-  .row-rm{ background:none; border:none; color:var(--ink-soft); font-size:var(--t-pil); padding:4px; flex-shrink:0; }
+  /* Kryss og blyant beholdes her - radene er tette, og ord ville sprengt
+     dem. Men de faar fargene som allerede betyr endre og slett. */
+  .row-rm{
+    background:var(--danger); border:none; color:#fff; cursor:pointer;
+    border-radius:7px; width:28px; height:28px; padding:0; flex-shrink:0;
+    font-size:var(--t-meta); line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .row-rm:active{ background:#8E4033; }
 
   .step-row{ margin-bottom:10px; }
   .step-row-line1{ display:flex; gap:8px; align-items:flex-start; }
@@ -1144,10 +1169,11 @@
   }
   /* Legg-til-knapp i hver dagrute i ukemenyen */
   .plan-day-add{
-    align-self:flex-start; background:none; border:1.5px dashed var(--line);
-    color:var(--lime-dark); border-radius:8px; padding:5px 11px;
+    align-self:flex-start; background:var(--handling-ny); border:none;
+    color:#fff; border-radius:8px; padding:6px 12px; cursor:pointer;
     font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
   }
+  .plan-day-add:active{ background:var(--handling-ny-moerk); }
   .plan-marks{
     position:absolute; top:-9px; left:-8px; z-index:2;
     display:flex; align-items:center; gap:5px; flex-wrap:wrap;
@@ -1381,7 +1407,11 @@
   .plan-day-dishes{ flex:1; display:flex; flex-direction:column; gap:6px; }
   .plan-dish{ display:flex; align-items:center; gap:8px; }
   .plan-dish-name{ flex:1; font-size:var(--t-brod); text-align:left; background:none; border:none; color:var(--ink); padding:0; }
-  .plan-dish-rm{ background:none; border:none; color:var(--ink-soft); font-size:var(--t-brod); padding:2px 6px; }
+  .plan-dish-rm{
+    background:var(--danger); border:none; color:#fff; cursor:pointer;
+    border-radius:6px; padding:3px 9px; flex-shrink:0;
+    font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+  }
 
   /* ---------- Seksjoner (deloppskrifter) ----------
      En oppskrift kan deles i deler, f.eks. "kake" og "krem". Delen ligger som
@@ -1732,8 +1762,10 @@ input,select,textarea{font-size:16px}
     <div class="sticky-sub">
       <div class="search-bar">
         <input type="text" id="search-input" placeholder="Søk" oninput="onSearchInput()" onkeydown="handleSearchKeydown(event)" onfocus="ensureAllRecipesLoaded()" onblur="$('search-suggestions').classList.remove('active')" autocomplete="off">
-        <button type="button" class="search-icon-btn include" onclick="lockSearchTerm('include')">Inkluder</button>
-        <button type="button" class="search-icon-btn exclude" onclick="lockSearchTerm('exclude')">Ekskluder</button>
+        <div class="soek-valg">
+          <button type="button" class="search-icon-btn include" onclick="lockSearchTerm('include')">Inkluder</button>
+          <button type="button" class="search-icon-btn exclude" onclick="lockSearchTerm('exclude')">Ekskluder</button>
+        </div>
         <div class="search-suggestions" id="search-suggestions"></div>
       </div>
       <div class="search-chips" id="search-chips"></div>
@@ -1925,6 +1957,9 @@ input,select,textarea{font-size:16px}
           <thead><tr><th>Ingrediens</th><th>Mengde</th></tr></thead>
           <tbody id="d-shopping-body"></tbody>
         </table>
+        <button type="button" class="til-handleliste" onclick="sendTilHandleliste()">
+          Legg ingrediensene i handlelista
+        </button>
         <div class="allergen-summary" id="d-allergens" style="display:none;">
           <span class="lbl">⚠ Allergener i denne oppskriften</span>
           <div class="allergen-pills" id="d-allergen-pills"></div>
@@ -6577,7 +6612,7 @@ function renderPlanMenuTab(){
           <div class="plan-col-dish">
             <button type="button" class="plan-dish-name" onclick="openRecipe('${d.id}')">${escapeHtml(d.title)}</button>
             <span class="plan-dish-serv">${d.servings ? d.servings + ' pors.' : ''}</span>
-            <button type="button" class="plan-dish-rm" onclick="removeFromPlan('${key}', ${dayNum}, ${di})" title="Fjern">🗑</button>
+            <button type="button" class="plan-dish-rm" onclick="removeFromPlan('${key}', ${dayNum}, ${di})">Slett</button>
           </div>`).join('')
       : '';
     return `<div class="plan-day-card${isToday ? ' today' : ''}${dishes.length ? '' : ' empty'}">
@@ -7477,6 +7512,70 @@ async function byggHandleliste(){
        allerede er tatt, i stedet for å spørre om det samme på nytt. */
     varekatalog: { katalog: varekatalog, avvist: vareAvvist, typer: VARETYPER }
   };
+}
+
+/* Samme pakkeformat som ukemenyen bruker, men bygget av én oppskrift og
+   skalert til porsjonene som vises. Handlelisteappen gjoer sin egen
+   sammenslaaing, saa vi sender raalinjene ved siden av. */
+async function sendTilHandleliste(){
+  const r = recipeCache[currentRecipeId];
+  if(!r || !Array.isArray(r.ingredients) || !r.ingredients.length){
+    showToast('Ingen ingredienser å overføre.', true);
+    return;
+  }
+  const faktor = (r.baseServings > 0) ? (currentServings / r.baseServings) : 1;
+
+  const varer = [];
+  const basis = [];
+  const raalinjer = [];
+  r.ingredients.forEach(i => {
+    const navn = (i.name || '').trim();
+    if(!navn) return;
+    const mengde = (i.amount != null) ? Math.round(i.amount * faktor * 100) / 100 : null;
+    raalinjer.push({
+      vare: navn, type: i.type || 'Annet',
+      mengde, enhet: i.unit || '', fraRett: r.title || ''
+    });
+    if(i.basis){ basis.push(navn); return; }
+    varer.push({
+      vare: navn,
+      type: i.type || 'Annet',
+      mengder: (mengde != null) ? [{ mengde, enhet: i.unit || '' }] : [],
+      fritekst: (mengde == null && i.unit) ? [i.unit] : [],
+      fraRetter: [r.title || '']
+    });
+  });
+
+  const pakke = {
+    format: 'familiehub-handleliste-1',
+    kilde: 'Oppskriftsboka',
+    laget: new Date().toISOString(),
+    fraOppskrift: r.title || '',
+    porsjoner: currentServings,
+    varer,
+    basisvarer: basis,
+    raalinjer,
+    varekatalog: { katalog: varekatalog, avvist: vareAvvist, typer: VARETYPER }
+  };
+
+  const tekst = JSON.stringify(pakke, null, 2);
+  let kopiert = false;
+  try{
+    await navigator.clipboard.writeText(tekst);
+    kopiert = true;
+  }catch(e){ /* ikke tillatt her - vi laster ned i stedet */ }
+
+  const blob = new Blob([tekst], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `handleliste-${(r.title || 'oppskrift').replace(/[^\wÆØÅæøå-]+/g, '-').toLowerCase()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+
+  showToast(`${varer.length} varer klar for handlelista${kopiert ? ' – også kopiert' : ''}.`);
 }
 
 async function tilHandlelista(){
