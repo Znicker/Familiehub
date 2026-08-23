@@ -47,8 +47,8 @@
     /* Opprett-handlinger: fylt flate i denne tonen. Regelen er "fylt flate
        = denne skaper noe, tekst uten flate = denne tar deg et sted".
        Egen farge fordi aksenten allerede betyr "valgt". */
-    --handling-ny: #6E9B4E;
-    --handling-ny-moerk: #5C8340;
+    --handling-ny: #4F8F5F;
+    --handling-ny-moerk: #427A4F;
     --boks-mild: #EDF3F8;
     --boks-kant: #DCE6EF;
     --mustard-light: #F0D9A6;
@@ -1400,10 +1400,12 @@
   /* Ligger inne i .home-side, saa de foelger spalten - ingen egen
      rutenettplassering. Foer laa de som egne rader i rutenettet og havnet
      under hele oppskriftslista. */
+  /* Ukemeny-boksen er hel og lukket. "Ny oppskrift" hoerer ikke til den -
+     den skaper noe, de to andre navigerer - og staar derfor fritt under. */
   #view-home .uke-flyt{
     position:static; inset:auto; align-items:stretch; gap:2px;
     background:var(--boks-mild); border:1px solid var(--boks-kant);
-    border-bottom:none; border-radius:14px 14px 0 0; padding:6px 6px 2px;
+    border-radius:14px; padding:6px; margin-bottom:10px;
   }
   #view-home .uke-knapp{
     background:none; border:none; box-shadow:none; color:var(--lime);
@@ -1417,9 +1419,11 @@
 
   #view-home .bottom-bar{
     display:flex; position:relative; inset:auto; padding:0;
-    justify-content:flex-start; margin-top:0;
+    justify-content:stretch; margin-top:0;
   }
-  #view-home .fab-pill{ border-radius:0 0 14px 14px; border-top:none; padding:2px 6px 6px; }
+  #view-home .fab-pill{
+    background:none; border:none; border-radius:0; padding:0; width:100%;
+  }
   /* Knappen nederst i lista hoerer bare til portrett. */
   #view-home .ny-oppskrift-bunn{ display:none; }
 
@@ -1446,7 +1450,8 @@
      tar deg et sted. Da trengs ingen skillestrek - flaten skiller selv. */
   #view-home .fab-pill .new-fab{
     background:var(--handling-ny); color:#FFFFFF;
-    justify-content:center; gap:0;
+    justify-content:center; gap:0; width:100%; border-radius:12px;
+    padding:14px 12px;
   }
   #view-home .fab-pill .new-fab:active{ background:var(--handling-ny-moerk); }
   /* Plusstegnet ga knappen en tredje venstrekant. Teksten sier det selv. */
