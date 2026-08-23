@@ -49,6 +49,10 @@
        Egen farge fordi aksenten allerede betyr "valgt". */
     --handling-ny: #4F8F5F;
     --handling-ny-moerk: #427A4F;
+    /* Endrer noe. Maa holde avstand til --danger: en roedoransje ville
+       sett lik ut ved siden av Slett i samme meny. */
+    --handling-endre: #B8873A;
+    --handling-endre-moerk: #9E7230;
     --boks-mild: #EDF3F8;
     --boks-kant: #DCE6EF;
     --mustard-light: #F0D9A6;
@@ -191,6 +195,17 @@
     font-size:var(--t-brod); font-weight:700; padding:13px 16px; cursor:pointer;
   }
   .ny-oppskrift-bunn:active{ background:var(--blue-light); }
+
+  /* Blyant og soeppelboette var to ikoner ingen kunne skille paa avstand.
+     Ett ord i endre-fargen sier det de gjorde. Slett hoerer ikke ved siden
+     av tittelen - den kommer i menyen under Rediger. */
+  .rediger-knapp{
+    background:var(--handling-endre); color:#fff; border:none;
+    border-radius:10px; padding:8px 16px;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+    letter-spacing:.04em; cursor:pointer; flex-shrink:0;
+  }
+  .rediger-knapp:active{ background:var(--handling-endre-moerk); }
 
   .nullstill-knapp{
     display:none; width:100%; margin-top:10px;
@@ -489,6 +504,10 @@
     font-family:'Archivo', sans-serif;
   }
   .btn-primary{ background:var(--blue); color:#fff; width:100%; margin-top:14px; }
+  /* Skaper noe - fylt flate i opprettfargen. Samme regel som "Ny oppskrift"
+     i venstrespalten paa forsiden. */
+  .btn-ny{ background:var(--handling-ny); color:#fff; width:100%; margin-top:0; }
+  .btn-ny:active{ background:var(--handling-ny-moerk); }
   .btn-primary:disabled{ background:#B7C2D4; }
   .btn-primary:active:not(:disabled){ background:#20447F; }
   .btn-ghost{ background:none; color:var(--ink); border:1.5px solid var(--line); width:100%; }
@@ -1649,8 +1668,7 @@ input,select,textarea{font-size:16px}
         <div class="title-row">
           <h2 id="d-title"></h2>
           <div class="actions">
-            <button class="icon-btn" onclick="editCurrentRecipe()" title="Rediger">✎</button>
-            <button class="icon-btn btn-danger" onclick="confirmDelete()" title="Slett">🗑</button>
+            <button class="rediger-knapp" onclick="editCurrentRecipe()">Rediger</button>
           </div>
         </div>
         <div class="detail-stats-row" id="d-stats-row"></div>
@@ -1658,12 +1676,12 @@ input,select,textarea{font-size:16px}
       </div>
 
       <div class="tabs">
-        <button class="tab-btn active" id="tab-list-btn" onclick="switchTab('list')"><span class="tab-ikon">🥕</span><span class="tab-tekst">Ingred.</span></button>
-        <button class="tab-btn" id="tab-steps-btn" onclick="switchTab('steps')"><span class="tab-ikon">📋</span><span class="tab-tekst">Steg</span></button>
-        <button class="tab-btn" id="tab-begge-btn" onclick="switchTab('begge')"><span class="tab-ikon">🍳</span><span class="tab-tekst">Oppskrift</span></button>
-        <button class="tab-btn" id="tab-tips-btn" onclick="switchTab('tips')"><span class="tab-ikon">💡</span><span class="tab-tekst">Tips</span></button>
-        <button class="tab-btn" id="tab-comments-btn" onclick="switchTab('comments')"><span class="tab-ikon">💬</span><span class="tab-tekst">Kokken</span></button>
-        <button class="tab-btn" id="tab-rating-btn" onclick="switchTab('rating')"><span class="tab-ikon">⭐</span><span class="tab-tekst">Terning</span></button>
+        <button class="tab-btn active" id="tab-list-btn" onclick="switchTab('list')"><span class="tab-tekst">Ingredienser</span></button>
+        <button class="tab-btn" id="tab-steps-btn" onclick="switchTab('steps')"><span class="tab-tekst">Steg</span></button>
+        <button class="tab-btn" id="tab-begge-btn" onclick="switchTab('begge')"><span class="tab-tekst">Oppskrift</span></button>
+        <button class="tab-btn" id="tab-tips-btn" onclick="switchTab('tips')"><span class="tab-tekst">Tips</span></button>
+        <button class="tab-btn" id="tab-comments-btn" onclick="switchTab('comments')"><span class="tab-tekst">Kokken</span></button>
+        <button class="tab-btn" id="tab-rating-btn" onclick="switchTab('rating')"><span class="tab-tekst">Vurdering</span></button>
       </div>
     </div>
     </div>
@@ -1711,22 +1729,23 @@ input,select,textarea{font-size:16px}
     </div>
 
     <div class="tabpane" id="tab-tips">
-      <div class="card-panel punched">
-        <div class="section-label" style="margin-top:0;">Tips fra oppskriften</div>
+      <div class="card-panel punched" style="padding-top:20px;">
+        <button class="btn btn-ny" onclick="openNewTipModal()">Nytt tips</button>
+        <div class="section-label">Tips fra oppskriften</div>
         <div id="d-tips-list"></div>
       </div>
     </div>
 
     <div class="tabpane" id="tab-comments">
       <div class="card-panel punched" style="padding-top:20px;">
-        <button class="btn btn-primary" style="margin-top:0;" onclick="openNewCommentModal()">Ny kommentar</button>
+        <button class="btn btn-ny" onclick="openNewCommentModal()">Ny kommentar</button>
         <div id="d-comments-list" style="margin-top:18px;"></div>
       </div>
     </div>
 
     <div class="tabpane" id="tab-rating">
       <div class="card-panel punched" style="padding-top:20px;">
-        <button class="btn btn-primary" style="margin-top:0;" onclick="openNewTastingModal()">Ny vurdering</button>
+        <button class="btn btn-ny" onclick="openNewTastingModal()">Ny vurdering</button>
         <div id="d-tastings-list" style="margin-top:18px;"></div>
       </div>
     </div>
@@ -1766,6 +1785,23 @@ input,select,textarea{font-size:16px}
   <div class="naering-tittel" id="naering-tittel"></div>
   <div class="naering-grunnlag" id="naering-grunnlag"></div>
   <table class="nutrition-table" id="naering-tabell"></table>
+</div>
+
+<div class="modal-backdrop" id="nytt-tips-modal">
+  <div class="confirm-box" style="max-width:420px; margin:0; width:100%; text-align:left;">
+    <p style="text-align:center; font-weight:700; color:var(--ink); margin:0 0 4px;">Nytt tips</p>
+    <p style="text-align:center; font-size:var(--t-meta); color:var(--ink-soft); margin:0 0 14px;">
+      Én kort setning. Substitutter, oppbevaring, hva som passer til.
+    </p>
+    <div class="ing-merge-fields">
+      <textarea id="nytt-tips-tekst" rows="3" placeholder="Skriv tipset her"></textarea>
+    </div>
+    <div id="nytt-tips-status"></div>
+    <div class="row" style="display:flex; gap:8px; margin-top:12px;">
+      <button class="btn btn-ghost" style="flex:1; margin-top:0;" onclick="closeModal('nytt-tips')">Avbryt</button>
+      <button class="btn btn-ny" style="flex:1;" onclick="saveNewTip()">Lagre tips</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-backdrop" id="export-name-modal">
@@ -5213,8 +5249,8 @@ function renderTips(){
   const r = recipeCache[currentRecipeId];
   const tips = (r && Array.isArray(r.tips)) ? r.tips.filter(t => (t || '').trim()) : [];
   wrap.innerHTML = tips.length
-    ? tips.map(t => `<div class="tips-rad"><span class="tips-ikon">💡</span><span>${escapeHtml(t)}</span></div>`).join('')
-    : `<p class="ing-empty">Ingen tips lagt inn. Du kan legge dem inn under Rediger.</p>`;
+    ? tips.map(t => `<div class="tips-rad"><span>${escapeHtml(t)}</span></div>`).join('')
+    : `<p class="ing-empty">Ingen tips lagt inn ennå.</p>`;
 }
 
 function addTipsRow(tekst){
@@ -5361,6 +5397,36 @@ async function saveComment(){
   renderCommentsList();
   renderSteps();
 }
+/* Tips ligger som en enkel liste med tekst paa oppskrifta. Lagres samme
+   vei som kommentarer, saa de to oppfoerer seg likt. */
+function openNewTipModal(){
+  const r = recipeCache[currentRecipeId];
+  if(!r) return;
+  $('nytt-tips-tekst').value = '';
+  $('nytt-tips-status').innerHTML = '';
+  openModal('nytt-tips');
+}
+
+async function saveNewTip(){
+  const r = recipeCache[currentRecipeId];
+  if(!r) return;
+  const tekst = $('nytt-tips-tekst').value.trim();
+  if(!tekst){
+    $('nytt-tips-status').innerHTML =
+      '<div class="status-msg error">Skriv inn tipset først.</div>';
+    return;
+  }
+  if(!Array.isArray(r.tips)) r.tips = [];
+  r.tips.push(tekst);
+  closeModal('nytt-tips');
+  try{
+    await persistFullRecipe(r);
+  }catch(e){
+    console.error('Kunne ikke lagre tipset', e);
+  }
+  renderTips();
+}
+
 function renderCommentsList(){
   const r = recipeCache[currentRecipeId];
   if(!r) return;
@@ -5396,6 +5462,15 @@ let sisteFane = 'list';
 function switchTab(which){
   sisteFane = which;
   const kol = $('oppskrift-kolonner');
+
+  /* Fem faner staaende, fire liggende. "Oppskrift" ER landskapsvisningen,
+     saa den hoerer ikke hjemme i portrett; og i landskap staar
+     ingredienser og steg allerede side om side. */
+  const land = LANDSKAP.matches;
+  const vis = (id, paa) => { const b = $(id); if(b) b.style.display = paa ? '' : 'none'; };
+  vis('tab-begge-btn', land);
+  vis('tab-list-btn', !land);
+  vis('tab-steps-btn', !land);
 
   if(LANDSKAP.matches){
     /* Ingredienser og fremgangsmaate staar side om side. De to fanene er
