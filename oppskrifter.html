@@ -142,10 +142,19 @@
   }
   .category-chip.active{ background:var(--lime); border-color:var(--lime); color:#FFFFFF; }
 
-  .card-categories{ display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+  /* Kategorimerket og "paa menyen" er begge smaa fakta om retten og hoerer
+   paa samme linje. Hver for seg ble kortet fire loese rader. */
+  .card-merker{
+    display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; margin-top:8px;
+  }
+  .card-categories{ display:flex; flex-wrap:wrap; gap:5px; }
+  /* Var en fylt pille i versaler - den leste som en knapp og tok mer plass
+   enn den fortjener. Nå en rolig merkelapp i samme sjanger som resten. */
   .cat-badge{
-    background:var(--paper-soft); color:var(--ink-soft); border-radius:999px;
-    padding:2px 9px; font-size:var(--t-meta); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
+    background:none; color:var(--ink-soft);
+    border:1px solid var(--line); border-radius:7px;
+    padding:2px 8px; font-size:var(--t-etikett); font-weight:700;
+    text-transform:uppercase; letter-spacing:0.06em;
   }
 
   .category-filter-row{
@@ -848,8 +857,9 @@
     box-shadow:0 2px 6px rgba(0,0,0,0.18);
   }
   .plan-times{
-    display:block; margin-top:6px; font-family:'Archivo',sans-serif;
-    font-size:var(--t-brod); color:var(--ink-soft);
+    display:inline-flex; align-items:center; gap:4px;
+    font-family:'Archivo',sans-serif;
+    font-size:var(--t-meta); color:var(--ink-soft); font-weight:600;
   }
   .plan-badge{
     width:26px; height:26px; border-radius:50%; flex-shrink:0;
@@ -1275,7 +1285,20 @@
   #view-home .search-bar{
     padding:9px 10px; border-radius:14px 14px 0 0; border-bottom:none;
   }
-  #view-home .search-bar input{ background:transparent; }
+  /* Feltet forsvant i boksen bak seg - uten egen ramme leste det som en
+     overskrift, ikke som noe man kan skrive i. Hvit flate og kant sier
+     "skriv her". Skriftstoerrelsen roeres ikke: den arver 16px fra
+     rammelaasen, og under det zoomer iOS inn ved trykk. */
+  #view-home .search-bar input{
+    background:var(--paper);
+    border:1px solid var(--boks-kant);
+    border-radius:10px;
+    padding:10px 12px;
+  }
+  #view-home .search-bar input:focus{
+    outline:none; border-color:var(--lime);
+    box-shadow:0 0 0 3px rgba(74,127,168,.16);
+  }
   #view-home .category-filter-row{
     padding:10px 8px 4px; border-top:none; border-bottom:none; border-radius:0;
   }
@@ -2351,8 +2374,10 @@ function renderHome(){
             ${r.time ? `<span>⏱ ${escapeHtml(r.time)}</span>` : ''}
             ${cardRatingHtml(r)}
           </div>
-          ${cardCategoriesHtml(r)}
-          ${planTimesHtml(r.id)}
+          <div class="card-merker">
+            ${cardCategoriesHtml(r)}
+            ${planTimesHtml(r.id)}
+          </div>
         </div>
       </button>
     </div>
@@ -5407,7 +5432,7 @@ function planTimesOnMenu(recipeId){
 }
 function planTimesHtml(recipeId){
   const n = planTimesOnMenu(recipeId);
-  return n ? `<span class="plan-times">📅 På menyen ${n} ${n === 1 ? 'gang' : 'ganger'}</span>` : '';
+  return n ? `<span class="plan-times">${n} ${n === 1 ? 'gang' : 'ganger'} på menyen</span>` : '';
 }
 
 /* ---- Dagvelger ---- */
