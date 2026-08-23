@@ -204,13 +204,18 @@
     right:20px; bottom:calc(84px + env(safe-area-inset-bottom));
     display:flex; flex-direction:column; align-items:flex-end; gap:8px;
   }
+  /* Lukket er de sirkler paa 48px, akkurat som sorteringsknappen. Sidelufta
+     legges foerst til naar navnet folder seg ut - ellers ville de vaert
+     bredere enn den de staar rett over. */
   .uke-knapp{
     position:relative; height:48px; min-width:48px; border-radius:999px;
     background:#F3E7D2; color:#7A4E00; border:1px solid #E6D3B4;
-    padding:0 14px; display:flex; align-items:center; gap:9px;
+    padding:0; display:flex; align-items:center; justify-content:center; gap:0;
     font-family:'Archivo',sans-serif; font-weight:700; font-size:var(--t-brod);
     cursor:pointer; box-shadow:0 6px 22px rgba(44,62,80,.14);
+    transition:padding .18s ease, gap .18s ease;
   }
+  .uke-knapp.vis{ padding:0 18px 0 15px; gap:9px; justify-content:flex-start; }
   .uke-knapp .uke-ikon{ position:relative; font-size:var(--t-pil); line-height:1; }
   .uke-knapp:active{ transform:scale(0.96); }
   .uke-knapp.active{ background:var(--lime); border-color:var(--lime); color:#fff; }
