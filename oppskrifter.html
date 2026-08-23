@@ -179,6 +179,14 @@
    fellesfila og gjenbrukes paa de andre sidene under 7.3. */
   /* Erstatter soeppelboette-ikonet i soekefeltet. Full bredde, dempet -
      den skal vaere lett aa finne, ikke lett aa treffe ved uhell. */
+  .ny-oppskrift-bunn{
+    display:block; width:100%; margin:14px 0 8px;
+    background:none; border:1px solid var(--line); border-radius:12px;
+    color:var(--lime); font-family:'Archivo',sans-serif;
+    font-size:var(--t-brod); font-weight:700; padding:13px 16px; cursor:pointer;
+  }
+  .ny-oppskrift-bunn:active{ background:var(--blue-light); }
+
   .nullstill-knapp{
     display:none; width:100%; margin-top:10px;
     background:none; border:1px solid var(--boks-kant); border-radius:10px;
@@ -187,6 +195,31 @@
     letter-spacing:.04em; cursor:pointer;
   }
   .nullstill-knapp:active{ background:var(--blue-light); }
+
+  /* Ukemeny: to piller over sorteringsknappen. Fargene er hentet fra
+     ikonene de erstatter, saa de er til aa kjenne igjen. Sorteringsknappen
+     er hvit - den er den noeytrale i hele Neam. */
+  .uke-flyt{
+    position:fixed; z-index:26;
+    right:20px; bottom:calc(84px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column; align-items:flex-end; gap:8px;
+  }
+  .uke-knapp{
+    position:relative; height:48px; min-width:48px; border-radius:999px;
+    background:#F3E7D2; color:#7A4E00; border:1px solid #E6D3B4;
+    padding:0 14px; display:flex; align-items:center; gap:9px;
+    font-family:'Archivo',sans-serif; font-weight:700; font-size:var(--t-brod);
+    cursor:pointer; box-shadow:0 6px 22px rgba(44,62,80,.14);
+  }
+  .uke-knapp .uke-ikon{ position:relative; font-size:var(--t-pil); line-height:1; }
+  .uke-knapp:active{ transform:scale(0.96); }
+  .uke-knapp.active{ background:var(--lime); border-color:var(--lime); color:#fff; }
+  /* Navnet vises foerst ved trykk. Uten bredde-overgang hopper knappen. */
+  .uke-knapp .fab-tekst{
+    display:block; max-width:0; overflow:hidden; white-space:nowrap;
+    opacity:0; transition:max-width .18s ease, opacity .18s ease;
+  }
+  .uke-knapp.vis .fab-tekst{ max-width:180px; opacity:1; }
 
   .sorter-flyt{
     position:fixed; z-index:26;
@@ -792,6 +825,9 @@
      bakgrunn saa teksten under ikke skinner gjennom. */
   /* Knappene har ord, men bare der det er plass til dem - se landskapsblokka. */
   .fab-tekst{ display:none; }
+  /* I portrett ligger "Ny oppskrift" nederst i lista, ikke og flyter.
+     Da staar bare ukemeny og sortering igjen i hjoernet. */
+  .bottom-bar{ display:none; }
   .fab-pill{
     display:inline-flex; align-items:center; gap:4px;
     background:var(--paper); border:1px solid var(--line);
@@ -1320,12 +1356,36 @@
 
   /* Knappene slutter aa flyte og faar ord. To av dem var samme ikon -
      ingen kunne se forskjell paa "legg i ukemenyen" og "aapne ukemenyen". */
-  #view-home .bottom-bar{
+  /* Ukemeny oeverst, deretter legg-i-uke, saa ny oppskrift nederst.
+     De to beholderne skjoetes til én boks. */
+  #view-home .uke-flyt{
     grid-column:1; grid-row:4;
+    position:static; inset:auto; align-items:stretch; gap:2px;
+    background:var(--boks-mild); border:1px solid var(--boks-kant);
+    border-bottom:none; border-radius:14px 14px 0 0; padding:6px 6px 0;
+  }
+  #view-home .uke-knapp{
+    background:none; border:none; box-shadow:none; color:var(--lime);
+    height:auto; border-radius:10px; padding:11px 12px;
+    justify-content:flex-start; gap:11px;
+  }
+  #view-home .uke-knapp.active{ background:var(--blue-light); color:var(--lime-dark); }
+  /* Ikonene er borte her - teksten staar allerede og sier hva de gjoer. */
+  #view-home .uke-ikon{ display:none; }
+  #view-home .uke-knapp .fab-tekst{ max-width:none; opacity:1; transition:none; }
+
+  #view-home .bottom-bar{
+    display:flex; grid-column:1; grid-row:5;
     position:relative; inset:auto; padding:0;
     justify-content:flex-start; margin-top:0;
   }
+  #view-home .fab-pill{ border-radius:0 0 14px 14px; border-top:none; padding:0 6px 6px; }
+  /* Knappen nederst i lista hoerer bare til portrett. */
+  #view-home .ny-oppskrift-bunn{ display:none; }
+
   #view-home .sticky-sub{ padding:0; }
+  /* Luft mellom navnet paa sida og innholdet under. */
+  #view-home .home-hero{ padding-bottom:20px; }
   /* Lista hadde 14px topplass som soekefeltet ikke hadde - da startet de
      to spaltene ulikt. */
   #view-home .recipe-grid{ margin-top:0; }
@@ -1414,8 +1474,6 @@ input,select,textarea{font-size:16px}
     <div class="bottom-bar" id="bottom-bar">
       <div class="fab-pill">
         <button type="button" class="new-fab" onclick="openNewRecipeModal()" title="Ny oppskrift">+<span class="fab-tekst">Ny oppskrift</span></button>
-        <button type="button" class="plan-fab" id="plan-fab" onclick="togglePlanMode()" title="Legg retter i ukemenyen">📋<span class="plan-fab-plus">+</span><span class="fab-tekst">Legg i ukemeny</span></button>
-        <button type="button" class="plan-menu-fab" onclick="openPlanView()" title="Åpne ukemenyen">📋<span class="fab-tekst">Åpne ukemeny</span></button>
       </div>
       <div class="plan-week-line">
         <button type="button" onclick="stepPlanWeek(-1)" title="Forrige uke">‹</button>
@@ -1426,6 +1484,19 @@ input,select,textarea{font-size:16px}
     </div>
     <div class="plan-target" id="plan-target-banner" style="display:none;"></div>
     <div id="home-content"></div>
+
+    <!-- Ukemeny-knappene. I portrett flyter de over sorteringsknappen og
+         viser navnet sitt ved foerste trykk; i landskap staar de i
+         venstrespalten med teksten alltid synlig. Rekkefoelge i landskap:
+         aapne oeverst, legg i midten, ny oppskrift nederst. -->
+    <div class="uke-flyt" id="uke-flyt">
+      <button type="button" class="uke-knapp uke-apne" onclick="ukeTrykk(this, openPlanView)" title="Åpne ukemenyen">
+        <span class="uke-ikon">📋</span><span class="fab-tekst">Åpne ukemeny</span>
+      </button>
+      <button type="button" class="uke-knapp uke-legg" id="plan-fab" onclick="ukeTrykk(this, togglePlanMode)" title="Legg retter i ukemenyen">
+        <span class="uke-ikon">📋<span class="plan-fab-plus">+</span></span><span class="fab-tekst">Legg i ukemeny</span>
+      </button>
+    </div>
 
     <!-- Sortering staar for seg nede til hoeyre, likt i alle oppsett.
          Egen klasse og eget hjoerne saa den kan flyttes rett ut i
@@ -2384,6 +2455,13 @@ function renderHome(){
   `).join('') + `</div>` + footerHtml;
 }
 function renderIndexFooterHtml(){
+  /* I portrett ligger "Ny oppskrift" nederst i lista, rett over
+     "Rediger indeks". Den brukes sjelden paa telefon, og trenger ikke
+     ligge og flyte. I landskap skjules den - der staar den i spalten. */
+  const ny = `<button type="button" class="ny-oppskrift-bunn" onclick="openNewRecipeModal()">+ Ny oppskrift</button>`;
+  return ny + renderIndexFooterInner();
+}
+function renderIndexFooterInner(){
   if(homeMode === 'edit' || homeMode === 'delete'){
     const label = homeMode === 'edit' ? '✎ Redigeringsmodus på' : '🗑 Slettemodus på';
     return `<button type="button" class="index-footer active-mode" onclick="toggleHomeMode('${homeMode}')">${label} - trykk her for å avslutte</button>`;
@@ -5434,6 +5512,30 @@ function planTimesHtml(recipeId){
   const n = planTimesOnMenu(recipeId);
   return n ? `<span class="plan-times">${n} ${n === 1 ? 'gang' : 'ganger'} på menyen</span>` : '';
 }
+
+/* ---- Ukemeny-knappene: to trykk i portrett ----
+   Foerste trykk viser hva knappen heter, andre trykk utfoerer. I landskap
+   staar navnet allerede der, og ett trykk holder.
+   Navnet trekker seg inn igjen ved rulling, ved trykk et annet sted, og
+   etter fire sekunder - ellers blir en halvferdig handling staaende. */
+/* LANDSKAP finnes allerede lenger oppe i fila - samme betingelse. */
+let ukeTimer = null;
+
+function ukeLukk(){
+  clearTimeout(ukeTimer); ukeTimer = null;
+  document.querySelectorAll('.uke-knapp.vis').forEach(function(b){ b.classList.remove('vis'); });
+}
+function ukeTrykk(el, handling){
+  if(LANDSKAP.matches){ handling(); return; }
+  if(el.classList.contains('vis')){ ukeLukk(); handling(); return; }
+  ukeLukk();
+  el.classList.add('vis');
+  ukeTimer = setTimeout(ukeLukk, 4000);
+}
+document.addEventListener('pointerdown', function(ev){
+  if(!ev.target.closest || !ev.target.closest('.uke-knapp')) ukeLukk();
+}, true);
+window.addEventListener('scroll', ukeLukk, {passive:true});
 
 /* ---- Dagvelger ---- */
 async function openDayPicker(recipeId){
