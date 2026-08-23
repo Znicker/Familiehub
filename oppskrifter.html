@@ -131,12 +131,17 @@
     background:var(--bg-1); color:var(--ink); font-size:var(--t-brod);
   }
   .search-bar input::placeholder{ color:#A0A0A0; }
+  /* Hake og kryss sa ikke hva de gjorde. Ord i de fargene som allerede
+     betyr noe: gronn tar med, rod holder unna. */
   .search-icon-btn{
-    flex-shrink:0; width:32px; height:32px; border-radius:50%; font-size:var(--t-brod); font-weight:700;
-    display:flex; align-items:center; justify-content:center; padding:0;
+    flex-shrink:0; border:none; border-radius:8px; padding:6px 11px; color:#fff;
+    font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+    letter-spacing:.04em; cursor:pointer; white-space:nowrap;
   }
-  .search-icon-btn.include{ background:var(--lime); color:#FFFFFF; border:none; }
-  .search-icon-btn.exclude{ background:none; color:var(--danger); border:2px solid var(--danger); }
+  .search-icon-btn.include{ background:var(--handling-ny); }
+  .search-icon-btn.include:active{ background:var(--handling-ny-moerk); }
+  .search-icon-btn.exclude{ background:var(--danger); }
+  .search-icon-btn.exclude:active{ background:#8E4033; }
   .search-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; padding:0 20px; margin-bottom:2px; }
   .search-chips:empty{ margin-top:0; }
   .search-chip.exclude{ background:var(--danger); color:#fff; }
@@ -232,6 +237,7 @@
   }
   /* Samme okerskjaer paa Tips, Kokken og Vurdering naar modusen staar paa,
      saa det er ett tydelig signal om hvor man er - ikke tre ulike. */
+  body.steg-redigeres .card-panel.detail-header,
   body.steg-redigeres #tab-tips .card-panel,
   body.steg-redigeres #tab-comments .card-panel,
   body.steg-redigeres #tab-rating .card-panel{
@@ -362,7 +368,7 @@
      bredere enn den de staar rett over. */
   .uke-knapp{
     position:relative; height:48px; min-width:48px; border-radius:999px;
-    background:#F3E7D2; color:#7A4E00; border:1px solid #E6D3B4;
+    background:var(--paper); color:var(--ink); border:1px solid var(--line);
     padding:0; display:flex; align-items:center; justify-content:center; gap:0;
     font-family:'Archivo',sans-serif; font-weight:700; font-size:var(--t-brod);
     cursor:pointer; box-shadow:0 6px 22px rgba(44,62,80,.14);
@@ -390,8 +396,8 @@
   body:has(#view-home.view.active) .sorter-flyt{ display:block; }
   .sorter-knapp{
     width:48px; height:48px; border-radius:50%;
-    background:var(--paper); color:var(--ink);
-    border:1px solid var(--line); padding:0; font-size:var(--t-pil);
+    background:var(--lime); color:#FFFFFF;
+    border:none; padding:0; font-size:var(--t-pil);
     display:flex; align-items:center; justify-content:center;
     cursor:pointer; box-shadow:0 6px 22px rgba(44,62,80,.14);
   }
@@ -1726,8 +1732,8 @@ input,select,textarea{font-size:16px}
     <div class="sticky-sub">
       <div class="search-bar">
         <input type="text" id="search-input" placeholder="Søk" oninput="onSearchInput()" onkeydown="handleSearchKeydown(event)" onfocus="ensureAllRecipesLoaded()" onblur="$('search-suggestions').classList.remove('active')" autocomplete="off">
-        <button type="button" class="search-icon-btn include" onclick="lockSearchTerm('include')" title="Inkluder">✓</button>
-        <button type="button" class="search-icon-btn exclude" onclick="lockSearchTerm('exclude')" title="Unngå">✕</button>
+        <button type="button" class="search-icon-btn include" onclick="lockSearchTerm('include')">Inkluder</button>
+        <button type="button" class="search-icon-btn exclude" onclick="lockSearchTerm('exclude')">Ekskluder</button>
         <div class="search-suggestions" id="search-suggestions"></div>
       </div>
       <div class="search-chips" id="search-chips"></div>
@@ -1858,7 +1864,6 @@ input,select,textarea{font-size:16px}
 
       <div class="section-label">Tips</div>
       <div id="tips-list"></div>
-      <button class="add-row-btn" onclick="addTipsRow()">+ Legg til tips</button>
 
     </div>
   </section>
@@ -5902,6 +5907,17 @@ window.addEventListener('orientationchange', () => setTimeout(updateTopbarHeight
 
 /* ---- Edit / delete ---- */
 async function editCurrentRecipe(){
+  /* Modusen maa av foer vi bytter visning. Uten dette kom man tilbake fra
+     skjemaet med okerskjaer og redigerbare steg, men uten Lagre og Avbryt. */
+  if(redigerModus){
+    redigerModus = false;
+    stegUtkast = null;
+    utkastFoer = null;
+    tipsRedigerer = null;
+    document.body.classList.remove('steg-redigeres');
+    lukkRedigerMeny();
+    settRedigerKnapp(false);
+  }
   const r = await loadFullRecipe(currentRecipeId);
   if(!r) return;
   resetAddForm();
