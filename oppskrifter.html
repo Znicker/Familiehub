@@ -519,13 +519,21 @@
   .photo-editor-static{ position:relative; width:100%; border-radius:12px; overflow:hidden; margin-bottom:8px; }
   /* Et kryss oeverst i hjoernet leses som "lukk skjemaet", ikke som "fjern
      bildet". Ord under bildet sier hva de gjoer, i sine egne farger. */
-  .bilde-handlinger{ display:flex; gap:14px; margin:0 0 16px; }
-  .bilde-bytt, .bilde-slett{
-    background:none; border:none; padding:4px 0; cursor:pointer;
-    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+  /* Samme form som Rediger-knappen paa oppskriftssiden: liten fylt boks.
+     Legg til vises bare naar det ikke finnes bilde; erstatt og slett bare
+     naar det gjoer det - da er det aldri tvil om hva knappen gjelder. */
+  .bilde-handlinger{ display:flex; gap:8px; margin:0 0 16px; flex-wrap:wrap; }
+  .bilde-knapp{
+    border:none; border-radius:8px; padding:5px 11px; color:#fff;
+    font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+    letter-spacing:.04em; cursor:pointer;
   }
-  .bilde-bytt{ color:var(--handling-endre); }
-  .bilde-slett{ color:var(--danger); }
+  .bilde-knapp.ny{ background:var(--handling-ny); }
+  .bilde-knapp.ny:active{ background:var(--handling-ny-moerk); }
+  .bilde-knapp.endre{ background:var(--handling-endre); }
+  .bilde-knapp.endre:active{ background:var(--handling-endre-moerk); }
+  .bilde-knapp.slett{ background:var(--danger); }
+  .bilde-knapp.slett:active{ background:#8E4033; }
   .photo-editor-static img{ width:100%; display:block; }
   .photo-editor-static.locked img{ aspect-ratio:4/3; object-fit:cover; }
   .photo-editor-static .photo-editor-rm-static{ top:8px; right:8px; width:30px; height:30px; font-size:var(--t-brod); }
@@ -2489,7 +2497,16 @@ function updateTopbarHeightVar(){
   if(tb) document.documentElement.style.setProperty('--topbar-h', (tb.offsetHeight + 2) + 'px');
 }
 window.addEventListener('resize', updateTopbarHeightVar);
+/* Redigerer man en eksisterende oppskrift, hoerer veien ut tilbake til
+   den oppskriften - ikke til forsiden. Ny oppskrift har ingen aa gaa
+   tilbake til, saa den lander paa forsiden som foer. */
 function goAddBack(){
+  const id = editingRecipeId;
+  if(id){
+    editingRecipeId = null;
+    openRecipe(id);
+    return;
+  }
   goHome();
 }
 function goHome(){ renderHome(); showView('view-home'); }
@@ -4093,11 +4110,14 @@ async function renderEditorFor(cfg){
         <img src="${cfg.getResult()}" alt="">
       </div>
       <div class="bilde-handlinger">
-        <button type="button" class="bilde-bytt" onclick="$('${cfg.uploadInputId}').click()">Erstatt bilde</button>
-        <button type="button" class="bilde-slett" onclick="${clearCall}">Slett bilde</button>
+        <button type="button" class="bilde-knapp endre" onclick="$('${cfg.uploadInputId}').click()">Erstatt bilde</button>
+        <button type="button" class="bilde-knapp slett" onclick="${clearCall}">Slett bilde</button>
       </div>`;
   }else{
-    wrap.innerHTML = `<button type="button" class="add-photo-btn" onclick="$('${cfg.uploadInputId}').click()">＋</button>`;
+    wrap.innerHTML = `
+      <div class="bilde-handlinger">
+        <button type="button" class="bilde-knapp ny" onclick="$('${cfg.uploadInputId}').click()">Legg til bilde</button>
+      </div>`;
   }
 }
 async function loadEditorImage(cfg){
