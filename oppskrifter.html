@@ -207,16 +207,20 @@
   }
   .rediger-knapp:active{ background:var(--handling-endre-moerk); }
   /* Flyter i overkant av skjermen mens man ruller i redigeringsskjemaet. */
-  .avslutt-rediger{
+  .rediger-topp{
     position:sticky; top:calc(var(--topbar-h, 60px) + 8px); z-index:24;
-    display:block; margin:0 0 8px auto;
-    background:var(--handling-endre); color:#fff; border:none;
-    border-radius:999px; padding:9px 18px;
+    display:flex; justify-content:flex-end; gap:8px; margin:0 0 8px;
+  }
+  .rediger-topp-knapp{
+    border:none; border-radius:999px; padding:9px 18px; color:#fff;
     font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
     letter-spacing:.03em; cursor:pointer;
     box-shadow:0 6px 22px rgba(44,62,80,.18);
   }
-  .avslutt-rediger:active{ background:var(--handling-endre-moerk); }
+  .rediger-topp-knapp.avbryt{ background:var(--danger); }
+  .rediger-topp-knapp.avbryt:active{ background:#8E4033; }
+  .rediger-topp-knapp.lagre{ background:var(--handling-ny); }
+  .rediger-topp-knapp.lagre:active{ background:var(--handling-ny-moerk); }
 
   .rediger-hjoerne{ position:relative; }
   /* Folder seg ut under knappen. Slett bor her, ikke ved siden av tittelen -
@@ -756,8 +760,15 @@
      Da holder det med en smal fane uten at skriften må krympes. */
   .sticky-sub .tabs{ flex-wrap:nowrap; gap:0; padding:2px; }
   .sticky-sub .tab-btn{
-    flex:1 1 0; min-width:0; padding:7px 1px;
+    flex:1 1 0; min-width:0; padding:7px 0;
     display:flex; flex-direction:column; align-items:center; gap:2px;
+  }
+  /* "Ingredienser" er 12 tegn og avgjoer bredden. Fem faner paa en
+     telefonskjerm er trangt; her klippes ordet heller ikke, det krymper
+     til det faar plass. */
+  .sticky-sub .tab-tekst{
+    font-size:clamp(9px, 2.4vw, var(--t-etikett));
+    letter-spacing:0; overflow:visible; text-overflow:clip;
   }
   /* "Ingredienser" er det lengste ordet og avgjoer hvor trangt det maa
      vaere. Uten bokstavavstand faar det plass uten aa klippes. */
@@ -1651,8 +1662,12 @@ input,select,textarea{font-size:16px}
     <h2 id="add-heading" style="display:none;">Ny oppskrift</h2>
 
     <!-- Skjemaet er langt. Uten en vei ut som foelger med, maa man rulle
-         helt tilbake til toppen for aa komme seg ut av redigeringen. -->
-    <button type="button" class="avslutt-rediger" onclick="goAddBack()">Avslutt redigering</button>
+         helt tilbake til toppen. To valg, ikke ett: aa forlate uten aa lagre
+         og aa lagre er to helt ulike utfall og skal ikke se like ut. -->
+    <div class="rediger-topp">
+      <button type="button" class="rediger-topp-knapp avbryt" onclick="goAddBack()">Avbryt</button>
+      <button type="button" class="rediger-topp-knapp lagre" onclick="saveRecipe()">Avslutt og lagre</button>
+    </div>
 
     <div class="card-panel punched">
       <div class="section-label" style="margin-top:0;">Bilde av retten</div>
@@ -2480,8 +2495,10 @@ function showView(id){
       title.style.display = 'none';
     }else{
       topbar.classList.add('subview');
-      backBtn.style.display = 'flex';
-      backBtn.onclick = (id === 'view-add') ? goAddBack : goHome;
+      /* Skjemaet har sine egne to knapper oeverst - en pil i tillegg ville
+         vaert en tredje vei ut, uten aa si om den lagrer. */
+      backBtn.style.display = (id === 'view-add') ? 'none' : 'flex';
+      backBtn.onclick = goHome;
       title.style.display = 'block';
       title.textContent = (id === 'view-add')
         ? ($('add-heading').textContent || 'Oppskrift')
