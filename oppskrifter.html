@@ -315,7 +315,10 @@
      en sletteknapp skal ikke ligge under tommelen ved et uhell. */
   /* To knapper stablet til venstre for Ferdig - ingen utfellingsmeny.
      Da er alt synlig samtidig, og ingenting maa aapnes for aa oppdages. */
-  .rediger-valg{ display:flex; flex-direction:column; gap:5px; align-items:center; }
+  .rediger-valg{
+    display:flex; flex-direction:column; gap:5px; align-items:center;
+    margin-right:14px;
+  }
   .rediger-valg[hidden]{ display:none; }
   .rediger-valg-knapp{
     border:none; border-radius:8px; padding:5px 11px; color:#fff; cursor:pointer;
@@ -1139,7 +1142,7 @@
   .plan-fab.active{ background:var(--lime); color:#FFFFFF; }
   .plan-fab-plus{
     position:absolute; right:-3px; bottom:-3px; width:20px; height:20px; border-radius:50%;
-    background:var(--blue); color:#fff; border:2px solid var(--bg-solid);
+    background:var(--handling-ny); color:#fff; border:2px solid var(--bg-solid);
     font-size:var(--t-brod); font-weight:700; line-height:16px; text-align:center;
   }
     /* Ligger i forhold til knapperaden, så den følger med når raden fester seg */
@@ -1996,6 +1999,8 @@ input,select,textarea{font-size:16px}
       </div>
     </div>
 
+    <!-- Etter alle fanene, ikke mellom to av dem - laa den midt i rekka
+         havnet den over vurderingene i stedet for nederst paa sida. -->
     <button type="button" class="slett-oppskrift" id="slett-oppskrift" hidden onclick="confirmDelete()">
       Slett oppskriften
     </button>
