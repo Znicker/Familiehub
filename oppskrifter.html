@@ -1291,7 +1291,7 @@
   #view-home.view.active{
     display:grid;
     grid-template-columns:320px minmax(0,1fr);
-    grid-template-rows:auto auto auto 1fr auto;
+    grid-template-rows:auto auto 1fr;
     column-gap:26px;
     align-items:start;
   }
@@ -1308,6 +1308,7 @@
   #view-home .home-side{
     grid-column:1; grid-row:2 / span 2;
     position:sticky; top:12px; align-self:start; min-width:0;
+    display:flex; flex-direction:column;
   }
 
   /* Maaltidstypene som liste med avkrysning. Filteret har alltid vaert
@@ -1391,8 +1392,10 @@
      ingen kunne se forskjell paa "legg i ukemenyen" og "aapne ukemenyen". */
   /* Ukemeny oeverst, deretter legg-i-uke, saa ny oppskrift nederst.
      De to beholderne skjoetes til én boks. */
+  /* Ligger inne i .home-side, saa de foelger spalten - ingen egen
+     rutenettplassering. Foer laa de som egne rader i rutenettet og havnet
+     under hele oppskriftslista. */
   #view-home .uke-flyt{
-    grid-column:1; grid-row:4;
     position:static; inset:auto; align-items:stretch; gap:2px;
     background:var(--boks-mild); border:1px solid var(--boks-kant);
     border-bottom:none; border-radius:14px 14px 0 0; padding:6px 6px 0;
@@ -1408,8 +1411,7 @@
   #view-home .uke-knapp .fab-tekst{ max-width:none; opacity:1; transition:none; }
 
   #view-home .bottom-bar{
-    display:flex; grid-column:1; grid-row:5;
-    position:relative; inset:auto; padding:0;
+    display:flex; position:relative; inset:auto; padding:0;
     justify-content:flex-start; margin-top:0;
   }
   #view-home .fab-pill{ border-radius:0 0 14px 14px; border-top:none; padding:0 6px 6px; }
@@ -1518,15 +1520,6 @@ input,select,textarea{font-size:16px}
     <div class="plan-target" id="plan-target-banner" style="display:none;"></div>
     <div id="home-content"></div>
 
-    <!-- Naeringsboble: én ingrediens om gangen. Egen boble og ikke en toast,
-         fordi innholdet er en tabell og skal kunne leses i ro. -->
-    <div class="naering-bak" id="naering-bak" hidden onclick="lukkNaering()"></div>
-    <div class="naering-boble" id="naering-boble" hidden>
-      <button type="button" class="naering-lukk" onclick="lukkNaering()" aria-label="Lukk">×</button>
-      <div class="naering-tittel" id="naering-tittel"></div>
-      <div class="naering-grunnlag" id="naering-grunnlag"></div>
-      <table class="nutrition-table" id="naering-tabell"></table>
-    </div>
 
     <!-- Ukemeny-knappene. I portrett flyter de over sorteringsknappen og
          viser navnet sitt ved foerste trykk; i landskap staar de i
@@ -1746,6 +1739,16 @@ input,select,textarea{font-size:16px}
 </main>
 
 <div class="busy-overlay" id="busy-overlay"></div>
+
+<!-- Naeringsboble: én ingrediens om gangen. Egen boble og ikke en toast,
+     fordi innholdet er en tabell og skal kunne leses i ro. -->
+<div class="naering-bak" id="naering-bak" hidden onclick="lukkNaering()"></div>
+<div class="naering-boble" id="naering-boble" hidden>
+  <button type="button" class="naering-lukk" onclick="lukkNaering()" aria-label="Lukk">×</button>
+  <div class="naering-tittel" id="naering-tittel"></div>
+  <div class="naering-grunnlag" id="naering-grunnlag"></div>
+  <table class="nutrition-table" id="naering-tabell"></table>
+</div>
 
 <div class="modal-backdrop" id="export-name-modal">
   <div class="confirm-box" style="max-width:400px; margin:0; width:100%; text-align:left;">
