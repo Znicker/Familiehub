@@ -206,6 +206,8 @@
     letter-spacing:.04em; cursor:pointer; flex-shrink:0;
   }
   .rediger-knapp:active{ background:var(--handling-endre-moerk); }
+  .rediger-knapp.ferdig{ background:var(--handling-ny); }
+  .rediger-knapp.ferdig:active{ background:var(--handling-ny-moerk); }
   /* Flyter i overkant av skjermen mens man ruller i redigeringsskjemaet. */
   .rediger-topp{
     position:sticky; top:calc(var(--topbar-h, 60px) + 8px); z-index:24;
@@ -228,6 +230,28 @@
     background:#FBF3E4; border:1px solid #EBDCC0; border-radius:14px;
     padding:12px; margin-top:4px;
   }
+  /* Samme okerskjaer paa Tips, Kokken og Vurdering naar modusen staar paa,
+     saa det er ett tydelig signal om hvor man er - ikke tre ulike. */
+  body.steg-redigeres #tab-tips .card-panel,
+  body.steg-redigeres #tab-comments .card-panel,
+  body.steg-redigeres #tab-rating .card-panel{
+    background:#FBF3E4; border:1px solid #EBDCC0;
+  }
+  .post-handlinger{ display:flex; gap:6px; align-items:center; margin-left:auto; }
+  .post-endre, .post-slett{
+    border:none; border-radius:7px; padding:4px 10px; color:#fff; cursor:pointer;
+    font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+    letter-spacing:.04em;
+  }
+  .post-endre{ background:var(--handling-endre); }
+  .post-slett{ background:var(--danger); }
+  .tips-rad.rediger{ display:flex; gap:8px; align-items:flex-start; margin-bottom:8px; }
+  .tips-felt{
+    flex:1; min-width:0; background:var(--paper); border:1px solid #EBDCC0;
+    border-radius:10px; padding:8px 10px; font-family:'Archivo',sans-serif;
+    line-height:1.45; resize:vertical;
+  }
+
   .steg-rad{ display:flex; gap:10px; align-items:flex-start; margin-bottom:10px; }
   .steg-flytt{ display:flex; flex-direction:column; align-items:center; gap:1px; flex-shrink:0; }
   .steg-nr{
@@ -271,7 +295,7 @@
   /* Folder seg ut under knappen. Slett bor her, ikke ved siden av tittelen -
      en sletteknapp skal ikke ligge under tommelen ved et uhell. */
   .rediger-meny{
-    position:absolute; right:0; top:calc(100% + 6px); z-index:30;
+    position:absolute; right:calc(100% + 8px); top:0; z-index:30;
     min-width:260px; max-width:min(80vw,320px);
     background:var(--paper); border:1px solid var(--line); border-radius:14px;
     box-shadow:0 10px 30px rgba(44,62,80,.2); padding:6px; text-align:left;
@@ -4923,7 +4947,7 @@ async function openRecipe(id){
   redigerModus = false;
   stegUtkast = null;
   document.body.classList.remove('steg-redigeres');
-  const rk = $('rediger-knapp'); if(rk) rk.textContent = 'Rediger';
+  settRedigerKnapp(false);
   lukkRedigerMeny();
   switchTab('list');
   showView('view-detail');
@@ -4984,10 +5008,13 @@ function setWeekdayLabel(elId, dateStr){
   $(elId).textContent = isNaN(d.getTime()) ? '' : WEEKDAYS_NB[d.getDay()];
 }
 function entryActionsHtml(kind, idx, extraHtml = ''){
-  return `<div style="display:flex; gap:6px;">
+  /* Blyant og soeppelboette laa framme hele tiden og var umulige aa skille
+     paa avstand. Naa staar de bare i redigeringsmodus, med ord. */
+  if(!redigerModus) return extraHtml ? `<div style="display:flex; gap:6px;">${extraHtml}</div>` : '';
+  return `<div class="post-handlinger">
             ${extraHtml}
-            <button onclick="${ENTRY_TYPES[kind].editFn}(${idx})" style="${ENTRY_BTN_STYLE}">✎</button>
-            <button onclick="deleteEntry('${kind}', ${idx})" style="${ENTRY_BTN_STYLE}">🗑</button>
+            <button class="post-endre" onclick="${ENTRY_TYPES[kind].editFn}(${idx})">Endre</button>
+            <button class="post-slett" onclick="deleteEntry('${kind}', ${idx})">Slett</button>
           </div>`;
 }
 // Holder gjennomsnittsterningen i hjemme-indeksen i takt med vurderingene på oppskriften
@@ -5475,9 +5502,43 @@ function renderTips(){
   if(!wrap) return;
   const r = recipeCache[currentRecipeId];
   const tips = (r && Array.isArray(r.tips)) ? r.tips.filter(t => (t || '').trim()) : [];
+  if(redigerModus){
+    wrap.innerHTML = tips.length
+      ? tips.map((t, i) => `
+          <div class="tips-rad rediger">
+            <textarea class="tips-felt" rows="2" onchange="lagreTips(${i}, this.value)">${escapeHtml(t)}</textarea>
+            <button type="button" class="post-slett" onclick="slettTips(${i})">Slett</button>
+          </div>`).join('')
+      : `<p class="ing-empty">Ingen tips lagt inn ennå.</p>`;
+    return;
+  }
   wrap.innerHTML = tips.length
     ? tips.map(t => `<div class="tips-rad"><span>${escapeHtml(t)}</span></div>`).join('')
     : `<p class="ing-empty">Ingen tips lagt inn ennå.</p>`;
+}
+
+/* Tips lagres med én gang, som kommentarer og vurderinger. Bare
+   fremgangsmaaten har utkast med Avbryt - der er rekkefoelgen i spill, og
+   da trengs en vei tilbake. */
+async function lagreTips(i, verdi){
+  const r = recipeCache[currentRecipeId];
+  if(!r || !Array.isArray(r.tips)) return;
+  const ny = (verdi || '').trim();
+  if(!ny){ return slettTips(i); }
+  r.tips[i] = ny;
+  try{ await persistFullRecipe(r); }
+  catch(e){ console.error('Kunne ikke lagre tipset', e); }
+}
+
+function slettTips(i){
+  const r = recipeCache[currentRecipeId];
+  if(!r || !Array.isArray(r.tips)) return;
+  showConfirmModal('Slette dette tipset?', async () => {
+    r.tips.splice(i, 1);
+    try{ await persistFullRecipe(r); }
+    catch(e){ console.error('Kunne ikke slette tipset', e); }
+    renderTips();
+  });
 }
 
 function addTipsRow(tekst){
@@ -5816,9 +5877,12 @@ function startStegRedigering(){
   /* Uten dette ville redigeringen skjedd i en fane man ikke ser. */
   switchTab(LANDSKAP.matches ? 'begge' : 'steps');
   const m = $('rediger-meny'); if(m) m.hidden = false;
-  $('rediger-knapp').textContent = 'Ferdig';
+  settRedigerKnapp(true);
   document.body.classList.add('steg-redigeres');
   renderSteps();
+  renderTips();
+  renderCommentsList();
+  renderTastingsList();
 }
 
 function avbrytStegRedigering(){
@@ -5826,7 +5890,20 @@ function avbrytStegRedigering(){
   stegUtkast = null;
   lukkRedigerMeny();
   document.body.classList.remove('steg-redigeres');
+  settRedigerKnapp(false);
   renderSteps();
+  renderTips();
+  renderCommentsList();
+  renderTastingsList();
+}
+
+/* Knappen bytter bade tekst og farge: gronn "Ferdig" naar modusen staar
+   paa, oker "Rediger" naar den er av. */
+function settRedigerKnapp(paa){
+  const b = $('rediger-knapp');
+  if(!b) return;
+  b.textContent = paa ? 'Ferdig' : 'Rediger';
+  b.classList.toggle('ferdig', paa);
 }
 
 async function lagreStegRedigering(){
@@ -5842,7 +5919,7 @@ async function lagreStegRedigering(){
   stegUtkast = null;
   lukkRedigerMeny();
   document.body.classList.remove('steg-redigeres');
-  $('rediger-knapp').textContent = 'Rediger';
+  settRedigerKnapp(false);
   renderSteps();
   try{
     await persistFullRecipe(r);
