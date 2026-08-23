@@ -41,6 +41,11 @@
     --lime-dark: #3A6689;
     --blue: #4A7FA8;
     --blue-light: #E3ECF4;
+    /* Mild flate for grupperingsbokser. Egen variabel, ikke --blue-light:
+       den betyr "valgt" (sortering, suksess), og en boks skal ikke se
+       ut som et valg. Navnet er ment aa overleve flyttingen til 7.3. */
+    --boks-mild: #EDF3F8;
+    --boks-kant: #DCE6EF;
     --mustard-light: #F0D9A6;
     --line: #E4E8EC;
     --danger: #A64D3C;
@@ -1224,7 +1229,7 @@
      for en liggende skjerm. Hovedkategoriene fyller foerste kolonne. */
   #view-home .category-filter-row{
     display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:0 8px; padding:6px 4px 0; margin-top:8px;
+    gap:0 8px;
   }
   #view-home .category-filter-row .annet-knapp{ display:none; }
   #view-home .category-under{
@@ -1244,20 +1249,41 @@
     background:var(--lime); border-color:var(--lime);
   }
 
-  #view-home .rating-filter-bar{
-    justify-content:flex-start; padding:0 8px; flex-wrap:wrap; margin-top:10px;
+  /* Tre grupper i spalten: soek, filtre, handlinger. Uten bokser leser de
+     som loese elementer med én boks nederst. Hvit er kortenes farge - her
+     brukes den milde flaten. */
+  #view-home .search-bar,
+  #view-home .category-filter-row,
+  #view-home .rating-filter-bar,
+  #view-home .fab-pill{
+    background:var(--boks-mild); border:1px solid var(--boks-kant);
+    border-radius:14px; margin:0 0 10px; width:100%;
   }
+  #view-home .search-bar{ padding:9px 10px; }
+  #view-home .search-bar input{ background:transparent; }
+  #view-home .category-filter-row{ padding:10px 8px; }
+
+  /* "Min. vurdering" er overfloedig - fem stjerner ved siden av en knapp
+     forklarer seg selv. Plassen gaar til stjernene i stedet. */
+  #view-home .rating-filter-bar{
+    justify-content:flex-start; padding:8px 12px; flex-wrap:wrap;
+  }
+  #view-home .rating-filter-label{ display:none; }
+  #view-home .rating-filter-row{ width:100%; gap:8px; }
+  #view-home .rating-filter-row .star-btn{ font-size:var(--t-stor); padding:2px; }
+  #view-home .rating-filter-toggle{ font-size:var(--t-brod); padding:6px 12px; }
 
   /* Knappene slutter aa flyte og faar ord. To av dem var samme ikon -
      ingen kunne se forskjell paa "legg i ukemenyen" og "aapne ukemenyen". */
   #view-home .bottom-bar{
     grid-column:1; grid-row:4;
     position:relative; inset:auto; padding:0;
-    justify-content:flex-start; margin-top:18px;
+    justify-content:flex-start; margin-top:0;
   }
+  #view-home .sticky-sub{ padding:0; }
   #view-home .fab-pill{
     flex-direction:column; align-items:stretch; gap:2px;
-    width:100%; margin-left:0; border-radius:14px; padding:6px;
+    padding:6px; box-shadow:none;
   }
   #view-home .fab-pill button{
     width:auto; height:auto; border-radius:10px;
