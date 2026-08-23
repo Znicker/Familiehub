@@ -612,10 +612,30 @@
 
   .step-row{ margin-bottom:10px; }
   .step-row-line1{ display:flex; gap:8px; align-items:flex-start; }
+  /* Piler for nabobytte, tallet for lange hopp. Ingen draing - se
+     kommentaren ved flyttSteg. */
+  .step-flytt{
+    display:flex; flex-direction:column; align-items:center; gap:1px;
+    flex-shrink:0; margin-top:4px;
+  }
   .step-num{
-    width:26px; height:26px; border-radius:50%; background:var(--lime); color:#FFFFFF;
+    width:30px; height:26px; border-radius:8px;
+    background:var(--lime); color:#FFFFFF; border:none; padding:0;
     font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); font-weight:700;
-    display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:8px;
+    text-align:center; -webkit-appearance:none;
+  }
+  .step-num:focus{ outline:2px solid var(--handling-endre); outline-offset:1px; }
+  .step-pil{
+    width:30px; height:18px; border:none; background:none; padding:0;
+    color:var(--ink-soft); font-size:var(--t-etikett); line-height:1;
+    cursor:pointer; border-radius:5px;
+  }
+  .step-pil:active{ background:var(--blue-light); color:var(--lime-dark); }
+  /* Kort glimt saa man ser hvor steget tok veien. */
+  .step-row.nettopp-flyttet{ animation:flyttet .6s ease; }
+  @keyframes flyttet{
+    0%{ background:var(--blue-light); }
+    100%{ background:transparent; }
   }
   .step-row textarea{ flex:1; }
   .step-photo-toggle{
@@ -3779,7 +3799,13 @@ function addStepRow(data){
   wrap.dataset.stepId = stepId;
   wrap.innerHTML = `
     <div class="step-row-line1">
-      <div class="step-num">${num}</div>
+      <div class="step-flytt">
+        <button type="button" class="step-pil" onclick="flyttSteg('${stepId}', -1)" title="Flytt opp" aria-label="Flytt opp">▲</button>
+        <input class="step-num" type="text" inputmode="numeric" value="${num}"
+               onchange="settStegPosisjon('${stepId}', this.value)"
+               onfocus="this.select()" aria-label="Rekkefølge">
+        <button type="button" class="step-pil" onclick="flyttSteg('${stepId}', 1)" title="Flytt ned" aria-label="Flytt ned">▼</button>
+      </div>
       <textarea placeholder="Beskriv steget...">${escapeHtml(stepData.text || '')}</textarea>
       <button type="button" class="step-photo-toggle ${stepData.photo ? 'active' : ''}" onclick="toggleStepPhotoPanel('${stepId}')" title="Bilde av steget">🖼️</button>
       <button class="row-rm" onclick="removeStepRow('${stepId}')">✕</button>
@@ -3788,6 +3814,50 @@ function addStepRow(data){
   list.appendChild(wrap);
   renumberSteps();
 }
+/* Flytting uten draing. Piler for nabobytte, tallet for lange hopp -
+   aa flytte steg 9 til plass 2 er sju trykk med piler, ett tall her.
+   Draing ble vraket med vilje: paa beroeringsskjerm slaass den mot
+   rulling, og nettleseren avbryter draget naar den tror du blar. */
+function stegRader(){
+  const list = $('step-list');
+  if(!list) return [];
+  return Array.from(list.children).filter(r => r.classList.contains('step-row'));
+}
+
+function flyttSteg(stepId, retning){
+  const list = $('step-list');
+  const rad = document.querySelector(`.step-row[data-step-id="${stepId}"]`);
+  if(!list || !rad) return;
+  const rader = stegRader();
+  const i = rader.indexOf(rad);
+  const j = i + retning;
+  if(i < 0 || j < 0 || j >= rader.length) return;   /* allerede ytterst */
+  if(retning < 0) list.insertBefore(rad, rader[j]);
+  else list.insertBefore(rader[j], rad);
+  renumberSteps();
+  rad.classList.add('nettopp-flyttet');
+  setTimeout(() => rad.classList.remove('nettopp-flyttet'), 600);
+}
+
+function settStegPosisjon(stepId, verdi){
+  const list = $('step-list');
+  const rad = document.querySelector(`.step-row[data-step-id="${stepId}"]`);
+  if(!list || !rad) return;
+  const rader = stegRader();
+  let mål = parseInt(String(verdi).replace(/\D/g, ''), 10);
+  if(!mål || isNaN(mål)){ renumberSteps(); return; }
+  mål = Math.max(1, Math.min(mål, rader.length));
+  const fra = rader.indexOf(rad);
+  if(fra === mål - 1){ renumberSteps(); return; }
+  const uten = rader.filter(r => r !== rad);
+  const foran = uten[mål - 1];
+  if(foran) list.insertBefore(rad, foran);
+  else list.appendChild(rad);
+  renumberSteps();
+  rad.classList.add('nettopp-flyttet');
+  setTimeout(() => rad.classList.remove('nettopp-flyttet'), 600);
+}
+
 function removeStepRow(stepId){
   const row = document.querySelector(`.step-row[data-step-id="${stepId}"]`);
   if(row) row.remove();
@@ -3804,7 +3874,7 @@ function renumberSteps(){
   Array.from(list.children).forEach(rad => {
     if(rad.classList.contains('sec-row')){ n = 0; return; }
     const el = rad.querySelector('.step-num');
-    if(el){ n++; el.textContent = n; }
+    if(el){ n++; if('value' in el) el.value = n; else el.textContent = n; }
   });
 }
 
