@@ -735,11 +735,39 @@
     margin-left:4px; vertical-align:middle; line-height:1;
     border:none; padding:0; font-family:inherit; cursor:pointer;
   }
+  /* Var 14px og bare et title-attributt - altsaa usynlig paa iPad og for
+     liten aa treffe. Naa en ekte knapp med 20px flate. */
   .nutrition-flag{
-    display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px;
-    border-radius:50%; border:1.3px solid var(--blue); color:var(--blue); background:none;
-    font-size:var(--t-meta); font-weight:700; margin-left:5px; cursor:help; vertical-align:middle; line-height:1;
-    opacity:0.75;
+    display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px;
+    border-radius:50%; border:1.5px solid var(--blue); color:var(--blue);
+    background:var(--paper); padding:0;
+    font-family:'Archivo',sans-serif;
+    font-size:var(--t-meta); font-weight:700; margin-left:6px; cursor:pointer;
+    vertical-align:middle; line-height:1; flex-shrink:0;
+  }
+  .nutrition-flag:active{ background:var(--blue-light); }
+
+  .naering-bak{
+    position:fixed; inset:0; z-index:60; background:rgba(44,62,80,.16);
+  }
+  .naering-bak[hidden], .naering-boble[hidden]{ display:none; }
+  .naering-boble{
+    position:fixed; z-index:61; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:min(92vw,360px); max-height:80vh; overflow-y:auto;
+    background:var(--paper); border:1px solid var(--line); border-radius:16px;
+    padding:16px 18px 12px; box-shadow:0 18px 44px rgba(44,62,80,.28);
+  }
+  .naering-lukk{
+    position:absolute; right:10px; top:8px; background:none; border:none;
+    font-size:var(--t-pil); line-height:1; color:var(--ink-soft); cursor:pointer;
+  }
+  .naering-tittel{
+    font-size:var(--t-brod); font-weight:700; padding-right:26px;
+    text-transform:capitalize;
+  }
+  .naering-grunnlag{
+    font-size:var(--t-meta); color:var(--ink-soft); font-weight:600;
+    margin:2px 0 8px;
   }
   .nutrition-form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
   .nutrition-form-grid .field{ margin-bottom:10px; }
@@ -1489,6 +1517,16 @@ input,select,textarea{font-size:16px}
     </div>
     <div class="plan-target" id="plan-target-banner" style="display:none;"></div>
     <div id="home-content"></div>
+
+    <!-- Naeringsboble: én ingrediens om gangen. Egen boble og ikke en toast,
+         fordi innholdet er en tabell og skal kunne leses i ro. -->
+    <div class="naering-bak" id="naering-bak" hidden onclick="lukkNaering()"></div>
+    <div class="naering-boble" id="naering-boble" hidden>
+      <button type="button" class="naering-lukk" onclick="lukkNaering()" aria-label="Lukk">×</button>
+      <div class="naering-tittel" id="naering-tittel"></div>
+      <div class="naering-grunnlag" id="naering-grunnlag"></div>
+      <table class="nutrition-table" id="naering-tabell"></table>
+    </div>
 
     <!-- Ukemeny-knappene. I portrett flyter de over sorteringsknappen og
          viser navnet sitt ved foerste trykk; i landskap staar de i
@@ -4948,7 +4986,7 @@ function renderIngredientViews(){
     const rad = (i, idx) => `
       <tr id="shop-${idx}">
         <td class="name">${escapeHtml(i.name)}${(i.allergens && i.allergens.length) ? ` <button type="button" class="allergen-flag" onclick="visAllergener('${jsStr(i.name)}', '${jsStr(i.allergens.join(', '))}')">!</button>` : ''}</td>
-        <td class="amt mono">${escapeHtml(scaledAmountLabel(i, factor))}${nutritionFlagHtml(i.nutrition, perPortionAmountLabel(i, r.baseServings))}</td>
+        <td class="amt mono">${escapeHtml(scaledAmountLabel(i, factor))}${nutritionFlagHtml(i.nutrition, i, r.baseServings)}</td>
       </tr>`;
     /* Seksjon ytterst, varetype inni. Uten seksjoner blir det bare
        varetypebolkene, akkurat som foer. */
@@ -4993,19 +5031,66 @@ function visAllergener(overskrift, innhold){
   showToast(`${overskrift}: ${innhold}`);
 }
 
-function nutritionFlagHtml(nutrition, amountLabel){
+/* Naeringsinnholdet som er lagret per ingrediens er PER PORSJON - det er
+   slik AI-gjennomgangen regner det ut. Per 100 g kan derfor bare regnes
+   naar mengden er oppgitt i vekt. For "2 stk loek" eller "1 ss olje"
+   finnes ikke grunnlaget, og da vises per porsjon i stedet. Popupen sier
+   alltid hvilket grunnlag den viser - ellers er tallet verdiloest. */
+function gramPerPorsjon(i, baseServings){
+  if(i.amount == null || !(baseServings > 0)) return null;
+  const u = String(i.unit || '').trim().toLowerCase();
+  if(u === 'g' || u === 'gram') return i.amount / baseServings;
+  if(u === 'kg') return (i.amount * 1000) / baseServings;
+  return null;
+}
+
+function nutritionFlagHtml(nutrition, ing, baseServings){
   if(!nutrition) return '';
-  const parts = [];
-  if(nutrition.energyKj != null || nutrition.energyKcal != null){
-    parts.push([nutrition.energyKj != null ? formatAmt(nutrition.energyKj) + ' kJ' : null, nutrition.energyKcal != null ? formatAmt(nutrition.energyKcal) + ' kcal' : null].filter(Boolean).join(' / '));
-  }
-  if(nutrition.fat != null) parts.push(`Fett ${formatAmt(nutrition.fat)} g`);
-  if(nutrition.carbs != null) parts.push(`Karbo ${formatAmt(nutrition.carbs)} g`);
-  if(nutrition.protein != null) parts.push(`Protein ${formatAmt(nutrition.protein)} g`);
-  if(nutrition.salt != null) parts.push(`Salt ${formatAmt(nutrition.salt)} g`);
-  if(parts.length === 0) return '';
-  const amountPart = amountLabel ? `${amountLabel} per porsjon: ` : 'Per porsjon: ';
-  return ` <span class="nutrition-flag" title="${escapeAttr(amountPart + parts.join(', '))}">N</span>`;
+  const felt = ['energyKj','energyKcal','fat','satFat','carbs','sugars','fiber','protein','salt'];
+  if(!felt.some(k => nutrition[k] != null)) return '';
+  const gram = ing ? gramPerPorsjon(ing, baseServings) : null;
+  const navn = ing ? (ing.name || '') : '';
+  return ` <button type="button" class="nutrition-flag"
+      onclick="event.stopPropagation(); visNaering(${escapeAttr(JSON.stringify(JSON.stringify({n:nutrition, g:gram, navn:navn})))})"
+      title="Næringsinnhold" aria-label="Næringsinnhold">N</button>`;
+}
+
+function visNaering(rå){
+  let d; try{ d = JSON.parse(rå); }catch(e){ return; }
+  const n = d.n || {};
+  const gram = d.g;
+  /* Per 100 g naar vi vet vekten, ellers per porsjon. */
+  const f = (gram && gram > 0) ? (100 / gram) : 1;
+  const grunnlag = (gram && gram > 0)
+    ? 'Per 100 g'
+    : 'Per porsjon';
+  const rad = (etikett, verdi, enhet) => verdi == null ? '' :
+    `<tr><td>${etikett}</td><td>${formatAmt(verdi * f)} ${enhet}</td></tr>`;
+  const tabell =
+      rad('Energi', n.energyKcal, 'kcal')
+    + rad('Energi', n.energyKj, 'kJ')
+    + rad('Fett', n.fat, 'g')
+    + rad('&nbsp;&nbsp;herav mettet', n.satFat, 'g')
+    + rad('Karbohydrater', n.carbs, 'g')
+    + rad('&nbsp;&nbsp;herav sukker', n.sugars, 'g')
+    + rad('Fiber', n.fiber, 'g')
+    + rad('Protein', n.protein, 'g')
+    + rad('Salt', n.salt, 'g');
+
+  const boks = $('naering-boble');
+  $('naering-tittel').textContent = d.navn || 'Næringsinnhold';
+  $('naering-grunnlag').textContent = grunnlag
+    + ((gram && gram > 0) ? '' : ' – mengden er ikke oppgitt i vekt');
+  $('naering-tabell').innerHTML = tabell;
+  boks.hidden = false;
+  $('naering-bak').hidden = false;
+}
+document.addEventListener('keydown', function(ev){
+  if(ev.key === 'Escape') lukkNaering();
+});
+function lukkNaering(){
+  const b = $('naering-boble'); if(b) b.hidden = true;
+  const bak = $('naering-bak'); if(bak) bak.hidden = true;
 }
 
 function renderNutritionBox(r){
