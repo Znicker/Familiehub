@@ -297,7 +297,7 @@
   }
   .steg-knapper{ display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
 
-  .rediger-hjoerne{ display:flex; align-items:flex-start; gap:16px; }
+  .rediger-hjoerne{ display:flex; align-items:flex-start; gap:26px; }
   /* Folder seg ut under knappen. Slett bor her, ikke ved siden av tittelen -
      en sletteknapp skal ikke ligge under tommelen ved et uhell. */
   /* To knapper stablet til venstre for Ferdig - ingen utfellingsmeny.
@@ -311,6 +311,34 @@
   }
   .rediger-valg-knapp.endre{ background:var(--handling-endre); }
   .rediger-valg-knapp.slett{ background:var(--danger); }
+  .rediger-valg-knapp.lagre{ background:var(--handling-ny); }
+  .rediger-valg-knapp.avbryt{ background:var(--danger); }
+  /* Lagre over Avbryt, der Ferdig sto. Rediger-knappen skjules mens
+     modusen staar paa - de to her er veiene ut. */
+  /* Sletting hoerer nederst, langt fra alt annet - ikke i samme hjoerne
+     som Lagre. */
+  .tittel-felt{
+    width:100%; background:var(--paper); border:1px solid #EBDCC0;
+    border-radius:10px; padding:8px 11px;
+    font-family:'Archivo',sans-serif; font-size:var(--t-stor); font-weight:700;
+    text-transform:uppercase; letter-spacing:-.01em; color:var(--ink);
+  }
+  .tittel-felt[hidden]{ display:none; }
+
+  .slett-oppskrift{
+    display:block; width:100%; margin:26px 0 10px;
+    background:var(--danger); color:#fff; border:none; border-radius:14px;
+    padding:16px; cursor:pointer;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
+    letter-spacing:.03em;
+  }
+  .slett-oppskrift[hidden]{ display:none; }
+  .slett-oppskrift:active{ background:#8E4033; }
+
+  .rediger-stell{ display:flex; flex-direction:column; gap:5px; align-items:stretch; }
+  .rediger-stell[hidden]{ display:none; }
+  .rediger-stell .rediger-valg-knapp{ padding:6px 16px; }
+  body.steg-redigeres .rediger-knapp{ display:none; }
 
   .nullstill-knapp{
     display:none; width:100%; margin-top:10px;
@@ -1832,8 +1860,6 @@ input,select,textarea{font-size:16px}
       <div id="tips-list"></div>
       <button class="add-row-btn" onclick="addTipsRow()">+ Legg til tips</button>
 
-      <button class="btn btn-primary" onclick="saveRecipe()">Lagre oppskrift</button>
-      <button class="btn btn-ghost" style="margin-top:8px;" onclick="goHome()">Avbryt</button>
     </div>
   </section>
 
@@ -1851,14 +1877,16 @@ input,select,textarea{font-size:16px}
       <div class="card-panel punched detail-header">
         <div class="title-row">
           <h2 id="d-title"></h2>
+          <input id="d-title-felt" class="tittel-felt" hidden aria-label="Navn på retten">
           <div class="actions rediger-hjoerne">
             <div class="rediger-valg" id="rediger-meny" hidden>
               <button type="button" class="rediger-valg-knapp endre" onclick="editCurrentRecipe()">
-                Ingredienser og næring
+                Rediger alt
               </button>
-              <button type="button" class="rediger-valg-knapp slett" onclick="confirmDelete()">
-                Slett oppskriften
-              </button>
+            </div>
+            <div class="rediger-stell" id="rediger-stell" hidden>
+              <button type="button" class="rediger-valg-knapp lagre" onclick="lagreStegRedigering()">Lagre</button>
+              <button type="button" class="rediger-valg-knapp avbryt" onclick="avbrytStegRedigering()">Avbryt</button>
             </div>
             <button class="rediger-knapp" id="rediger-knapp" onclick="vekslRedigerMeny()">Rediger</button>
           </div>
@@ -1927,6 +1955,10 @@ input,select,textarea{font-size:16px}
         <div id="d-comments-list" style="margin-top:18px;"></div>
       </div>
     </div>
+
+    <button type="button" class="slett-oppskrift" id="slett-oppskrift" hidden onclick="confirmDelete()">
+      Slett oppskriften
+    </button>
 
     <div class="tabpane" id="tab-rating">
       <div class="card-panel punched" style="padding-top:20px;">
@@ -5629,10 +5661,6 @@ function renderSteps(){
           <button type="button" class="steg-slett" onclick="stegSlett(${i})" aria-label="Slett steget">✕</button>
         </div>`).join('')
       + `<button type="button" class="steg-nytt" onclick="stegNytt()">Legg til steg</button>`
-      + `<div class="steg-knapper">
-           <button type="button" class="rediger-topp-knapp avbryt" onclick="avbrytStegRedigering()">Avbryt</button>
-           <button type="button" class="rediger-topp-knapp lagre" onclick="lagreStegRedigering()">Lagre</button>
-         </div>`
       + '</div>';
     return;
   }
@@ -5930,9 +5958,18 @@ function startStegRedigering(){
     tastings: r.tastings || []
   });
   redigerModus = true;
-  /* Uten dette ville redigeringen skjedd i en fane man ikke ser. */
-  switchTab(LANDSKAP.matches ? 'begge' : 'steps');
+  /* Staar man allerede i en fane som kan redigeres, blir man staaende.
+     Bare fra Ingredienser - som ikke redigeres her - flyttes man. */
+  const redigerbare = ['steps', 'begge', 'tips', 'comments', 'rating'];
+  if(redigerbare.indexOf(sisteFane) < 0){
+    switchTab(LANDSKAP.matches ? 'begge' : 'steps');
+  }
   const m = $('rediger-meny'); if(m) m.hidden = false;
+  const s = $('rediger-stell'); if(s) s.hidden = false;
+  const sl = $('slett-oppskrift'); if(sl) sl.hidden = false;
+  /* Navnet redigeres her ogsaa - det er det man oftest vil rette. */
+  const h = $('d-title'), tf = $('d-title-felt');
+  if(h && tf){ tf.value = r.title || ''; h.hidden = true; tf.hidden = false; }
   settRedigerKnapp(true);
   document.body.classList.add('steg-redigeres');
   renderSteps();
@@ -5997,6 +6034,18 @@ async function lagreStegRedigering(){
   r.steps = stegUtkast
     .filter(s => (s.text || '').trim())
     .map(s => ({text: s.text.trim(), photo: s.photo || null, section: s.section || ''}));
+
+  /* Navnet staar to steder: paa oppskrifta og i indeksen som forsiden
+     leser. Endres bare det ene, viser lista fortsatt det gamle navnet. */
+  const tf = $('d-title-felt');
+  const nyttNavn = tf ? tf.value.trim() : '';
+  let navnEndret = false;
+  if(nyttNavn && nyttNavn !== r.title){
+    r.title = nyttNavn;
+    const idxEntry = recipes.find(x => x.id === r.id);
+    if(idxEntry){ idxEntry.title = nyttNavn; navnEndret = true; }
+    $('d-title').textContent = nyttNavn;
+  }
   redigerModus = false;
   stegUtkast = null;
   utkastFoer = null;
@@ -6007,9 +6056,10 @@ async function lagreStegRedigering(){
   renderSteps();
   try{
     await persistFullRecipe(r);
+    if(navnEndret) await persistRecipeIndex();
   }catch(e){
     console.error('Kunne ikke lagre fremgangsmaaten', e);
-    showToast('Kunne ikke lagre. Prov igjen.', true);
+    showToast('Kunne ikke lagre. Prøv igjen.', true);
   }
 }
 
@@ -6068,6 +6118,12 @@ function stegNytt(){
 function lukkRedigerMeny(){
   const m = $('rediger-meny');
   if(m) m.hidden = true;
+  const s = $('rediger-stell');
+  if(s) s.hidden = true;
+  const sl = $('slett-oppskrift');
+  if(sl) sl.hidden = true;
+  const h = $('d-title'), tf = $('d-title-felt');
+  if(h && tf){ h.hidden = false; tf.hidden = true; }
 }
 document.addEventListener('keydown', function(ev){
   if(ev.key === 'Escape' && redigerModus) avbrytStegRedigering();
