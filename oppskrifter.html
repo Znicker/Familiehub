@@ -1506,6 +1506,19 @@ input,select,textarea{font-size:16px}
       </div>
     </div>
     <!-- Knapperad nederst: sortering, kalendermodus og ukemeny -->
+    <!-- Ukemeny-knappene. I portrett flyter de over sorteringsknappen og
+         viser navnet sitt ved foerste trykk; i landskap staar de i
+         venstrespalten med teksten alltid synlig. Rekkefoelge i landskap:
+         aapne oeverst, legg i midten, ny oppskrift nederst. -->
+    <div class="uke-flyt" id="uke-flyt">
+      <button type="button" class="uke-knapp uke-apne" onclick="ukeTrykk(this, openPlanView)" title="Åpne ukemenyen">
+        <span class="uke-ikon">📋</span><span class="fab-tekst">Åpne ukemeny</span>
+      </button>
+      <button type="button" class="uke-knapp uke-legg" id="plan-fab" onclick="ukeTrykk(this, togglePlanMode)" title="Legg retter i ukemenyen">
+        <span class="uke-ikon">📋<span class="plan-fab-plus">+</span></span><span class="fab-tekst">Legg i ukemeny</span>
+      </button>
+    </div>
+
     <div class="bottom-bar" id="bottom-bar">
       <div class="fab-pill">
         <button type="button" class="new-fab" onclick="openNewRecipeModal()" title="Ny oppskrift">+<span class="fab-tekst">Ny oppskrift</span></button>
@@ -1520,19 +1533,6 @@ input,select,textarea{font-size:16px}
     <div class="plan-target" id="plan-target-banner" style="display:none;"></div>
     <div id="home-content"></div>
 
-
-    <!-- Ukemeny-knappene. I portrett flyter de over sorteringsknappen og
-         viser navnet sitt ved foerste trykk; i landskap staar de i
-         venstrespalten med teksten alltid synlig. Rekkefoelge i landskap:
-         aapne oeverst, legg i midten, ny oppskrift nederst. -->
-    <div class="uke-flyt" id="uke-flyt">
-      <button type="button" class="uke-knapp uke-apne" onclick="ukeTrykk(this, openPlanView)" title="Åpne ukemenyen">
-        <span class="uke-ikon">📋</span><span class="fab-tekst">Åpne ukemeny</span>
-      </button>
-      <button type="button" class="uke-knapp uke-legg" id="plan-fab" onclick="ukeTrykk(this, togglePlanMode)" title="Legg retter i ukemenyen">
-        <span class="uke-ikon">📋<span class="plan-fab-plus">+</span></span><span class="fab-tekst">Legg i ukemeny</span>
-      </button>
-    </div>
 
     <!-- Sortering staar for seg nede til hoeyre, likt i alle oppsett.
          Egen klasse og eget hjoerne saa den kan flyttes rett ut i
