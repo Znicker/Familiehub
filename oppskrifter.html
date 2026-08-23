@@ -1262,27 +1262,27 @@
   /* Tre grupper i spalten: soek, filtre, handlinger. Uten bokser leser de
      som loese elementer med én boks nederst. Hvit er kortenes farge - her
      brukes den milde flaten. */
+  /* Soek, kategorier og vurdering er alle det samme: maater aa snevre inn
+     lista paa. De hoerer i én boks. De tre delene deler kant, saa de leser
+     som ett felt med tre rader. */
   #view-home .search-bar,
   #view-home .category-filter-row,
+  #view-home .rating-filter-bar,
   #view-home .fab-pill{
     background:var(--boks-mild); border:1px solid var(--boks-kant);
-    border-radius:14px; margin:0 0 10px; width:100%;
+    width:100%; margin:0;
   }
-  #view-home .search-bar{ padding:9px 10px; }
+  #view-home .search-bar{
+    padding:9px 10px; border-radius:14px 14px 0 0; border-bottom:none;
+  }
   #view-home .search-bar input{ background:transparent; }
-
-  /* Kategorier og vurdering er begge filtre og hoerer i samme boks.
-     Kategoriboksen mister bunnen, vurderingsraden toppen - sammen ser de
-     ut som én. */
   #view-home .category-filter-row{
-    padding:10px 8px 4px; margin-bottom:0;
-    border-bottom:none; border-radius:14px 14px 0 0;
+    padding:10px 8px 4px; border-top:none; border-bottom:none; border-radius:0;
   }
   #view-home .rating-filter-bar{
-    background:var(--boks-mild); border:1px solid var(--boks-kant);
-    border-top:none; border-radius:0 0 14px 14px;
-    margin:0 0 10px; width:100%;
+    border-top:none; border-radius:0 0 14px 14px; margin-bottom:10px;
   }
+  #view-home .fab-pill{ border-radius:14px; }
 
   /* "Min. vurdering" er overfloedig - fem stjerner ved siden av en knapp
      forklarer seg selv. Plassen gaar til stjernene i stedet. */
@@ -1303,6 +1303,10 @@
     justify-content:flex-start; margin-top:0;
   }
   #view-home .sticky-sub{ padding:0; }
+  /* Lista hadde 14px topplass som soekefeltet ikke hadde - da startet de
+     to spaltene ulikt. */
+  #view-home .recipe-grid{ margin-top:0; }
+  #view-home .home-side{ padding-top:0; }
   #view-home .fab-pill{
     flex-direction:column; align-items:stretch; gap:2px;
     padding:6px; box-shadow:none;
@@ -1329,7 +1333,11 @@
    det som faktisk virker er touch-action mot dobbelttrykk, og 16px i
    skjemafelt saa iOS ikke zoomer inn naar man trykker i dem. */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+/* MERK: overflow-x her maa vaere 'clip', ikke 'hidden'. 'hidden' gjoer
+   html/body til en rullebeholder, og da slutter position:sticky lenger nede
+   i dokumentet aa virke - venstrespalten paa forsiden fulgte med i stedet
+   for aa staa i ro. 'clip' klipper likt uten aa lage beholderen. */
+html,body{max-width:100%;overflow-x:clip;overscroll-behavior-x:none}
 body{touch-action:manipulation}
 input,select,textarea{font-size:16px}
 </style>
