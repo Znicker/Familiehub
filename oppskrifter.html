@@ -201,11 +201,23 @@
      av tittelen - den kommer i menyen under Rediger. */
   .rediger-knapp{
     background:var(--handling-endre); color:#fff; border:none;
-    border-radius:10px; padding:8px 16px;
-    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+    border-radius:8px; padding:5px 11px;
+    font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
     letter-spacing:.04em; cursor:pointer; flex-shrink:0;
   }
   .rediger-knapp:active{ background:var(--handling-endre-moerk); }
+  /* Flyter i overkant av skjermen mens man ruller i redigeringsskjemaet. */
+  .avslutt-rediger{
+    position:sticky; top:calc(var(--topbar-h, 60px) + 8px); z-index:24;
+    display:block; margin:0 0 8px auto;
+    background:var(--handling-endre); color:#fff; border:none;
+    border-radius:999px; padding:9px 18px;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+    letter-spacing:.03em; cursor:pointer;
+    box-shadow:0 6px 22px rgba(44,62,80,.18);
+  }
+  .avslutt-rediger:active{ background:var(--handling-endre-moerk); }
+
   .rediger-hjoerne{ position:relative; }
   /* Folder seg ut under knappen. Slett bor her, ikke ved siden av tittelen -
      en sletteknapp skal ikke ligge under tommelen ved et uhell. */
@@ -504,7 +516,16 @@
     background:none; border:1.5px solid var(--line); color:var(--ink); font-size:var(--t-meta); font-weight:600;
     padding:8px 14px; border-radius:999px;
   }
-  .photo-editor-static{ position:relative; width:100%; border-radius:12px; overflow:hidden; margin-bottom:16px; }
+  .photo-editor-static{ position:relative; width:100%; border-radius:12px; overflow:hidden; margin-bottom:8px; }
+  /* Et kryss oeverst i hjoernet leses som "lukk skjemaet", ikke som "fjern
+     bildet". Ord under bildet sier hva de gjoer, i sine egne farger. */
+  .bilde-handlinger{ display:flex; gap:14px; margin:0 0 16px; }
+  .bilde-bytt, .bilde-slett{
+    background:none; border:none; padding:4px 0; cursor:pointer;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+  }
+  .bilde-bytt{ color:var(--handling-endre); }
+  .bilde-slett{ color:var(--danger); }
   .photo-editor-static img{ width:100%; display:block; }
   .photo-editor-static.locked img{ aspect-ratio:4/3; object-fit:cover; }
   .photo-editor-static .photo-editor-rm-static{ top:8px; right:8px; width:30px; height:30px; font-size:var(--t-brod); }
@@ -524,7 +545,14 @@
   .btn-primary{ background:var(--blue); color:#fff; width:100%; margin-top:14px; }
   /* Skaper noe - fylt flate i opprettfargen. Samme regel som "Ny oppskrift"
      i venstrespalten paa forsiden. */
-  .btn-ny{ background:var(--handling-ny); color:#fff; width:100%; margin-top:0; }
+  /* Samme form som "Ny oppskrift" i venstrespalten: fylt flate, avrundet
+     hjoerne, ikke pille. De var kunstig brede fordi .btn er en pille i full
+     bredde - her holder det med innholdets bredde. */
+  .btn-ny{
+    background:var(--handling-ny); color:#fff; margin:0 0 4px;
+    border-radius:12px; padding:12px 22px; width:auto;
+    text-transform:none; letter-spacing:.01em;
+  }
   .btn-ny:active{ background:var(--handling-ny-moerk); }
   .btn-primary:disabled{ background:#B7C2D4; }
   .btn-primary:active:not(:disabled){ background:#20447F; }
@@ -1613,6 +1641,10 @@ input,select,textarea{font-size:16px}
   <!-- ADD / EDIT -->
   <section class="view" id="view-add">
     <h2 id="add-heading" style="display:none;">Ny oppskrift</h2>
+
+    <!-- Skjemaet er langt. Uten en vei ut som foelger med, maa man rulle
+         helt tilbake til toppen for aa komme seg ut av redigeringen. -->
+    <button type="button" class="avslutt-rediger" onclick="goAddBack()">Avslutt redigering</button>
 
     <div class="card-panel punched">
       <div class="section-label" style="margin-top:0;">Bilde av retten</div>
@@ -4059,7 +4091,10 @@ async function renderEditorFor(cfg){
     wrap.innerHTML = `
       <div class="photo-editor-static ${cfg.aspectLock ? 'locked' : ''}">
         <img src="${cfg.getResult()}" alt="">
-        <button type="button" class="photo-editor-rm-static" onclick="${clearCall}" title="Fjern">✕</button>
+      </div>
+      <div class="bilde-handlinger">
+        <button type="button" class="bilde-bytt" onclick="$('${cfg.uploadInputId}').click()">Erstatt bilde</button>
+        <button type="button" class="bilde-slett" onclick="${clearCall}">Slett bilde</button>
       </div>`;
   }else{
     wrap.innerHTML = `<button type="button" class="add-photo-btn" onclick="$('${cfg.uploadInputId}').click()">＋</button>`;
