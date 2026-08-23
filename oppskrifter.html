@@ -222,6 +222,51 @@
   .rediger-topp-knapp.lagre{ background:var(--handling-ny); }
   .rediger-topp-knapp.lagre:active{ background:var(--handling-ny-moerk); }
 
+  /* Okerskjaer over hele fremgangsmaaten mens den redigeres - da er det
+     aldri tvil om at man staar i en annen modus. */
+  .steg-rediger{
+    background:#FBF3E4; border:1px solid #EBDCC0; border-radius:14px;
+    padding:12px; margin-top:4px;
+  }
+  .steg-rad{ display:flex; gap:10px; align-items:flex-start; margin-bottom:10px; }
+  .steg-flytt{ display:flex; flex-direction:column; align-items:center; gap:1px; flex-shrink:0; }
+  .steg-nr{
+    width:30px; height:26px; border-radius:8px; border:none; padding:0;
+    background:var(--handling-endre); color:#fff;
+    font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); font-weight:700;
+    text-align:center; -webkit-appearance:none;
+  }
+  .steg-pil{
+    width:30px; height:18px; border:none; background:none; padding:0;
+    color:var(--ink-soft); font-size:var(--t-etikett); line-height:1;
+    cursor:pointer; border-radius:5px;
+  }
+  .steg-pil:active{ background:#F1E2C6; }
+  .steg-innhold{ flex:1; min-width:0; }
+  .steg-seksjon{
+    font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
+    letter-spacing:.08em; color:var(--ink-soft); margin-bottom:3px;
+  }
+  .steg-felt{
+    width:100%; background:var(--paper); border:1px solid #EBDCC0;
+    border-radius:10px; padding:9px 11px; font-family:'Archivo',sans-serif;
+    line-height:1.45; resize:vertical;
+  }
+  .steg-bildemerke{
+    font-size:var(--t-etikett); color:var(--ink-soft); margin-top:3px;
+  }
+  .steg-slett{
+    background:none; border:none; color:var(--danger);
+    font-size:var(--t-pil); line-height:1; padding:4px; cursor:pointer; flex-shrink:0;
+  }
+  .steg-nytt{
+    width:100%; background:none; border:1.5px dashed #DCC79B;
+    color:var(--handling-ny); border-radius:10px; padding:10px;
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
+    cursor:pointer; margin-top:2px;
+  }
+  .steg-knapper{ display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+
   .rediger-hjoerne{ position:relative; }
   /* Folder seg ut under knappen. Slett bor her, ikke ved siden av tittelen -
      en sletteknapp skal ikke ligge under tommelen ved et uhell. */
@@ -4875,6 +4920,10 @@ async function openRecipe(id){
   /* Elementet er borte - bekreftelsen er en modal naa. Uten denne endringen
      ville hele visningen stoppet med feil naar en oppskrift aapnes. */
   closeModal('delete-confirm');
+  redigerModus = false;
+  stegUtkast = null;
+  document.body.classList.remove('steg-redigeres');
+  const rk = $('rediger-knapp'); if(rk) rk.textContent = 'Rediger';
   lukkRedigerMeny();
   switchTab('list');
   showView('view-detail');
@@ -5449,6 +5498,39 @@ function renderSteps(){
   const r = recipeCache[currentRecipeId];
   if(!r) return;
   renderPinnedComments();
+
+  /* I redigeringsmodus tegnes en flat liste med gjennomgaaende nummer.
+     Seksjonsvis nummerering ville gjort posisjonsfeltet tvetydig - "2" i
+     hvilken seksjon? Seksjonsnavnet vises som en rolig etikett i stedet. */
+  if(redigerModus && stegUtkast){
+    $('d-steps-all').innerHTML =
+      '<div class="steg-rediger">'
+      + stegUtkast.map((s, i) => `
+        <div class="steg-rad">
+          <div class="steg-flytt">
+            <button type="button" class="steg-pil" onclick="stegFlytt(${i}, -1)" aria-label="Flytt opp">▲</button>
+            <input class="steg-nr" type="text" inputmode="numeric" value="${i + 1}"
+                   onchange="stegTilPosisjon(${i}, this.value)" onfocus="this.select()"
+                   aria-label="Rekkefølge">
+            <button type="button" class="steg-pil" onclick="stegFlytt(${i}, 1)" aria-label="Flytt ned">▼</button>
+          </div>
+          <div class="steg-innhold">
+            ${s.section ? `<div class="steg-seksjon">${escapeHtml(s.section)}</div>` : ''}
+            <textarea class="steg-felt" data-idx="${i}" rows="3"
+                      placeholder="Beskriv steget">${escapeHtml(s.text || '')}</textarea>
+            ${s.photo ? '<div class="steg-bildemerke">Har bilde – endres i skjemaet</div>' : ''}
+          </div>
+          <button type="button" class="steg-slett" onclick="stegSlett(${i})" aria-label="Slett steget">✕</button>
+        </div>`).join('')
+      + `<button type="button" class="steg-nytt" onclick="stegNytt()">Legg til steg</button>`
+      + `<div class="steg-knapper">
+           <button type="button" class="rediger-topp-knapp avbryt" onclick="avbrytStegRedigering()">Avbryt</button>
+           <button type="button" class="rediger-topp-knapp lagre" onclick="lagreStegRedigering()">Lagre</button>
+         </div>`
+      + '</div>';
+    return;
+  }
+
   const steps = (r.steps.length ? r.steps : ['Ingen steg lagt inn ennå.']).map(normalizeStep);
   const blokk = (s, nr) => `
     <div class="step-block">
@@ -5710,24 +5792,122 @@ async function editCurrentRecipe(){
 
   showView('view-add');
 }
-/* Rediger-menyen. Lukkes ved trykk utenfor og ved Escape, som resten av
-   boblene i appen. */
+/* ---- Redigering rett i oppskriften ----
+   Rediger slaar paa modusen OG viser de to dypere valgene under knappen.
+   Fremgangsmaaten redigeres der man staar: tekst, rekkefoelge, legg til,
+   slett. Bilder og seksjoner hoerer fortsatt til skjemaet - der er de en
+   egen jobb, og aa bygge dem to steder gir to systemer som kan sprike.
+
+   Utkastet lagres foerst naar man trykker Lagre. Da betyr Avbryt noe, og
+   vi skriver ikke til tjeneren for hvert tastetrykk. */
+let redigerModus = false;
+let stegUtkast = null;
+
 function vekslRedigerMeny(){
-  const m = $('rediger-meny');
-  if(!m) return;
-  m.hidden = !m.hidden;
+  if(redigerModus){ avbrytStegRedigering(); return; }
+  startStegRedigering();
 }
+
+function startStegRedigering(){
+  const r = recipeCache[currentRecipeId];
+  if(!r) return;
+  stegUtkast = (r.steps || []).map(normalizeStep).map(s => ({...s}));
+  redigerModus = true;
+  /* Uten dette ville redigeringen skjedd i en fane man ikke ser. */
+  switchTab(LANDSKAP.matches ? 'begge' : 'steps');
+  const m = $('rediger-meny'); if(m) m.hidden = false;
+  $('rediger-knapp').textContent = 'Ferdig';
+  document.body.classList.add('steg-redigeres');
+  renderSteps();
+}
+
+function avbrytStegRedigering(){
+  redigerModus = false;
+  stegUtkast = null;
+  lukkRedigerMeny();
+  document.body.classList.remove('steg-redigeres');
+  renderSteps();
+}
+
+async function lagreStegRedigering(){
+  const r = recipeCache[currentRecipeId];
+  if(!r || !stegUtkast) return avbrytStegRedigering();
+  lesStegFelt();
+  /* Tomme steg fjernes - ellers blir en glemt "Legg til" staaende som et
+     tomt punkt i oppskriften. */
+  r.steps = stegUtkast
+    .filter(s => (s.text || '').trim())
+    .map(s => ({text: s.text.trim(), photo: s.photo || null, section: s.section || ''}));
+  redigerModus = false;
+  stegUtkast = null;
+  lukkRedigerMeny();
+  document.body.classList.remove('steg-redigeres');
+  $('rediger-knapp').textContent = 'Rediger';
+  renderSteps();
+  try{
+    await persistFullRecipe(r);
+  }catch(e){
+    console.error('Kunne ikke lagre fremgangsmaaten', e);
+    showToast('Kunne ikke lagre. Prov igjen.', true);
+  }
+}
+
+/* Teksten leses fra feltene rett foer enhver omrokering eller lagring -
+   ellers mister man det som er skrevet men ikke forlatt. */
+function lesStegFelt(){
+  if(!stegUtkast) return;
+  document.querySelectorAll('#d-steps-all .steg-felt').forEach(el => {
+    const i = Number(el.dataset.idx);
+    if(stegUtkast[i]) stegUtkast[i].text = el.value;
+  });
+}
+
+function stegFlytt(i, retning){
+  if(!stegUtkast) return;
+  lesStegFelt();
+  const j = i + retning;
+  if(j < 0 || j >= stegUtkast.length) return;
+  const [x] = stegUtkast.splice(i, 1);
+  stegUtkast.splice(j, 0, x);
+  renderSteps();
+}
+
+function stegTilPosisjon(i, verdi){
+  if(!stegUtkast) return;
+  lesStegFelt();
+  let maal = parseInt(String(verdi).replace(/\D/g, ''), 10);
+  if(!maal || isNaN(maal)) return renderSteps();
+  maal = Math.max(1, Math.min(maal, stegUtkast.length));
+  const [x] = stegUtkast.splice(i, 1);
+  stegUtkast.splice(maal - 1, 0, x);
+  renderSteps();
+}
+
+function stegSlett(i){
+  if(!stegUtkast) return;
+  lesStegFelt();
+  stegUtkast.splice(i, 1);
+  renderSteps();
+}
+
+function stegNytt(){
+  if(!stegUtkast) return;
+  lesStegFelt();
+  /* Nytt steg arver seksjonen til det siste, saa det havner der man er. */
+  const sisteSek = stegUtkast.length ? (stegUtkast[stegUtkast.length - 1].section || '') : '';
+  stegUtkast.push({text: '', photo: null, section: sisteSek});
+  renderSteps();
+  const felt = document.querySelectorAll('#d-steps-all .steg-felt');
+  const siste = felt[felt.length - 1];
+  if(siste) siste.focus();
+}
+
 function lukkRedigerMeny(){
   const m = $('rediger-meny');
   if(m) m.hidden = true;
 }
-document.addEventListener('pointerdown', function(ev){
-  const t = ev.target;
-  if(!t.closest) return;
-  if(!t.closest('.rediger-hjoerne')) lukkRedigerMeny();
-}, true);
 document.addEventListener('keydown', function(ev){
-  if(ev.key === 'Escape') lukkRedigerMeny();
+  if(ev.key === 'Escape' && redigerModus) avbrytStegRedigering();
 });
 
 function confirmDelete(){ openModal('delete-confirm'); }
