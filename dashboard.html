@@ -373,6 +373,9 @@ a.middag:active{opacity:.72}
   text-transform:uppercase;
 }
 .bunn .knapp:active{background:#F0F2F4}
+/* .knapp har margin-left:auto for bunnraden. I et feilkort skal den staa
+   der teksten staar, ikke presses ut i hoeyre kant. */
+.tom.feil .knapp{margin-left:0;margin-top:10px}
 .feil{color:#B4443A}
 
 /* ---------- Innlogging ---------- */
@@ -742,13 +745,42 @@ function lesToken(){
     return !!(S.token || S.refresh);
   }catch(e){ return false; }
 }
+/* Refresh-tokenet fra en SPA-registrering lever bare et doegn. En skjerm
+   som staar paa over natta vaakner derfor uten gyldig token. Microsoft-oekta
+   i nettleseren lever lenger, saa en ny runde gjennom innloggingen gaar som
+   regel rett gjennom uten at noen maa taste noe.
+   Sperren er viktig: er OGSAA Microsoft-oekta doed, kommer vi tilbake med
+   samme feil, og uten flagg ville skjermen sendt seg selv i ring. Ett
+   forsoek per oekt - deretter en aerlig beskjed. */
+function grantUtloept(e){
+  const m = String((e && e.message) || '');
+  return m.indexOf('AADSTS70000') >= 0
+      || m.indexOf('invalid_grant') >= 0
+      || m.indexOf('expired') >= 0;
+}
+function harProevdPaaNytt(){
+  try{ return sessionStorage.getItem('fh_reauth') === '1'; }catch(e){ return true; }
+}
+function merkProevd(){ try{ sessionStorage.setItem('fh_reauth','1'); }catch(e){} }
+function nullstillProevd(){ try{ sessionStorage.removeItem('fh_reauth'); }catch(e){} }
+
 let fornyelse = null;
 async function gyldigToken(){
   if(S.token && Date.now() < S.expires) return S.token;
   if(!S.refresh) return null;
   if(!fornyelse){
     fornyelse = bytt({grant_type:'refresh_token', refresh_token:S.refresh, scope:CFG.scopes})
-      .then(function(d){ lagreToken(d); return S.token; })
+      .then(function(d){ lagreToken(d); nullstillProevd(); return S.token; })
+      .catch(function(e){
+        if(grantUtloept(e) && !harProevdPaaNytt()){
+          merkProevd();
+          try{ localStorage.removeItem('fh_cal_auth'); }catch(_){}
+          S.token = null; S.refresh = null; S.expires = 0;
+          loggInn();                       /* gaar stille gjennom naar oekta lever */
+          return null;
+        }
+        throw e;
+      })
       .finally(function(){ fornyelse = null; });
   }
   return fornyelse;
@@ -771,6 +803,24 @@ function loggUt(){
   try{ sessionStorage.removeItem('fh_ut'); }catch(e){}
   location.replace('/cdn-cgi/access/logout');
 })();
+
+/* Skjermen skal ikke kjefte. Trace ID og Correlation ID hoerer i konsollen,
+   ikke paa kjoekkenveggen - der trengs bare det man kan gjoere noe med. */
+function planFeil(e){
+  console.warn('Planen kunne ikke hentes:', e);
+  if(grantUtloept(e)){
+    return '<div class="tom feil">Kalenderen må kobles til igjen.'
+      + '<div><button class="knapp" onclick="koblePaaNytt()">Koble til</button></div></div>';
+  }
+  return '<div class="tom feil">Kunne ikke hente planen akkurat nå.'
+    + '<div><button class="knapp" onclick="oppdaterAlt(true)">Prøv igjen</button></div></div>';
+}
+function koblePaaNytt(){
+  nullstillProevd();
+  try{ localStorage.removeItem('fh_cal_auth'); }catch(e){}
+  S.token = null; S.refresh = null; S.expires = 0;
+  loggInn();
+}
 
 function portNote(tekst){
   $('portNote').textContent = tekst || '';
@@ -1890,7 +1940,7 @@ async function tegnPlanPaaNytt(){
       tegnPlan(r);
     }).catch(function(e){
       if(mitt !== tegneNr) return;
-      $('plan').innerHTML = '<div class="tom feil">Kunne ikke hente planen: ' + esc(e.message) + '</div>';
+      $('plan').innerHTML = planFeil(e);
     }),
     hentMiddag().then(function(r){
       if(mitt !== tegneNr) return;
@@ -2048,7 +2098,7 @@ async function oppdaterAlt(manuelt){
      hver senere oppdatering staaende og returnere med én gang. */
   const jobber = [
     hentPlan().then(tegnPlan).catch(function(e){
-      $('plan').innerHTML = '<div class="tom feil">Kunne ikke hente planen: ' + esc(e.message) + '</div>';
+      $('plan').innerHTML = planFeil(e);
     }),
     hentVaer().then(tegnVaer).catch(function(e){
       /* Vaeret bor i toppstripa naa. Feiler det, skjuler vi stripa i
@@ -2109,6 +2159,7 @@ async function oppdaterAlt(manuelt){
         scope:CFG.scopes
       });
       lagreToken(d);
+      nullstillProevd();          /* ny oekt - ett forsoek er ledig igjen */
       sessionStorage.removeItem('fh_verifier');
       sessionStorage.removeItem('fh_state');
     }catch(err){
