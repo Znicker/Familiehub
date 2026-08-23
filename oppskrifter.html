@@ -206,6 +206,24 @@
     letter-spacing:.04em; cursor:pointer; flex-shrink:0;
   }
   .rediger-knapp:active{ background:var(--handling-endre-moerk); }
+  .rediger-hjoerne{ position:relative; }
+  /* Folder seg ut under knappen. Slett bor her, ikke ved siden av tittelen -
+     en sletteknapp skal ikke ligge under tommelen ved et uhell. */
+  .rediger-meny{
+    position:absolute; right:0; top:calc(100% + 6px); z-index:30;
+    min-width:260px; max-width:min(80vw,320px);
+    background:var(--paper); border:1px solid var(--line); border-radius:14px;
+    box-shadow:0 10px 30px rgba(44,62,80,.2); padding:6px; text-align:left;
+  }
+  .rediger-meny[hidden]{ display:none; }
+  .rediger-meny button{
+    display:block; width:100%; text-align:left;
+    background:none; border:none; border-radius:9px; padding:11px 12px;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+    color:var(--handling-endre); cursor:pointer; line-height:1.3;
+  }
+  .rediger-meny button.slett{ color:var(--danger); }
+  .rediger-meny button:active{ background:var(--bg-1); }
 
   .nullstill-knapp{
     display:none; width:100%; margin-top:10px;
@@ -700,11 +718,14 @@
   .sticky-sub .tabs{ margin:8px 0 4px; padding:3px; }
   /* Fem faner på én linje: ikonet bærer betydningen, teksten bekrefter den.
      Da holder det med en smal fane uten at skriften må krympes. */
-  .sticky-sub .tabs{ flex-wrap:nowrap; gap:2px; }
+  .sticky-sub .tabs{ flex-wrap:nowrap; gap:0; padding:2px; }
   .sticky-sub .tab-btn{
-    flex:1 1 0; min-width:0; padding:7px 2px;
+    flex:1 1 0; min-width:0; padding:7px 1px;
     display:flex; flex-direction:column; align-items:center; gap:2px;
   }
+  /* "Ingredienser" er det lengste ordet og avgjoer hvor trangt det maa
+     vaere. Uten bokstavavstand faar det plass uten aa klippes. */
+  .sticky-sub .tab-tekst{ letter-spacing:0; }
   .sticky-sub .tab-ikon{ font-size:var(--t-brod); line-height:1; }
   .sticky-sub .tab-tekst{
     font-size:var(--t-etikett); font-weight:700; line-height:1.1;
@@ -1667,8 +1688,16 @@ input,select,textarea{font-size:16px}
       <div class="card-panel punched detail-header">
         <div class="title-row">
           <h2 id="d-title"></h2>
-          <div class="actions">
-            <button class="rediger-knapp" onclick="editCurrentRecipe()">Rediger</button>
+          <div class="actions rediger-hjoerne">
+            <button class="rediger-knapp" id="rediger-knapp" onclick="vekslRedigerMeny()">Rediger</button>
+            <div class="rediger-meny" id="rediger-meny" hidden>
+              <button type="button" onclick="lukkRedigerMeny(); editCurrentRecipe();">
+                Rediger ingredienser, allergener og næringsinnhold
+              </button>
+              <button type="button" class="slett" onclick="lukkRedigerMeny(); confirmDelete();">
+                Slett oppskriften
+              </button>
+            </div>
           </div>
         </div>
         <div class="detail-stats-row" id="d-stats-row"></div>
@@ -1686,13 +1715,6 @@ input,select,textarea{font-size:16px}
     </div>
     </div>
 
-    <div id="delete-confirm" class="confirm-box" style="display:none;">
-      <p>Slette denne oppskriften? Dette kan ikke angres.</p>
-      <div class="row">
-        <button class="btn btn-ghost" onclick="cancelDelete()">Avbryt</button>
-        <button class="btn" style="background:var(--danger); color:#fff;" onclick="deleteCurrentRecipe()">Slett</button>
-      </div>
-    </div>
 
     <div id="oppskrift-kolonner">
     <div class="tabpane active" id="tab-list">
@@ -1785,6 +1807,17 @@ input,select,textarea{font-size:16px}
   <div class="naering-tittel" id="naering-tittel"></div>
   <div class="naering-grunnlag" id="naering-grunnlag"></div>
   <table class="nutrition-table" id="naering-tabell"></table>
+</div>
+
+<div class="modal-backdrop" id="delete-confirm-modal">
+  <div class="confirm-box" style="max-width:400px; margin:0; width:100%;">
+    <p style="font-weight:700; color:var(--ink); margin:0 0 4px;">Slette denne oppskriften?</p>
+    <p style="margin:0 0 16px;">Oppskriften, bildene og alle kommentarer og vurderinger blir borte. Dette kan ikke angres.</p>
+    <div class="row">
+      <button class="btn btn-ghost" style="flex:1; margin-top:0;" onclick="cancelDelete()">Avbryt</button>
+      <button class="btn" style="flex:1; background:var(--danger); color:#fff;" onclick="deleteCurrentRecipe()">Slett for godt</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-backdrop" id="nytt-tips-modal">
@@ -4697,7 +4730,10 @@ async function openRecipe(id){
   renderIngredientViews();
   renderSteps();
 
-  $('delete-confirm').style.display = 'none';
+  /* Elementet er borte - bekreftelsen er en modal naa. Uten denne endringen
+     ville hele visningen stoppet med feil naar en oppskrift aapnes. */
+  closeModal('delete-confirm');
+  lukkRedigerMeny();
   switchTab('list');
   showView('view-detail');
 }
@@ -5532,9 +5568,30 @@ async function editCurrentRecipe(){
 
   showView('view-add');
 }
-function confirmDelete(){ $('delete-confirm').style.display = 'block'; }
-function cancelDelete(){ $('delete-confirm').style.display = 'none'; }
+/* Rediger-menyen. Lukkes ved trykk utenfor og ved Escape, som resten av
+   boblene i appen. */
+function vekslRedigerMeny(){
+  const m = $('rediger-meny');
+  if(!m) return;
+  m.hidden = !m.hidden;
+}
+function lukkRedigerMeny(){
+  const m = $('rediger-meny');
+  if(m) m.hidden = true;
+}
+document.addEventListener('pointerdown', function(ev){
+  const t = ev.target;
+  if(!t.closest) return;
+  if(!t.closest('.rediger-hjoerne')) lukkRedigerMeny();
+}, true);
+document.addEventListener('keydown', function(ev){
+  if(ev.key === 'Escape') lukkRedigerMeny();
+});
+
+function confirmDelete(){ openModal('delete-confirm'); }
+function cancelDelete(){ closeModal('delete-confirm'); }
 async function deleteCurrentRecipe(){
+  closeModal('delete-confirm');
   recipes = recipes.filter(r => r.id !== currentRecipeId);
   await persistRecipeIndex();
   await deleteFullRecipe(currentRecipeId);
