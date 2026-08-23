@@ -32,18 +32,20 @@
     --bg-solid: #FFFFFF;
     --paper: #FFFFFF;
     --paper-soft: #F0F0F0;
+    /* Paletten foelger dashboardet: dempet skifer i stedet for den mettede
+       materialgroennen, lysere hjelpetekst, mykere skygge, samme hjoerner.
+       --lime beholder navnet av historiske grunner, men er naa aksentfargen. */
     --ink: #2C3E50;
-    --ink-soft: #5A6C7D;
-    --lime: #4CAF50;
-    --lime-dark: #388E3C;
-    --blue: #2E5CA6;
-    --blue-light: #DCE6F6;
+    --ink-soft: #7A8899;
+    --lime: #4A7FA8;
+    --lime-dark: #3A6689;
+    --blue: #4A7FA8;
+    --blue-light: #E3ECF4;
     --mustard-light: #F0D9A6;
-    --line: #E0E0E0;
+    --line: #E4E8EC;
     --danger: #A64D3C;
-    --blue: #2E6FB7;
-    --shadow: 0 2px 8px rgba(0,0,0,0.1);
-    --radius: 16px;
+    --shadow: 0 2px 14px rgba(0,0,0,.06);
+    --radius: 18px;
   }
 
   /* iPad: kjoekkenbenken. Leses paa avstand, alt et hakk opp. */
@@ -72,15 +74,11 @@
     /* Knapperaden opptar båndet 88-136px over bunnen. Bunnmargen må være større
        enn det, ellers kan "Rediger indeks" aldri rulles klar av knappene. */
     padding-bottom:calc(172px + max(0px, env(safe-area-inset-bottom)));
-    background-color:var(--bg-solid);
-    background-image:
-      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0),
-      radial-gradient(ellipse 900px 500px at 15% 0%, #F5F5F5, transparent 60%),
-      radial-gradient(ellipse 700px 600px at 90% 30%, rgba(0,0,0,0.28), transparent 55%),
-      radial-gradient(ellipse 800px 700px at 20% 90%, rgba(0,0,0,0.22), transparent 55%),
-      linear-gradient(160deg, var(--bg-1), var(--bg-2));
-    background-size: 5px 5px, auto, auto, auto, auto;
+    /* Fire lag med radialgradienter ga en moerk vignett som ikke fantes
+       noen andre steder. Dashboardets ene lineaere gradient i stedet. */
+    background:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
     background-attachment: fixed;
+    -webkit-font-smoothing:antialiased;
   }
   h1,h2,h3{ font-family:'Archivo', sans-serif; margin:0; font-weight:700; letter-spacing:-0.01em; }
   .mono{ font-family:'IBM Plex Mono', monospace; }
@@ -101,7 +99,7 @@
   .topbar.scrolled{ background:linear-gradient(180deg, var(--bg-1) 88%, transparent); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
   .topbar.subview{ background:var(--bg-1); box-shadow:0 2px 10px rgba(0,0,0,0.18); }
   .sticky-sub{ z-index:15; background:transparent; padding:8px 0; }
-  .search-bar{ display:flex; gap:6px; position:relative; align-items:center; padding:10px 20px; margin:6px 20px; background:#F5F5F5; border:1px solid #E8E8E8; border-radius:12px; }
+  .search-bar{ display:flex; gap:6px; position:relative; align-items:center; padding:10px 20px; margin:6px 20px; background:var(--bg-1); border:1px solid #E8E8E8; border-radius:12px; }
   .search-suggestions{
     display:none; position:absolute; top:100%; left:0; right:0; margin-top:6px;
     background:var(--paper); border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);
@@ -116,7 +114,7 @@
   .search-suggestions button:active{ background:#F0F0F0; }
   .search-bar input{
     flex:1; min-width:0; padding:10px 12px; border-radius:999px; border:none;
-    background:#F5F5F5; color:var(--ink); font-size:var(--t-brod);
+    background:var(--bg-1); color:var(--ink); font-size:var(--t-brod);
   }
   .search-bar input::placeholder{ color:#A0A0A0; }
   .search-icon-btn{
@@ -163,31 +161,40 @@
 
   /* Flytende runde knapper: ny oppskrift, sortering og tilbake */
   .new-fab, .sort-fab, .back-fab{
-    width:48px; height:48px; border-radius:50%;
-    background:var(--lime); color:#FFFFFF; border:none; padding:0;
+    width:44px; height:44px; border-radius:50%;
+    background:transparent; color:var(--ink-soft); border:none; padding:0;
     display:flex; align-items:center; justify-content:center;
-    cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    cursor:pointer;
   }
+  /* Én knapp baerer farge - den man bruker oftest. Resten er stille,
+     ellers konkurrerer fire like sterke knapper om det samme blikket. */
+  .fab-pill .new-fab{ background:var(--lime); color:#FFFFFF; }
+  .fab-pill button:active{ background:var(--blue-light); }
+  .fab-pill .new-fab:active{ background:var(--lime-dark); }
   .sort-fab{ font-size:var(--t-pil); }
   .new-fab{ font-size:var(--t-ikon); }
   .back-fab{
     position:fixed; left:20px; top:calc(22px + env(safe-area-inset-top)); z-index:25;
+    background:var(--paper); color:var(--ink);
+    border:1px solid var(--line); box-shadow:0 6px 22px rgba(44,62,80,.14);
     font-size:var(--t-ikon); font-weight:700; padding-bottom:3px;
     -webkit-text-stroke:1px currentColor;   /* pilen er tynn i Archivo */
   }
   .new-fab:active, .sort-fab:active, .back-fab:active{ transform:scale(0.95); }
   .sort-fab-menu{
-    position:absolute; bottom:calc(100% + 10px); left:16px; z-index:27;
-    background:var(--paper); border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.15);
-    padding:8px; display:none; min-width:160px;
+    position:absolute; bottom:calc(100% + 10px); left:50%; transform:translateX(-50%);
+    z-index:27;
+    background:var(--paper); border:1px solid var(--line); border-radius:14px;
+    box-shadow:0 6px 22px rgba(44,62,80,.14);
+    padding:8px; display:none; min-width:180px;
   }
   .sort-fab-menu.active{ display:block; }
   .sort-fab-menu button{
     display:block; width:100%; text-align:left; background:none; border:none;
     padding:10px 12px; font-size:var(--t-meta); color:var(--ink); border-radius:8px; cursor:pointer;
   }
-  .sort-fab-menu button:hover{ background:#F5F5F5; }
-  .sort-fab-menu button.active{ background:var(--lime); color:#FFFFFF; }
+  .sort-fab-menu button:hover{ background:var(--bg-1); }
+  .sort-fab-menu button.active{ background:var(--blue-light); color:var(--lime-dark); font-weight:700; }
 
   .rating-filter-bar{ margin-top:4px; padding:0 20px; margin-bottom:12px; display:flex; align-items:center; gap:12px; justify-content:center; }
   .rating-filter-row{ display:flex; align-items:center; gap:4px; flex-wrap:nowrap; margin:0; white-space:nowrap; }
@@ -203,7 +210,7 @@
   }
   .rating-filter-toggle.active{ background:var(--lime); color:#FFFFFF; }
   .rating-people-panel{
-    margin-top:8px; background:#F5F5F5; border-radius:12px; padding:10px 12px; display:none;
+    margin-top:8px; background:var(--bg-1); border-radius:12px; padding:10px 12px; display:none;
   }
   .rating-person-check{
     display:flex; align-items:center; gap:9px; padding:6px 2px; font-size:var(--t-brod); color:var(--ink);
@@ -265,6 +272,16 @@
   .icon-btn:active{ background:rgba(255,255,255,0.1); }
 
   main{ max-width:520px; margin:0 auto; padding:0 20px; }
+  /* iPad i landskap: spalten paa 520px lot halve skjermen staa tom, og
+     lange retter maatte brekkes i tre linjer. Samme betingelse som
+     landskapsreglene lenger nede - hoeydekravet holder telefonen utenfor. */
+  @media (min-width:820px) and (min-height:600px) and (orientation:landscape){
+    main{ max-width:1000px; }
+    .recipe-grid{
+      display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px; align-items:start;
+    }
+  }
 
   /* ---------- Home / recipe cards ---------- */
   .empty-state{ margin-top:60px; text-align:center; color:var(--ink-soft); }
@@ -293,7 +310,7 @@
   }
   .recipe-card{
     background:var(--paper);
-    border-radius:12px;
+    border-radius:var(--radius);
     box-shadow:var(--shadow);
     display:flex; align-items:stretch;
     overflow:hidden;
@@ -485,7 +502,7 @@
   }
   .status-msg.loading{ background:var(--blue-light); color:#1E3E70; }
   .status-msg.error{ background:#F4DCD5; color:var(--danger); }
-  .status-msg.success{ background:#E4F0D6; color:var(--lime-dark); }
+  .status-msg.success{ background:var(--blue-light); color:var(--lime-dark); }
 
   .spinner{
     display:inline-block; width:14px; height:14px; border-radius:50%;
@@ -728,27 +745,36 @@
   .bottom-bar{
     position:fixed; left:0; right:0; z-index:26;
     bottom:calc(88px + env(safe-area-inset-bottom));
-    display:flex; justify-content:center; align-items:center; gap:13px;
+    display:flex; justify-content:center; align-items:center;
     padding:0 12px;
     pointer-events:none;
   }
+  /* Fire loese sirkler la seg oppaa innholdet og leste som fire ting.
+     Samlet i én pille leser de som ett verktoeysett, og pillen har egen
+     bakgrunn saa teksten under ikke skinner gjennom. */
+  .fab-pill{
+    display:inline-flex; align-items:center; gap:4px;
+    background:var(--paper); border:1px solid var(--line);
+    border-radius:999px; padding:5px;
+    box-shadow:0 6px 22px rgba(44,62,80,.14);
+  }
   .bottom-bar > *{ pointer-events:auto; }
   .plan-fab, .plan-menu-fab{
-    position:relative; width:48px; height:48px; border-radius:50%;
-    background:var(--lime); color:#FFFFFF; border:none; padding:0; font-size:var(--t-pil);
+    position:relative; width:44px; height:44px; border-radius:50%;
+    background:transparent; color:var(--ink-soft); border:none; padding:0;
+    font-size:var(--t-pil);
     display:flex; align-items:center; justify-content:center;
-    cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    cursor:pointer;
   }
   .plan-fab:active, .plan-menu-fab:active{ transform:scale(0.95); }
   /* Midtknappen legger retter i ukemenyen. Grønn når modus er av, grågrønn når den er på. */
-  .plan-fab.active{ background:#AEBCA4; box-shadow:0 0 0 3px rgba(255,255,255,0.55), 0 4px 12px rgba(0,0,0,0.18); }
+  .plan-fab.active{ background:var(--lime); color:#FFFFFF; }
   .plan-fab-plus{
     position:absolute; right:-3px; bottom:-3px; width:20px; height:20px; border-radius:50%;
     background:var(--blue); color:#fff; border:2px solid var(--bg-solid);
     font-size:var(--t-brod); font-weight:700; line-height:16px; text-align:center;
   }
-  .plan-menu-fab{ background:var(--blue); }
-  /* Ligger i forhold til knapperaden, så den følger med når raden fester seg */
+    /* Ligger i forhold til knapperaden, så den følger med når raden fester seg */
   .plan-week-line{
     position:absolute; left:50%; transform:translateX(-50%); bottom:calc(100% + 10px);
     display:flex; align-items:center; gap:2px;
@@ -1199,10 +1225,12 @@ input,select,textarea{font-size:16px}
 
     <!-- Knapperad nederst: sortering, kalendermodus og ukemeny -->
     <div class="bottom-bar" id="bottom-bar">
-      <button type="button" class="new-fab" onclick="openNewRecipeModal()" title="Ny oppskrift">+</button>
-      <button type="button" class="sort-fab" id="sort-fab" onclick="toggleSortMenu()" title="Sortering">⇅</button>
-      <button type="button" class="plan-fab" id="plan-fab" onclick="togglePlanMode()" title="Legg retter i ukemenyen">📋<span class="plan-fab-plus">+</span></button>
-      <button type="button" class="plan-menu-fab" onclick="openPlanView()" title="Åpne ukemenyen">📋</button>
+      <div class="fab-pill">
+        <button type="button" class="new-fab" onclick="openNewRecipeModal()" title="Ny oppskrift">+</button>
+        <button type="button" class="sort-fab" id="sort-fab" onclick="toggleSortMenu()" title="Sortering">⇅</button>
+        <button type="button" class="plan-fab" id="plan-fab" onclick="togglePlanMode()" title="Legg retter i ukemenyen">📋<span class="plan-fab-plus">+</span></button>
+        <button type="button" class="plan-menu-fab" onclick="openPlanView()" title="Åpne ukemenyen">📋</button>
+      </div>
       <div class="plan-week-line">
         <button type="button" onclick="stepPlanWeek(-1)" title="Forrige uke">‹</button>
         <span id="plan-week-label">Uke –</span>
