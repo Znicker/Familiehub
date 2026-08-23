@@ -245,6 +245,12 @@
   }
   .post-endre{ background:var(--handling-endre); }
   .post-slett{ background:var(--danger); }
+  .post-avbryt{
+    border:1px solid var(--boks-kant); border-radius:7px; padding:4px 10px;
+    background:none; color:var(--ink-soft); cursor:pointer;
+    font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+  }
+  .tips-rad{ display:flex; gap:10px; align-items:flex-start; margin-bottom:8px; }
   .tips-rad.rediger{ display:flex; gap:8px; align-items:flex-start; margin-bottom:8px; }
   .tips-felt{
     flex:1; min-width:0; background:var(--paper); border:1px solid #EBDCC0;
@@ -291,24 +297,20 @@
   }
   .steg-knapper{ display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
 
-  .rediger-hjoerne{ position:relative; }
+  .rediger-hjoerne{ display:flex; align-items:flex-start; gap:8px; }
   /* Folder seg ut under knappen. Slett bor her, ikke ved siden av tittelen -
      en sletteknapp skal ikke ligge under tommelen ved et uhell. */
-  .rediger-meny{
-    position:absolute; right:calc(100% + 8px); top:0; z-index:30;
-    min-width:260px; max-width:min(80vw,320px);
-    background:var(--paper); border:1px solid var(--line); border-radius:14px;
-    box-shadow:0 10px 30px rgba(44,62,80,.2); padding:6px; text-align:left;
+  /* To knapper stablet til venstre for Ferdig - ingen utfellingsmeny.
+     Da er alt synlig samtidig, og ingenting maa aapnes for aa oppdages. */
+  .rediger-valg{ display:flex; flex-direction:column; gap:4px; align-items:flex-end; }
+  .rediger-valg[hidden]{ display:none; }
+  .rediger-valg-knapp{
+    border:none; border-radius:8px; padding:5px 11px; color:#fff; cursor:pointer;
+    font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+    letter-spacing:.04em; white-space:nowrap;
   }
-  .rediger-meny[hidden]{ display:none; }
-  .rediger-meny button{
-    display:block; width:100%; text-align:left;
-    background:none; border:none; border-radius:9px; padding:11px 12px;
-    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
-    color:var(--handling-endre); cursor:pointer; line-height:1.3;
-  }
-  .rediger-meny button.slett{ color:var(--danger); }
-  .rediger-meny button:active{ background:var(--bg-1); }
+  .rediger-valg-knapp.endre{ background:var(--handling-endre); }
+  .rediger-valg-knapp.slett{ background:var(--danger); }
 
   .nullstill-knapp{
     display:none; width:100%; margin-top:10px;
@@ -877,6 +879,22 @@
     font-family:'Archivo', sans-serif;
   }
   .tab-btn.active{ background:var(--lime); color:#FFFFFF; }
+  /* I redigeringsmodus faar fanene med redigerbart innhold okerfargen, saa
+     man ser hvor man kan gjoere noe uten aa proeve seg fram. */
+  body.steg-redigeres #tab-begge-btn,
+  body.steg-redigeres #tab-steps-btn,
+  body.steg-redigeres #tab-tips-btn,
+  body.steg-redigeres #tab-comments-btn,
+  body.steg-redigeres #tab-rating-btn{ color:var(--handling-endre); }
+  body.steg-redigeres #tab-begge-btn.active,
+  body.steg-redigeres #tab-steps-btn.active,
+  body.steg-redigeres #tab-tips-btn.active,
+  body.steg-redigeres #tab-comments-btn.active,
+  body.steg-redigeres #tab-rating-btn.active{
+    background:var(--handling-endre); color:#FFFFFF;
+  }
+  /* Ingredienser redigeres i skjemaet, ikke her. */
+  body.steg-redigeres #tab-list-btn{ opacity:.4; pointer-events:none; }
 
   .tabpane{ display:none; }
   .tabpane.active{ display:block; }
@@ -1833,15 +1851,15 @@ input,select,textarea{font-size:16px}
         <div class="title-row">
           <h2 id="d-title"></h2>
           <div class="actions rediger-hjoerne">
-            <button class="rediger-knapp" id="rediger-knapp" onclick="vekslRedigerMeny()">Rediger</button>
-            <div class="rediger-meny" id="rediger-meny" hidden>
-              <button type="button" onclick="lukkRedigerMeny(); editCurrentRecipe();">
-                Rediger ingredienser, allergener og næringsinnhold
+            <div class="rediger-valg" id="rediger-meny" hidden>
+              <button type="button" class="rediger-valg-knapp endre" onclick="editCurrentRecipe()">
+                Ingredienser og næring
               </button>
-              <button type="button" class="slett" onclick="lukkRedigerMeny(); confirmDelete();">
+              <button type="button" class="rediger-valg-knapp slett" onclick="confirmDelete()">
                 Slett oppskriften
               </button>
             </div>
+            <button class="rediger-knapp" id="rediger-knapp" onclick="vekslRedigerMeny()">Rediger</button>
           </div>
         </div>
         <div class="detail-stats-row" id="d-stats-row"></div>
@@ -4946,6 +4964,7 @@ async function openRecipe(id){
   closeModal('delete-confirm');
   redigerModus = false;
   stegUtkast = null;
+  utkastFoer = null;
   document.body.classList.remove('steg-redigeres');
   settRedigerKnapp(false);
   lukkRedigerMeny();
@@ -5503,12 +5522,24 @@ function renderTips(){
   const r = recipeCache[currentRecipeId];
   const tips = (r && Array.isArray(r.tips)) ? r.tips.filter(t => (t || '').trim()) : [];
   if(redigerModus){
+    /* Som kommentarer og vurderinger: teksten staar i ro til man trykker
+       Endre. Ellers ville ti tips blitt ti aapne felt paa én gang. */
     wrap.innerHTML = tips.length
-      ? tips.map((t, i) => `
-          <div class="tips-rad rediger">
-            <textarea class="tips-felt" rows="2" onchange="lagreTips(${i}, this.value)">${escapeHtml(t)}</textarea>
-            <button type="button" class="post-slett" onclick="slettTips(${i})">Slett</button>
-          </div>`).join('')
+      ? tips.map((t, i) => (i === tipsRedigerer)
+          ? `<div class="tips-rad rediger">
+               <textarea class="tips-felt" id="tips-felt-${i}" rows="3">${escapeHtml(t)}</textarea>
+               <div class="post-handlinger">
+                 <button type="button" class="post-endre" onclick="lagreTips(${i})">Lagre</button>
+                 <button type="button" class="post-avbryt" onclick="avbrytTips()">Avbryt</button>
+               </div>
+             </div>`
+          : `<div class="tips-rad">
+               <span>${escapeHtml(t)}</span>
+               <div class="post-handlinger">
+                 <button type="button" class="post-endre" onclick="startTipsRediger(${i})">Endre</button>
+                 <button type="button" class="post-slett" onclick="slettTips(${i})">Slett</button>
+               </div>
+             </div>`).join('')
       : `<p class="ing-empty">Ingen tips lagt inn ennå.</p>`;
     return;
   }
@@ -5520,12 +5551,25 @@ function renderTips(){
 /* Tips lagres med én gang, som kommentarer og vurderinger. Bare
    fremgangsmaaten har utkast med Avbryt - der er rekkefoelgen i spill, og
    da trengs en vei tilbake. */
-async function lagreTips(i, verdi){
+let tipsRedigerer = null;
+
+function startTipsRediger(i){
+  tipsRedigerer = i;
+  renderTips();
+  const f = $('tips-felt-' + i);
+  if(f){ f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
+}
+function avbrytTips(){ tipsRedigerer = null; renderTips(); }
+
+async function lagreTips(i){
   const r = recipeCache[currentRecipeId];
-  if(!r || !Array.isArray(r.tips)) return;
-  const ny = (verdi || '').trim();
+  const felt = $('tips-felt-' + i);
+  if(!r || !Array.isArray(r.tips) || !felt) return;
+  const ny = felt.value.trim();
+  tipsRedigerer = null;
   if(!ny){ return slettTips(i); }
   r.tips[i] = ny;
+  renderTips();
   try{ await persistFullRecipe(r); }
   catch(e){ console.error('Kunne ikke lagre tipset', e); }
 }
@@ -5869,10 +5913,21 @@ function vekslRedigerMeny(){
   startStegRedigering();
 }
 
+/* Alt som kan endres i modusen tas vare paa slik det var. Avbryt setter
+   det tilbake - ogsaa tips, kommentarer og vurderinger, som lagrer med én
+   gang hver for seg. Uten dette betyr Avbryt bare "angre fremgangsmaaten",
+   og da er den ikke til aa stole paa. */
+let utkastFoer = null;
+
 function startStegRedigering(){
   const r = recipeCache[currentRecipeId];
   if(!r) return;
   stegUtkast = (r.steps || []).map(normalizeStep).map(s => ({...s}));
+  utkastFoer = JSON.stringify({
+    tips: r.tips || [],
+    chefComments: r.chefComments || [],
+    tastings: r.tastings || []
+  });
   redigerModus = true;
   /* Uten dette ville redigeringen skjedd i en fane man ikke ser. */
   switchTab(LANDSKAP.matches ? 'begge' : 'steps');
@@ -5885,12 +5940,38 @@ function startStegRedigering(){
   renderTastingsList();
 }
 
-function avbrytStegRedigering(){
+async function avbrytStegRedigering(){
+  const r = recipeCache[currentRecipeId];
   redigerModus = false;
   stegUtkast = null;
   lukkRedigerMeny();
   document.body.classList.remove('steg-redigeres');
   settRedigerKnapp(false);
+
+  /* Bare skriv tilbake hvis noe faktisk ble endret - ellers sender vi en
+     unoedig lagring hver gang noen aapner og lukker modusen. */
+  if(r && utkastFoer){
+    const naa = JSON.stringify({
+      tips: r.tips || [],
+      chefComments: r.chefComments || [],
+      tastings: r.tastings || []
+    });
+    if(naa !== utkastFoer){
+      const foer = JSON.parse(utkastFoer);
+      r.tips = foer.tips;
+      r.chefComments = foer.chefComments;
+      r.tastings = foer.tastings;
+      try{
+        await persistFullRecipe(r);
+        await syncIndexRating(r);
+      }catch(e){
+        console.error('Kunne ikke angre endringene', e);
+        showToast('Kunne ikke angre. Last siden på nytt.', true);
+      }
+    }
+  }
+  utkastFoer = null;
+
   renderSteps();
   renderTips();
   renderCommentsList();
@@ -5917,6 +5998,8 @@ async function lagreStegRedigering(){
     .map(s => ({text: s.text.trim(), photo: s.photo || null, section: s.section || ''}));
   redigerModus = false;
   stegUtkast = null;
+  utkastFoer = null;
+  tipsRedigerer = null;
   lukkRedigerMeny();
   document.body.classList.remove('steg-redigeres');
   settRedigerKnapp(false);
@@ -5979,6 +6062,8 @@ function stegNytt(){
   if(siste) siste.focus();
 }
 
+/* Skjuler de to valgknappene. Beholder navnet fordi den kalles fire
+   steder - innholdet er ikke lenger en meny, men en knapperad. */
 function lukkRedigerMeny(){
   const m = $('rediger-meny');
   if(m) m.hidden = true;
