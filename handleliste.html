@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Familie Hub – Handleliste</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
   :root{
     /* ---------- Typeskala ----------
@@ -29,17 +29,36 @@
     --bg-solid: #FFFFFF;
     --paper: #FFFFFF;
     --paper-soft: #F0F0F0;
+    /* Paletten foelger designsystemet og oppskrifter.html: dempet skifer
+       i stedet for den mettede materialgroennen, lysere hjelpetekst,
+       mykere skygge, samme hjoerner.
+       --lime beholder navnet av historiske grunner, men er naa aksenten.
+       Doepes om til --aksent i 7.3, naar alle fem filene endres samtidig. */
     --ink: #2C3E50;
-    --ink-soft: #5A6C7D;
-    --lime: #4CAF50;
-    --lime-dark: #388E3C;
-    --blue: #2E6FB7;
-    --blue-light: #DCE6F6;
+    --ink-soft: #7A8899;
+    --lime: #4A7FA8;
+    --lime-dark: #3A6689;
+    --blue: #4A7FA8;
+    /* "valgt" (sortering, suksess). Skal IKKE slaas sammen med --boks-mild. */
+    --blue-light: #E3ECF4;
+    /* Skaper noe - fylt flate i denne tonen. */
+    --handling-ny: #4F8F5F;
+    --handling-ny-moerk: #427A4F;
+    /* Endrer noe. Maa holde avstand til --danger. */
+    --handling-endre: #B8873A;
+    --handling-endre-moerk: #9E7230;
+    /* Paa tvers av apper - henter fra eller sender til en annen del av
+       hubben. Ikke en femte handlingstype, men en annen kategori. */
+    --handling-tvers: #7A5EA8;
+    --handling-tvers-moerk: #66508C;
+    /* Mild flate for grupperingsbokser. */
+    --boks-mild: #EDF3F8;
+    --boks-kant: #DCE6EF;
     --mustard-light: #F0D9A6;
-    --line: #E0E0E0;
+    --line: #E4E8EC;
     --danger: #A64D3C;
-    --shadow: 0 2px 8px rgba(0,0,0,0.1);
-    --radius: 16px;
+    --shadow: 0 2px 14px rgba(0,0,0,.06);
+    --radius: 18px;
   }
 
   /* iPad: leses paa avstand, alt et hakk opp */
@@ -64,15 +83,11 @@
     font-family:'Archivo', sans-serif;
     min-height:100vh;
     padding-bottom:calc(172px + max(0px, env(safe-area-inset-bottom)));
-    background-color:var(--bg-solid);
-    background-image:
-      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0),
-      radial-gradient(ellipse 900px 500px at 15% 0%, #F5F5F5, transparent 60%),
-      radial-gradient(ellipse 700px 600px at 90% 30%, rgba(0,0,0,0.28), transparent 55%),
-      radial-gradient(ellipse 800px 700px at 20% 90%, rgba(0,0,0,0.22), transparent 55%),
-      linear-gradient(160deg, var(--bg-1), var(--bg-2));
-    background-size: 5px 5px, auto, auto, auto, auto;
+    /* Fem lag med prikkflate og moerke ellipser ga en vignett som ikke
+       fantes noen andre steder. Samme ene gradient som de fire andre. */
+    background:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
     background-attachment: fixed;
+    -webkit-font-smoothing:antialiased;
   }
   h1,h2,h3{ font-family:'Archivo', sans-serif; margin:0; font-weight:700; letter-spacing:-0.01em; }
   .mono{ font-family:'IBM Plex Mono', monospace; }
@@ -157,7 +172,7 @@
   .type-rad .navn{ flex:1; min-width:0; font-size:var(--t-brod); word-break:break-word; }
   .type-rad select{
     flex:0 0 150px; border:1.5px solid var(--line); border-radius:9px; padding:8px;
-    font-family:'Archivo',sans-serif; font-size:var(--t-meta); background:#fff; color:var(--ink);
+    font-family:'Archivo',sans-serif; font-size:16px; background:#fff; color:var(--ink);
   }
 
   .trash-row{
@@ -192,7 +207,7 @@
   .home-hero-icon{
     width:60px; height:60px; border-radius:50%; background:var(--paper);
     display:flex; align-items:center; justify-content:center; padding:9px;
-    box-shadow:0 3px 10px rgba(0,0,0,0.28); margin-bottom:7px;
+    box-shadow:0 3px 10px rgba(44,62,80,.18); margin-bottom:7px;
   }
   .home-hero-icon img{ width:100%; height:auto; display:block; }
   .home-hero-title{
@@ -238,10 +253,10 @@
   .store-header{
     display:flex; align-items:center; gap:10px; width:100%; text-align:left;
     padding:11px 14px; background:var(--blue); border:none; border-radius:9px;
-    margin:26px 0 4px; box-shadow:0 2px 6px rgba(46,111,183,0.28);
+    margin:26px 0 4px; box-shadow:0 2px 6px rgba(44,62,80,.16);
   }
   .store-group:first-child .store-header{ margin-top:12px; }
-  .store-header:active{ background:#20447F; }
+  .store-header:active{ background:var(--lime-dark); }
   .store-header .caret{ font-size:var(--t-etikett); color:#FFFFFF; width:12px; flex-shrink:0; opacity:0.8; }
   .store-header h3{
     flex:1; font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
@@ -259,7 +274,7 @@
     background:var(--lime-dark); color:#FFFFFF;
     font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
-    box-shadow:0 2px 6px rgba(56,142,60,0.28);
+    box-shadow:0 2px 6px rgba(44,62,80,.16);
   }
   .category-group:first-child .category-header{ margin-top:10px; }
 
@@ -339,11 +354,12 @@
   .bottom-bar > *{ pointer-events:auto; }
   .new-fab, .inbox-fab{
     position:relative; width:48px; height:48px; border-radius:50%;
-    background:var(--lime); color:#FFFFFF; border:none; padding:0; font-size:var(--t-pil);
+    background:var(--handling-ny); color:#FFFFFF; border:none; padding:0; font-size:var(--t-pil);
     display:flex; align-items:center; justify-content:center;
     box-shadow:0 4px 12px rgba(0,0,0,0.15);
   }
-  .inbox-fab{ background:var(--blue); }
+  /* Henter fra Oppskriftsboka - paa tvers av apper, ikke en aksent. */
+  .inbox-fab{ background:var(--handling-tvers); }
   .new-fab:active, .inbox-fab:active{ transform:scale(0.95); }
   .inbox-badge{
     position:absolute; right:-3px; bottom:-3px; min-width:20px; height:20px; border-radius:999px;
@@ -360,20 +376,33 @@
     font-size:var(--t-brod); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
     font-family:'Archivo', sans-serif;
   }
-  .btn-primary{ background:var(--blue); color:#fff; width:100%; margin-top:14px; }
-  .btn-primary:disabled{ background:#B7C2D4; }
-  .btn-primary:active:not(:disabled){ background:#20447F; }
+  /* Legg til vare, Legg til behov, Lagre vare - alle skaper noe.
+     Sto i aksentblaatt, som betyr "valgt", ikke "skaper". */
+  .btn-primary{ background:var(--handling-ny); color:#fff; width:100%; margin-top:14px; }
+  .btn-primary:disabled{ background:#C3CBD4; }
+  .btn-primary:active:not(:disabled){ background:var(--handling-ny-moerk); }
   .btn-ghost{ background:none; color:var(--ink); border:1.5px solid var(--line); width:100%; }
   .btn-danger{ background:none; color:var(--danger); }
-  .btn-success{ background:var(--lime); color:#fff; }
+  /* Bekreftelsesknappen i dialogene: Flytt og Lagre endrer noe som finnes.
+     Klassenavnet er historisk; rollen er --handling-endre. */
+  .btn-success{ background:var(--handling-endre); color:#fff; }
+  .btn-success:active{ background:var(--handling-endre-moerk); }
+  /* Gaar paa tvers av apper: leser inn fra Oppskriftsboka, laster ned eller
+     slaar sammen varekatalogen som deles med den. */
+  .btn-tvers{ background:var(--handling-tvers); color:#fff; }
+  .btn-tvers:active{ background:var(--handling-tvers-moerk); }
 
   .field{ margin-bottom:12px; }
   .field label{
     display:block; font-size:var(--t-meta); color:var(--ink-soft); margin-bottom:4px;
   }
+  /* Skjemafelt staar BEVISST utenfor typeskalaen: iOS Safari zoomer inn
+     naar man trykker i et felt under 16px, og --t-brod er 15 paa mobil.
+     Regelen "input,select,textarea{font-size:16px}" nederst i arket taper
+     mot en klasseselektor, saa 16 maa staa her ogsaa. */
   .field input, .field textarea, .field select{
     width:100%; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line);
-    background:#fff; font-size:var(--t-brod); color:var(--ink);
+    background:#fff; font-size:16px; color:var(--ink);
   }
   .field textarea{ resize:vertical; min-height:56px; }
   .field-hint{ font-size:var(--t-etikett); color:var(--lime-dark); margin:4px 0 0; font-weight:600; }
@@ -659,14 +688,14 @@ input,select,textarea{font-size:16px}
 
     <div class="field">
       <label for="import-text">Eller lim inn her - JSON, eller én vare per linje</label>
-      <textarea id="import-text" style="min-height:110px; font-family:'IBM Plex Mono',monospace; font-size:12px;" placeholder='{"format":"familiehub-handleliste-1","varer":[…]}'></textarea>
+      <textarea id="import-text" style="min-height:110px; font-family:'IBM Plex Mono',monospace; font-size:16px;" placeholder='{"format":"familiehub-handleliste-1","varer":[…]}'></textarea>
     </div>
 
     <button type="button" class="btn-quiet" id="import-tekst" style="display:none;" onclick="importSomTekst()"></button>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('import-modal')">Avbryt</button>
-      <button class="btn btn-success" onclick="parseImport()">Les inn</button>
+      <button class="btn btn-tvers" onclick="parseImport()">Les inn</button>
     </div>
   </div>
 </div>
@@ -679,19 +708,19 @@ input,select,textarea{font-size:16px}
 
     <div id="kat-error" class="import-error" style="display:none;"></div>
 
-    <button class="btn btn-success" style="width:100%; margin-top:0;" onclick="eksporterKatalog()">Last ned katalogen</button>
+    <button class="btn btn-tvers" style="width:100%; margin-top:0;" onclick="eksporterKatalog()">Last ned katalogen</button>
 
     <button class="file-btn" style="margin-top:12px;" onclick="document.getElementById('kat-file').click()">Hent inn katalog</button>
     <input type="file" id="kat-file" accept=".json,application/json" style="display:none;" onchange="lesKatalogFil(this)">
 
     <div class="field">
       <label for="kat-text">Eller lim inn her</label>
-      <textarea id="kat-text" style="min-height:90px; font-family:'IBM Plex Mono',monospace; font-size:12px;" placeholder='{"format":"familiehub-varekatalog-1","katalog":{…}}'></textarea>
+      <textarea id="kat-text" style="min-height:90px; font-family:'IBM Plex Mono',monospace; font-size:16px;" placeholder='{"format":"familiehub-varekatalog-1","katalog":{…}}'></textarea>
     </div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('katalog-modal')">Lukk</button>
-      <button class="btn btn-success" onclick="importerKatalog()">Slå sammen</button>
+      <button class="btn btn-tvers" onclick="importerKatalog()">Slå sammen</button>
     </div>
   </div>
 </div>
