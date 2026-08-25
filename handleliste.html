@@ -1359,9 +1359,8 @@ function settOmrade(omrade){
     omrade === 'mat' ? 'Melk, brokkoli, kaffe …' : 'Skruer, maling, pensel …';
 
   // Sett foreslått butikk
-  const valgt = omrade === 'mat' ? standardButikk() : '';
   const inp = document.getElementById('f-store');
-  if (inp) inp.value = valgt;
+  if (inp) inp.value = '';
 }
 
 function openAddItem(omrade){
@@ -1907,7 +1906,7 @@ async function leggIListen(varer){
       name: v.name,
       week: viewWeek, year: viewYear,
       store: butikk, cat: cat, by: '',
-      notes: (v.fra && v.fra.length) ? v.fra.join(', ') : '',
+      notes: '',
       qty: v.qty || '',
       amt: (() => { const p = parseMengde(v.qty || ''); return p ? String(p.tall) : ''; })(),
       unit: (() => { const p = parseMengde(v.qty || ''); return p ? normEnhet(p.enhet) : ''; })(),
