@@ -1088,6 +1088,10 @@ async function lagreKatalog(){
 
 const STANDARD_BUTIKK = 'Kiwi';
 
+// Alle kjente butikker brukt som forslagsliste i autocomplete.
+// Brukerens egne butikker (data.stores/data.andreStores) brukes for lagring og bolkgruppering.
+const ALLE_BUTIKKER = ["7-Eleven", "Akademika", "AliExpress", "Amazon", "Anton Sport", "Apotek 1", "ARK", "Babyshop", "Barnas Hus", "Bik Bok", "Bildeler.no", "Biltema", "BilXtra", "Blivakker", "Bohus", "Boots Apotek", "Boozt", "Boys of Europe", "Buddy", "Bull Ski & Kajakk", "Bunnpris", "Byggmakker", "Byggmax", "Carlings", "CDON", "Christiania Glasmagasin", "Circle K", "Clas Ohlson", "Coop Marked", "Coop Mega", "Coop Prix", "Cubus", "Deli de Luca", "Din Sko", "Dollarstore", "Dressmann", "eBay", "Elektroimportøren", "Elkjøp", "Elon", "Eplehuset", "Esso", "Etsy", "Eurodel", "Europris", "Eurosko", "EUROSPAR", "Extra", "Extra Leker", "Fargerike", "Farmasiet", "Feel", "Felleskjøpet", "FINN", "Fjellsport", "Flisekompaniet", "Floriss", "Fredrik & Louisa", "Gina Tricot", "H&M", "Hageland", "Holdbart", "Home & Cottage", "Høyer", "IKEA", "Intersport", "Jack & Jones", "Jernia", "Joker", "Jollyroom", "Jula", "JYSK", "Kappahl", "KICKS", "Kid Interiør", "Kitch'n", "KIWI", "Kjell & Company", "Komplett", "Kremmerhuset", "Lager 157", "Lagerhaus", "Lekia", "Lindex", "Lyko", "Lyreco", "Match", "Matkroken", "Maxbo", "MECA", "Megaflis", "Mekonomen", "MENY", "Mester Grønn", "Milrab", "Montér", "Musti", "Møbelringen", "Narvesen", "NetOnNet", "Nille", "Norli", "Normal", "Nærbutikken", "Obs", "Obs BYGG", "Oda", "Only", "Outnorth", "Panduro", "PetXL", "Plantasjen", "Power", "Princess", "Proshop", "REMA 1000", "Right Price Tiles", "Ringo", "Rituals", "Rusta", "Shell", "Skeidar", "Skitt Fiske", "Skoringen", "Skousen", "Skruvat", "SPAR", "Sport 1", "Sprell", "Stadium Outlet", "Stormberg", "Søstrene Grene", "Temu", "thansen", "Tilbords", "Torshov Sport", "Vero Moda", "VIC", "Vinmonopolet", "VITA", "Vitusapotek", "Volt", "Würth", "XL-BYGG", "XXL", "YX", "Zalando", "Zavanna", "Zoo-1"];
+
 let data = {
   items: [],          // {id, name, week, year, store, cat, by, notes, done}
   stores: [STANDARD_BUTIKK],   // butikker for dagligvarer
@@ -3413,7 +3417,7 @@ function initAcFields(){
   const FAMILY = ['Magne','Andrea','Emma','Nina'];
 
   // Skjema
-  acBind('f-store', () => butikkListe(nyttOmrade), {
+  acBind('f-store', () => { const egne = butikkListe(nyttOmrade); return [...new Set([...egne, ...ALLE_BUTIKKER])]; }, {
     canAddOnce: true, canAddPerm: true,
     onPerm: v => { huskButikk(nyttOmrade, v); save(); }
   });
@@ -3424,7 +3428,8 @@ function initAcFields(){
   // Rediger-modal
   acBind('e-store', () => {
     const item = data.items.find(x => x.id === byttId);
-    return butikkListe(item ? (item.omrade || 'mat') : 'mat');
+    const egne = butikkListe(item ? (item.omrade || 'mat') : 'mat');
+    return [...new Set([...egne, ...ALLE_BUTIKKER])];
   }, {
     canAddOnce: true, canAddPerm: true,
     onPerm: v => {
