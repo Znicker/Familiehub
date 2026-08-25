@@ -56,11 +56,11 @@
     /* Paa tvers av apper - sender noe til en annen del av hubben.
        Ikke en femte handlingstype, men en annen kategori: de fire andre
        gjoer noe HER, denne flytter noe DIT.
-       Gul ligger naer okeren som betyr "endre". De skilles paa to maater:
-       gulen er lysere og klarere, og den er den eneste knappen med MOERK
-       tekst. Endres den ene, maa den andre sjekkes. */
-    --handling-tvers: #E3BC4F;
-    --handling-tvers-moerk: #D0A833;
+       Lilla staar alene i paletten: den deler ingen tone med aksenten,
+       okeren eller groennen, og trenger derfor ingen regel om hvordan
+       den skilles fra dem. Hvit tekst som de tre andre fylte flatene. */
+    --handling-tvers: #7A5EA8;
+    --handling-tvers-moerk: #66508C;
     --boks-mild: #EDF3F8;
     --boks-kant: #DCE6EF;
     --mustard-light: #F0D9A6;
@@ -348,7 +348,7 @@
      denne flytter noe til handlelista. */
   .til-handleliste{
     display:block; width:100%; margin:16px 0 4px;
-    background:var(--handling-tvers); color:var(--ink); border:none; border-radius:12px;
+    background:var(--handling-tvers); color:#fff; border:none; border-radius:12px;
     padding:13px 16px; cursor:pointer;
     font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
   }
@@ -6876,8 +6876,8 @@ async function renderPlanIngredientsTab(){
        ${basis.map((r, i) => rad(r, vanlige.length + i)).join('')}` : ''}
     ${missing ? `<p style="font-size:var(--t-meta); color:var(--ink-soft); margin-top:14px;">${missing} rett${missing > 1 ? 'er' : ''} kunne ikke lastes, og mangler i listen.</p>` : ''}
     ${alle.some(r => r.raw.size > 1) ? '<p class="ing-fotnote">* slått sammen fra flere ingredienser</p>' : ''}
-    <button type="button" class="btn btn-primary" style="width:100%; margin-top:18px;" onclick="tilHandlelista()">
-      🛒 Legg ingrediensene i handlelista
+    <button type="button" class="til-handleliste" style="margin-top:18px;" onclick="tilHandlelista()">
+      Legg ingrediensene i handlelista
     </button>
     <p style="font-size:var(--t-meta); color:var(--ink-soft); margin-top:14px;">Hold inne på en ingrediens og dra den oppå en annen for å slå dem sammen. Sammenslåingen huskes for alle uker.</p>`;
 
