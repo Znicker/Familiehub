@@ -409,6 +409,49 @@
   .field-note{ font-size:var(--t-etikett); color:var(--ink-soft); margin:4px 0 0; }
   .new-value{ margin-top:8px; }
 
+  /* ---- Butikklogoer ---- */
+  .butikk-logo{
+    width:24px; height:24px; object-fit:contain; flex-shrink:0;
+    border-radius:4px; background:transparent;
+  }
+  .ac-opt{ display:flex; align-items:center; gap:10px; }
+  .item-store-logo{
+    width:20px; height:20px; object-fit:contain; flex-shrink:0;
+    border-radius:3px; vertical-align:middle; margin-right:4px;
+  }
+
+  /* ---- Autocomplete-widget ---- */
+  .ac-wrap{ position:relative; }
+  .ac-drop{
+    position:absolute; left:0; right:0; top:calc(100% + 3px);
+    background:var(--paper); border:1.5px solid var(--lime);
+    border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.10);
+    z-index:200; overflow:hidden; max-height:220px; overflow-y:auto;
+    display:none;
+  }
+  .ac-drop.open{ display:block; }
+  .ac-opt{
+    padding:11px 14px; font-size:16px; color:var(--ink); cursor:pointer;
+    border-bottom:1px solid var(--line);
+  }
+  .ac-opt:last-child{ border-bottom:none; }
+  .ac-opt:active, .ac-opt.ac-focus{ background:var(--boks-mild); }
+  .ac-ny{
+    padding:11px 14px; font-size:var(--t-meta); font-weight:700;
+    color:var(--handling-ny); cursor:pointer; display:flex;
+    align-items:center; gap:8px; border-bottom:1px solid var(--line);
+  }
+  .ac-ny:last-child{ border-bottom:none; }
+  .ac-ny:active{ background:var(--boks-mild); }
+  .ac-ny-perm{ color:var(--handling-endre); }
+
+  /* Mengde + enhet side om side i skjema */
+  .mengde-rad{ display:flex; gap:8px; }
+  .mengde-rad .f-amt{ flex:1; min-width:0; }
+  .mengde-rad select{ flex:0 0 100px; border:1.5px solid var(--line);
+    border-radius:10px; padding:11px 8px; background:#fff; color:var(--ink);
+    font-family:'Archivo',sans-serif; font-size:16px; }
+
   /* ---------- Tabs ---------- */
   .tabs{
     display:flex; background:var(--paper-soft); border-radius:999px;
@@ -594,28 +637,43 @@ input,select,textarea{font-size:16px}
 
       <div class="field">
         <label for="f-store">Butikk</label>
-        <select id="f-store" onchange="onSelectChange('store')"></select>
-        <input type="text" id="f-store-new" class="new-value" placeholder="Navn på butikk" style="display:none;">
+        <div class="ac-wrap" id="ac-wrap-f-store">
+          <input type="text" id="f-store" autocomplete="off" placeholder="Kiwi, Rema …">
+          <div class="ac-drop" id="ac-drop-f-store"></div>
+        </div>
       </div>
 
       <div class="field" id="felt-type">
         <label for="f-cat">Varetype</label>
-        <select id="f-cat"></select>
+        <div class="ac-wrap" id="ac-wrap-f-cat">
+          <input type="text" id="f-cat" autocomplete="off" placeholder="Meieri, Grønnsaker …">
+          <div class="ac-drop" id="ac-drop-f-cat"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Mengde</label>
+        <div class="mengde-rad">
+          <input type="number" id="f-amt" class="f-amt" min="0" step="any"
+                 placeholder="0" inputmode="decimal">
+          <div class="ac-wrap" id="ac-wrap-f-unit" style="flex:0 0 100px;">
+            <input type="text" id="f-unit" autocomplete="off" placeholder="enhet">
+            <div class="ac-drop" id="ac-drop-f-unit"></div>
+          </div>
+        </div>
       </div>
 
       <div class="field">
         <label for="f-by">Lagt til av</label>
-        <select id="f-by">
-          <option value="Magne">Magne</option>
-          <option value="Andrea">Andrea</option>
-          <option value="Emma">Emma</option>
-          <option value="Nina">Nina</option>
-        </select>
+        <div class="ac-wrap" id="ac-wrap-f-by">
+          <input type="text" id="f-by" autocomplete="off" placeholder="Navn …">
+          <div class="ac-drop" id="ac-drop-f-by"></div>
+        </div>
       </div>
 
       <div class="field">
         <label for="f-notes">Notat</label>
-        <textarea id="f-notes" placeholder="Mengde, merke, øko …"></textarea>
+        <textarea id="f-notes" placeholder="Fritekst …"></textarea>
       </div>
 
       <button class="btn btn-primary" onclick="saveItem()">Lagre vare</button>
@@ -776,25 +834,44 @@ input,select,textarea{font-size:16px}
     </div>
 
     <div class="field">
-      <label for="e-qty">Mengde</label>
-      <input type="text" id="e-qty" oninput="oppdaterSumKnapp()" placeholder="F.eks. 2 stk">
-      <button type="button" class="btn-quiet" id="e-sum" style="display:none; text-align:left; padding:8px 0;" onclick="summerMengde()"></button>
+      <label>Mengde</label>
+      <div class="mengde-rad">
+        <input type="number" id="e-amt" class="f-amt" min="0" step="any"
+               placeholder="0" inputmode="decimal">
+        <div class="ac-wrap" id="ac-wrap-e-unit" style="flex:0 0 100px;">
+          <input type="text" id="e-unit" autocomplete="off" placeholder="enhet">
+          <div class="ac-drop" id="ac-drop-e-unit"></div>
+        </div>
+      </div>
     </div>
 
     <div class="field" id="e-cat-felt">
       <label for="e-cat">Varetype</label>
-      <select id="e-cat"></select>
+      <div class="ac-wrap" id="ac-wrap-e-cat">
+        <input type="text" id="e-cat" autocomplete="off" placeholder="Meieri, Grønnsaker …">
+        <div class="ac-drop" id="ac-drop-e-cat"></div>
+      </div>
     </div>
 
     <div class="field">
       <label for="e-store">Butikk</label>
-      <select id="e-store" onchange="onSelectChange('itemstore')"></select>
-      <input type="text" id="e-store-new" class="new-value" placeholder="Navn på butikk" style="display:none;">
+      <div class="ac-wrap" id="ac-wrap-e-store">
+        <input type="text" id="e-store" autocomplete="off" placeholder="Kiwi, Rema …">
+        <div class="ac-drop" id="ac-drop-e-store"></div>
+      </div>
     </div>
 
     <div class="field">
       <label for="e-notes">Notat</label>
       <textarea id="e-notes"></textarea>
+    </div>
+
+    <div class="field">
+      <label for="e-by">Lagt til av</label>
+      <div class="ac-wrap" id="ac-wrap-e-by">
+        <input type="text" id="e-by" autocomplete="off" placeholder="Navn …">
+        <div class="ac-drop" id="ac-drop-e-by"></div>
+      </div>
     </div>
 
     <div class="modal-actions">
@@ -1079,52 +1156,108 @@ function renderWeek(){
 const NY = '__ny__';
 
 // Fast liste uten mulighet for nye verdier
-function fillFast(sel, values, valgt){
-  sel.innerHTML = '';
-  const tom = document.createElement('option');
-  tom.value = ''; tom.textContent = '– velg –';
-  sel.appendChild(tom);
-  values.forEach(v => {
-    const o = document.createElement('option');
-    o.value = v; o.textContent = v;
-    sel.appendChild(o);
+/* ---- Autocomplete-system ----
+   acBind(inputId, getList, opts)
+     getList()       – returnerer gjeldende liste med strenger
+     opts.canAddOnce – tilbyr «+ Legg til denne gangen» (lagres ikke)
+     opts.canAddPerm – tilbyr «+ Legg til i lista» (lagres permanent)
+     opts.onPerm(v)  – kall når permanent lagring er ønsket
+     opts.closed     – ingen legg-til-valg (lukket liste, bare filtrering)
+*/
+const _acState = {};   // inputId -> { list, opts }
+
+function acBind(inputId, getList, opts){
+  opts = opts || {};
+  _acState[inputId] = { getList, opts };
+  const inp = document.getElementById(inputId);
+  const drop = document.getElementById('ac-drop-' + inputId);
+  if (!inp || !drop) return;
+
+  inp.addEventListener('focus', () => acOpen(inputId));
+  inp.addEventListener('input', () => acOpen(inputId));
+  inp.addEventListener('blur', () => setTimeout(() => acClose(inputId), 150));
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { acClose(inputId); inp.blur(); }
+    if (e.key === 'ArrowDown'){ e.preventDefault(); acMoveFocus(inputId, 1); }
+    if (e.key === 'ArrowUp')  { e.preventDefault(); acMoveFocus(inputId, -1); }
+    if (e.key === 'Enter'){
+      const foc = drop.querySelector('.ac-focus');
+      if (foc){ e.preventDefault(); foc.click(); }
+    }
   });
-  sel.value = (valgt && values.includes(valgt)) ? valgt : '';
 }
 
-function fillSelect(sel, values, valgt, nyTekst){
-  sel.innerHTML = '';
-  const tom = document.createElement('option');
-  tom.value = ''; tom.textContent = '– velg –';
-  sel.appendChild(tom);
-  values.forEach(v => {
-    const o = document.createElement('option');
-    o.value = v; o.textContent = v;
-    sel.appendChild(o);
+function acOpen(inputId){
+  const st = _acState[inputId];
+  if (!st) return;
+  const inp = document.getElementById(inputId);
+  const drop = document.getElementById('ac-drop-' + inputId);
+  const q = (inp.value || '').trim().toLowerCase();
+  const alle = st.getList();
+  const treff = alle.filter(v => !q || v.toLowerCase().includes(q));
+
+  drop.innerHTML = '';
+
+  treff.forEach(v => {
+    const d = document.createElement('div');
+    d.className = 'ac-opt';
+    // Logo for butikkfelter
+    if (inputId === 'f-store' || inputId === 'e-store'){
+      const img = document.createElement('img');
+      img.src = butikkLogoSrc(v);
+      img.className = 'butikk-logo';
+      img.alt = '';
+      d.appendChild(img);
+    }
+    d.appendChild(document.createTextNode(v));
+    d.addEventListener('mousedown', e => { e.preventDefault(); acVelg(inputId, v); });
+    drop.appendChild(d);
   });
-  const ny = document.createElement('option');
-  ny.value = NY; ny.textContent = nyTekst;
-  sel.appendChild(ny);
-  sel.value = (valgt && values.includes(valgt)) ? valgt : '';
-}
 
-const NYFELT = {
-  store:     ['f-store','f-store-new'],
-  itemstore: ['e-store','e-store-new']
-};
-
-function onSelectChange(which){
-  const [selId, inpId] = NYFELT[which];
-  const sel = document.getElementById(selId);
-  const inp = document.getElementById(inpId);
-  if (sel.value === NY){
-    inp.style.display = 'block';
-    inp.focus();
-  } else {
-    inp.style.display = 'none';
-    inp.value = '';
+  // Ukjent verdi – tilby legg til
+  const eksakt = alle.some(v => v.toLowerCase() === q);
+  if (q && !eksakt && !st.opts.closed){
+    if (st.opts.canAddOnce !== false){
+      const d = document.createElement('div');
+      d.className = 'ac-ny';
+      d.innerHTML = '<span>+</span><span>Legg til «' + q + '» denne gangen</span>';
+      d.addEventListener('mousedown', e => { e.preventDefault(); acVelg(inputId, inp.value.trim(), false); });
+      drop.appendChild(d);
+    }
+    if (st.opts.canAddPerm && st.opts.onPerm){
+      const d = document.createElement('div');
+      d.className = 'ac-ny ac-ny-perm';
+      d.innerHTML = '<span>★</span><span>Legg til «' + q + '» i lista permanent</span>';
+      d.addEventListener('mousedown', e => { e.preventDefault(); st.opts.onPerm(inp.value.trim()); acVelg(inputId, inp.value.trim(), true); });
+      drop.appendChild(d);
+    }
   }
+
+  drop.classList.toggle('open', drop.children.length > 0);
 }
+
+function acMoveFocus(inputId, dir){
+  const drop = document.getElementById('ac-drop-' + inputId);
+  const items = Array.from(drop.querySelectorAll('.ac-opt,.ac-ny'));
+  const cur = drop.querySelector('.ac-focus');
+  const idx = cur ? items.indexOf(cur) : -1;
+  items.forEach(i => i.classList.remove('ac-focus'));
+  const next = items[Math.max(0, Math.min(items.length-1, idx + dir))];
+  if (next) next.classList.add('ac-focus');
+}
+
+function acVelg(inputId, value){
+  const inp = document.getElementById(inputId);
+  if (inp) inp.value = value;
+  acClose(inputId);
+}
+
+function acClose(inputId){
+  const drop = document.getElementById('ac-drop-' + inputId);
+  if (drop) drop.classList.remove('open');
+}
+
+function acVerdi(inputId){ return (document.getElementById(inputId) || {}).value || ''; }
 
 // Butikken som foreslås når vi ikke vet bedre. Gjelder bare dagligvarer -
 // andre behov har ingen naturlig standardbutikk.
@@ -1146,13 +1279,10 @@ function huskButikk(omrade, navn){
   }
 }
 
-// Leser verdien fra et nedtrekk, eller fra "ny"-feltet hvis det er i bruk
+// Leser verdien fra et autocomplete-felt
 function readSelect(which){
-  const [selId, inpId] = NYFELT[which];
-  const sel = document.getElementById(selId);
-  const inp = document.getElementById(inpId);
-  if (sel.value === NY) return inp.value.trim();
-  return sel.value;
+  const idMap = { store: 'f-store', itemstore: 'e-store' };
+  return acVerdi(idMap[which] || which);
 }
 
 /* ============================================================
@@ -1173,14 +1303,10 @@ function settOmrade(omrade){
   document.getElementById('f-name').placeholder =
     omrade === 'mat' ? 'Melk, brokkoli, kaffe …' : 'Skruer, maling, pensel …';
 
-  // Ingen forhåndsutfylt butikk for andre behov
+  // Sett foreslått butikk
   const valgt = omrade === 'mat' ? standardButikk() : '';
-  fillSelect(document.getElementById('f-store'), butikkListe(omrade), valgt, '+ Ny butikk …');
-  document.getElementById('f-store-new').style.display =
-    (omrade === 'annet' && !data.andreStores.length) ? 'block' : 'none';
-  if (omrade === 'annet' && !data.andreStores.length){
-    document.getElementById('f-store').value = NY;
-  }
+  const inp = document.getElementById('f-store');
+  if (inp) inp.value = valgt;
 }
 
 function openAddItem(omrade){
@@ -1188,11 +1314,11 @@ function openAddItem(omrade){
     'Legges i uke ' + viewWeek + ', ' + viewYear + '.';
 
   document.getElementById('f-name').value = '';
+  document.getElementById('f-amt').value = '';
+  const fuEl = document.getElementById('f-unit'); if(fuEl) fuEl.value = '';
+  document.getElementById('f-by').value = '';
   document.getElementById('f-notes').value = '';
   document.getElementById('f-name-hint').style.display = 'none';
-  document.getElementById('f-store-new').value = '';
-
-  fillFast(document.getElementById('f-cat'), VARETYPER, '');
   settOmrade(omrade || aktivOmrade());
 
   showView('add');
@@ -1215,8 +1341,9 @@ function onNameInput(){
   const butikk = data.butikkvalg[navn];
   const deler = [];
 
-  const catSel = document.getElementById('f-cat');
-  const storeSel = document.getElementById('f-store');
+  // cat og store settes via value-prop; acBind håndterer dropdown
+  const catEl = document.getElementById('f-cat');
+  if (catEl) catEl.value = '';
 
   if (oppf && oppf.type && VARETYPER.includes(oppf.type) && catSel.value === ''){
     catSel.value = oppf.type;
@@ -1241,10 +1368,15 @@ async function saveItem(){
   const name = document.getElementById('f-name').value.trim();
   if (!name){ document.getElementById('f-name').focus(); return; }
 
-  const store = readSelect('store');
-  const cat = nyttOmrade === 'mat' ? document.getElementById('f-cat').value : '';
+  const store = acVerdi('f-store');
+  const cat = nyttOmrade === 'mat' ? acVerdi('f-cat') : '';
 
   huskButikk(nyttOmrade, store);
+  // Permanent lagring av ny butikk skjer via acBind onPerm-callback
+
+  const fAmt = document.getElementById('f-amt').value.trim();
+  const fUnit = document.getElementById('f-unit').value.trim();
+  const fQty = fAmt ? (fAmt + (fUnit ? ' ' + fUnit : '')).trim() : fUnit;
 
   data.items.push({
     id: 'i' + Date.now() + Math.random().toString(36).slice(2,6),
@@ -1253,9 +1385,11 @@ async function saveItem(){
     year: viewYear,
     store: store || '',
     cat: cat || '',
-    by: document.getElementById('f-by').value,
+    by: acVerdi('f-by'),
     notes: document.getElementById('f-notes').value.trim(),
-    qty: '',
+    qty: fQty,
+    amt: fAmt,
+    unit: fUnit,
     omrade: nyttOmrade,
     done: false
   });
@@ -1716,7 +1850,10 @@ async function leggIListen(varer){
       week: viewWeek, year: viewYear,
       store: butikk, cat: cat, by: '',
       notes: (v.fra && v.fra.length) ? v.fra.join(', ') : '',
-      qty: v.qty || '', basis: !!v.basis, omrade: 'mat', done: false
+      qty: v.qty || '',
+      amt: (() => { const p = parseMengde(v.qty || ''); return p ? String(p.tall) : ''; })(),
+      unit: (() => { const p = parseMengde(v.qty || ''); return p ? normEnhet(p.enhet) : ''; })(),
+      basis: !!v.basis, omrade: 'mat', done: false
     });
     katalogLagre(v.name, cat, !!v.basis);
     if (butikk) data.butikkvalg[v.name.trim().toLowerCase()] = butikk;
@@ -1877,6 +2014,254 @@ const ENHET_ALIAS = {
   'neve':'neve','never':'neve',
   'fedd':'fedd','klype':'klype','klyper':'klype'
 };
+
+const ENHETER = [
+  '', 'stk', 'g', 'kg', 'dl', 'ml', 'l',
+  'ss', 'ts', 'pk', 'boks', 'pose',
+  'stilk', 'båt', 'skive', 'fedd', 'neve', 'klype', 'potte'
+];
+
+// Bygger <select> med enhetene
+function byggEnhetSelect(id, valgt){
+  const sel = document.createElement('select');
+  sel.id = id;
+  ENHETER.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e;
+    o.textContent = e || '—';
+    if (e === (valgt || '')) o.selected = true;
+    sel.appendChild(o);
+  });
+  return sel;
+}
+
+// 149 butikker, 218 oppslag inkl. aliaser
+const BUTIKK_LOGO = {
+  "kiwi": "kiwi",
+  "kiwi minipris": "kiwi",
+  "rema 1000": "rema-1000",
+  "rema": "rema-1000",
+  "rema1000": "rema-1000",
+  "extra": "extra",
+  "coop extra": "extra",
+  "coop prix": "coop-prix",
+  "prix": "coop-prix",
+  "coop mega": "coop-mega",
+  "mega": "coop-mega",
+  "coop marked": "coop-marked",
+  "marked": "coop-marked",
+  "matkroken": "matkroken",
+  "obs": "obs",
+  "coop obs": "obs",
+  "obs dagligvare": "obs",
+  "meny": "meny",
+  "spar": "spar",
+  "eurospar": "eurospar",
+  "euro spar": "eurospar",
+  "joker": "joker",
+  "bunnpris": "bunnpris",
+  "n\u00e6rbutikken": "naerbutikken",
+  "oda": "oda",
+  "oda.no": "oda",
+  "narvesen": "narvesen",
+  "7-eleven": "7-eleven",
+  "7 eleven": "7-eleven",
+  "seven eleven": "7-eleven",
+  "deli de luca": "deli-de-luca",
+  "deli": "deli-de-luca",
+  "circle k": "circle-k",
+  "circlek": "circle-k",
+  "yx": "yx",
+  "esso": "esso",
+  "shell": "shell",
+  "elkj\u00f8p": "elkjop",
+  "elkjop": "elkjop",
+  "power": "power",
+  "komplett": "komplett",
+  "netonnet": "netonnet",
+  "net on net": "netonnet",
+  "proshop": "proshop",
+  "kjell & company": "kjell-og-company",
+  "kjell og company": "kjell-og-company",
+  "kjell": "kjell-og-company",
+  "eplehuset": "eplehuset",
+  "skousen": "skousen",
+  "elon": "elon",
+  "jula": "jula",
+  "biltema": "biltema",
+  "clas ohlson": "clas-ohlson",
+  "clas": "clas-ohlson",
+  "clas ohlson norge": "clas-ohlson",
+  "jernia": "jernia",
+  "obs bygg": "obs-bygg",
+  "coop obs bygg": "obs-bygg",
+  "mont\u00e9r": "monter",
+  "monter": "monter",
+  "maxbo": "maxbo",
+  "byggmakker": "byggmakker",
+  "byggmax": "byggmax",
+  "megaflis": "megaflis",
+  "right price tiles": "right-price-tiles",
+  "rpt": "right-price-tiles",
+  "flisekompaniet": "flisekompaniet",
+  "elektroimport\u00f8ren": "elektroimportoren",
+  "elektroimportoren": "elektroimportoren",
+  "fargerike": "fargerike",
+  "xl-bygg": "xl-bygg",
+  "xl bygg": "xl-bygg",
+  "xlbygg": "xl-bygg",
+  "normal": "normal",
+  "europris": "europris",
+  "nille": "nille",
+  "rusta": "rusta",
+  "dollarstore": "dollarstore",
+  "dollar store": "dollarstore",
+  "holdbart": "holdbart",
+  "lager 157": "lager-157",
+  "lager157": "lager-157",
+  "s\u00f8strene grene": "sostrene-grene",
+  "sostrene grene": "sostrene-grene",
+  "ikea": "ikea",
+  "jysk": "jysk",
+  "bohus": "bohus",
+  "skeidar": "skeidar",
+  "kid interi\u00f8r": "kid-interior",
+  "kid": "kid-interior",
+  "princess": "princess",
+  "princess interi\u00f8r": "princess",
+  "kremmerhuset": "kremmerhuset",
+  "christiania glasmagasin": "christiania-glasmagasin",
+  "christiania": "christiania-glasmagasin",
+  "cg": "christiania-glasmagasin",
+  "tilbords": "tilbords",
+  "til bords": "tilbords",
+  "kitch'n": "kitchn",
+  "kitchn": "kitchn",
+  "kitch\u2019n": "kitchn",
+  "lagerhaus": "lagerhaus",
+  "home & cottage": "home-og-cottage",
+  "home and cottage": "home-og-cottage",
+  "feel": "feel",
+  "feel interi\u00f8r": "feel",
+  "m\u00f8belringen": "mobelringen",
+  "h&m": "h-og-m",
+  "hm": "h-og-m",
+  "hennes og mauritz": "h-og-m",
+  "cubus": "cubus",
+  "lindex": "lindex",
+  "kappahl": "kappahl",
+  "dressmann": "dressmann",
+  "carlings": "carlings",
+  "bik bok": "bik-bok",
+  "bikbok": "bik-bok",
+  "volt": "volt",
+  "match": "match",
+  "match fashion": "match",
+  "zavanna": "zavanna",
+  "gina tricot": "gina-tricot",
+  "only": "only",
+  "vero moda": "vero-moda",
+  "jack & jones": "jack-og-jones",
+  "jack and jones": "jack-og-jones",
+  "eurosko": "eurosko",
+  "skoringen": "skoringen",
+  "din sko": "din-sko",
+  "dinsko": "din-sko",
+  "h\u00f8yer": "hoyer",
+  "hoyer": "hoyer",
+  "vic": "vic",
+  "boys of europe": "boys-of-europe",
+  "stormberg": "stormberg",
+  "xxl": "xxl",
+  "xxl sport": "xxl",
+  "sport 1": "sport-1",
+  "sport1": "sport-1",
+  "intersport": "intersport",
+  "anton sport": "anton-sport",
+  "stadium outlet": "stadium-outlet",
+  "fjellsport": "fjellsport",
+  "outnorth": "outnorth",
+  "torshov sport": "torshov-sport",
+  "bull ski & kajakk": "bull-ski-og-kajakk",
+  "bull ski og kajakk": "bull-ski-og-kajakk",
+  "bull": "bull-ski-og-kajakk",
+  "milrab": "milrab",
+  "skitt fiske": "skitt-fiske",
+  "barnas hus": "barnas-hus",
+  "babyshop": "babyshop",
+  "sprell": "sprell",
+  "ringo": "ringo",
+  "extra leker": "extra-leker",
+  "lekia": "lekia",
+  "jollyroom": "jollyroom",
+  "apotek 1": "apotek-1",
+  "apotek1": "apotek-1",
+  "vitusapotek": "vitusapotek",
+  "vitus apotek": "vitusapotek",
+  "boots apotek": "boots-apotek",
+  "boots": "boots-apotek",
+  "farmasiet": "farmasiet",
+  "blivakker": "blivakker",
+  "bli vakker": "blivakker",
+  "fredrik & louisa": "fredrik-og-louisa",
+  "fredrik og louisa": "fredrik-og-louisa",
+  "kicks": "kicks",
+  "vita": "vita",
+  "rituals": "rituals",
+  "lyko": "lyko",
+  "musti": "musti",
+  "petxl": "petxl",
+  "pet xl": "petxl",
+  "buddy": "buddy",
+  "buddy zoo": "buddy",
+  "felleskj\u00f8pet": "felleskjopet",
+  "felleskjopet": "felleskjopet",
+  "zoo-1": "zoo-1",
+  "zoo 1": "zoo-1",
+  "mekonomen": "mekonomen",
+  "thansen": "thansen",
+  "t hansen": "thansen",
+  "eurodel": "eurodel",
+  "skruvat": "skruvat",
+  "meca": "meca",
+  "bildeler.no": "bildeler-no",
+  "bildeler": "bildeler-no",
+  "bilxtra": "bilxtra",
+  "bilextra": "bilxtra",
+  "bil extra": "bilxtra",
+  "w\u00fcrth": "wurth",
+  "wurth": "wurth",
+  "plantasjen": "plantasjen",
+  "hageland": "hageland",
+  "mester gr\u00f8nn": "mester-gronn",
+  "floriss": "floriss",
+  "ark": "ark",
+  "ark bokhandel": "ark",
+  "norli": "norli",
+  "akademika": "akademika",
+  "panduro": "panduro",
+  "lyreco": "lyreco",
+  "vinmonopolet": "vinmonopolet",
+  "polet": "vinmonopolet",
+  "amazon": "amazon",
+  "temu": "temu",
+  "aliexpress": "aliexpress",
+  "ali express": "aliexpress",
+  "zalando": "zalando",
+  "boozt": "boozt",
+  "cdon": "cdon",
+  "cd on": "cdon",
+  "finn": "finn",
+  "finn.no": "finn",
+  "etsy": "etsy",
+  "ebay": "ebay",
+};
+const BUTIKK_LOGO_BASE = '/butikklogoer/';
+const BUTIKK_LOGO_DEFAULT = 'annen-butikk';
+function butikkLogoSrc(navn){
+  const k = (navn||'').trim().toLowerCase();
+  return BUTIKK_LOGO_BASE + (BUTIKK_LOGO[k] || BUTIKK_LOGO_DEFAULT) + '.png';
+}
 
 function normEnhet(e){
   const s = String(e || '').trim().toLowerCase();
@@ -2227,7 +2612,10 @@ function renderTyper(){
     t.textContent = n;
 
     const sel = document.createElement('select');
-    fillFast(sel, VARETYPER, '');
+    sel.style.cssText = 'border:1.5px solid var(--line);border-radius:9px;padding:8px;font-family:Archivo,sans-serif;font-size:16px;background:#fff;color:var(--ink);';
+    [{value:'',text:'– velg –'},...VARETYPER.map(t=>({value:t,text:t}))].forEach(({value,text})=>{
+      const o=document.createElement('option');o.value=value;o.textContent=text;sel.appendChild(o);
+    });
     sel.onchange = () => settType(n, sel.value);
 
     rad.appendChild(t); rad.appendChild(sel);
@@ -2448,54 +2836,61 @@ function openEdit(id){
   const erMat = (v.omrade || 'mat') === 'mat';
 
   document.getElementById('e-name').value = v.name || '';
-  document.getElementById('e-qty').value = v.qty || '';
+
+  // Prøv å parse eksisterende qty til amt+unit, fall tilbake til fritekst i amt
+  const qtyStr = v.qty || '';
+  const qtyParsed = parseMengde(qtyStr);
+  const eAmt = v.amt !== undefined ? String(v.amt) :
+               (qtyParsed ? String(qtyParsed.tall) : (qtyStr ? qtyStr : ''));
+  const eUnit = v.unit !== undefined ? v.unit :
+                (qtyParsed ? normEnhet(qtyParsed.enhet) : '');
+  document.getElementById('e-amt').value = eAmt;
+  const eUnitEl = document.getElementById('e-unit'); if (eUnitEl) eUnitEl.value = ENHETER.includes(eUnit) ? eUnit : eUnit;
+
   document.getElementById('e-notes').value = v.notes || '';
 
   document.getElementById('e-cat-felt').style.display = erMat ? 'block' : 'none';
-  if (erMat) fillFast(document.getElementById('e-cat'), VARETYPER, v.cat || '');
+  const eCatEl = document.getElementById('e-cat');
+  if (erMat && eCatEl) eCatEl.value = v.cat || '';
 
-  fillSelect(document.getElementById('e-store'), butikkListe(v.omrade || 'mat'), v.store, '+ Ny butikk …');
-  document.getElementById('e-store-new').style.display = 'none';
-  document.getElementById('e-store-new').value = '';
+  const eStoreEl = document.getElementById('e-store');
+  if (eStoreEl) eStoreEl.value = v.store || '';
 
-  oppdaterSumKnapp();
+  const eByEl = document.getElementById('e-by');
+  if (eByEl) eByEl.value = v.by || '';
   document.getElementById('edit-modal').classList.add('active');
 }
 
-// Knappen vises bare når det faktisk er noe å slå sammen
-function oppdaterSumKnapp(){
-  const felt = document.getElementById('e-qty');
-  const knapp = document.getElementById('e-sum');
-  const na = felt.value.trim();
-  const etter = normaliserMengde(na);
-  knapp.style.display = (na.indexOf(' + ') !== -1 && etter !== na) ? 'block' : 'none';
-  knapp.textContent = 'Slå sammen mengdene → ' + etter;
-}
-
-function summerMengde(){
-  const felt = document.getElementById('e-qty');
-  felt.value = normaliserMengde(felt.value);
-  oppdaterSumKnapp();
-}
+// oppdaterSumKnapp og summerMengde var knyttet til fritekst-mengdefeltet
+// som nå er erstattet med amt+unit. Beholdtes som no-ops for trygghetens skyld.
+function oppdaterSumKnapp(){ }
+function summerMengde(){ }
 
 async function lagreEndring(){
   const v = data.items.find(x => x.id === byttId);
   if (!v){ byttId = null; return closeModal('edit-modal'); }
 
-  const forrige = { name: v.name, qty: v.qty, cat: v.cat, store: v.store, notes: v.notes };
+  const forrige = { name: v.name, qty: v.qty, amt: v.amt, unit: v.unit, by: v.by, cat: v.cat, store: v.store, notes: v.notes };
   const erMat = (v.omrade || 'mat') === 'mat';
 
   const nyttNavn = document.getElementById('e-name').value.trim();
   if (!nyttNavn){ document.getElementById('e-name').focus(); return; }
 
-  const butikk = readSelect('itemstore');
+  const butikk = acVerdi('e-store');
   huskButikk(v.omrade || 'mat', butikk);
 
   v.name = nyttNavn;
-  v.qty = normaliserMengde(document.getElementById('e-qty').value);
+
+  const eAmt2 = document.getElementById('e-amt').value.trim();
+  const eUnit2 = document.getElementById('e-unit') ? document.getElementById('e-unit').value.trim() : '';
+  v.amt = eAmt2;
+  v.unit = eUnit2;
+  v.qty = eAmt2 ? (eAmt2 + (eUnit2 ? ' ' + eUnit2 : '')).trim() : eUnit2;
+
   v.notes = document.getElementById('e-notes').value.trim();
+  v.by = document.getElementById('e-by') ? document.getElementById('e-by').value : (v.by || '');
   v.store = butikk || '';
-  if (erMat) v.cat = document.getElementById('e-cat').value || '';
+  if (erMat) v.cat = acVerdi('e-cat');
 
   if (erMat) katalogLagre(v.name, v.cat, !!v.basis);
   if (v.store) data.butikkvalg[v.name.toLowerCase()] = v.store;
@@ -2795,10 +3190,15 @@ function tegnSeksjon(c, varer, erHandlet, utenType){
     head.type = 'button';
     head.className = 'store-header';
     head.onclick = () => toggleStore(nokkel);
+    const logoEl = document.createElement('img');
+    logoEl.src = butikkLogoSrc(b);
+    logoEl.className = 'butikk-logo';
+    logoEl.alt = '';
     head.innerHTML = '<span class="caret">' + (skjult ? '▶' : '▼') + '</span>' +
                      '<h3></h3><span class="store-count">' + alle.length +
                      (erHandlet ? '' : ' igjen') + '</span>';
     head.querySelector('h3').textContent = b;
+    head.querySelector('h3').prepend(logoEl);
     grp.appendChild(head);
 
     const body = document.createElement('div');
@@ -2866,13 +3266,15 @@ function tegnSeksjon(c, varer, erHandlet, utenType){
         del.onclick = (e) => { e.stopPropagation(); openDelete(v.id); };
 
         row.appendChild(body2);
-        if (v.qty){
+        // Mengde: foretrekk amt+unit; fall tilbake til qty for importerte varer
+        const visQty = (v.amt !== undefined || v.unit !== undefined)
+          ? ((v.amt ? String(v.amt) : '') + (v.unit ? ' ' + v.unit : '')).trim()
+          : (v.qty || '');
+        if (visQty){
           const q = document.createElement('span');
           q.className = 'item-qty';
-          // Kan de ikke summeres, står de under hverandre -
-          // ikke slått sammen til ett tall appen ikke kan stå inne for
-          String(v.qty).split(' + ').forEach((del, n) => {
-            if (n) q.appendChild(document.createElement('br'));
+          String(visQty).split(' + ').forEach((del, idx) => {
+            if (idx) q.appendChild(document.createElement('br'));
             q.appendChild(document.createTextNode(del));
           });
           row.appendChild(q);
@@ -3004,6 +3406,36 @@ async function init(){
   render();
   oppdaterKurvMerke();
   oppdaterRyddMerke();
+  initAcFields();
+}
+
+function initAcFields(){
+  const FAMILY = ['Magne','Andrea','Emma','Nina'];
+
+  // Skjema
+  acBind('f-store', () => butikkListe(nyttOmrade), {
+    canAddOnce: true, canAddPerm: true,
+    onPerm: v => { huskButikk(nyttOmrade, v); save(); }
+  });
+  acBind('f-cat',  () => VARETYPER,              { closed: true });
+  acBind('f-unit', () => ENHETER.filter(e => e), { closed: true });
+  acBind('f-by',   () => FAMILY,                 { closed: true });
+
+  // Rediger-modal
+  acBind('e-store', () => {
+    const item = data.items.find(x => x.id === byttId);
+    return butikkListe(item ? (item.omrade || 'mat') : 'mat');
+  }, {
+    canAddOnce: true, canAddPerm: true,
+    onPerm: v => {
+      const item = data.items.find(x => x.id === byttId);
+      huskButikk(item ? (item.omrade || 'mat') : 'mat', v);
+      save();
+    }
+  });
+  acBind('e-cat',  () => VARETYPER,              { closed: true });
+  acBind('e-unit', () => ENHETER.filter(e => e), { closed: true });
+  acBind('e-by',   () => FAMILY,                 { closed: true });
 }
 
 /* ============================================================
