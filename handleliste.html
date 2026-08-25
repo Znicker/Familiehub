@@ -251,20 +251,26 @@
   /* ---------- Store / category ---------- */
   .store-group{ margin-bottom:18px; }
   .store-header{
-    display:flex; align-items:center; gap:10px; width:100%; text-align:left;
-    padding:11px 14px; background:var(--blue); border:none; border-radius:9px;
-    margin:26px 0 4px; box-shadow:0 2px 6px rgba(44,62,80,.16);
+    display:flex; align-items:center; justify-content:center;
+    width:100%; padding:6px 14px; background:transparent; border:none;
+    border-radius:9px; margin:22px 0 4px;
   }
-  .store-group:first-child .store-header{ margin-top:12px; }
-  .store-header:active{ background:var(--lime-dark); }
-  .store-header .caret{ font-size:var(--t-etikett); color:#FFFFFF; width:12px; flex-shrink:0; opacity:0.8; }
-  .store-header h3{
-    flex:1; font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
-    color:#FFFFFF; text-transform:uppercase; letter-spacing:0.09em;
+  .store-group:first-child .store-header{ margin-top:10px; }
+  .store-header:active{ opacity:0.7; }
+  /* h3 og caret skjules - kun logo vises */
+  .store-header .caret{ display:none; }
+  .store-header h3{ display:none; }
+  .store-count{ display:none; }
+  /* Logo-ramme */
+  .store-logo-wrap{
+    display:flex; align-items:center; justify-content:center;
+    padding:6px 12px; border-radius:10px;
+    background:var(--paper); border:1.5px solid var(--line);
+    box-shadow:0 1px 4px rgba(44,62,80,.10);
+    min-width:56px; min-height:44px;
   }
-  .store-count{
-    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
-    color:#FFFFFF; opacity:0.85; flex-shrink:0;
+  .store-header .butikk-logo{
+    width:44px; height:44px; object-fit:contain;
   }
   .store-group.collapsed .store-body{ display:none; }
 
@@ -280,9 +286,9 @@
 
   .item-list{ display:flex; flex-direction:column; }
   .item-row{
-    display:flex; justify-content:space-between; align-items:baseline; gap:12px;
-    padding:13px 0; border-bottom:1px solid var(--line); cursor:pointer;
-    transition:opacity .13s ease;
+    display:flex; align-items:center; gap:0;
+    padding:4px 0; border-bottom:1px solid var(--line);
+    transition:opacity .13s ease; min-height:56px;
   }
   .item-row:last-child{ border-bottom:none; }
   .item-row:active{ background:var(--paper-soft); }
@@ -290,9 +296,19 @@
   .item-row.checked .item-name{ text-decoration:line-through; color:var(--ink-soft); }
   /* Nederst er hele blokken alt dempet - ikke demp raden en gang til */
   .done-wrap .item-row.checked{ opacity:1; }
+  /* Handlevogn-knapp til venstre - streker ut varen */
+  .item-check{
+    flex-shrink:0; width:48px; height:48px; display:flex; align-items:center;
+    justify-content:center; background:none; border:none; cursor:pointer;
+    font-size:22px; color:var(--ink-soft); touch-action:manipulation;
+  }
+  .item-row.checked .item-check{ color:var(--handling-ny); }
+  .item-check:active{ transform:scale(0.88); }
+  /* Rediger og flytt - til høyre */
   .item-store, .item-move{
     background:none; border:none; color:var(--ink-soft); padding:4px 5px;
     font-size:var(--t-brod); flex-shrink:0; line-height:1; opacity:0.55;
+    touch-action:manipulation;
   }
   .item-store:active{ color:var(--blue); opacity:1; }
   .item-move:active{ color:var(--lime-dark); opacity:1; }
@@ -315,7 +331,7 @@
   }
   .btn-quiet:active{ color:var(--ink); }
   .item-body{ flex:1; min-width:0; }
-  .item-name{ font-size:var(--t-brod); font-weight:600; line-height:1.3; color:var(--ink); }
+  .item-name{ font-size:var(--t-stor); font-weight:600; line-height:1.2; color:var(--ink); }
   .item-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; line-height:1.3; }
   /* Mengden er ofte det viktigste på linja ved hylla - full farge, ikke grå */
   .item-qty{
@@ -3194,15 +3210,16 @@ function tegnSeksjon(c, varer, erHandlet, utenType){
     head.type = 'button';
     head.className = 'store-header';
     head.onclick = () => toggleStore(nokkel);
+    const logoWrap = document.createElement('div');
+    logoWrap.className = 'store-logo-wrap';
     const logoEl = document.createElement('img');
     logoEl.src = butikkLogoSrc(b);
     logoEl.className = 'butikk-logo';
-    logoEl.alt = '';
-    head.innerHTML = '<span class="caret">' + (skjult ? '▶' : '▼') + '</span>' +
-                     '<h3></h3><span class="store-count">' + alle.length +
-                     (erHandlet ? '' : ' igjen') + '</span>';
-    head.querySelector('h3').textContent = b;
-    head.querySelector('h3').prepend(logoEl);
+    logoEl.alt = b;
+    logoEl.title = b;
+    logoWrap.appendChild(logoEl);
+    head.innerHTML = '';
+    head.appendChild(logoWrap);
     grp.appendChild(head);
 
     const body = document.createElement('div');
@@ -3228,7 +3245,14 @@ function tegnSeksjon(c, varer, erHandlet, utenType){
         const row = document.createElement('div');
         row.className = 'item-row' + (v.done ? ' checked' : '');
 
-        row.onclick = () => toggleDone(v.id, row);
+        // Handlevogn-knapp til venstre
+        const checkBtn = document.createElement('button');
+        checkBtn.type = 'button';
+        checkBtn.className = 'item-check';
+        checkBtn.title = 'Marker som handlet';
+        checkBtn.textContent = '🛒';
+        checkBtn.onclick = (e) => { e.stopPropagation(); toggleDone(v.id, row); };
+        row.appendChild(checkBtn);
 
         const body2 = document.createElement('div');
         body2.className = 'item-body';
