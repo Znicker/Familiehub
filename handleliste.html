@@ -461,6 +461,37 @@
   .ac-ny:active{ background:var(--boks-mild); }
   .ac-ny-perm{ color:var(--handling-endre); }
 
+  /* Vare-popup ved trykk på navn */
+  .vare-popup{
+    position:fixed; inset:0; z-index:300; display:flex;
+    align-items:flex-end; justify-content:center;
+    background:rgba(44,62,80,.35); padding:0;
+  }
+  .vare-popup-card{
+    background:var(--paper); border-radius:18px 18px 0 0;
+    padding:24px 22px 32px; width:100%; max-width:520px;
+    box-shadow:0 -4px 24px rgba(0,0,0,.12);
+  }
+  .vare-popup-navn{
+    font-size:var(--t-stor); font-weight:700; color:var(--ink);
+    margin:0 0 16px; line-height:1.2;
+  }
+  .vare-popup-rad{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:8px 0; border-bottom:1px solid var(--line);
+    font-size:var(--t-brod);
+  }
+  .vare-popup-rad:last-of-type{ border-bottom:none; }
+  .vare-popup-etikett{ color:var(--ink-soft); font-weight:500; }
+  .vare-popup-verdi{ color:var(--ink); font-weight:600; text-align:right; }
+  .vare-popup-lukk{
+    display:block; width:100%; margin-top:20px;
+    background:var(--boks-mild); border:none; border-radius:12px;
+    padding:13px; font-size:var(--t-brod); font-weight:700;
+    color:var(--ink); font-family:'Archivo',sans-serif; cursor:pointer;
+  }
+  .vare-popup-lukk:active{ background:var(--boks-kant); }
+
   /* Mengde + enhet side om side i skjema */
   .mengde-rad{ display:flex; gap:8px; }
   .mengde-rad .f-amt{ flex:1; min-width:0; }
@@ -668,11 +699,13 @@ input,select,textarea{font-size:16px}
       </div>
 
       <div class="field">
-        <label>Mengde</label>
+        <label>Antall og mengde</label>
         <div class="mengde-rad">
+          <input type="number" id="f-count" class="f-amt" min="0" step="1"
+                 placeholder="antall" inputmode="numeric" style="flex:0 0 80px;">
           <input type="number" id="f-amt" class="f-amt" min="0" step="any"
-                 placeholder="0" inputmode="decimal">
-          <div class="ac-wrap" id="ac-wrap-f-unit" style="flex:0 0 100px;">
+                 placeholder="mengde" inputmode="decimal">
+          <div class="ac-wrap" id="ac-wrap-f-unit" style="flex:0 0 90px;">
             <input type="text" id="f-unit" autocomplete="off" placeholder="enhet">
             <div class="ac-drop" id="ac-drop-f-unit"></div>
           </div>
@@ -850,11 +883,13 @@ input,select,textarea{font-size:16px}
     </div>
 
     <div class="field">
-      <label>Mengde</label>
+      <label>Antall og mengde</label>
       <div class="mengde-rad">
+        <input type="number" id="e-count" class="f-amt" min="0" step="1"
+               placeholder="antall" inputmode="numeric" style="flex:0 0 80px;">
         <input type="number" id="e-amt" class="f-amt" min="0" step="any"
-               placeholder="0" inputmode="decimal">
-        <div class="ac-wrap" id="ac-wrap-e-unit" style="flex:0 0 100px;">
+               placeholder="mengde" inputmode="decimal">
+        <div class="ac-wrap" id="ac-wrap-e-unit" style="flex:0 0 90px;">
           <input type="text" id="e-unit" autocomplete="off" placeholder="enhet">
           <div class="ac-drop" id="ac-drop-e-unit"></div>
         </div>
@@ -1334,6 +1369,7 @@ function openAddItem(omrade){
     'Legges i uke ' + viewWeek + ', ' + viewYear + '.';
 
   document.getElementById('f-name').value = '';
+  document.getElementById('f-count').value = '';
   document.getElementById('f-amt').value = '';
   const fuEl = document.getElementById('f-unit'); if(fuEl) fuEl.value = '';
   document.getElementById('f-by').value = '';
@@ -1394,9 +1430,10 @@ async function saveItem(){
   huskButikk(nyttOmrade, store);
   // Permanent lagring av ny butikk skjer via acBind onPerm-callback
 
+  const fCount = document.getElementById('f-count').value.trim();
   const fAmt = document.getElementById('f-amt').value.trim();
   const fUnit = document.getElementById('f-unit').value.trim();
-  const fQty = fAmt ? (fAmt + (fUnit ? ' ' + fUnit : '')).trim() : fUnit;
+  const fQty = byggMengdeTekst(fCount, fAmt, fUnit);
 
   data.items.push({
     id: 'i' + Date.now() + Math.random().toString(36).slice(2,6),
@@ -1408,6 +1445,7 @@ async function saveItem(){
     by: acVerdi('f-by'),
     notes: document.getElementById('f-notes').value.trim(),
     qty: fQty,
+    count: fCount,
     amt: fAmt,
     unit: fUnit,
     omrade: nyttOmrade,
@@ -2036,7 +2074,7 @@ const ENHET_ALIAS = {
 };
 
 const ENHETER = [
-  '', 'stk', 'g', 'kg', 'dl', 'ml', 'l',
+  '', 'g', 'kg', 'dl', 'ml', 'l',
   'ss', 'ts', 'pk', 'boks', 'pose',
   'stilk', 'båt', 'skive', 'fedd', 'neve', 'klype', 'potte'
 ];
@@ -2281,6 +2319,22 @@ const BUTIKK_LOGO_DEFAULT = 'annen-butikk';
 function butikkLogoSrc(navn){
   const k = (navn||'').trim().toLowerCase();
   return BUTIKK_LOGO_BASE + (BUTIKK_LOGO[k] || BUTIKK_LOGO_DEFAULT) + '.png';
+}
+
+/* Bygger visningsstreng for antall + mengde + enhet.
+   Regel: bare count -> "2 stk"
+          bare amt+unit -> "1,5 l"
+          begge -> "2 × 1,5 l"
+          ingenting -> "" */
+function byggMengdeTekst(count, amt, unit){
+  const c = count ? String(count).trim() : '';
+  const a = amt   ? String(amt).trim()   : '';
+  const u = unit  ? String(unit).trim()  : '';
+  const mengde = a ? (a + (u ? ' ' + u : '')).trim() : '';
+  if (c && mengde) return c + ' × ' + mengde;
+  if (c)           return c + ' stk';
+  if (mengde)      return mengde;
+  return '';
 }
 
 function normEnhet(e){
@@ -2864,6 +2918,7 @@ function openEdit(id){
                (qtyParsed ? String(qtyParsed.tall) : (qtyStr ? qtyStr : ''));
   const eUnit = v.unit !== undefined ? v.unit :
                 (qtyParsed ? normEnhet(qtyParsed.enhet) : '');
+  document.getElementById('e-count').value = v.count || '';
   document.getElementById('e-amt').value = eAmt;
   const eUnitEl = document.getElementById('e-unit'); if (eUnitEl) eUnitEl.value = ENHETER.includes(eUnit) ? eUnit : eUnit;
 
@@ -2886,11 +2941,61 @@ function openEdit(id){
 function oppdaterSumKnapp(){ }
 function summerMengde(){ }
 
+/* ---- Vare-popup ---- */
+function visVarePopup(v){
+  // Bygg mengdetekst
+  const mengde = byggMengdeTekst(v.count, v.amt, v.unit) || v.qty || '';
+
+  const rader = [
+    v.store    ? ['Butikk',      v.store]                    : null,
+    v.cat      ? ['Varetype',    v.cat]                      : null,
+    mengde     ? ['Mengde',      mengde]                     : null,
+    v.by       ? ['Lagt til av', v.by]                       : null,
+    v.notes    ? ['Notat',       v.notes]                    : null,
+  ].filter(Boolean);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'vare-popup';
+  overlay.onclick = () => overlay.remove();
+
+  const card = document.createElement('div');
+  card.className = 'vare-popup-card';
+  card.onclick = e => e.stopPropagation();
+
+  const tittel = document.createElement('div');
+  tittel.className = 'vare-popup-navn';
+  tittel.textContent = v.name;
+  card.appendChild(tittel);
+
+  rader.forEach(([etikett, verdi]) => {
+    const rad = document.createElement('div');
+    rad.className = 'vare-popup-rad';
+    const et = document.createElement('span');
+    et.className = 'vare-popup-etikett';
+    et.textContent = etikett;
+    const vd = document.createElement('span');
+    vd.className = 'vare-popup-verdi';
+    vd.textContent = verdi;
+    rad.appendChild(et);
+    rad.appendChild(vd);
+    card.appendChild(rad);
+  });
+
+  const lukk = document.createElement('button');
+  lukk.className = 'vare-popup-lukk';
+  lukk.textContent = 'Lukk';
+  lukk.onclick = () => overlay.remove();
+  card.appendChild(lukk);
+
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+}
+
 async function lagreEndring(){
   const v = data.items.find(x => x.id === byttId);
   if (!v){ byttId = null; return closeModal('edit-modal'); }
 
-  const forrige = { name: v.name, qty: v.qty, amt: v.amt, unit: v.unit, by: v.by, cat: v.cat, store: v.store, notes: v.notes };
+  const forrige = { name: v.name, qty: v.qty, count: v.count, amt: v.amt, unit: v.unit, by: v.by, cat: v.cat, store: v.store, notes: v.notes };
   const erMat = (v.omrade || 'mat') === 'mat';
 
   const nyttNavn = document.getElementById('e-name').value.trim();
@@ -2901,11 +3006,13 @@ async function lagreEndring(){
 
   v.name = nyttNavn;
 
+  const eCount2 = document.getElementById('e-count').value.trim();
   const eAmt2 = document.getElementById('e-amt').value.trim();
   const eUnit2 = document.getElementById('e-unit') ? document.getElementById('e-unit').value.trim() : '';
+  v.count = eCount2;
   v.amt = eAmt2;
   v.unit = eUnit2;
-  v.qty = eAmt2 ? (eAmt2 + (eUnit2 ? ' ' + eUnit2 : '')).trim() : eUnit2;
+  v.qty = byggMengdeTekst(eCount2, eAmt2, eUnit2);
 
   v.notes = document.getElementById('e-notes').value.trim();
   v.by = document.getElementById('e-by') ? document.getElementById('e-by').value : (v.by || '');
@@ -3293,18 +3400,20 @@ function tegnSeksjon(c, varer, erHandlet, utenType){
         del.textContent = '✕';
         del.onclick = (e) => { e.stopPropagation(); openDelete(v.id); };
 
+        // Navn klikkbart -> popup
+        navn.style.cursor = 'pointer';
+        navn.onclick = (e) => { e.stopPropagation(); visVarePopup(v); };
+
         row.appendChild(body2);
-        // Mengde: foretrekk amt+unit; fall tilbake til qty for importerte varer
-        const visQty = (v.amt !== undefined || v.unit !== undefined)
-          ? ((v.amt ? String(v.amt) : '') + (v.unit ? ' ' + v.unit : '')).trim()
+
+        // Mengde: count + amt + unit via byggMengdeTekst
+        const visQty = (v.count || v.amt || v.unit)
+          ? byggMengdeTekst(v.count, v.amt, v.unit)
           : (v.qty || '');
         if (visQty){
           const q = document.createElement('span');
           q.className = 'item-qty';
-          String(visQty).split(' + ').forEach((del, idx) => {
-            if (idx) q.appendChild(document.createElement('br'));
-            q.appendChild(document.createTextNode(del));
-          });
+          q.textContent = visQty;
           row.appendChild(q);
         }
         row.appendChild(bytt); row.appendChild(flytt); row.appendChild(del);
