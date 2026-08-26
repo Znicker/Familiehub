@@ -134,10 +134,18 @@ body{
 .panel-title{font-size:var(--t-meta);font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-soft)}
 .panel-note{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);opacity:.75}
 
-.cal-panel{display:flex;flex-direction:column;min-height:0}
+.cal-panel{
+  display:flex;flex-direction:column;min-height:0;
+  /* Kalenderen tegner sin egen ramme - ingen hvit boks rundt den igjen */
+  background:none;box-shadow:none;padding:0;
+}
 .side{display:flex;flex-direction:column;gap:14px;min-height:0}
 .side .panel{display:flex;flex-direction:column;min-height:0}
 .side .scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
+/* Rundingen skal ligge helt inntil kanten, bade i sidekolonnen og i
+   panelet som spretter opp naar sidekolonnen er borte */
+.side-day .ev{margin-left:-16px}
+.dagpanel-liste .ev{margin-left:-14px}
 .side-day{flex:1 1 55%}
 .side-cals{flex:1 1 45%}
 
@@ -232,8 +240,16 @@ body{
 .cal-more{font-size:var(--t-etikett);font-weight:700;color:var(--ink-soft);letter-spacing:.03em;padding-left:11px}
 
 /* ---------- Avtaleliste ---------- */
-.ev{display:flex;gap:12px;padding:11px 0}
+/* Raden: stor initialrunding helt ute til venstre, saa tid og tekst.
+   Fargen ligger i rundingen og gaar helt ut til kanten av boksen. */
+.ev{display:flex;gap:11px;padding:11px 0;align-items:flex-start}
 .ev:first-child{padding-top:0}
+.ev-stor-ini{
+  flex-shrink:0;width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-family:'Archivo',sans-serif;font-size:var(--t-meta);
+  font-weight:700;line-height:1;
+}
 .ev + .ev{border-top:1px solid var(--line)}
 .ev-time{
   font-family:'IBM Plex Mono',monospace;font-size:var(--t-meta);color:var(--ink-soft);
@@ -368,6 +384,19 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   padding:4px 8px;overflow:hidden;cursor:pointer;
   box-shadow:0 1px 3px rgba(44,62,80,.14);
 }
+/* Korte avtaler: fargeflaten stopper der avtalen slutter, men teksten
+   faar henge videre i en uttonet hale saa den er mulig aa lese. */
+.dagtid-ev.kort{
+  overflow:visible;border-bottom-left-radius:0;border-bottom-right-radius:0;
+  border-bottom:none;
+}
+.dagtid-ev.kort::after{
+  content:'';position:absolute;left:-1px;right:-1px;top:100%;
+  height:var(--hale,0px);
+  background:inherit;border:1px solid;border-color:inherit;border-top:none;
+  border-radius:0 0 8px 8px;opacity:.35;pointer-events:none;
+}
+.dagtid-ev.kort .dagtid-ev-n{position:relative;z-index:1;white-space:nowrap}
 .dagtid-ev-t{
   font-family:'IBM Plex Mono',monospace;font-size:var(--t-rute);
   color:var(--ink-soft);font-variant-numeric:tabular-nums;
@@ -1917,10 +1946,12 @@ function renderDay(){
         + '<br>' + pad(e.end.getHours())+'.'+pad(e.end.getMinutes());
     const meta = e.where || '';
     return '<div class="ev klikk" onclick="visBoble(\''+e.id+'\', event)">'
+      + '<div class="ev-stor-ini" style="background:'+e.color+'" title="'+esc(e.calName||'')+'">'
+      +   esc(initialFor(e.calId, e.calName))+'</div>'
       + '<div class="ev-time">'+time+'</div>'
       + '<div class="ev-body">'
       +   '<div class="ev-title">'+esc(e.title)+'</div>'
-      +   '<div class="ev-meta"><span class="ev-ini" style="background:'+e.color+'" title="'+esc(e.calName||'')+'">'+esc(initialFor(e.calId, e.calName))+'</span>'+esc(meta)+'</div>'
+      +   (meta ? '<div class="ev-meta">'+esc(meta)+'</div>' : '')
       + '</div></div>';
   }).join('');
 }
@@ -2603,12 +2634,19 @@ function renderDagTid(){
     liste.forEach(function(e){
       const fra = minutter(e.start);
       const til = sameDay(e.end, d) ? minutter(e.end) : 24 * 60;
-      const hoyde = Math.max(22, (til - fra) / 60 * TIME_H);
+      const hoyde = (til - fra) / 60 * TIME_H;
+
+      /* Under denne hoeyden er det ikke plass til bade klokkeslett og
+         navn. Blokken beholder sin riktige hoeyde, men teksten faar
+         henge videre under i en gjennomsiktig hale. */
+      const MIN_LESBAR = 40;
+      const kort = hoyde < MIN_LESBAR;
 
       const el = document.createElement('div');
-      el.className = 'dagtid-ev';
+      el.className = 'dagtid-ev' + (kort ? ' kort' : '');
       el.style.top = (fra / 60 * TIME_H) + 'px';
       el.style.height = hoyde + 'px';
+      if(kort) el.style.setProperty('--hale', (MIN_LESBAR - hoyde) + 'px');
       el.style.left = (i / antSpor * 100) + '%';
       el.style.width = 'calc(' + (100 / antSpor) + '% - 5px)';
       el.style.background = dus(e.color, .18);
@@ -3098,10 +3136,12 @@ function tegnDagPanel(){
           + '<br>' + pad(e.end.getHours())+'.'+pad(e.end.getMinutes());
       const meta = e.where || '';
       return '<div class="ev klikk" onclick="visBoble(\''+e.id+'\', event)">'
+        + '<div class="ev-stor-ini" style="background:'+e.color+'" title="'+esc(e.calName||'')+'">'
+        +   esc(initialFor(e.calId, e.calName))+'</div>'
         + '<div class="ev-time">'+time+'</div>'
         + '<div class="ev-body">'
         +   '<div class="ev-title">'+esc(e.title)+'</div>'
-        +   '<div class="ev-meta"><span class="ev-ini" style="background:'+e.color+'" title="'+esc(e.calName||'')+'">'+esc(initialFor(e.calId, e.calName))+'</span>'+esc(meta)+'</div>'
+        +   (meta ? '<div class="ev-meta">'+esc(meta)+'</div>' : '')
         + '</div></div>';
     }).join('');
   }
