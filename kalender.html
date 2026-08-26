@@ -76,7 +76,7 @@ body{
 .shell{
   height:100%;height:100dvh;
   max-width:1600px;margin:0 auto;
-  padding:16px 20px calc(12px + env(safe-area-inset-bottom));
+  padding:16px 62px calc(12px + env(safe-area-inset-bottom)) 20px;
   display:flex;flex-direction:column;gap:14px;
 }
 
@@ -84,6 +84,9 @@ body{
 .top{
   display:flex;align-items:center;justify-content:center;gap:16px;flex-shrink:0;
   padding-bottom:12px;border-bottom:1px solid var(--line);
+  /* Skallet har en bredere hoeyremarg til hurtigvelgeren. Toppen
+     strekkes tilbake, saa logoen staar midt paa skjermen. */
+  margin-right:-42px;
 }
 .brand{display:flex;align-items:center;gap:12px;flex-shrink:0;text-decoration:none;color:inherit}
 .brand-icon{
@@ -141,6 +144,9 @@ body{
   background:none;box-shadow:none;padding:0;
 }
 .side{display:flex;flex-direction:column;gap:14px;min-height:0}
+/* Lista har knapperaden over seg. Hoeyrekolonnen trekkes ned like mye,
+   saa toppen ligger i flukt med foerste dato. */
+.grid.liste .side{padding-top:var(--mnav-h,0px)}
 .side .panel{display:flex;flex-direction:column;min-height:0}
 .side .scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
 /* Rundingen skal ligge inntil kanten i sidekolonnen, men holde seg
@@ -641,7 +647,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   letter-spacing:.05em;font-size:var(--t-meta);color:var(--ink);
   padding:12px 4px 8px;position:sticky;top:0;background:var(--paper);z-index:1;
 }
-.plan-sec.idag .plan-dhead{box-shadow:inset 3px 0 0 #b8d947;padding-left:9px}
+.plan-sec.idag .plan-dhead{color:var(--blaa)}
 .plan-sec.idag .plan-dhead::after{content:' · i dag';color:var(--ink-soft);font-weight:600}
 .plan-item{
   display:flex;gap:12px;align-items:flex-start;
@@ -670,6 +676,11 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   align-self:center;flex-shrink:0;margin-left:2px;transition:transform .15s ease;
 }
 .plan-item.har-note.open::after{transform:rotate(180deg)}
+/* Ukenummeret ligger til hoeyre i dagoverskriften */
+.plan-uke{
+  float:right;font-family:'IBM Plex Mono',monospace;font-size:var(--t-rute);
+  font-weight:600;color:var(--ink-soft);text-transform:none;letter-spacing:0;
+}
 .plan-tom{color:var(--ink-soft);font-size:var(--t-meta);padding:2px 4px 12px}
 
 /* Notat i uke-brikker (Uke + Plan) */
@@ -712,6 +723,37 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* Kalenderlista bor nå i toppmenyen */
 #app .side-cals{display:none}
 #app .side-day{flex:1 1 100%}
+
+/* ---------- Hurtigvelger for kalendere ----------
+   Initialrundingene langs hoeyre skjermkant, rett under toppen. Trykk
+   paa en for aa se bare den, trykk paa flere for aa legge dem til. */
+.hurtigkal{
+  position:fixed;right:14px;z-index:44;
+  top:calc(96px + env(safe-area-inset-top));
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  max-height:calc(100dvh - 210px);overflow-y:auto;
+  -webkit-overflow-scrolling:touch;padding:2px;
+}
+.hk-ini{
+  width:34px;height:34px;border-radius:50%;border:2px solid transparent;
+  padding:0;flex-shrink:0;cursor:pointer;color:#fff;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  box-shadow:0 2px 8px rgba(44,62,80,.18);
+  transition:opacity .12s ease,transform .12s ease;
+}
+.hk-ini:active{transform:scale(.92)}
+/* Kalendere som ikke er med i utvalget staar dempet */
+.hk-ini.av{opacity:.28}
+.hk-ini.valgt{border-color:var(--ink)}
+.hk-alle{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;cursor:pointer;
+  border:1.5px solid var(--line);background:var(--paper);color:var(--ink-soft);
+  font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  box-shadow:0 2px 8px rgba(44,62,80,.14);
+}
+.hk-alle.pa{background:var(--blaa);color:#fff;border-color:var(--blaa)}
 
 /* ---------- Handlingsknapper nede til hoeyre ----------
    Samme moenster som handleliste og oppskrifter: runde knapper stablet
@@ -995,6 +1037,8 @@ input,select,textarea{font-size:16px}
 
 
 </div>
+
+<div class="hurtigkal" id="hurtigKal" hidden></div>
 
 <div class="bottom-bar" id="bottomBar" hidden>
   <div class="caldrop" id="caldrop" hidden>
@@ -1526,7 +1570,7 @@ async function loadCalendars(){
 function periode(){
   if(S.vis === 'liste'){
     const d = new Date(S.sel.getFullYear(), S.sel.getMonth(), S.sel.getDate());
-    return [d, plussDager(d, LISTE_DAGER)];
+    return [d, plussDager(d, listeVindu)];
   }
   if(S.modus === 'week'){
     const m = mandag(S.sel);
@@ -2076,6 +2120,7 @@ function render(){
   $('app').hidden  = !inn;
   $('caldrop').hidden = !inn;
   $('bottomBar').hidden = !inn;
+  $('hurtigKal').hidden = !inn;
   if(!inn) return;
 
   const liste = (S.vis === 'liste');
@@ -2092,6 +2137,14 @@ function render(){
      fast hoeyrekolonne. Liste beholder kolonnen. */
   const bred = !liste;
   $('app').classList.toggle('uten-side', bred);
+  $('app').classList.toggle('liste', liste);
+  if(liste){
+    const panel = document.querySelector('.cal-panel');
+    const pl = $('plan');
+    if(panel && pl){
+      $('app').style.setProperty('--mnav-h', (pl.offsetTop - panel.offsetTop) + 'px');
+    }
+  }
   $('cal').hidden  = liste || S.modus !== 'month';
   $('tg').hidden   = liste || S.modus === 'month';
   $('plan').hidden = !liste;
@@ -2110,11 +2163,77 @@ function render(){
   else if(!bred) renderDay();
   else if(dagPanelEl) tegnDagPanel();   /* holder en aapen popup i takt */
   renderCalList();
+  renderHurtigKal();
 }
 
 /* ============================================================
    Handlinger
    ============================================================ */
+/* ============================================================
+   Hurtigvelger
+
+   null betyr "vis alle". Ellers er det et utvalg: foerste trykk velger
+   én kalender alene, neste trykk legger til, trykk paa en som allerede
+   er valgt tar den ut igjen.
+   ============================================================ */
+let hurtigUtvalg = null;
+
+function hurtigVelg(id){
+  if(!hurtigUtvalg){
+    hurtigUtvalg = {};
+    hurtigUtvalg[id] = true;
+  } else if(hurtigUtvalg[id]){
+    delete hurtigUtvalg[id];
+    if(!Object.keys(hurtigUtvalg).length) hurtigUtvalg = null;   /* tomt = alle */
+  } else {
+    hurtigUtvalg[id] = true;
+  }
+  brukHurtigUtvalg();
+}
+
+function visAlleKal(){
+  hurtigUtvalg = null;
+  brukHurtigUtvalg();
+}
+
+function brukHurtigUtvalg(){
+  S.calendars.forEach(function(c){
+    c.on = hurtigUtvalg ? !!hurtigUtvalg[c.id] : true;
+    kalenderValg[c.id] = c.on;
+  });
+  lagreKalenderValg();
+  fyllFraCache();
+  render();
+  last(false);
+}
+
+function renderHurtigKal(){
+  const el = $('hurtigKal');
+  if(!el) return;
+  if(!S.calendars.length){ el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = '';
+
+  S.calendars.forEach(function(c){
+    const b = document.createElement('button');
+    b.className = 'hk-ini'
+      + (c.on ? '' : ' av')
+      + ((hurtigUtvalg && hurtigUtvalg[c.id]) ? ' valgt' : '');
+    b.style.background = c.color;
+    b.title = c.name;
+    b.textContent = initialFor(c.id, c.name);
+    b.onclick = function(){ hurtigVelg(c.id); };
+    el.appendChild(b);
+  });
+
+  const alle = document.createElement('button');
+  alle.className = 'hk-alle' + (hurtigUtvalg ? '' : ' pa');
+  alle.title = 'Vis alle kalendere';
+  alle.textContent = 'ALLE';
+  alle.onclick = visAlleKal;
+  el.appendChild(alle);
+}
+
 async function toggleCal(id){
   const c = S.calendars.filter(function(x){ return x.id===id; })[0];
   if(!c) return;
@@ -2198,6 +2317,7 @@ async function refresh(){
 function naviger(){
   lukkBoble();
   lukkDagPanel();      /* dagen man sto paa gjelder ikke lenger */
+  nullstillListe();    /* lista begynner forfra paa den nye datoen */
   fyllFraCache();
   render();
   last(false);
@@ -2995,17 +3115,41 @@ function planItem(e){
 
 /* Lista begynner paa dagen man staar paa - i dag, eller den man har
    valgt i maaned eller uke - og gaar framover derfra. */
-const LISTE_DAGER = 31;
+/* Lista rekker to aar fram, men henter tre maaneder om gangen og
+   utvider seg naar man ruller mot bunnen. */
+const LISTE_MAKS = 730;
+const LISTE_BOLK = 92;
+let listeVindu = LISTE_BOLK;
+
+function nullstillListe(){ listeVindu = LISTE_BOLK; }
+
+/* Naar man naermer seg bunnen hentes neste bolk */
+function listeRulling(){
+  const el = $('plan');
+  if(!el || S.vis !== 'liste') return;
+  if(listeVindu >= LISTE_MAKS) return;
+  if(el.scrollTop + el.clientHeight < el.scrollHeight - 400) return;
+
+  listeVindu = Math.min(LISTE_MAKS, listeVindu + LISTE_BOLK);
+  renderListe();      /* vis dagene med det samme */
+  last(false);        /* og hent avtalene for dem */
+}
 
 function listePeriode(){
   const start = new Date(S.sel.getFullYear(), S.sel.getMonth(), S.sel.getDate());
   const a = [];
-  for(let i = 0; i < LISTE_DAGER; i++) a.push(plussDager(start, i));
+  for(let i = 0; i < listeVindu; i++) a.push(plussDager(start, i));
   return a;
 }
 
+let listeLyttes = false;
+
 function renderListe(){
   const wrap = $('plan');
+  if(!listeLyttes){
+    wrap.addEventListener('scroll', listeRulling, {passive:true});
+    listeLyttes = true;
+  }
   wrap.innerHTML = '';
   const dager = listePeriode();
   const hoppTomme = true;   /* rullende liste: bare dager med avtaler */
@@ -3022,6 +3166,7 @@ function renderListe(){
     const hd = helligdag(d);
     head.className = 'plan-dhead';
     head.innerHTML = esc(DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase())
+      + ' <span class="plan-uke">Uke ' + ukeNr(d) + '</span>'
       + (hd ? ' <span class="plan-helg">· '+esc(hd)+'</span>' : '');
     if(hd) sec.classList.add('helligdag');
     sec.appendChild(head);
