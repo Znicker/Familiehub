@@ -665,7 +665,7 @@ input,select,textarea{font-size:16px}
 
     <div class="week-nav">
       <button type="button" onclick="stepOkt(-1)" title="Forrige handletur">‹</button>
-      <span class="week-label" id="week-label">Ingen handletur valgt</span>
+      <span class="week-label" id="week-label" onclick="openOmdop()">Ingen handletur valgt</span>
       <button type="button" onclick="stepOkt(1)" title="Neste handletur">›</button>
     </div>
 
@@ -885,17 +885,32 @@ input,select,textarea{font-size:16px}
 <div class="modal-backdrop" id="nyhandel-modal">
   <div class="modal-card">
     <h3>Ny handel</h3>
-    <p class="lead">Velg hvilken uke handleturen skal ligge i.</p>
+    <p class="lead">Gi handleturen et navn.</p>
 
     <div class="field">
-      <label for="nyhandel-uke">Uke</label>
-      <input type="text" id="nyhandel-uke" autocomplete="off" inputmode="numeric" oninput="oppdaterNyHandelNavn()">
-      <p class="field-note" id="nyhandel-navn-note"></p>
+      <label for="nyhandel-navn">Navn</label>
+      <input type="text" id="nyhandel-navn" autocomplete="off" placeholder="Uke 35">
+      <p class="field-note">Forslaget er uka vi er i nå. Bytt det gjerne ut, for eksempel «Handel til Emmas bursdag».</p>
     </div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="avbrytNyHandel()">Avbryt</button>
       <button class="btn btn-primary" style="margin-top:0;" onclick="bekreftNyHandel()">Opprett</button>
+    </div>
+  </div>
+</div>
+
+<!-- Endre navn på handleturen -->
+<div class="modal-backdrop" id="omdop-modal">
+  <div class="modal-card">
+    <h3>Endre navn</h3>
+    <div class="field">
+      <label for="omdop-navn">Navn på handleturen</label>
+      <input type="text" id="omdop-navn" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('omdop-modal')">Avbryt</button>
+      <button class="btn btn-success" style="margin-top:0;" onclick="bekreftOmdop()">Lagre</button>
     </div>
   </div>
 </div>
@@ -1228,7 +1243,8 @@ let data = {
   collapsed: []       // butikker som er slått sammen
 };
 
-let viewOktId = null;
+// Hver fane har sin egen aktive handletur - listene er uavhengige
+let viewOktId = { mat: null, annet: null };
 let assignId = null;
 
 /* ============================================================
@@ -1255,13 +1271,14 @@ function mondayOf(week, year){
 
 function stepOkt(dir){
   clearTimeout(omrokeringTimer); omrokeringTimer = null;
-  const liste = sorterteOkter();
+  const omr = aktivOmrade();
+  const liste = sorterteOkter(omr);
   if (!liste.length) return;
-  const i = liste.findIndex(o => o.id === viewOktId);
+  const i = liste.findIndex(o => o.id === viewOktId[omr]);
   let ny = (i === -1) ? 0 : i + dir;
   if (ny < 0) ny = 0;
   if (ny >= liste.length) ny = liste.length - 1;
-  viewOktId = liste[ny].id;
+  viewOktId[omr] = liste[ny].id;
   renderOktLabel();
   render();
 }
@@ -1269,44 +1286,57 @@ function stepOkt(dir){
 function renderOktLabel(){
   const okt = aktivOkt();
   const el = document.getElementById('week-label');
-  el.textContent = '';
-  el.appendChild(document.createTextNode(okt ? ('Handletur ' + oktNavn(okt) + ' · ' + okt.aar) : 'Ingen handletur valgt'));
+  el.textContent = okt ? okt.navn : 'Ingen handletur valgt';
+  el.style.cursor = okt ? 'pointer' : 'default';
+  el.title = okt ? 'Trykk for å endre navn' : '';
 }
 
 /* ============================================================
    Handleøkter
+
+   Dagligvarer og Andre varer er to helt uavhengige lister. Hver
+   handletur hoerer til ett omraade, og fanene har hver sin aktive
+   handletur, hvert sitt navn i toppen og hver sin start/stopp.
    ============================================================ */
 const ROMERTALL = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 
 function oktNavn(okt){
-  return 'Uke ' + okt.uke + ' ' + (okt.suffiks || 'I');
+  return okt ? (okt.navn || 'Uten navn') : '';
 }
 
-// Sorteringsverdi for lopenummeret, saa I kommer foer II osv.
-function oktRang(okt){
-  const i = ROMERTALL.indexOf(okt.suffiks || 'I');
-  return i === -1 ? 99 : i;
+function oktOmrade(okt){
+  return (okt && okt.omrade) || 'mat';
 }
 
-function sorterteOkter(){
-  return data.okter.slice().sort((a, b) => {
-    if (a.aar !== b.aar) return a.aar - b.aar;
-    if (a.uke !== b.uke) return a.uke - b.uke;
-    return oktRang(a) - oktRang(b);
-  });
+function sorterteOkter(omrade){
+  return data.okter
+    .filter(o => oktOmrade(o) === (omrade || aktivOmrade()))
+    .sort((a, b) => (a.opprettet || 0) - (b.opprettet || 0));
 }
 
-function aktivOkt(){
-  return data.okter.find(o => o.id === viewOktId) || null;
+function aktivOkt(omrade){
+  const omr = omrade || aktivOmrade();
+  return data.okter.find(o => o.id === viewOktId[omr]) || null;
 }
 
-// Ny handletur for gitt uke - andre handletur samme uke får "II", tredje "III" osv.
-function opprettOkt(uke, aar){
-  const alt = data.okter.filter(o => o.uke === uke && o.aar === aar).length;
+/* Foreslaatt navn for en ny handletur: inneveerende uke. Finnes navnet
+   allerede i dette omraadet, settes et lopenummer bak. */
+function foreslaattOktNavn(omrade){
+  const base = 'Uke ' + isoWeek(new Date()).week;
+  const brukt = new Set(sorterteOkter(omrade).map(o => (o.navn || '').toLowerCase()));
+  if (!brukt.has(base.toLowerCase())) return base;
+  for (let i = 1; i < 40; i++){
+    const kandidat = base + ' ' + (ROMERTALL[i] || String(i + 1));
+    if (!brukt.has(kandidat.toLowerCase())) return kandidat;
+  }
+  return base;
+}
+
+function opprettOkt(navn, omrade){
   const okt = {
     id: 'o' + Date.now() + Math.random().toString(36).slice(2, 6),
-    uke, aar,
-    suffiks: ROMERTALL[alt] || String(alt + 1),
+    navn: String(navn || '').trim() || foreslaattOktNavn(omrade),
+    omrade: omrade || 'mat',
     startet: false,
     startTid: null,
     opprettet: Date.now()
@@ -1315,55 +1345,23 @@ function opprettOkt(uke, aar){
   return okt;
 }
 
-// Finner en eksisterende handletur for uka, ellers opprettes en ny
-function finnEllerOpprettOkt(uke, aar){
-  return data.okter.find(o => o.uke === uke && o.aar === aar) || opprettOkt(uke, aar);
-}
-
 // Brukes av importflyter som legger varer rett i lista uten at brukeren
-// nødvendigvis har en handletur åpen fra før
-function sikreAktivOkt(){
-  if (aktivOkt()) return aktivOkt();
-  const naa = isoWeek(new Date());
-  const okt = finnEllerOpprettOkt(naa.week, naa.year);
-  viewOktId = okt.id;
+// nødvendigvis har en handletur åpen fra før. Import gjelder dagligvarer.
+function sikreAktivOkt(omrade){
+  const omr = omrade || 'mat';
+  const finnes = aktivOkt(omr);
+  if (finnes) return finnes;
+  const siste = sorterteOkter(omr);
+  const okt = siste.length ? siste[siste.length - 1] : opprettOkt(null, omr);
+  viewOktId[omr] = okt.id;
   return okt;
 }
 
-// Navnet den neste handleturen for inneværende uke ville fått
-function nesteOktNavn(){
-  const naa = isoWeek(new Date());
-  const alt = data.okter.filter(o => o.uke === naa.week && o.aar === naa.year).length;
-  return 'Uke ' + naa.week + ' ' + (ROMERTALL[alt] || String(alt + 1));
-}
-
+/* ---- Ny handel ---- */
 function openNyHandel(){
-  const naa = isoWeek(new Date());
-  document.getElementById('nyhandel-uke').value = String(naa.week);
-  oppdaterNyHandelNavn();
+  document.getElementById('nyhandel-navn').value = foreslaattOktNavn(aktivOmrade());
   document.getElementById('nyhandel-modal').classList.add('active');
-}
-
-// Uka man har skrevet inn, begrenset til et fornuftig ISO-ukenummer
-function nyHandelUke(){
-  const naa = isoWeek(new Date());
-  const n = parseInt(document.getElementById('nyhandel-uke').value, 10);
-  if (isNaN(n) || n < 1 || n > 53) return null;
-  // Uker som er passert i aar hoerer til neste aar
-  const aar = (n < naa.week - 26) ? naa.year + 1 : naa.year;
-  return { uke: n, aar };
-}
-
-function oppdaterNyHandelNavn(){
-  const valg = nyHandelUke();
-  const note = document.getElementById('nyhandel-navn-note');
-  if (!valg){
-    note.textContent = 'Skriv et ukenummer mellom 1 og 53.';
-    return;
-  }
-  const alt = data.okter.filter(o => o.uke === valg.uke && o.aar === valg.aar).length;
-  const navn = 'Uke ' + valg.uke + ' ' + (ROMERTALL[alt] || String(alt + 1));
-  note.textContent = 'Handleturen får navnet ' + navn + ', ' + valg.aar + '.';
+  setTimeout(() => document.getElementById('nyhandel-navn').select(), 30);
 }
 
 /* Varer som venter paa aa bli flyttet over i handleturen som opprettes
@@ -1377,11 +1375,14 @@ function avbrytNyHandel(){
 }
 
 async function bekreftNyHandel(){
-  const valg = nyHandelUke();
-  if (!valg){ document.getElementById('nyhandel-uke').focus(); return; }
+  const feltet = document.getElementById('nyhandel-navn');
+  const navn = feltet.value.trim();
+  if (!navn){ feltet.focus(); return; }
+
+  const omr = aktivOmrade();
   closeModal('nyhandel-modal');
-  const okt = opprettOkt(valg.uke, valg.aar);
-  viewOktId = okt.id;
+  const okt = opprettOkt(navn, omr);
+  viewOktId[omr] = okt.id;
 
   let antall = 0;
   if (flyttTilNyHandel && flyttTilNyHandel.length){
@@ -1397,6 +1398,28 @@ async function bekreftNyHandel(){
   visMelding(antall
     ? (oktNavn(okt) + ' opprettet med ' + antall + ' varer fra forrige handel.')
     : ('Ny handletur: ' + oktNavn(okt) + '.'));
+}
+
+/* ---- Endre navn ---- */
+function openOmdop(){
+  const okt = aktivOkt();
+  if (!okt) return;
+  document.getElementById('omdop-navn').value = okt.navn || '';
+  document.getElementById('omdop-modal').classList.add('active');
+  setTimeout(() => document.getElementById('omdop-navn').select(), 30);
+}
+
+async function bekreftOmdop(){
+  const okt = aktivOkt();
+  const feltet = document.getElementById('omdop-navn');
+  const navn = feltet.value.trim();
+  if (!okt || !navn){ feltet.focus(); return; }
+  okt.navn = navn;
+  closeModal('omdop-modal');
+  renderOktLabel();
+  render();
+  const ok = await medLaas(async () => await save());
+  if (ok === false) visMelding('Klarte ikke lagre.');
 }
 
 async function startHandel(){
@@ -1442,7 +1465,7 @@ function openStopp(){
 
 // Handleturen som kommer etter denne i rekkefølgen, om den finnes
 function nesteOkt(okt){
-  const liste = sorterteOkter();
+  const liste = sorterteOkter(oktOmrade(okt));
   const i = liste.findIndex(o => o.id === okt.id);
   return (i !== -1 && i + 1 < liste.length) ? liste[i + 1] : null;
 }
@@ -1464,8 +1487,8 @@ async function stoppHandel(handling){
     return;
   }
 
-  // Ny handel: avslutt denne, og la brukeren velge uke for den nye
-  // paa samme maate som ellers. Varene flyttes naar den er opprettet.
+  // Ny handel: avslutt denne, og la brukeren navngi den nye paa samme
+  // maate som ellers. Varene flyttes naar den er opprettet.
   if (handling === 'ny'){
     okt.startet = false;
     okt.avsluttet = Date.now();
@@ -1512,10 +1535,16 @@ function oppdaterStartKnapp(){
 
   // Mens man staar i butikken skal ikke hente, opprette og slette ligge
   // i veien - da er det avkryssing som gjelder
-  ['btn-hent', 'btn-ny', 'btn-tom'].forEach(id => {
+  ['btn-ny', 'btn-tom'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = igang ? 'none' : 'inline-flex';
   });
+
+  // Oppskriftsboka gjelder bare mat - andre varer har ingen ingredienser
+  const hent = document.getElementById('btn-hent');
+  if (hent){
+    hent.style.display = (igang || aktivOmrade() !== 'mat') ? 'none' : 'inline-flex';
+  }
 }
 
 /* ============================================================
@@ -1736,17 +1765,18 @@ function settOmrade(omrade){
   // Dagligvarer staar fast paa standardbutikken; andre varer har ingen
   const inp = document.getElementById('f-store');
   if (inp) inp.value = (omrade === 'mat') ? standardButikk() : '';
+
+  // Listene er uavhengige, saa notatet maa foelge omraadet man velger her
+  const okt = aktivOkt(omrade);
+  const note = document.getElementById('add-week-note');
+  if (note){
+    note.textContent = okt
+      ? ('Legges i ' + oktNavn(okt) + '.')
+      : 'Det finnes ingen handletur her ennå - en ny opprettes når du lagrer.';
+  }
 }
 
 function openAddItem(omrade){
-  const okt = aktivOkt();
-  if (!okt){
-    visMelding('Trykk «Ny handel» nederst for å starte en handletur først.');
-    return;
-  }
-  document.getElementById('add-week-note').textContent =
-    'Legges i ' + oktNavn(okt) + ', ' + okt.aar + '.';
-
   document.getElementById('f-name').value = '';
   document.getElementById('f-count').value = '';
   document.getElementById('f-amt').value = '';
@@ -1840,8 +1870,8 @@ function onNameInput(){
 async function saveItem(){
   const name = document.getElementById('f-name').value.trim();
   if (!name){ document.getElementById('f-name').focus(); return; }
-  const okt = aktivOkt();
-  if (!okt){ visMelding('Ingen handletur valgt.'); return; }
+  // Omraadet velges i skjemaet og trenger ikke vaere fanen man kom fra
+  const okt = aktivOkt(nyttOmrade) || sikreAktivOkt(nyttOmrade);
 
   const store = acVerdi('f-store');
   const cat = nyttOmrade === 'mat' ? acVerdi('f-cat') : '';
@@ -2088,7 +2118,7 @@ function visListeSammendrag(d){
   const uke = Number(d.uke), aar = Number(d.aar);
   const harUke = !isNaN(uke) && uke > 0 && !isNaN(aar);
   const okt = aktivOkt();
-  const fallbackIso = okt ? { week: okt.uke, year: okt.aar } : isoWeek(new Date());
+  const fallbackIso = isoWeek(new Date());
   document.getElementById('sum-uke').textContent =
     harUke ? ('Uke ' + uke + ', ' + aar) : ('Uke ' + fallbackIso.week + ', ' + fallbackIso.year);
 
@@ -2133,17 +2163,17 @@ async function bekreftListe(){
   const d = impListe;
   if (!d) return closeModal('sum-modal');
 
-  // Uka i fila bestemmer hvilken handletur varene havner i - finn eller
-  // opprett en for den uka, ellers brukes den aktive handleturen
+  // Import gjelder alltid dagligvarer. Uka i fila navngir handleturen
+  // hvis vi maa opprette en ny; ellers legges varene i den aktive.
   const uke = Number(d.uke), aar = Number(d.aar);
-  if (!isNaN(uke) && uke > 0 && !isNaN(aar)){
-    const okt = finnEllerOpprettOkt(uke, aar);
-    viewOktId = okt.id;
-    renderOktLabel();
-  } else {
-    sikreAktivOkt();
+  const harUkeFraFil = !isNaN(uke) && uke > 0 && !isNaN(aar);
+
+  let okt = aktivOkt('mat');
+  if (!okt){
+    okt = opprettOkt(harUkeFraFil ? ('Uke ' + uke) : null, 'mat');
+    viewOktId.mat = okt.id;
   }
-  const okt = aktivOkt();
+  if (aktivOmrade() === 'mat') renderOktLabel();
 
   taInnKatalog(d.varekatalog);
 
@@ -2151,7 +2181,10 @@ async function bekreftListe(){
   // kan kjøres på nytt senere
   const raa = Array.isArray(d.raalinjer) ? d.raalinjer : [];
   if (raa.length){
-    data.raalinjer[okt.aar + '-W' + String(okt.uke).padStart(2, '0')] = raa;
+    const naaIso = isoWeek(new Date());
+    const nAar = harUkeFraFil ? aar : naaIso.year;
+    const nUke = harUkeFraFil ? uke : naaIso.week;
+    data.raalinjer[nAar + '-W' + String(nUke).padStart(2, '0')] = raa;
   }
 
   const varer = (impKilde === 'raa' && raa.length)
@@ -2185,9 +2218,11 @@ async function bekreftListe(){
   openMerge();
 }
 
+// Ukemenyen i Oppskriftsboka er lagret per kalenderuke. Handleturene har
+// fritt navn, saa her brukes uka vi faktisk er i.
 function planNokkel(){
-  const okt = aktivOkt() || sikreAktivOkt();
-  return okt.aar + '-W' + String(okt.uke).padStart(2, '0');
+  const naa = isoWeek(new Date());
+  return naa.year + '-W' + String(naa.week).padStart(2, '0');
 }
 
 // Rettene som ligger i ukemenyen for uka den aktive handleturen tilhører
@@ -2222,9 +2257,9 @@ function openPicker(){
 
   const lead = document.getElementById('pick-lead');
   if (menyIder.length){
-    lead.textContent = 'Ukemenyen for uke ' + (okt ? okt.uke : '') + ' er huket av på forhånd.';
+    lead.textContent = 'Ukemenyen for uke ' + isoWeek(new Date()).week + ' er huket av på forhånd.';
   } else if (impPlan){
-    lead.textContent = 'Ingen ukemeny for uke ' + (okt ? okt.uke : '') + ' i fila. Velg retter selv.';
+    lead.textContent = 'Ingen ukemeny for uke ' + isoWeek(new Date()).week + ' i fila. Velg retter selv.';
   } else {
     lead.textContent = 'Fila inneholder ingen ukemeny. Velg retter selv.';
   }
@@ -4852,7 +4887,7 @@ async function slaaSammenKlynge(i, kl){
   if (valg.total !== undefined && valg.total !== null){
     data.items.forEach(v => {
       if ((v.name || '').trim().toLowerCase() === beholdt.toLowerCase() &&
-          v.oktId === viewOktId){
+          v.oktId === viewOktId.mat){
         v.qty = String(valg.total).trim();
       }
     });
@@ -5101,8 +5136,9 @@ async function tomListe(omfang){
     const navn = oktNavn(okt);
     data.okter = data.okter.filter(o => o.id !== okt.id);
     // Vis naboen i stedet, ellers blank tilstand
-    const igjen = sorterteOkter();
-    viewOktId = igjen.length ? igjen[igjen.length - 1].id : null;
+    const omr = oktOmrade(okt);
+    const igjen = sorterteOkter(omr);
+    viewOktId[omr] = igjen.length ? igjen[igjen.length - 1].id : null;
     renderOktLabel();
     melding = navn + ' er slettet.';
   }
@@ -5441,10 +5477,13 @@ async function toggleStore(navn){
   render();
 }
 
+// Varene i den aktive handleturen for et omraade. Uten argument brukes
+// fanen man staar i.
 function oktVarer(omrade){
-  return data.items.filter(v =>
-    v.oktId === viewOktId &&
-    (omrade === undefined || (v.omrade || 'mat') === omrade));
+  const omr = omrade || aktivOmrade();
+  const id = viewOktId[omr];
+  if (!id) return [];
+  return data.items.filter(v => v.oktId === id && (v.omrade || 'mat') === omr);
 }
 
 function render(){
@@ -5458,7 +5497,9 @@ function render(){
 
 // Andre varer har ingen varetyper - der grupperes det bare på butikk
 function tegnOmrade(omrade, c, cDone){
-  const okt = aktivOkt();
+  // Begge faner tegnes samtidig, saa handleturen maa hentes for det
+  // omraadet vi tegner - ikke for den fanen som tilfeldigvis er aapen
+  const okt = aktivOkt(omrade);
   const varer = oktVarer(omrade);
   const utenType = (omrade === 'annet');
   if (cDone) cDone.innerHTML = '';
@@ -5688,6 +5729,7 @@ function showView(navn){
 
 function goHome(){
   clearTimeout(omrokeringTimer); omrokeringTimer = null;
+  renderOktLabel();
   render();
   showView('home');
 }
@@ -5705,6 +5747,11 @@ function switchTab(navn){
   rot.querySelectorAll('.donepane').forEach(el => el.classList.remove('active'));
   const done = document.getElementById('done-' + navn);
   if (done) done.classList.add('active');
+
+  // Fanene har hver sin handletur, saa navnet i toppen og knappene
+  // under maa bygges om naar man bytter
+  renderOktLabel();
+  oppdaterStartKnapp();
 }
 
 function closeModal(id){ document.getElementById(id).classList.remove('active'); }
@@ -5786,33 +5833,60 @@ async function init(){
       }
     });
 
-    // Migrer fra det gamle uke/år-systemet til handleøkter: én økt per
-    // uke som allerede fantes varer i, så ingenting går tapt.
-    const oktForUke = new Map();
-    const sikreOktForUke = (uke, aar) => {
-      const nokkel = uke + '-' + aar;
-      if (oktForUke.has(nokkel)) return oktForUke.get(nokkel);
-      let okt = data.okter.find(o => o.uke === uke && o.aar === aar);
-      if (!okt) okt = opprettOkt(uke, aar);
-      oktForUke.set(nokkel, okt);
+    /* Migrer eldre handleturer til fritt navn og eget omraade.
+       Turer som ble laget da uke og lopenummer laa i egne felt faar
+       navnet sitt satt av dem, saa ingenting ser annerledes ut. */
+    data.okter.forEach(o => {
+      if (!o.navn){
+        o.navn = 'Uke ' + o.uke + (o.suffiks && o.suffiks !== 'I' ? ' ' + o.suffiks : '');
+        flyttet = true;
+      }
+      if (!o.omrade){ o.omrade = 'mat'; flyttet = true; }
+    });
+
+    /* Migrer fra det gamle uke/år-systemet: én handletur per uke som
+       allerede fantes varer i, og en egen per omraade, siden listene
+       naa er uavhengige. */
+    const oktForNokkel = new Map();
+    const sikreOktFor = (uke, aar, omrade) => {
+      const nokkel = uke + '-' + aar + '-' + omrade;
+      if (oktForNokkel.has(nokkel)) return oktForNokkel.get(nokkel);
+      const navn = 'Uke ' + uke;
+      let okt = data.okter.find(o => o.navn === navn && oktOmrade(o) === omrade);
+      if (!okt) okt = opprettOkt(navn, omrade);
+      oktForNokkel.set(nokkel, okt);
       return okt;
     };
     [data.items, data.trash].forEach(liste => {
       (liste || []).forEach(v => {
         if (!v.oktId && v.week && v.year){
-          v.oktId = sikreOktForUke(v.week, v.year).id;
+          v.oktId = sikreOktFor(v.week, v.year, v.omrade || 'mat').id;
           flyttet = true;
         }
       });
     });
+
+    /* Varer og handleturer kan ha kommet i utakt hvis en tur ble laget
+       for dagligvarer, men varen hoerer til andre varer. Flytt varen
+       til en tur i sitt eget omraade. */
+    data.items.forEach(v => {
+      const okt = data.okter.find(o => o.id === v.oktId);
+      const omr = v.omrade || 'mat';
+      if (okt && oktOmrade(okt) !== omr){
+        const navn = okt.navn || foreslaattOktNavn(omr);
+        let riktig = data.okter.find(o => o.navn === navn && oktOmrade(o) === omr);
+        if (!riktig) riktig = opprettOkt(navn, omr);
+        v.oktId = riktig.id;
+        flyttet = true;
+      }
+    });
   }
 
-  // Velg hvilken handletur som vises: denne kalenderuka om den finnes,
-  // ellers den sist opprettede, ellers ingen (blank tilstand)
-  const naa = isoWeek(new Date());
-  const oktDenneUka = data.okter.find(o => o.uke === naa.week && o.aar === naa.year);
-  const sortert = sorterteOkter();
-  viewOktId = oktDenneUka ? oktDenneUka.id : (sortert.length ? sortert[sortert.length - 1].id : null);
+  // Hver fane viser sin sist opprettede handletur, ellers blank tilstand
+  ['mat', 'annet'].forEach(omr => {
+    const liste = sorterteOkter(omr);
+    viewOktId[omr] = liste.length ? liste[liste.length - 1].id : null;
+  });
 
   if (flyttet){ await lagreKatalog(); await save(); }
 
