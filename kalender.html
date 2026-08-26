@@ -38,6 +38,11 @@
   --line:rgba(44,62,80,.10);
   --grid:rgba(44,62,80,.20);
   --shadow:0 2px 10px rgba(0,0,0,.08);
+  --radius:18px;
+  /* Handlingsfarger, samme som i handleliste og oppskrifter:
+     groenn skaper noe, blaa gjoer noe med det som finnes. */
+  --handling-ny:#4F8F5F;
+  --blaa:#4A7FA8;
 }
 /* iPad: leses paa avstand, alt et hakk opp */
 @media(min-width:700px){
@@ -117,7 +122,7 @@ body{
 .grid.uten-side{grid-template-columns:1fr}
 .grid.uten-side .side{display:none}
 .panel{
-  background:var(--paper);border-radius:16px;padding:16px;
+  background:var(--paper);border-radius:var(--radius);padding:16px;
   box-shadow:var(--shadow);
 }
 .panel-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-shrink:0}
@@ -372,7 +377,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 
 .veil{
   position:fixed;inset:0;background:rgba(44,62,80,.45);
-  display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;
+  display:flex;align-items:center;justify-content:center;padding:20px;z-index:90;
   -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
 }
 .veil[hidden]{display:none}
@@ -584,7 +589,8 @@ footer .btn{margin-left:auto}
 .caldrop-btn:active{transform:scale(.98)}
 .caldrop-car{font-size:var(--t-etikett);color:var(--ink-soft);font-weight:700}
 .caldrop-panel{
-  position:absolute;top:calc(100% + 8px);right:0;z-index:55;
+  position:fixed;right:20px;z-index:47;
+  bottom:calc(88px + env(safe-area-inset-bottom));
   background:var(--paper);border:1px solid var(--line);border-radius:14px;
   box-shadow:0 16px 40px rgba(44,62,80,.22);padding:8px 14px;
   min-width:240px;max-width:300px;max-height:60vh;overflow-y:auto;
@@ -595,6 +601,75 @@ footer .btn{margin-left:auto}
 /* Kalenderlista bor nå i toppmenyen */
 #app .side-cals{display:none}
 #app .side-day{flex:1 1 100%}
+
+/* ---------- Handlingsknapper nede til hoeyre ----------
+   Samme moenster som handleliste og oppskrifter: runde knapper stablet
+   i hjoernet i stedet for spredt utover topplinja og bunnlinja. */
+.bottom-bar{
+  position:fixed;right:20px;z-index:46;
+  bottom:calc(24px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  pointer-events:none;
+}
+.bottom-bar > *{pointer-events:auto}
+.fab{
+  position:relative;width:48px;height:48px;border-radius:50%;
+  border:none;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;box-shadow:0 4px 14px rgba(44,62,80,.18);
+  touch-action:manipulation;color:#fff;
+}
+.fab:active{transform:scale(.95)}
+.fab.ny{background:var(--handling-ny);font-size:var(--t-pil);line-height:1}
+.fab.blaa{background:var(--blaa)}
+.fab svg{width:21px;height:21px;display:block}
+/* Snurrer mens oppdateringen gaar */
+.fab.gaar svg{animation:fabSnurr .9s linear infinite}
+@keyframes fabSnurr{ to{transform:rotate(360deg)} }
+
+/* ---------- Dagpanel (trykk paa dag naar hoeyrekolonnen er borte) ----------
+   Dekker halve skjermen. Siden velges ut fra hvor dagen ligger: trykker
+   du paa en dag i venstre halvdel, legger panelet seg til hoeyre, slik at
+   dagen du valgte fortsatt er synlig ved siden av. */
+.dagpanel{
+  position:fixed;top:0;bottom:0;width:50vw;z-index:70;
+  background:var(--paper);
+  display:flex;flex-direction:column;
+  box-shadow:0 0 40px rgba(44,62,80,.22);
+  animation:dagpanelInn .18s ease;
+}
+.dagpanel.hoyre{right:0;border-radius:18px 0 0 18px}
+.dagpanel.venstre{left:0;border-radius:0 18px 18px 0}
+@keyframes dagpanelInn{ from{opacity:0} to{opacity:1} }
+.dagpanel-bak{position:fixed;inset:0;z-index:69;background:rgba(44,62,80,.28)}
+.dagpanel-topp{
+  display:flex;align-items:center;gap:12px;
+  padding:18px 18px 12px;border-bottom:1px solid var(--line);flex-shrink:0;
+}
+.dagpanel-tittel{font-size:var(--t-stor);font-weight:700;line-height:1.2}
+.dagpanel-tall{
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);
+  color:var(--ink-soft);
+}
+.dagpanel-lukk{
+  margin-left:auto;flex-shrink:0;width:34px;height:34px;border-radius:50%;
+  border:1px solid var(--line);background:none;color:var(--ink-soft);
+  font-size:var(--t-pil);line-height:1;cursor:pointer;
+}
+.dagpanel-lukk:active{background:var(--bg-2)}
+.dagpanel-liste{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px}
+.dagpanel-ny{
+  margin:0 14px 14px;flex-shrink:0;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;
+  background:var(--ink);color:#fff;border:none;border-radius:999px;
+  padding:12px 18px;cursor:pointer;
+}
+.dagpanel-ny:active{transform:scale(.98)}
+/* Smal skjerm: halv bredde blir for trangt - da dekker panelet alt */
+@media(max-width:700px){
+  .dagpanel{width:100%;border-radius:0}
+}
 
 /* ---------- Dagmeny (langt trykk) ---------- */
 .dagpop{
@@ -743,12 +818,7 @@ input,select,textarea{font-size:16px}
       </div>
     </a>
     <div class="top-right">
-      <div class="caldrop" id="caldrop" hidden>
-        <button class="caldrop-btn" id="caldropBtn" onclick="toggleCalMeny(event)">Kalendere <span class="caldrop-car">&#9662;</span></button>
-        <div class="caldrop-panel" id="caldropPanel" hidden></div>
-      </div>
       <div class="who" id="who" hidden></div>
-      <button class="btn" id="authBtn" onclick="toggleAuth()">Logg inn</button>
     </div>
   </div>
 
@@ -786,7 +856,6 @@ input,select,textarea{font-size:16px}
           <button onclick="bla(1)" title="Neste">&rsaquo;</button>
           <button id="fsBtn" onclick="toggleFull()" title="Fullskjerm" aria-label="Fullskjerm"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
         </div>
-        <button class="btn solid" onclick="nyAvtale()">+ Ny avtale</button>
         </div>
       </div>
       <div class="cal" id="cal"></div>
@@ -813,9 +882,21 @@ input,select,textarea{font-size:16px}
 
   <footer>
     <span id="foot">Familie Hub</span>
-    <button class="btn ghost" onclick="refresh()">Oppdater</button>
   </footer>
 
+</div>
+
+<div class="bottom-bar" id="bottomBar" hidden>
+  <div class="caldrop" id="caldrop" hidden>
+    <div class="caldrop-panel" id="caldropPanel" hidden></div>
+  </div>
+  <button class="fab blaa" id="caldropBtn" onclick="toggleCalMeny(event)" title="Kalendere" aria-label="Kalendere">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+  </button>
+  <button class="fab blaa" id="refreshBtn" onclick="refresh()" title="Oppdater" aria-label="Oppdater">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4.5V11h-6.5"/></svg>
+  </button>
+  <button class="fab ny" onclick="nyAvtale()" title="Ny avtale" aria-label="Ny avtale">+</button>
 </div>
 
 <!-- Dialogvindu for ny/endret avtale -->
@@ -1634,6 +1715,8 @@ function renderCal(medNotat){
         if(skjulTrykk) return;
         S.sel = date;
         render();
+        // Uten hoeyrekolonne har dagen ingen annen plass aa vises paa
+        if($('app').classList.contains('uten-side')) apneDagPanel(date, cell);
       };
       langtTrykk(cell, function(){ dagMeny(date); });
       grid.appendChild(cell);
@@ -1730,9 +1813,9 @@ function renderCalList(){
   const på = S.calendars.filter(function(c){ return c.on; }).length;
   const btn = $('caldropBtn');
   if(btn){
-    btn.innerHTML = 'Kalendere'
-      + (S.calendars.length ? ' <span class="caldrop-car">('+på+'/'+S.calendars.length+')</span>' : '')
-      + ' <span class="caldrop-car">&#9662;</span>';
+    btn.title = S.calendars.length
+      ? ('Kalendere (' + på + '/' + S.calendars.length + ')')
+      : 'Kalendere';
   }
   if(!S.calendars.length){
     el.innerHTML = '<div class="msg">Ingen kalendere funnet.</div>';
@@ -1773,8 +1856,9 @@ function toggleCalMeny(ev){
   if(p) p.hidden = !p.hidden;
 }
 document.addEventListener('click', function(ev){
-  const dd = $('caldrop'), p = $('caldropPanel');
-  if(dd && p && !p.hidden && !dd.contains(ev.target)) p.hidden = true;
+  const dd = $('caldrop'), p = $('caldropPanel'), btn = $('caldropBtn');
+  if(dd && p && !p.hidden && !dd.contains(ev.target) &&
+     !(btn && btn.contains(ev.target))) p.hidden = true;
 });
 function visTomme(){ S.visAlle = !S.visAlle; renderCalList(); }
 
@@ -1782,9 +1866,9 @@ function render(){
   const inn = !!(S.token || S.refresh);
   $('gate').hidden = inn;
   $('app').hidden  = !inn;
-  $('authBtn').textContent = inn ? 'Logg ut' : 'Logg inn';
   $('who').hidden = !inn || !S.me;
   $('caldrop').hidden = !inn;
+  $('bottomBar').hidden = !inn;
   if(S.me) $('who').innerHTML = '<b>'+esc(S.me.displayName||'')+'</b>'+esc(S.me.userPrincipalName||'');
   if(!inn) return;
 
@@ -1796,8 +1880,14 @@ function render(){
 
   const liste = (S.vis === 'liste');
   const plan  = (S.vis === 'plan');
-  const bredPlan = plan && S.modus === 'week';   /* syv soeyler trenger hele bredden */
-  $('app').classList.toggle('uten-side', bredPlan);
+  /* To kombinasjoner bruker hele bredden: Uke+Plan (syv kronologiske
+     soeyler) og Maaned+Kalender (rutenettet fortjener plassen). I begge
+     tilfeller er hoeyrekolonnen borte, og dagen man trykker paa vises
+     som en halvsides popup i stedet. */
+  const bredPlan = plan && S.modus === 'week';
+  const bredKal  = !liste && !plan && (S.modus === 'month' || S.modus === 'week');
+  const bred     = bredPlan || bredKal;
+  $('app').classList.toggle('uten-side', bred);
   $('cal').hidden  = liste || S.modus !== 'month';
   $('tg').hidden   = liste || S.modus === 'month';
   $('plan').hidden = !liste;
@@ -1814,7 +1904,8 @@ function render(){
     else renderTid();
   }
 
-  if(!bredPlan) renderDay();
+  if(!bred) renderDay();
+  else if(dagPanelEl) tegnDagPanel();   /* holder en aapen popup i takt */
   renderCalList();
 }
 
@@ -1859,11 +1950,18 @@ async function last(force){
     if(S.ventende){ S.ventende = false; last(false); }
   }
 }
-async function refresh(){ return last(true); }
+async function refresh(){
+  // Ikonet snurrer saa lenge hentingen gaar - ellers ser knappen doed ut
+  const b = $('refreshBtn');
+  if(b) b.classList.add('gaar');
+  try { return await last(true); }
+  finally { if(b) b.classList.remove('gaar'); }
+}
 
 /* Rask bladding: tegn straks fra cachen, hent i bakgrunnen kun ved behov */
 function naviger(){
   lukkBoble();
+  lukkDagPanel();      /* dagen man sto paa gjelder ikke lenger */
   fyllFraCache();
   render();
   last(false);
@@ -2273,7 +2371,12 @@ function renderUkePlan(dager){
     c.innerHTML = '<div class="uke-dow">' + DOW[(d.getDay()+6)%7] + '</div>'
                 + '<div class="uke-dnum">' + d.getDate() + '</div>'
                 + (hd ? '<div class="uke-helg" title="'+esc(hd)+'">'+esc(hd)+'</div>' : '');
-    c.onclick = function(){ if(skjulTrykk) return; S.sel = d; render(); };
+    c.onclick = function(){
+      if(skjulTrykk) return;
+      S.sel = d;
+      render();
+      if($('app').classList.contains('uten-side')) apneDagPanel(d, c);
+    };
     langtTrykk(c, function(){ dagMeny(d); });
     head.appendChild(c);
   });
@@ -2368,7 +2471,12 @@ function renderUke(medNotat, dager){
     c.innerHTML = '<div class="uke-dow">' + DOW[(d.getDay()+6)%7] + '</div>'
                 + '<div class="uke-dnum">' + d.getDate() + '</div>'
                 + (hd ? '<div class="uke-helg" title="'+esc(hd)+'">'+esc(hd)+'</div>' : '');
-    c.onclick = function(){ if(skjulTrykk) return; S.sel = d; render(); };
+    c.onclick = function(){
+      if(skjulTrykk) return;
+      S.sel = d;
+      render();
+      if($('app').classList.contains('uten-side')) apneDagPanel(d, c);
+    };
     langtTrykk(c, function(){ dagMeny(d); });
     head.appendChild(c);
   });
@@ -2625,10 +2733,12 @@ function renderTid(){
   const tg = $('tg');
   tg.innerHTML = '';
 
-  /* --- Topprad med datoer --- */
+  /* --- Topprad med datoer. I dagvisning gjentar den bare overskriften
+         over, saa der sloeyfes den helt. --- */
   const head = document.createElement('div');
   head.className = 'tg-head';
   head.style.gridTemplateColumns = kols;
+  if(S.modus === 'day') head.style.display = 'none';
   head.appendChild(Object.assign(document.createElement('div'), {className:'tg-corner'}));
   dager.forEach(function(d){
     const c = document.createElement('div');
@@ -2860,6 +2970,103 @@ function langtTrykk(el, handler){
   el.addEventListener('mouseup',    stopp);
   el.addEventListener('mouseleave', stopp);
   el.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
+}
+
+/* ============================================================
+   Dagpanel
+
+   Naar hoeyrekolonnen er borte (Maaned+Kalender og Uke+Plan) vises
+   dagen man trykker paa i et panel som dekker halve skjermen. Panelet
+   legger seg paa motsatt side av dagen, saa dagen forblir synlig.
+   ============================================================ */
+let dagPanelEl = null;
+
+function apneDagPanel(dato, kilde){
+  lukkDagPanel();
+
+  // Hvilken halvdel ble trykket? Panelet gaar paa den andre siden.
+  let tilHoyre = true;
+  if(kilde && kilde.getBoundingClientRect){
+    const r = kilde.getBoundingClientRect();
+    tilHoyre = (r.left + r.width / 2) < window.innerWidth / 2;
+  }
+
+  const bak = document.createElement('div');
+  bak.className = 'dagpanel-bak';
+  bak.onclick = lukkDagPanel;
+
+  const panel = document.createElement('div');
+  panel.className = 'dagpanel ' + (tilHoyre ? 'hoyre' : 'venstre');
+
+  document.body.appendChild(bak);
+  document.body.appendChild(panel);
+  dagPanelEl = { panel: panel, bak: bak };
+  tegnDagPanel();
+}
+
+function tegnDagPanel(){
+  if(!dagPanelEl) return;
+  const d = S.sel, today = new Date();
+  const evs = eventsOn(d);
+
+  const topp = document.createElement('div');
+  topp.className = 'dagpanel-topp';
+
+  const tit = document.createElement('div');
+  tit.className = 'dagpanel-tittel';
+  tit.textContent = sameDay(d, today)
+    ? 'I dag'
+    : DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase();
+  topp.appendChild(tit);
+
+  const tall = document.createElement('span');
+  tall.className = 'dagpanel-tall';
+  tall.textContent = evs.length ? evs.length + (evs.length === 1 ? ' avtale' : ' avtaler') : '';
+  topp.appendChild(tall);
+
+  const lukk = document.createElement('button');
+  lukk.className = 'dagpanel-lukk';
+  lukk.setAttribute('aria-label', 'Lukk');
+  lukk.innerHTML = '&times;';
+  lukk.onclick = lukkDagPanel;
+  topp.appendChild(lukk);
+
+  const liste = document.createElement('div');
+  liste.className = 'dagpanel-liste';
+  if(!evs.length){
+    liste.innerHTML = '<div class="msg">Ingen avtaler denne dagen.</div>';
+  } else {
+    liste.innerHTML = evs.map(function(e){
+      const time = e.allDay
+        ? 'Hele<br>dagen'
+        : pad(e.start.getHours())+'.'+pad(e.start.getMinutes())
+          + '<br>' + pad(e.end.getHours())+'.'+pad(e.end.getMinutes());
+      const meta = [e.calName, e.where].filter(Boolean).join(' · ');
+      return '<div class="ev klikk" onclick="visBoble(\''+e.id+'\', event)">'
+        + '<div class="ev-time">'+time+'</div>'
+        + '<div class="ev-body">'
+        +   '<div class="ev-title">'+esc(e.title)+'</div>'
+        +   '<div class="ev-meta"><span class="ev-who" style="background:'+e.color+'"></span>'+esc(meta)+'</div>'
+        + '</div></div>';
+    }).join('');
+  }
+
+  const ny = document.createElement('button');
+  ny.className = 'dagpanel-ny';
+  ny.textContent = '+ Ny avtale';
+  ny.onclick = function(){ lukkDagPanel(); nyAvtale(); };
+
+  dagPanelEl.panel.innerHTML = '';
+  dagPanelEl.panel.appendChild(topp);
+  dagPanelEl.panel.appendChild(liste);
+  dagPanelEl.panel.appendChild(ny);
+}
+
+function lukkDagPanel(){
+  if(!dagPanelEl) return;
+  dagPanelEl.panel.remove();
+  dagPanelEl.bak.remove();
+  dagPanelEl = null;
 }
 
 /* Meny som spretter opp ved langt trykk på en dag:
