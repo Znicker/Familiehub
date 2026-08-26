@@ -210,26 +210,6 @@ body{
 .cal-cell.weekend .cal-num{color:var(--ink-soft)}
 
 .cal-evs{display:flex;flex-direction:column;gap:3px;min-height:0}
-/* Brikker i maanedsrutenettet: én per kalender som har noe den dagen,
-   med initial og antall. Kalendere uten avtaler vises ikke. */
-.cal-inis{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;min-height:0;overflow:hidden}
-.cal-ini{
-  position:relative;width:21px;height:21px;border-radius:50%;
-  border:none;padding:0;color:#fff;cursor:pointer;flex-shrink:0;
-  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
-  display:flex;align-items:center;justify-content:center;line-height:1;
-}
-.cal-ini:active{transform:scale(.92)}
-/* Antallet henger som et lite merke naar det er mer enn én */
-.cal-ini-n{
-  position:absolute;right:-3px;bottom:-3px;
-  min-width:13px;height:13px;border-radius:999px;padding:0 3px;
-  background:var(--ink);color:#fff;border:1.5px solid var(--paper);
-  font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;line-height:1;
-}
-.cal-cell.sel .cal-ini-n{border-color:var(--ink)}
-
 .cal-ev{
   font-family:'Archivo',sans-serif;
   font-size:var(--t-etikett);font-weight:600;line-height:1.28;
@@ -529,7 +509,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* ---------- Heldags / fleredags bånd (måned) ---------- */
 .cal-bars{display:flex;flex-direction:column;gap:2px;margin:0 -7px 3px;overflow:visible}
 .cal-band{
-  height:16px;display:flex;align-items:center;justify-content:center;color:#fff;
+  height:16px;display:flex;align-items:center;color:#fff;
   font-size:var(--t-etikett);font-weight:700;line-height:1;padding:0 6px;
   white-space:nowrap;
 }
@@ -648,6 +628,14 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .fab:active{transform:scale(.95)}
 .fab.ny{background:var(--handling-ny);font-size:var(--t-pil);line-height:1}
 .fab.blaa{background:var(--blaa)}
+/* Oppdater: foerste trykk utvider og viser tidspunktet, andre trykk henter */
+.fab.aapen{
+  width:auto;border-radius:999px;padding:0 16px;gap:9px;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+  letter-spacing:.04em;white-space:nowrap;
+}
+.fab-tekst{display:none}
+.fab.aapen .fab-tekst{display:block}
 .fab svg{width:21px;height:21px;display:block}
 /* Snurrer mens oppdateringen gaar */
 .fab.gaar svg{animation:fabSnurr .9s linear infinite}
@@ -903,8 +891,9 @@ input,select,textarea{font-size:16px}
   <button class="fab blaa" id="caldropBtn" onclick="toggleCalMeny(event)" title="Kalendere" aria-label="Kalendere">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
   </button>
-  <button class="fab blaa" id="refreshBtn" onclick="refresh()" title="Oppdater" aria-label="Oppdater">
+  <button class="fab blaa" id="refreshBtn" onclick="oppdaterTrykk()" title="Oppdater" aria-label="Oppdater">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4.5V11h-6.5"/></svg>
+    <span class="fab-tekst" id="refreshTekst"></span>
   </button>
 </div>
 
@@ -1350,6 +1339,62 @@ async function loadMe(){
   if(fra){ minEpost = fra; settRettigheter(); render(); }
 }
 
+/* ============================================================
+   Initialer
+
+   Husstanden har forrang og beholder én bokstav. Alle andre som
+   kolliderer faar flere bokstaver til initialen er entydig, saa to
+   kalendere aldri viser samme merke.
+   ============================================================ */
+const INITIAL_PRI = ['Magne', 'Nina', 'Emma', 'Andrea', 'Familien'];
+let initialKart = {};
+
+function byggInitialer(){
+  initialKart = {};
+  const brukt = {};
+
+  // Rent navn uten e-post og parenteser, saa "Emma (skole)" blir "Emma"
+  const reint = function(n){
+    return String(n || '?').replace(/[<(].*$/, '').trim() || '?';
+  };
+  const forkort = function(n, lengde){
+    const r = reint(n);
+    return (r.slice(0, lengde).charAt(0).toUpperCase() + r.slice(1, lengde)).trim();
+  };
+
+  const rang = function(c){
+    const r = reint(c.name).toLowerCase();
+    const i = INITIAL_PRI.findIndex(function(p){ return r.indexOf(p.toLowerCase()) === 0; });
+    return i === -1 ? INITIAL_PRI.length : i;
+  };
+
+  // Husstanden foerst, saa de faar sin ene bokstav foer noen andre
+  S.calendars.slice()
+    .sort(function(a, b){ return rang(a) - rang(b); })
+    .forEach(function(c){
+      let lengde = 1, merke = forkort(c.name, 1);
+      while(brukt[merke] && lengde < 6){
+        lengde++;
+        merke = forkort(c.name, lengde);
+      }
+      // Gaar navnet tomt for bokstaver, settes et tall bak
+      if(brukt[merke]){
+        let n = 2;
+        while(brukt[merke + n]) n++;
+        merke = merke + n;
+      }
+      brukt[merke] = true;
+      initialKart[c.id] = merke;
+    });
+}
+
+// Merket for en kalender. Faller tilbake til foerste bokstav om
+// kalenderlista ikke er lest inn ennaa.
+function initialFor(calId, navn){
+  return initialKart[calId] ||
+    String(navn || '?').trim().charAt(0).toUpperCase();
+}
+
 async function loadCalendars(){
   const d = await graph('/me/calendars?$top=50');
   const prev = {};
@@ -1362,6 +1407,7 @@ async function loadCalendars(){
       on: prev[c.id] !== undefined ? prev[c.id] : (husket !== undefined ? husket : true)
     };
   });
+  byggInitialer();
 }
 
 /* Hvilken periode som skal hentes, ut fra valgt visning */
@@ -1585,14 +1631,7 @@ function fyllAvtaler(){
       if(erStart) band.classList.add('s');
       if(erSlutt) band.classList.add('e');
 
-      /* Tittelen settes i midtcella av strekket, saa den staar sentrert
-         over hele avtalen i stedet for klemt inn i foerste dag. */
-      let foer = 0, etter = 0;
-      if(!rundBegge){
-        while(col - foer > 0 && dekkerDag(e, plussDager(d, -(foer + 1)))) foer++;
-        while(col + etter < 6 && dekkerDag(e, plussDager(d,  etter + 1))) etter++;
-      }
-      if(foer === etter || (foer === etter - 1)) band.textContent = e.title;
+      if(erStart) band.textContent = e.title;      /* tittel ved start/ukestart */
       band.title = e.title;
       band.style.cursor = 'pointer';
       band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; visBoble(e.id, ev); };
@@ -1629,10 +1668,11 @@ function fyllAvtaler(){
       .filter(function(e){ return !erBånd(e) && sameDay(e.start, d); })
       .sort(function(a, b){ return a.start - b.start; });
 
-    /* Plan-visningen i maaned skal fortsatt vise titler og notater -
-       der er poenget aa lese innholdet, ikke telle det. */
-    if(timed.length && visNotat){
-      const rest = Math.max(1, Math.ceil((evsPerCell() - linjer) / 2));
+    /* --- Tidsbestemte (én-dags) avtaler --- */
+    if(timed.length){
+      const rest = visNotat
+        ? Math.max(1, Math.ceil((evsPerCell() - linjer) / 2))
+        : Math.max(1, evsPerCell() - linjer);
       const vis = timed.slice(0, rest);
       vis.forEach(function(e){
         const row = document.createElement('div');
@@ -1650,7 +1690,7 @@ function fyllAvtaler(){
         row.appendChild(dot);
         row.appendChild(txt);
         box.appendChild(row);
-        const note = (e.note || '').trim();
+        const note = visNotat ? (e.note || '').trim() : '';
         if(note){
           const nl = document.createElement('div');
           nl.className = 'cal-ev-note';
@@ -1664,47 +1704,6 @@ function fyllAvtaler(){
         more.textContent = '+' + (timed.length - vis.length) + ' til';
         box.appendChild(more);
       }
-      return;
-    }
-
-    if(timed.length){
-      const perKal = [];
-      timed.forEach(function(e){
-        const funnet = perKal.filter(function(x){ return x.calId === e.calId; })[0];
-        if(funnet){ funnet.antall++; }
-        else perKal.push({ calId:e.calId, navn:e.calName, farge:e.color, antall:1 });
-      });
-
-      const chips = document.createElement('div');
-      chips.className = 'cal-inis';
-      perKal.forEach(function(k){
-        const chip = document.createElement('button');
-        chip.className = 'cal-ini';
-        chip.style.background = k.farge;
-        chip.title = k.navn + ': ' + k.antall +
-          (k.antall === 1 ? ' avtale' : ' avtaler');
-        chip.textContent = (k.navn || '?').trim().charAt(0).toUpperCase();
-
-        if(k.antall > 1){
-          const n = document.createElement('span');
-          n.className = 'cal-ini-n';
-          n.textContent = k.antall;
-          chip.appendChild(n);
-        }
-
-        // Trykk paa brikka viser dagen, ikke en enkelt avtale
-        chip.onclick = function(ev){
-          ev.stopPropagation();
-          if(skjulTrykk) return;
-          S.sel = d;
-          render();
-          if($('app').classList.contains('uten-side')){
-            apneDagPanel(d, chip.closest('.cal-cell') || chip);
-          }
-        };
-        chips.appendChild(chip);
-      });
-      box.appendChild(chips);
     }
   });
 }
@@ -1991,10 +1990,9 @@ async function last(force){
     fyllFraCache();
     render();
     if(hentet){
-      // Bunnlinja er borte - tidspunktet vises paa oppdater-knappen i stedet
+      sistHentet = new Date().toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'});
       const rb = $('refreshBtn');
-      if(rb) rb.title = 'Sist oppdatert ' +
-        new Date().toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'});
+      if(rb) rb.title = 'Sist oppdatert ' + sistHentet;
     }
   }catch(err){
     console.error(err);
@@ -2005,6 +2003,37 @@ async function last(force){
     if(S.ventende){ S.ventende = false; last(false); }
   }
 }
+/* Foerste trykk viser naar lista sist ble hentet, andre trykk henter paa
+   nytt. Lukker seg selv etter noen sekunder. */
+let sistHentet = null;
+let oppdaterTimer = null;
+
+function lukkOppdater(){
+  clearTimeout(oppdaterTimer); oppdaterTimer = null;
+  const b = $('refreshBtn');
+  if(b) b.classList.remove('aapen');
+}
+
+function oppdaterTrykk(){
+  const b = $('refreshBtn');
+  if(!b) return;
+
+  if(b.classList.contains('aapen')){   /* andre trykk - hent */
+    lukkOppdater();
+    refresh();
+    return;
+  }
+
+  const t = $('refreshTekst');
+  if(t){
+    t.textContent = sistHentet
+      ? ('Sist oppdatert ' + sistHentet)
+      : 'Ikke oppdatert ennå';
+  }
+  b.classList.add('aapen');
+  oppdaterTimer = setTimeout(lukkOppdater, 4000);
+}
+
 async function refresh(){
   // Ikonet snurrer saa lenge hentingen gaar - ellers ser knappen doed ut
   const b = $('refreshBtn');
@@ -2329,7 +2358,7 @@ function dus(hex, a){
 }
 
 function planFarget(e){
-  const bokstav = (e.calName || '?').trim().charAt(0).toUpperCase();
+  const bokstav = initialFor(e.calId, e.calName);
   const el = document.createElement('div');
   el.className = 'pu-ev';
   el.style.background  = dus(e.color, .18);
