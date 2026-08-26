@@ -687,8 +687,11 @@ input,select,textarea{font-size:16px}
 
       <div class="field">
         <label for="f-name">Vare</label>
-        <input type="text" id="f-name" placeholder="Melk, brokkoli, kaffe …"
-               autocomplete="off" oninput="onNameInput()">
+        <div class="ac-wrap" id="ac-wrap-f-name">
+          <input type="text" id="f-name" autocomplete="off"
+                 placeholder="Melk, brokkoli, kaffe …" oninput="onNameInput()">
+          <div class="ac-drop" id="ac-drop-f-name"></div>
+        </div>
         <p class="field-hint" id="f-name-hint" style="display:none;"></p>
       </div>
 
@@ -4149,11 +4152,22 @@ const VARE_BILDE = {
   "lim": "vareikoner/lim.webp",
   "saks": "vareikoner/saks.webp",
 };
-const VARE_BILDE_DEFAULT = 'vareikoner/icons/annen-vare.svg';
+const VARE_BILDE_DEFAULT = '/vareikoner/icons/annen-vare.svg';
+
+/* Navnelista for autocomplete utledes av oppslagstabellen i stedet for aa
+   ligge som en egen kopi. Naar tabellen endres, foelger lista med.
+   Noeklene er smaa bokstaver; foerste bokstav settes stor for visning.
+   varebildeSrc() gjoer om til smaa igjen ved oppslag, saa det gaar rundt. */
+const VARE_NAVN = Object.keys(VARE_BILDE)
+  .map(k => k.charAt(0).toUpperCase() + k.slice(1))
+  .sort((a, b) => a.localeCompare(b, 'nb'));
 
 function varebildeSrc(navn){
   const k = (navn||'').trim().toLowerCase();
-  return VARE_BILDE[k] || VARE_BILDE_DEFAULT;
+  const sti = VARE_BILDE[k];
+  // Tabellen har relative stier; butikklogoene er absolutte. Gjoer dem like
+  // her, saa de ikke ryker naar sidene en gang havner under skallet.
+  return sti ? '/' + sti : VARE_BILDE_DEFAULT;
 }
 
 function butikkLogoSrc(navn){
