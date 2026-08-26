@@ -295,12 +295,12 @@
   .item-row.checked .item-name{ text-decoration:line-through; color:var(--ink-soft); }
   /* Nederst er hele blokken alt dempet - ikke demp raden en gang til */
   .done-wrap .item-row.checked{ opacity:1; }
-  /* Avkrysning - kun synlig i handlemodus (etter Start handel). Rødt merke
-     som legger varen nederst i utgråaet stand når man trykker den. */
+  /* Avkrysning - kun synlig i handlemodus (etter Start handel). Tar plassen
+     til slett-knappen, som skjules mens handelen pågår. */
   .item-check{
-    flex-shrink:0; width:36px; height:36px; margin-left:6px; display:flex; align-items:center;
-    justify-content:center; background:none; border:1.5px solid var(--danger); border-radius:50%;
-    cursor:pointer; font-size:17px; font-weight:700; color:var(--danger); touch-action:manipulation;
+    flex-shrink:0; width:26px; height:26px; margin-left:8px; display:flex; align-items:center;
+    justify-content:center; background:none; border:1.5px solid var(--danger); border-radius:8px;
+    cursor:pointer; font-size:14px; font-weight:700; color:var(--danger); touch-action:manipulation;
   }
   .item-row.checked .item-check{ background:var(--danger); color:#fff; }
   .item-check:active{ transform:scale(0.88); }
@@ -328,6 +328,11 @@
     overflow-wrap:anywhere; word-break:break-word;
   }
   .item-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; line-height:1.3; }
+  /* Mengde og enhet paa egen linje under varenavnet */
+  .vare-mengde-linje{
+    font-size:var(--t-meta); color:var(--ink-soft); font-weight:600;
+    margin-top:2px; line-height:1.3;
+  }
   /* Antall vises som "×N" til slutt paa varenavnet, ikke som egen kolonne */
   .vare-antall{
     color:var(--ink-soft); font-weight:700; margin-left:4px; white-space:nowrap;
@@ -368,7 +373,7 @@
   }
   .bottom-bar > *{ pointer-events:auto; }
   /* To vertikalt stablede FAB-knapper nede til høyre: Start handel og Ny handel */
-  .new-fab, .start-fab{
+  .new-fab, .start-fab, .stop-fab{
     position:relative; width:48px; height:48px; border-radius:50%;
     border:none; padding:0; font-size:var(--t-pil);
     display:flex; align-items:center; justify-content:center;
@@ -376,10 +381,11 @@
     touch-action:manipulation;
   }
   .new-fab{ background:var(--handling-ny); color:#FFFFFF; }
-  /* Start handel er blå - egen, ny betydning: "begynn noe", skilt fra
-     de fire etablerte handlingsfargene. */
+  /* Start og stopp handel er blå - egen, ny betydning: "begynn/avslutt noe",
+     skilt fra de fire etablerte handlingsfargene. */
   .start-fab{ background:var(--blue); color:#FFFFFF; padding-left:3px; }
-  .new-fab:active, .start-fab:active{ transform:scale(0.95); }
+  .stop-fab{ background:var(--blue); color:#FFFFFF; font-size:16px; }
+  .new-fab:active, .start-fab:active, .stop-fab:active{ transform:scale(0.95); }
 
   /* ---------- Buttons & fields ---------- */
   .btn{
@@ -425,15 +431,6 @@
   .vare-bilde{
     width:40px; height:40px; object-fit:contain; flex-shrink:0;
     border-radius:6px; background:transparent;
-  }
-  /* Bilde + mengde (amt/enhet) stablet under - antallet vises heller til slutt paa varenavnet */
-  .vare-bilde-wrap{
-    display:flex; flex-direction:column; align-items:center; gap:2px;
-    flex-shrink:0; width:44px;
-  }
-  .vare-mengde-liten{
-    font-size:var(--t-etikett); color:var(--ink-soft); font-weight:600;
-    text-align:center; line-height:1.1; max-width:44px;
   }
   .item-row{ display:flex; align-items:center; gap:10px; }
 
@@ -664,14 +661,13 @@ input,select,textarea{font-size:16px}
 
       <div class="tabpane active" id="tab-mat">
         <div id="stores-container"></div>
-        <button class="btn btn-primary" onclick="openAddItem('mat')">Legg til vare</button>
       </div>
 
       <div class="tabpane" id="tab-annet">
         <div id="annet-container"></div>
-        <button class="btn btn-primary" onclick="openAddItem('annet')">Legg til vare</button>
       </div>
 
+      <button class="btn btn-primary" onclick="openNyHandel()">Ny handel</button>
       <button type="button" class="btn-quiet" id="btn-tom" onclick="openTomListe()">Tøm lista</button>
     </div>
   </section>
@@ -794,7 +790,8 @@ input,select,textarea{font-size:16px}
 
 <div class="bottom-bar" id="bottom-bar">
   <button type="button" class="start-fab" id="start-fab" onclick="startHandel()" title="Start handel" style="display:none;">▶</button>
-  <button type="button" class="new-fab" onclick="nyHandel()" title="Ny handel">+</button>
+  <button type="button" class="stop-fab" id="stop-fab" onclick="openStopp()" title="Stopp handel" style="display:none;">■</button>
+  <button type="button" class="new-fab" onclick="openAddItem()" title="Legg til vare">+</button>
 </div>
 
 <!-- Importer fra Oppskriftsboka -->
@@ -860,6 +857,46 @@ input,select,textarea{font-size:16px}
       <span id="tom-alt-tekst"></span>
     </button>
     <button class="btn btn-ghost" style="margin-top:10px;" onclick="closeModal('tom-modal')">Avbryt</button>
+  </div>
+</div>
+
+<!-- Ny handel -->
+<div class="modal-backdrop" id="nyhandel-modal">
+  <div class="modal-card">
+    <h3>Ny handel?</h3>
+    <p class="lead">Det opprettes en ny handletur, <strong id="nyhandel-navn"></strong>. Den blir tom, og du kan legge til varer i den.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('nyhandel-modal')">Avbryt</button>
+      <button class="btn btn-primary" style="margin-top:0;" onclick="bekreftNyHandel()">Opprett</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stopp handel -->
+<div class="modal-backdrop" id="stopp-modal">
+  <div class="modal-card">
+    <h3>Avslutte handelen?</h3>
+    <p class="lead" id="stopp-lead"></p>
+
+    <!-- Vises bare når det står igjen varer som ikke er krysset av -->
+    <div id="stopp-valg" style="display:none;">
+      <button class="btn btn-primary" id="stopp-flytt-btn" style="margin-top:0;" onclick="stoppHandel('flytt')">
+        <span id="stopp-flytt-tekst">Flytt til neste handel</span>
+      </button>
+      <button class="btn btn-primary" style="margin-top:10px; background:var(--handling-tvers);" onclick="stoppHandel('ny')">
+        Flytt til en ny handel
+      </button>
+      <button class="btn btn-primary" style="margin-top:10px; background:var(--danger);" onclick="stoppHandel('forkast')">
+        Forkast varene
+      </button>
+    </div>
+
+    <!-- Vises når alt er handlet -->
+    <div id="stopp-enkel" style="display:none;">
+      <button class="btn btn-primary" style="margin-top:0;" onclick="stoppHandel('ferdig')">Avslutt handelen</button>
+    </div>
+
+    <button class="btn btn-ghost" style="margin-top:10px;" onclick="closeModal('stopp-modal')">Avbryt</button>
   </div>
 </div>
 
@@ -1254,13 +1291,25 @@ function sikreAktivOkt(){
   return okt;
 }
 
-async function nyHandel(){
+// Navnet den neste handleturen for inneværende uke ville fått
+function nesteOktNavn(){
+  const naa = isoWeek(new Date());
+  const alt = data.okter.filter(o => o.uke === naa.week && o.aar === naa.year).length;
+  return 'Uke ' + naa.week + (ROMERTALL[alt] ? ' ' + ROMERTALL[alt] : '');
+}
+
+function openNyHandel(){
+  document.getElementById('nyhandel-navn').textContent = nesteOktNavn();
+  document.getElementById('nyhandel-modal').classList.add('active');
+}
+
+async function bekreftNyHandel(){
+  closeModal('nyhandel-modal');
   const naa = isoWeek(new Date());
   const okt = opprettOkt(naa.week, naa.year);
   viewOktId = okt.id;
   renderOktLabel();
   render();
-  oppdaterStartKnapp();
   const ok = await medLaas(async () => await save());
   if (ok === false) visMelding('Klarte ikke lagre.');
   visMelding('Ny handletur: ' + oktNavn(okt) + '.');
@@ -1271,18 +1320,88 @@ async function startHandel(){
   if (!okt || okt.startet) return;
   okt.startet = true;
   okt.startTid = Date.now();
-  oppdaterStartKnapp();
   render();
   const ok = await medLaas(async () => await save());
   if (ok === false) visMelding('Klarte ikke lagre.');
 }
 
-// Play-knappen vises kun når det finnes en handletur som ikke er startet ennå
+/* ---- Stoppe handelen ---- */
+function openStopp(){
+  const okt = aktivOkt();
+  if (!okt || !okt.startet) return;
+
+  const igjen = oktVarer().filter(v => !v.done);
+  const lead = document.getElementById('stopp-lead');
+  const valg = document.getElementById('stopp-valg');
+  const enkel = document.getElementById('stopp-enkel');
+
+  if (igjen.length){
+    lead.textContent = 'Det står igjen ' + igjen.length +
+      (igjen.length === 1 ? ' vare' : ' varer') + ' som ikke er krysset av. Hva vil du gjøre med dem?';
+    valg.style.display = 'block';
+    enkel.style.display = 'none';
+
+    // Neste handletur i rekka, om det finnes en etter denne
+    const neste = nesteOkt(okt);
+    document.getElementById('stopp-flytt-tekst').textContent =
+      neste ? ('Flytt til ' + oktNavn(neste)) : 'Flytt til neste handel';
+    document.getElementById('stopp-flytt-btn').style.display = neste ? 'inline-flex' : 'none';
+  } else {
+    lead.textContent = 'Alle varene er handlet. Handleturen avsluttes.';
+    valg.style.display = 'none';
+    enkel.style.display = 'block';
+  }
+
+  document.getElementById('stopp-modal').classList.add('active');
+}
+
+// Handleturen som kommer etter denne i rekkefølgen, om den finnes
+function nesteOkt(okt){
+  const liste = sorterteOkter();
+  const i = liste.findIndex(o => o.id === okt.id);
+  return (i !== -1 && i + 1 < liste.length) ? liste[i + 1] : null;
+}
+
+async function stoppHandel(handling){
+  const okt = aktivOkt();
+  if (!okt) return closeModal('stopp-modal');
+
+  const igjen = oktVarer().filter(v => !v.done);
+
+  if (handling === 'flytt'){
+    const neste = nesteOkt(okt);
+    if (neste) igjen.forEach(v => { v.oktId = neste.id; });
+  } else if (handling === 'ny'){
+    const naa = isoWeek(new Date());
+    const ny = opprettOkt(naa.week, naa.year);
+    igjen.forEach(v => { v.oktId = ny.id; });
+  } else if (handling === 'forkast'){
+    const naaTid = Date.now();
+    const ider = new Set(igjen.map(v => v.id));
+    igjen.forEach(v => { v.slettet = naaTid; });
+    data.trash = igjen.concat(data.trash);
+    if (data.trash.length > 200) data.trash.length = 200;
+    data.items = data.items.filter(v => !ider.has(v.id));
+  }
+
+  okt.startet = false;
+  okt.avsluttet = Date.now();
+
+  closeModal('stopp-modal');
+  render();
+  oppdaterKurvMerke();
+  const ok = await medLaas(async () => await save());
+  if (ok === false) visMelding('Klarte ikke lagre.');
+  visMelding('Handleturen er avsluttet.');
+}
+
+// Play vises før handelen er startet, stopp mens den pågår
 function oppdaterStartKnapp(){
   const okt = aktivOkt();
-  const btn = document.getElementById('start-fab');
-  if (!btn) return;
-  btn.style.display = (okt && !okt.startet) ? 'flex' : 'none';
+  const start = document.getElementById('start-fab');
+  const stopp = document.getElementById('stop-fab');
+  if (start) start.style.display = (okt && !okt.startet) ? 'flex' : 'none';
+  if (stopp) stopp.style.display = (okt && okt.startet) ? 'flex' : 'none';
 }
 
 /* ============================================================
@@ -5228,25 +5347,13 @@ function tegnSeksjon(c, varer, erHandlet, utenType, handlemodus){
         const row = document.createElement('div');
         row.className = 'item-row' + (v.done ? ' checked' : '');
 
-        // Varebilde helt til venstre, med mengde (amt + enhet) stablet under
-        const imgWrap = document.createElement('div');
-        imgWrap.className = 'vare-bilde-wrap';
+        // Varebilde helt til venstre
         const vareImg = document.createElement('img');
         vareImg.src = varebildeSrc(v.name);
         vareImg.className = 'vare-bilde';
         vareImg.alt = '';
         vareImg.onerror = function(){ this.src = VARE_BILDE_DEFAULT; };
-        imgWrap.appendChild(vareImg);
-
-        const amtUnit = [v.amt, v.unit].filter(Boolean).join(' ').trim();
-        const mengdeUnderBilde = amtUnit || (!v.count && v.qty ? v.qty : '');
-        if (mengdeUnderBilde){
-          const mLiten = document.createElement('div');
-          mLiten.className = 'vare-mengde-liten';
-          mLiten.textContent = mengdeUnderBilde;
-          imgWrap.appendChild(mLiten);
-        }
-        row.appendChild(imgWrap);
+        row.appendChild(vareImg);
 
         const body2 = document.createElement('div');
         body2.className = 'item-body';
@@ -5267,9 +5374,23 @@ function tegnSeksjon(c, varer, erHandlet, utenType, handlemodus){
           navn.appendChild(ant);
         }
         body2.appendChild(navn);
+
+        // Mengde og enhet på egen linje under varenavnet
+        const amtUnit = [v.amt, v.unit].filter(Boolean).join(' ').trim();
+        const mengdeLinje = amtUnit || (!v.count && v.qty ? v.qty : '');
+        if (mengdeLinje){
+          const mL = document.createElement('div');
+          mL.className = 'vare-mengde-linje';
+          mL.textContent = mengdeLinje;
+          body2.appendChild(mL);
+        }
         row.appendChild(body2);
 
-        // Avkrysning - kun synlig når handleturen er startet (handlemodus)
+        // Navn klikkbart -> popup
+        navn.style.cursor = 'pointer';
+        navn.onclick = (e) => { e.stopPropagation(); visVarePopup(v); };
+
+        // I handlemodus tar avkrysningen plassen til slett-knappen
         if (handlemodus){
           const checkBtn = document.createElement('button');
           checkBtn.type = 'button';
@@ -5278,19 +5399,15 @@ function tegnSeksjon(c, varer, erHandlet, utenType, handlemodus){
           checkBtn.textContent = '✓';
           checkBtn.onclick = (e) => { e.stopPropagation(); toggleDone(v.id, row); };
           row.appendChild(checkBtn);
+        } else {
+          const del = document.createElement('button');
+          del.className = 'item-btn';
+          del.title = 'Fjern';
+          del.textContent = '✕';
+          del.onclick = (e) => { e.stopPropagation(); openDelete(v.id); };
+          row.appendChild(del);
         }
 
-        const del = document.createElement('button');
-        del.className = 'item-btn';
-        del.title = 'Fjern';
-        del.textContent = '✕';
-        del.onclick = (e) => { e.stopPropagation(); openDelete(v.id); };
-
-        // Navn klikkbart -> popup
-        navn.style.cursor = 'pointer';
-        navn.onclick = (e) => { e.stopPropagation(); visVarePopup(v); };
-
-        row.appendChild(del);
         liste.appendChild(row);
       });
 
