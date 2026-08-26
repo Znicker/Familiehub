@@ -85,7 +85,7 @@
     padding-bottom:calc(172px + max(0px, env(safe-area-inset-bottom)));
     /* Fem lag med prikkflate og moerke ellipser ga en vignett som ikke
        fantes noen andre steder. Samme ene gradient som de fire andre. */
-    background:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
+    background:linear-gradient(160deg,var(--bg-1),var(--bg-2));
     background-attachment: fixed;
     -webkit-font-smoothing:antialiased;
   }
@@ -102,27 +102,17 @@
     transition:background .15s;
   }
   .topbar.scrolled{ background:linear-gradient(180deg, var(--bg-1) 88%, transparent); box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+  /* Inne i en undervisning staar toppbaren solid, ikke gjennomsiktig.
+     Samme regel som i oppskrifter.html - hold dem like. */
+  .topbar.subview{ background:var(--bg-1); box-shadow:0 2px 10px rgba(0,0,0,0.18); }
   .topbar-brand{
     position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
     display:flex; align-items:center; gap:10px; min-width:0; max-width:62%; pointer-events:none;
   }
   .topbar-home-actions{ display:flex; gap:4px; flex-shrink:0; margin-left:auto; }
-  .icon-btn{
-    background:none; border:none; padding:8px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center; color:var(--ink);
-  }
-  .icon-btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
     outline:2px solid var(--lime); outline-offset:2px;
   }
-  .icon-btn:active{ background:rgba(0,0,0,0.05); }
-  .icon-btn .badge{
-    position:absolute; transform:translate(11px,-11px);
-    min-width:17px; height:17px; border-radius:999px; padding:0 4px;
-    background:var(--danger); color:#fff; font-size:var(--t-etikett); font-weight:700;
-    display:none; align-items:center; justify-content:center;
-    font-family:'IBM Plex Mono', monospace;
-  }
-  .icon-btn .badge.active{ display:flex; }
 
   .par-kort{
     border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px;
@@ -231,9 +221,6 @@
     font-size:calc(var(--t-meta) * 1.5); font-weight:700; color:var(--ink);
     line-height:1.2;
   }
-  .week-label small{
-    display:block; font-weight:400; font-size:var(--t-etikett); color:var(--ink-soft);
-  }
 
   /* ---------- Store / category ---------- */
   .store-group{ margin-bottom:18px; }
@@ -244,11 +231,7 @@
   }
   .store-group:first-child .store-header{ margin-top:10px; }
   .store-header:active{ opacity:0.7; }
-  /* h3 og caret skjules - kun logo vises */
-  .store-header .caret{ display:none; }
-  .store-header h3{ display:none; }
-  .store-count{ display:none; }
-  /* Logo-ramme */
+  /* Logo-ramme - butikkoverskriften er bare logoen */
   .store-logo-wrap{
     display:flex; align-items:center; justify-content:center;
     padding:6px 12px; border-radius:10px;
@@ -273,7 +256,7 @@
 
   .item-list{ display:flex; flex-direction:column; }
   .item-row{
-    display:flex; align-items:center; gap:0;
+    display:flex; align-items:center; gap:10px;
     padding:4px 0; border-bottom:1px solid var(--line);
     transition:opacity .13s ease; min-height:56px;
   }
@@ -301,10 +284,13 @@
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
   }
   .done-wrap{ opacity:0.6; }
-  /* Avsluttet handletur - alt staar dempet og utenfor rekkevidde */
-  .okt-avsluttet{ opacity:0.5; }
-  .okt-avsluttet .item-row{ pointer-events:none; }
+  /* Avsluttet handletur - alt staar dempet og utenfor rekkevidde.
+     Dempingen settes paa radene, ikke paa hele beholderen, ellers
+     legger den seg oppaa .done-wrap og blir nesten uleselig. */
+  .okt-avsluttet .item-row{ pointer-events:none; opacity:0.55; }
   .okt-avsluttet .item-name{ text-decoration:line-through; color:var(--ink-soft); }
+  .okt-avsluttet .store-header, .okt-avsluttet .category-header,
+  .okt-avsluttet .basis-band{ opacity:0.55; }
   .done-wrap .store-header{ background:var(--ink-soft); box-shadow:none; }
   .done-wrap .category-header{ background:var(--ink-soft); box-shadow:none; }
 
@@ -325,7 +311,6 @@
     font-size:var(--t-brod); font-weight:600; line-height:1.25; color:var(--ink);
     overflow-wrap:anywhere; word-break:break-word;
   }
-  .item-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; line-height:1.3; }
   /* Mengde og enhet paa egen linje under varenavnet */
   .vare-mengde-linje{
     font-size:var(--t-meta); color:var(--ink-soft); font-weight:600;
@@ -399,7 +384,6 @@
   .btn-primary:disabled{ background:#C3CBD4; }
   .btn-primary:active:not(:disabled){ background:var(--handling-ny-moerk); }
   .btn-ghost{ background:none; color:var(--ink); border:1.5px solid var(--line); width:100%; }
-  .btn-danger{ background:none; color:var(--danger); }
   /* Bekreftelsesknappen i dialogene: Flytt og Lagre endrer noe som finnes.
      Klassenavnet er historisk; rollen er --handling-endre. */
   .btn-success{ background:var(--handling-endre); color:#fff; }
@@ -427,26 +411,17 @@
   .field textarea{ resize:vertical; min-height:56px; }
   .field-hint{ font-size:var(--t-etikett); color:var(--lime-dark); margin:4px 0 0; font-weight:600; }
   .field-note{ font-size:var(--t-etikett); color:var(--ink-soft); margin:4px 0 0; }
-  .new-value{ margin-top:8px; }
 
   /* ---- Varebilder ---- */
   .vare-bilde{
     width:40px; height:40px; object-fit:contain; flex-shrink:0;
     border-radius:6px; background:transparent;
   }
-  .item-row{ display:flex; align-items:center; gap:10px; }
-
   /* ---- Butikklogoer ---- */
   .butikk-logo{
     width:24px; height:24px; object-fit:contain; flex-shrink:0;
     border-radius:4px; background:transparent;
   }
-  .ac-opt{ display:flex; align-items:center; gap:10px; }
-  .item-store-logo{
-    width:20px; height:20px; object-fit:contain; flex-shrink:0;
-    border-radius:3px; vertical-align:middle; margin-right:4px;
-  }
-
   /* ---- Autocomplete-widget ---- */
   .ac-wrap{ position:relative; }
   .ac-drop{
@@ -457,7 +432,21 @@
     display:none;
   }
   .ac-drop.open{ display:block; }
+
+  /* Liggende nettbrett og telefon: tastaturet spiser den nederste
+     halvparten av skjermen, og trefflista under varenavnfeltet havner
+     bak det. Da loeftes den ut av skjemaet og opp i hoeyre hjoerne,
+     der det fortsatt er plass. Gjelder bare varenavn - de andre
+     feltene har korte lister som faar plass der de staar. */
+  @media (orientation:landscape) and (max-height:900px) and (min-width:640px){
+    #ac-drop-f-name.open{
+      position:fixed; top:12px; right:12px; left:auto;
+      width:min(380px, 42vw); max-height:min(60vh, 320px);
+      z-index:400; box-shadow:0 8px 28px rgba(44,62,80,.22);
+    }
+  }
   .ac-opt{
+    display:flex; align-items:center; gap:10px;
     padding:11px 14px; font-size:16px; color:var(--ink); cursor:pointer;
     border-bottom:1px solid var(--line);
   }
@@ -553,35 +542,12 @@
   .donepane{ display:none; }
   .donepane.active{ display:block; }
 
-  /* ---------- Summary ---------- */
-  .sum-row{
-    display:flex; justify-content:space-between; align-items:baseline;
-    padding:11px 2px; border-bottom:1px solid var(--line);
-  }
-  .sum-row:last-child{ border-bottom:none; }
-  .sum-label{ font-size:var(--t-meta); color:var(--ink-soft); }
-  .sum-value{ font-family:'IBM Plex Mono',monospace; font-size:var(--t-brod); font-weight:600; color:var(--ink); }
-
-  /* ---------- Inbox ---------- */
-  .inbox-item{
-    background:var(--blue-light); border:1.5px solid var(--blue); border-radius:12px;
-    padding:13px 14px; margin-bottom:10px;
-    display:flex; align-items:center; gap:10px;
-  }
-  .inbox-item-body{ flex:1; min-width:0; }
-  .inbox-item-name{ font-weight:600; color:var(--blue); font-size:var(--t-brod); }
-  .inbox-item-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; }
-  .inbox-item-btn{
-    border:none; border-radius:999px; padding:8px 14px; font-size:var(--t-meta); font-weight:700;
-    font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.03em;
-    background:var(--lime); color:#fff; flex-shrink:0;
-  }
-  .inbox-item-btn.skip{ background:none; color:var(--ink-soft); border:1.5px solid var(--line); }
 
   /* ---------- Modal ---------- */
   .modal-backdrop{
-    display:none; position:fixed; inset:0; background:rgba(10,14,7,0.85); z-index:100;
+    display:none; position:fixed; inset:0; background:rgba(44,62,80,.45); z-index:100;
     align-items:center; justify-content:center; padding:20px;
+    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
   }
   .modal-backdrop.active{ display:flex; }
 
@@ -1271,17 +1237,6 @@ function isoWeek(date){
   return { week: Math.ceil((((d - yearStart) / 86400000) + 1) / 7), year: d.getUTCFullYear() };
 }
 
-// Mandag i en gitt ISO-uke
-function mondayOf(week, year){
-  const jan4 = new Date(Date.UTC(year, 0, 4));
-  const dayNum = jan4.getUTCDay() || 7;
-  const week1Mon = new Date(jan4);
-  week1Mon.setUTCDate(jan4.getUTCDate() - dayNum + 1);
-  const d = new Date(week1Mon);
-  d.setUTCDate(week1Mon.getUTCDate() + (week - 1) * 7);
-  return d;
-}
-
 function stepOkt(dir){
   clearTimeout(omrokeringTimer); omrokeringTimer = null;
   const omr = aktivOmrade();
@@ -1311,6 +1266,15 @@ function renderOktLabel(){
    handletur hoerer til ett omraade, og fanene har hver sin aktive
    handletur, hvert sitt navn i toppen og hver sin start/stopp.
    ============================================================ */
+/* Alle id-er lages her. Telleren gjoer at varer som opprettes i samme
+   millisekund - for eksempel ved import eller kopiering - garantert
+   faar ulike id-er. */
+let _idTeller = 0;
+function nyId(prefiks){
+  return prefiks + Date.now().toString(36) + (_idTeller++).toString(36) +
+         Math.random().toString(36).slice(2, 5);
+}
+
 const ROMERTALL = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 
 function oktNavn(okt){
@@ -1347,7 +1311,7 @@ function foreslaattOktNavn(omrade){
 
 function opprettOkt(navn, omrade){
   const okt = {
-    id: 'o' + Date.now() + Math.random().toString(36).slice(2, 6),
+    id: nyId('o'),
     navn: String(navn || '').trim() || foreslaattOktNavn(omrade),
     omrade: omrade || 'mat',
     startet: false,
@@ -1532,7 +1496,7 @@ function oppdaterKopiKnapp(){
 // Lager en fersk kopi av en vare, uten avkryssing og uten gammel id
 function kopiAvVare(v, oktId){
   return Object.assign({}, v, {
-    id: 'i' + Date.now() + Math.random().toString(36).slice(2, 6),
+    id: nyId('i'),
     oktId: oktId,
     done: false
   });
@@ -1629,10 +1593,13 @@ function openStopp(){
 }
 
 // Handleturen som kommer etter denne i rekkefølgen, om den finnes
+/* Neste handletur som faktisk kan ta imot varer. Avsluttede turer
+   hoppes over - de er kvitteringer, ikke lister. */
 function nesteOkt(okt){
   const liste = sorterteOkter(oktOmrade(okt));
   const i = liste.findIndex(o => o.id === okt.id);
-  return (i !== -1 && i + 1 < liste.length) ? liste[i + 1] : null;
+  if (i === -1) return null;
+  return liste.slice(i + 1).find(o => !erAvsluttet(o)) || null;
 }
 
 async function stoppHandel(handling){
@@ -1906,12 +1873,6 @@ function huskButikk(omrade, navn){
   }
 }
 
-// Leser verdien fra et autocomplete-felt
-function readSelect(which){
-  const idMap = { store: 'f-store', itemstore: 'e-store' };
-  return acVerdi(idMap[which] || which);
-}
-
 /* ============================================================
    Skjema
    ============================================================ */
@@ -1944,6 +1905,13 @@ function settOmrade(omrade){
 }
 
 function openAddItem(omrade){
+  // En avsluttet handletur er en kvittering - den skal ikke kunne fylles
+  const maal = aktivOkt(omrade || aktivOmrade());
+  if (erAvsluttet(maal)){
+    visMelding('Denne handleturen er avsluttet. Bruk «Gjenopprett handel» eller lag en ny.');
+    return;
+  }
+
   document.getElementById('f-name').value = '';
   document.getElementById('f-count').value = '';
   document.getElementById('f-amt').value = '';
@@ -2055,7 +2023,7 @@ async function saveItem(){
   const fQty = byggMengdeTekst(fCount, fAmt, fUnit);
 
   data.items.push({
-    id: 'i' + Date.now() + Math.random().toString(36).slice(2,6),
+    id: nyId('i'),
     name,
     oktId: okt.id,
     store: store || '',
@@ -2536,7 +2504,7 @@ async function leggIListen(varer){
   varer.filter(Boolean).forEach(v => {
     const cat = (v.cat || '').trim();
     data.items.push({
-      id: 'i' + Date.now() + Math.random().toString(36).slice(2,6),
+      id: nyId('i'),
       name: v.name,
       oktId: okt.id,
       store: butikk, cat: cat, by: '',
@@ -2653,8 +2621,6 @@ function finnKlynger(){
 }
 
 // Beholdes for merket i topplinja
-function finnForslag(){ return finnKlynger(); }
-
 // Alle varer med et gitt navn, i alle uker
 function varerMedNavn(navn){
   return data.items.filter(v => (v.name || '').trim().toLowerCase() === navn.toLowerCase());
@@ -2711,20 +2677,6 @@ const ENHETER = [
   'ss', 'ts', 'pk', 'boks', 'pose',
   'stilk', 'båt', 'skive', 'fedd', 'neve', 'klype', 'potte'
 ];
-
-// Bygger <select> med enhetene
-function byggEnhetSelect(id, valgt){
-  const sel = document.createElement('select');
-  sel.id = id;
-  ENHETER.forEach(e => {
-    const o = document.createElement('option');
-    o.value = e;
-    o.textContent = e || '—';
-    if (e === (valgt || '')) o.selected = true;
-    sel.appendChild(o);
-  });
-  return sel;
-}
 
 // 149 butikker, 218 oppslag inkl. aliaser
 const BUTIKK_LOGO = {
@@ -4949,7 +4901,6 @@ function renderMerge(){
     navnFelt.innerHTML = '<label>Navn som beholdes</label>';
     const navnInp = document.createElement('input');
     navnInp.type = 'text';
-    navnInp.className = 'klynge-tittel';
     navnInp.value = kl.forslag;
     navnInp.oninput = () => { valg.tittel = navnInp.value; };
     navnFelt.appendChild(navnInp);
@@ -4960,6 +4911,8 @@ function renderMerge(){
     totFelt.className = 'field';
     totFelt.style.margin = '10px 0 0';
     totFelt.innerHTML = '<label>Mengde å handle</label>';
+    // klynge-total og klynge-tothint er kroker for oppdaterKlynge(),
+    // ikke stilklasser. De skal ikke ha CSS.
     const totInp = document.createElement('input');
     totInp.type = 'text';
     totInp.className = 'klynge-total';
@@ -5372,11 +5325,6 @@ function openEdit(id){
   if (eByEl) eByEl.value = v.by || '';
   document.getElementById('edit-modal').classList.add('active');
 }
-
-// oppdaterSumKnapp og summerMengde var knyttet til fritekst-mengdefeltet
-// som nå er erstattet med amt+unit. Beholdtes som no-ops for trygghetens skyld.
-function oppdaterSumKnapp(){ }
-function summerMengde(){ }
 
 /* ---- Vare-popup ---- */
 function visVarePopup(v){
@@ -5955,6 +5903,22 @@ async function init(){
         v.oktId = riktig.id;
         flyttet = true;
       }
+    });
+
+    /* Sikkerhetsnett: varer som peker paa en handletur som ikke finnes
+       ville aldri vist seg noe sted. Kan skje hvis to enheter har
+       endret lista samtidig. De samles i en egen tur i sitt omraade. */
+    const finnesOkt = new Set(data.okter.map(o => o.id));
+    const gjenfunnet = {};
+    data.items.forEach(v => {
+      if (v.oktId && finnesOkt.has(v.oktId)) return;
+      const omr = v.omrade || 'mat';
+      if (!gjenfunnet[omr]){
+        gjenfunnet[omr] = data.okter.find(o => o.navn === 'Gjenfunnet' && oktOmrade(o) === omr)
+                       || opprettOkt('Gjenfunnet', omr);
+      }
+      v.oktId = gjenfunnet[omr].id;
+      flyttet = true;
     });
   }
 
