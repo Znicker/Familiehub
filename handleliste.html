@@ -323,7 +323,10 @@
   }
   .btn-quiet:active{ color:var(--ink); }
   .item-body{ flex:1; min-width:0; }
-  .item-name{ font-size:var(--t-stor); font-weight:600; line-height:1.2; color:var(--ink); }
+  .item-name{
+    font-size:var(--t-brod); font-weight:600; line-height:1.25; color:var(--ink);
+    overflow-wrap:anywhere; word-break:break-word;
+  }
   .item-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; line-height:1.3; }
   /* Mengden er ofte det viktigste på linja ved hylla - full farge, ikke grå */
   .item-qty{
