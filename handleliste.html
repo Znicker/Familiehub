@@ -304,14 +304,6 @@
   }
   .item-row.checked .item-check{ color:var(--handling-ny); }
   .item-check:active{ transform:scale(0.88); }
-  /* Rediger og flytt - til høyre */
-  .item-store, .item-move{
-    background:none; border:none; color:var(--ink-soft); padding:4px 5px;
-    font-size:var(--t-brod); flex-shrink:0; line-height:1; opacity:0.55;
-    touch-action:manipulation;
-  }
-  .item-store:active{ color:var(--blue); opacity:1; }
-  .item-move:active{ color:var(--lime-dark); opacity:1; }
 
   /* Handlet-seksjonen nederst */
   .done-divider{
@@ -350,11 +342,14 @@
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
   }
   .item-row.checked .item-qty{ color:var(--ink-soft); }
+  /* Slett-knapp - fylt roed, likt slette-knappene i de andre appene */
   .item-btn{
-    background:none; border:none; color:var(--ink-soft); padding:4px 6px;
-    font-size:var(--t-brod); flex-shrink:0;
+    background:var(--danger); border:none; color:#fff; margin-left:8px;
+    width:26px; height:26px; border-radius:8px; flex-shrink:0;
+    font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center;
+    touch-action:manipulation;
   }
-  .item-btn:active{ color:var(--danger); }
+  .item-btn:active{ opacity:0.8; transform:scale(0.94); }
 
   .empty-state{ margin-top:60px; text-align:center; color:var(--ink-soft); }
   .empty-state .big{ font-size:var(--t-ikon); display:block; margin-bottom:10px; }
@@ -484,10 +479,22 @@
     padding:24px 22px 32px; width:100%; max-width:520px;
     box-shadow:0 -4px 24px rgba(0,0,0,.12);
   }
+  .vare-popup-head{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    gap:12px; margin:0 0 16px;
+  }
   .vare-popup-navn{
     font-size:var(--t-stor); font-weight:700; color:var(--ink);
-    margin:0 0 16px; line-height:1.2;
+    line-height:1.2; flex:1; min-width:0; overflow-wrap:break-word;
   }
+  /* Rediger-knapp i popup - oransje, likt rediger-knappene i de andre appene */
+  .vare-popup-edit{
+    flex-shrink:0; border:none; border-radius:8px; background:var(--handling-endre);
+    color:#fff; padding:8px 10px; font-size:16px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    touch-action:manipulation;
+  }
+  .vare-popup-edit:active{ background:var(--handling-endre-moerk); }
   .vare-popup-rad{
     display:flex; justify-content:space-between; align-items:baseline;
     padding:8px 0; border-bottom:1px solid var(--line);
@@ -841,18 +848,6 @@ input,select,textarea{font-size:16px}
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('katalog-modal')">Lukk</button>
       <button class="btn btn-tvers" onclick="importerKatalog()">Slå sammen</button>
-    </div>
-  </div>
-</div>
-
-<!-- Flytt til neste uke -->
-<div class="modal-backdrop" id="move-modal">
-  <div class="modal-card">
-    <h3>Flytt til neste uke?</h3>
-    <p class="lead"><strong id="move-name"></strong> flyttes til uke <span id="move-uke"></span>, <span id="move-aar"></span>.</p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('move-modal')">Avbryt</button>
-      <button class="btn btn-success" onclick="confirmMove()">Flytt</button>
     </div>
   </div>
 </div>
@@ -4640,45 +4635,6 @@ async function importerKatalog(){
 }
 
 /* ============================================================
-   Flytt til neste uke
-   ============================================================ */
-let flyttId = null;
-
-// Uka etter den varen ligger i
-function nesteUke(uke, aar){
-  const mon = mondayOf(uke, aar);
-  mon.setUTCDate(mon.getUTCDate() + 7);
-  return isoWeek(new Date(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate()));
-}
-
-function openMove(id){
-  const v = data.items.find(x => x.id === id);
-  if (!v) return;
-  flyttId = id;
-  const neste = nesteUke(v.week, v.year);
-  document.getElementById('move-name').textContent = v.name;
-  document.getElementById('move-uke').textContent = neste.week;
-  document.getElementById('move-aar').textContent = neste.year;
-  document.getElementById('move-modal').classList.add('active');
-}
-
-async function confirmMove(){
-  clearTimeout(omrokeringTimer); omrokeringTimer = null;
-  const v = data.items.find(x => x.id === flyttId);
-  if (!v){ flyttId = null; return closeModal('move-modal'); }
-
-  const neste = nesteUke(v.week, v.year);
-  v.week = neste.week;
-  v.year = neste.year;
-  v.done = false;   // flyttes fordi den ikke ble handlet
-
-  flyttId = null;
-  closeModal('move-modal');
-  await save();
-  render();
-}
-
-/* ============================================================
    Tøm lista
    ============================================================ */
 function openTomListe(){
@@ -4804,10 +4760,22 @@ function visVarePopup(v){
   card.className = 'vare-popup-card';
   card.onclick = e => e.stopPropagation();
 
+  const head = document.createElement('div');
+  head.className = 'vare-popup-head';
+
   const tittel = document.createElement('div');
   tittel.className = 'vare-popup-navn';
   tittel.textContent = v.name;
-  card.appendChild(tittel);
+  head.appendChild(tittel);
+
+  const rediger = document.createElement('button');
+  rediger.className = 'vare-popup-edit';
+  rediger.title = 'Rediger';
+  rediger.textContent = '✎';
+  rediger.onclick = (e) => { e.stopPropagation(); overlay.remove(); openEdit(v.id); };
+  head.appendChild(rediger);
+
+  card.appendChild(head);
 
   rader.forEach(([etikett, verdi]) => {
     const rad = document.createElement('div');
@@ -5212,26 +5180,6 @@ function tegnSeksjon(c, varer, erHandlet, utenType){
         }
         body2.appendChild(navn);
 
-        const meta = [v.notes, v.by].filter(Boolean).join(' · ');
-        if (meta){
-          const m = document.createElement('div');
-          m.className = 'item-meta';
-          m.textContent = meta;
-          body2.appendChild(m);
-        }
-
-        const bytt = document.createElement('button');
-        bytt.className = 'item-store';
-        bytt.title = 'Rediger';
-        bytt.textContent = '✎';
-        bytt.onclick = (e) => { e.stopPropagation(); openEdit(v.id); };
-
-        const flytt = document.createElement('button');
-        flytt.className = 'item-move';
-        flytt.title = 'Flytt til neste uke';
-        flytt.textContent = '»';
-        flytt.onclick = (e) => { e.stopPropagation(); openMove(v.id); };
-
         const del = document.createElement('button');
         del.className = 'item-btn';
         del.title = 'Fjern';
@@ -5254,7 +5202,7 @@ function tegnSeksjon(c, varer, erHandlet, utenType){
           q.textContent = visQty;
           row.appendChild(q);
         }
-        row.appendChild(bytt); row.appendChild(flytt); row.appendChild(del);
+        row.appendChild(del);
         liste.appendChild(row);
       });
 
