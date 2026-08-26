@@ -206,6 +206,7 @@ body{
 .cal-cell.sel:hover{background:var(--ink)}
 .cal-cell.sel .cal-num,.cal-cell.sel .cal-ev,
 .cal-cell.sel .cal-ev-t,.cal-cell.sel .cal-more{color:#fff}
+.cal-ev-t{margin-left:1px}
 .cal-num{font-size:var(--t-brod);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;flex-shrink:0}
 .cal-cell.weekend .cal-num{color:var(--ink-soft)}
 
@@ -215,7 +216,13 @@ body{
   font-size:var(--t-etikett);font-weight:600;line-height:1.28;
   display:flex;gap:5px;align-items:center;min-width:0;
 }
-.cal-ev-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+/* Initialen i stedet for en prikk. Liten, men fargen og bokstaven
+   sammen sier hvem det gjelder uten aa ta plass fra tittelen. */
+.cal-ev-dot{
+  min-width:14px;height:14px;border-radius:999px;padding:0 3px;flex-shrink:0;
+  color:#fff;font-family:'Archivo',sans-serif;font-size:9px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
 .cal-ev-x{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .cal-ev-t{font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums;margin-right:3px}
 .cal-more{font-size:var(--t-etikett);font-weight:700;color:var(--ink-soft);letter-spacing:.03em;padding-left:11px}
@@ -348,12 +355,26 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* ---------- Dialogvindu ---------- */
 /* ---------- Detaljboble ---------- */
 .boble-bak{position:fixed;inset:0;z-index:70;background:transparent}
+.boble-bak.dempet{background:rgba(44,62,80,.28)}
 .boble{
   position:fixed;z-index:71;
   background:var(--paper);border-radius:16px;
   padding:18px 20px 20px;width:min(340px,calc(100vw - 32px));
   box-shadow:0 12px 38px rgba(0,0,0,.24);
 }
+/* Naar hoeyrekolonnen er borte har vi ikke plass til en liten boble ved
+   siden av. Da legger avtalen seg som et panel over en tredjedel av
+   skjermen, paa motsatt side av det man trykket - som dagpanelet. */
+.boble.side{
+  top:0;bottom:0;width:33vw;min-width:320px;border-radius:0;
+  padding:22px 22px 26px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  box-shadow:0 0 40px rgba(44,62,80,.22);
+}
+.boble.side.hoyre{right:0;left:auto;border-radius:18px 0 0 18px}
+.boble.side.venstre{left:0;right:auto;border-radius:0 18px 18px 0}
+.boble.side::after{display:none}
+.boble.side #bobleInn{max-height:none}
+@media(max-width:700px){ .boble.side{width:100%;min-width:0;border-radius:0} }
 /* Selve boblen scroller ikke — da ville krysset og pekeren forsvunnet.
    Innholdet scroller i stedet, saa lukkeknappen alltid er innen rekkevidde. */
 #bobleInn{
@@ -1383,16 +1404,15 @@ function byggInitialer(){
   S.calendars.slice()
     .sort(function(a, b){ return rang(a) - rang(b); })
     .forEach(function(c){
-      let lengde = 1, merke = forkort(c.name, 1);
-      while(brukt[merke] && lengde < 6){
-        lengde++;
-        merke = forkort(c.name, lengde);
-      }
-      // Gaar navnet tomt for bokstaver, settes et tall bak
+      // Maks to bokstaver - lengre merker blir uleselige i rutenettet
+      let merke = forkort(c.name, 1);
+      if(brukt[merke]) merke = forkort(c.name, 2);
+      // Er to bokstaver ogsaa opptatt, settes et tall bak foerste bokstav
       if(brukt[merke]){
+        const base = forkort(c.name, 1);
         let n = 2;
-        while(brukt[merke + n]) n++;
-        merke = merke + n;
+        while(brukt[base + n]) n++;
+        merke = base + n;
       }
       brukt[merke] = true;
       initialKart[c.id] = merke;
@@ -1691,6 +1711,8 @@ function fyllAvtaler(){
         const dot = document.createElement('span');
         dot.className = 'cal-ev-dot';
         dot.style.background = e.color;
+        dot.textContent = initialFor(e.calId, e.calName);
+        dot.title = e.calName || '';
         const txt = document.createElement('span');
         txt.className = 'cal-ev-x';
         const t = document.createElement('span');
@@ -2117,7 +2139,9 @@ function nyAvtale(time, minutt, calId){
 /* ---------- Detaljboble ----------
    Viser hele notatet uten aa aapne redigeringsskjemaet. */
 function lukkBoble(){
-  $('boble').hidden = true;
+  const b = $('boble');
+  b.hidden = true;
+  b.classList.remove('side', 'hoyre', 'venstre');
   $('bobleBak').hidden = true;
 }
 
@@ -2151,10 +2175,26 @@ function visBoble(id, klikk){
   $('bobleBak').hidden = false;
   b.hidden = false;
 
-  /* Plasser boblen ved siden av det som ble trykket, og hold den
-     innenfor skjermen. Peker settes der det er plass. */
   const mål = (klikk && (klikk.currentTarget || klikk.target)) || null;
   const r = mål && mål.getBoundingClientRect ? mål.getBoundingClientRect() : null;
+
+  /* Uten hoeyrekolonne: panel over en tredjedel, motsatt side av trykket */
+  const somPanel = $('app').classList.contains('uten-side');
+  b.classList.toggle('side', somPanel);
+  b.classList.remove('hoyre', 'venstre');
+  $('bobleBak').classList.toggle('dempet', somPanel);
+  if(somPanel){
+    const tilHoyre = r ? ((r.left + r.width / 2) < innerWidth / 2) : true;
+    b.classList.add(tilHoyre ? 'hoyre' : 'venstre');
+    $('bobleBak').classList.add('dempet');
+    b.style.left = ''; b.style.top = '';
+    b.dataset.side = '';
+    lukkDagPanel();          /* to paneler samtidig ville ligget oppaa hverandre */
+    return;
+  }
+
+  /* Plasser boblen ved siden av det som ble trykket, og hold den
+     innenfor skjermen. Peker settes der det er plass. */
   const bb = b.getBoundingClientRect();
   const marg = 10;
 
