@@ -476,10 +476,25 @@
     background:rgba(44,62,80,.35); padding:0;
   }
   .vare-popup-card{
+    position:relative;
     background:var(--paper); border-radius:18px 18px 0 0;
     padding:24px 22px 32px; width:100%; max-width:520px;
     box-shadow:0 -4px 24px rgba(0,0,0,.12);
   }
+  /* Stort varebilde som stikker opp over arket, saa man ser hva man
+     har trykket paa uten aa lese navnet */
+  .vare-popup-bilde{
+    position:absolute; top:-52px; left:50%; transform:translateX(-50%);
+    width:104px; height:104px; border-radius:50%;
+    background:var(--paper); border:3px solid var(--paper);
+    box-shadow:0 4px 16px rgba(44,62,80,.16);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .vare-popup-bilde img{
+    width:76px; height:76px; object-fit:contain;
+  }
+  /* Plass til bildet over overskriften */
+  .vare-popup-card.har-bilde{ padding-top:64px; }
   .vare-popup-head{
     display:flex; align-items:flex-start; justify-content:space-between;
     gap:12px; margin:0 0 16px;
@@ -670,8 +685,8 @@ input,select,textarea{font-size:16px}
 
       <button class="btn btn-blaa" id="btn-start" style="margin-top:14px;" onclick="startHandel()">Start handel</button>
       <button class="btn btn-blaa" id="btn-stopp" style="margin-top:14px; display:none;" onclick="openStopp()">Stopp handel</button>
-      <button class="btn btn-tvers" style="margin-top:14px; width:100%;" onclick="openImport()">Hent handel fra Oppskriftsboka</button>
-      <button class="btn btn-primary" onclick="openNyHandel()">Ny handel</button>
+      <button class="btn btn-tvers" id="btn-hent" style="margin-top:14px; width:100%;" onclick="openImport()">Hent varer fra Oppskriftsboka</button>
+      <button class="btn btn-primary" id="btn-ny" onclick="openNyHandel()">Ny handel</button>
       <button class="btn btn-primary" id="btn-tom" style="background:var(--danger);" onclick="openTomListe()">Slett</button>
 
       <!-- Utkvitterte varer ligger helt nederst, under knappene -->
@@ -721,11 +736,11 @@ input,select,textarea{font-size:16px}
         <label>Antall og mengde</label>
         <div class="mengde-rad">
           <input type="number" id="f-count" class="f-amt" min="0" step="1"
-                 placeholder="antall" inputmode="numeric" style="flex:0 0 80px;">
+                 placeholder="1" inputmode="numeric" style="flex:0 0 80px;">
           <input type="number" id="f-amt" class="f-amt" min="0" step="any"
                  placeholder="mengde" inputmode="decimal">
           <div class="ac-wrap" id="ac-wrap-f-unit" style="flex:0 0 90px;">
-            <input type="text" id="f-unit" autocomplete="off" placeholder="enhet">
+            <input type="text" id="f-unit" autocomplete="off" placeholder="stk">
             <div class="ac-drop" id="ac-drop-f-unit"></div>
           </div>
         </div>
@@ -1488,10 +1503,19 @@ async function stoppHandel(handling){
 // Play vises før handelen er startet, stopp mens den pågår
 function oppdaterStartKnapp(){
   const okt = aktivOkt();
+  const igang = !!(okt && okt.startet);
+
   const start = document.getElementById('btn-start');
   const stopp = document.getElementById('btn-stopp');
   if (start) start.style.display = (okt && !okt.startet) ? 'inline-flex' : 'none';
-  if (stopp) stopp.style.display = (okt && okt.startet) ? 'inline-flex' : 'none';
+  if (stopp) stopp.style.display = igang ? 'inline-flex' : 'none';
+
+  // Mens man staar i butikken skal ikke hente, opprette og slette ligge
+  // i veien - da er det avkryssing som gjelder
+  ['btn-hent', 'btn-ny', 'btn-tom'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = igang ? 'none' : 'inline-flex';
+  });
 }
 
 /* ============================================================
@@ -1825,9 +1849,10 @@ async function saveItem(){
   huskButikk(nyttOmrade, store);
   // Permanent lagring av ny butikk skjer via acBind onPerm-callback
 
-  const fCount = document.getElementById('f-count').value.trim();
   const fAmt = document.getElementById('f-amt').value.trim();
-  // Staar bade mengde og enhet tomt, er "stk" det man mener
+  // Tomme felt betyr det som staar grått i dem: 1 stk
+  const fCount = document.getElementById('f-count').value.trim() ||
+                 (fAmt ? '' : '1');
   const fUnit = document.getElementById('f-unit').value.trim() ||
                 (fAmt ? '' : 'stk');
   const fQty = byggMengdeTekst(fCount, fAmt, fUnit);
@@ -5173,8 +5198,18 @@ function visVarePopup(v){
   overlay.onclick = () => overlay.remove();
 
   const card = document.createElement('div');
-  card.className = 'vare-popup-card';
+  card.className = 'vare-popup-card har-bilde';
   card.onclick = e => e.stopPropagation();
+
+  // Stort varebilde over arket
+  const bildeWrap = document.createElement('div');
+  bildeWrap.className = 'vare-popup-bilde';
+  const stortBilde = document.createElement('img');
+  stortBilde.src = varebildeSrc(v.name);
+  stortBilde.alt = '';
+  stortBilde.onerror = function(){ this.src = VARE_BILDE_DEFAULT; };
+  bildeWrap.appendChild(stortBilde);
+  card.appendChild(bildeWrap);
 
   const head = document.createElement('div');
   head.className = 'vare-popup-head';
@@ -5582,8 +5617,9 @@ function tegnSeksjon(c, varer, erHandlet, utenType, handlemodus){
           stj.textContent = '*';
           navn.appendChild(stj);
         }
-        // Antall vises som "×N" til slutt på navnet
-        if (v.count){
+        // Antall vises som "×N" til slutt på navnet. ×1 er underforstått
+        // og ville bare stått som stoey paa hver eneste rad.
+        if (v.count && Number(v.count) > 1){
           const ant = document.createElement('span');
           ant.className = 'vare-antall';
           ant.textContent = '×' + v.count;
