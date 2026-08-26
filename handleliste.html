@@ -532,6 +532,8 @@
   .tab-btn.active{ background:var(--lime); color:#FFFFFF; }
   .tabpane{ display:none; }
   .tabpane.active{ display:block; }
+  .donepane{ display:none; }
+  .donepane.active{ display:block; }
 
   /* ---------- Summary ---------- */
   .sum-row{
@@ -631,7 +633,7 @@ input,select,textarea{font-size:16px}
   <button class="topbar-back" id="topbar-back" onclick="goHome()" style="display:none;" title="Tilbake">←</button>
   <div class="topbar-brand" id="topbar-brand"></div>
   <div class="topbar-home-actions" id="topbar-home-actions">
-    <button type="button" class="icon-btn" onclick="openImport()" title="Importer fra Oppskriftsboka">⚙</button>
+    <!-- Import ligger som egen knapp i panelet under -->
   </div>
 </div>
 
@@ -668,8 +670,13 @@ input,select,textarea{font-size:16px}
 
       <button class="btn btn-blaa" id="btn-start" style="margin-top:14px;" onclick="startHandel()">Start handel</button>
       <button class="btn btn-blaa" id="btn-stopp" style="margin-top:14px; display:none;" onclick="openStopp()">Stopp handel</button>
+      <button class="btn btn-tvers" style="margin-top:14px; width:100%;" onclick="openImport()">Hent handel fra Oppskriftsboka</button>
       <button class="btn btn-primary" onclick="openNyHandel()">Ny handel</button>
       <button class="btn btn-primary" id="btn-tom" style="background:var(--danger);" onclick="openTomListe()">Slett</button>
+
+      <!-- Utkvitterte varer ligger helt nederst, under knappene -->
+      <div class="donepane active" id="done-mat"></div>
+      <div class="donepane" id="done-annet"></div>
     </div>
   </section>
 
@@ -872,7 +879,7 @@ input,select,textarea{font-size:16px}
     </div>
 
     <div class="modal-actions">
-      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('nyhandel-modal')">Avbryt</button>
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="avbrytNyHandel()">Avbryt</button>
       <button class="btn btn-primary" style="margin-top:0;" onclick="bekreftNyHandel()">Opprett</button>
     </div>
   </div>
@@ -1344,17 +1351,37 @@ function oppdaterNyHandelNavn(){
   note.textContent = 'Handleturen får navnet ' + navn + ', ' + valg.aar + '.';
 }
 
+/* Varer som venter paa aa bli flyttet over i handleturen som opprettes
+   naa. Settes naar man avslutter en handel og velger "flytt til en ny". */
+let flyttTilNyHandel = null;
+
+// Avbryter man, blir varene liggende i handleturen de allerede sto i
+function avbrytNyHandel(){
+  flyttTilNyHandel = null;
+  closeModal('nyhandel-modal');
+}
+
 async function bekreftNyHandel(){
   const valg = nyHandelUke();
   if (!valg){ document.getElementById('nyhandel-uke').focus(); return; }
   closeModal('nyhandel-modal');
   const okt = opprettOkt(valg.uke, valg.aar);
   viewOktId = okt.id;
+
+  let antall = 0;
+  if (flyttTilNyHandel && flyttTilNyHandel.length){
+    const ider = new Set(flyttTilNyHandel);
+    data.items.forEach(v => { if (ider.has(v.id)){ v.oktId = okt.id; antall++; } });
+  }
+  flyttTilNyHandel = null;
+
   renderOktLabel();
   render();
   const ok = await medLaas(async () => await save());
   if (ok === false) visMelding('Klarte ikke lagre.');
-  visMelding('Ny handletur: ' + oktNavn(okt) + '.');
+  visMelding(antall
+    ? (oktNavn(okt) + ' opprettet med ' + antall + ' varer fra forrige handel.')
+    : ('Ny handletur: ' + oktNavn(okt) + '.'));
 }
 
 async function startHandel(){
@@ -1422,13 +1449,22 @@ async function stoppHandel(handling){
     return;
   }
 
+  // Ny handel: avslutt denne, og la brukeren velge uke for den nye
+  // paa samme maate som ellers. Varene flyttes naar den er opprettet.
+  if (handling === 'ny'){
+    okt.startet = false;
+    okt.avsluttet = Date.now();
+    flyttTilNyHandel = igjen.map(v => v.id);
+    closeModal('stopp-modal');
+    render();
+    await medLaas(async () => await save());
+    openNyHandel();
+    return;
+  }
+
   if (handling === 'flytt'){
     const neste = nesteOkt(okt);
     if (neste) igjen.forEach(v => { v.oktId = neste.id; });
-  } else if (handling === 'ny'){
-    const naa = isoWeek(new Date());
-    const ny = opprettOkt(naa.week, naa.year);
-    igjen.forEach(v => { v.oktId = ny.id; });
   } else if (handling === 'forkast'){
     const naaTid = Date.now();
     const ider = new Set(igjen.map(v => v.id));
@@ -1791,7 +1827,9 @@ async function saveItem(){
 
   const fCount = document.getElementById('f-count').value.trim();
   const fAmt = document.getElementById('f-amt').value.trim();
-  const fUnit = document.getElementById('f-unit').value.trim();
+  // Staar bade mengde og enhet tomt, er "stk" det man mener
+  const fUnit = document.getElementById('f-unit').value.trim() ||
+                (fAmt ? '' : 'stk');
   const fQty = byggMengdeTekst(fCount, fAmt, fUnit);
 
   data.items.push({
@@ -5196,7 +5234,8 @@ async function lagreEndring(){
 
   const eCount2 = document.getElementById('e-count').value.trim();
   const eAmt2 = document.getElementById('e-amt').value.trim();
-  const eUnit2 = document.getElementById('e-unit') ? document.getElementById('e-unit').value.trim() : '';
+  const eUnit2 = (document.getElementById('e-unit') ? document.getElementById('e-unit').value.trim() : '') ||
+                 (eAmt2 ? '' : 'stk');
   v.count = eCount2;
   v.amt = eAmt2;
   v.unit = eUnit2;
@@ -5376,15 +5415,18 @@ function oktVarer(omrade){
 function render(){
   nullstillVarebruk();
   oppdaterStartKnapp();
-  tegnOmrade('mat',   document.getElementById('stores-container'));
-  tegnOmrade('annet', document.getElementById('annet-container'));
+  tegnOmrade('mat',   document.getElementById('stores-container'),
+                      document.getElementById('done-mat'));
+  tegnOmrade('annet', document.getElementById('annet-container'),
+                      document.getElementById('done-annet'));
 }
 
 // Andre varer har ingen varetyper - der grupperes det bare på butikk
-function tegnOmrade(omrade, c){
+function tegnOmrade(omrade, c, cDone){
   const okt = aktivOkt();
   const varer = oktVarer(omrade);
   const utenType = (omrade === 'annet');
+  if (cDone) cDone.innerHTML = '';
 
   if (!okt){
     c.innerHTML = '<div class="empty-state"><span class="big">🛒</span>' +
@@ -5420,15 +5462,17 @@ function tegnOmrade(omrade, c){
     c.appendChild(alt);
   }
 
-  if (ferdig.length){
+  // De utkvitterte varene tegnes i sin egen beholder nederst paa siden,
+  // under knappene, saa de ikke ligger i veien for det som gjenstaar
+  if (ferdig.length && cDone){
     const skille = document.createElement('div');
     skille.className = 'done-divider';
     skille.textContent = 'Handlet · ' + ferdig.length;
-    c.appendChild(skille);
+    cDone.appendChild(skille);
 
     const wrap = document.createElement('div');
     wrap.className = 'done-wrap';
-    c.appendChild(wrap);
+    cDone.appendChild(wrap);
     tegnSeksjon(wrap, ferdig, true, utenType, handlemodus);
   }
 
@@ -5620,6 +5664,11 @@ function switchTab(navn){
   rot.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + navn).classList.add('active');
   document.getElementById('tab-btn-' + navn).classList.add('active');
+
+  // De utkvitterte varene nederst hoerer til samme fane
+  rot.querySelectorAll('.donepane').forEach(el => el.classList.remove('active'));
+  const done = document.getElementById('done-' + navn);
+  if (done) done.classList.add('active');
 }
 
 function closeModal(id){ document.getElementById(id).classList.remove('active'); }
