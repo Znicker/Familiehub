@@ -370,13 +370,10 @@
   }
   .bottom-bar > *{ pointer-events:auto; }
   /* Legg til vare-knappen svever over hoeyre kant av de lange knappene.
-     Den ytterste femtedelen av dem tas derfor ut av bruk, saa man ikke
-     treffer "Ny handel" naar man sikter paa plussknappen. */
+     Trykk som havner rett bak plussknappen sluppes derfor - se
+     skjermLangeKnapper(). Sonen er usynlig og maales mot der
+     plussknappen faktisk staar, ikke som en fast andel av bredden. */
   .btn-lang{ position:relative; }
-  .btn-lang::after{
-    content:''; position:absolute; top:0; right:0; bottom:0; width:20%;
-    border-radius:0 999px 999px 0; background:rgba(0,0,0,0.10);
-  }
   /* Én FAB nede til høyre: legg til vare */
   .new-fab{
     position:relative; width:48px; height:48px; border-radius:50%;
@@ -689,7 +686,7 @@ input,select,textarea{font-size:16px}
       </div>
 
       <button class="btn btn-blaa btn-lang" id="btn-start" style="margin-top:14px;" onclick="startHandel()">Start handel</button>
-      <button class="btn btn-blaa btn-lang" id="btn-stopp" style="margin-top:14px; display:none;" onclick="openStopp()">Stopp handel</button>
+      <button class="btn btn-blaa btn-lang" id="btn-stopp" style="margin-top:14px; display:none;" onclick="openStopp()">Avslutt handel</button>
       <button class="btn btn-blaa btn-lang" id="btn-gjenopprett" style="margin-top:14px; display:none;" onclick="openGjenopprett()">Gjenopprett handel</button>
       <button class="btn btn-tvers btn-lang" id="btn-hent" style="margin-top:14px; width:100%;" onclick="openImport()">Hent varer fra Oppskriftsboka</button>
       <button class="btn btn-primary btn-lang" id="btn-ny" onclick="openNyHandel()">Ny handel</button>
@@ -900,12 +897,22 @@ input,select,textarea{font-size:16px}
 <div class="modal-backdrop" id="gjenopprett-modal">
   <div class="modal-card">
     <h3>Gjenopprett handel</h3>
-    <p class="lead">Hvor skal varene kopieres?</p>
+    <p class="lead">Velg hvilken handletur varene skal hentes fra, og hvor de skal kopieres.</p>
 
-    <button class="btn btn-blaa" style="margin-top:0;" onclick="velgKopiMaal('ny')">En ny handletur</button>
-    <div id="gjenopprett-liste"></div>
+    <div class="field">
+      <label for="gjenopprett-fra">Hent varer fra</label>
+      <select id="gjenopprett-fra"></select>
+    </div>
 
-    <button class="btn btn-ghost" style="margin-top:10px;" onclick="closeModal('gjenopprett-modal')">Avbryt</button>
+    <div class="field">
+      <label for="gjenopprett-til">Kopier til</label>
+      <select id="gjenopprett-til"></select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('gjenopprett-modal')">Avbryt</button>
+      <button class="btn btn-blaa" style="margin-top:0;" onclick="velgKopiMaal()">Neste</button>
+    </div>
   </div>
 </div>
 
@@ -937,7 +944,7 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
-<!-- Stopp handel -->
+<!-- Avslutt handel -->
 <div class="modal-backdrop" id="stopp-modal">
   <div class="modal-card">
     <h3>Avslutte handelen?</h3>
@@ -1445,26 +1452,51 @@ let kopiValg = [];         // {id, name, med}
 function openGjenopprett(){
   const okt = aktivOkt();
   if (!okt) return;
-  kopiFraOktId = okt.id;
+  const omr = oktOmrade(okt);
 
-  // Andre handleturer i samme omraade kan tas imot varene
-  const c = document.getElementById('gjenopprett-liste');
-  c.innerHTML = '';
-  sorterteOkter(oktOmrade(okt))
-    .filter(o => o.id !== okt.id && !erAvsluttet(o))
+  // Alle handleturer i omraadet som har varer, i den rekkefoelgen de
+  // ble laget. Den man staar i er valgt fra foer.
+  const fra = document.getElementById('gjenopprett-fra');
+  fra.innerHTML = '';
+  sorterteOkter(omr)
+    .filter(o => data.items.some(v => v.oktId === o.id))
     .forEach(o => {
-      const b = document.createElement('button');
-      b.className = 'btn btn-blaa';
-      b.style.marginTop = '10px';
-      b.textContent = oktNavn(o);
-      b.onclick = () => velgKopiMaal(o.id);
-      c.appendChild(b);
+      const opt = document.createElement('option');
+      opt.value = o.id;
+      const ant = data.items.filter(v => v.oktId === o.id).length;
+      opt.textContent = oktNavn(o) + ' (' + ant + ')';
+      opt.selected = (o.id === okt.id);
+      fra.appendChild(opt);
+    });
+
+  if (!fra.children.length){
+    visMelding('Det finnes ingen handleturer med varer å hente fra.');
+    return;
+  }
+
+  // Handleturer som kan ta imot varene, pluss en helt ny
+  const til = document.getElementById('gjenopprett-til');
+  til.innerHTML = '';
+  const ny = document.createElement('option');
+  ny.value = 'ny';
+  ny.textContent = 'En ny handletur';
+  til.appendChild(ny);
+
+  sorterteOkter(omr)
+    .filter(o => !erAvsluttet(o))
+    .forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.id;
+      opt.textContent = oktNavn(o);
+      til.appendChild(opt);
     });
 
   document.getElementById('gjenopprett-modal').classList.add('active');
 }
 
-function velgKopiMaal(maal){
+function velgKopiMaal(){
+  kopiFraOktId = document.getElementById('gjenopprett-fra').value;
+  const maal = document.getElementById('gjenopprett-til').value;
   kopiMaal = maal;
   closeModal('gjenopprett-modal');
 
@@ -5957,14 +5989,30 @@ async function init(){
   skjermLangeKnapper();
 }
 
-/* Sluker trykk i den ytterste femtedelen av de lange knappene, der
-   plussknappen svever over. Kjoeres i fangstfasen, saa knappens egen
-   onclick aldri faar hendelsen. */
+/* Sluker trykk som havner rett bak plussknappen. Sonen regnes ut fra
+   der plussknappen faktisk ligger, med litt luft rundt, og gjelder bare
+   knapper den overlapper. Ligger plussknappen et annet sted - eller er
+   skjult - blokkeres ingenting. Kjoeres i fangstfasen, saa knappens
+   egen onclick aldri faar hendelsen. */
+const FAB_LUFT = 10;
+
 function skjermLangeKnapper(){
   document.querySelectorAll('.btn-lang').forEach(btn => {
     btn.addEventListener('click', e => {
+      const fab = document.querySelector('.new-fab');
+      if (!fab || !fab.offsetParent) return;
+
+      const f = fab.getBoundingClientRect();
       const r = btn.getBoundingClientRect();
-      if (e.clientX > r.right - r.width * 0.20){
+
+      // Overlapper knappen og plussknappen i det hele tatt?
+      const treffer = f.left - FAB_LUFT < r.right && f.right + FAB_LUFT > r.left &&
+                      f.top - FAB_LUFT < r.bottom && f.bottom + FAB_LUFT > r.top;
+      if (!treffer) return;
+
+      // Ligger selve trykket innenfor plussknappens omraade?
+      if (e.clientX > f.left - FAB_LUFT && e.clientX < f.right + FAB_LUFT &&
+          e.clientY > f.top - FAB_LUFT && e.clientY < f.bottom + FAB_LUFT){
         e.preventDefault();
         e.stopPropagation();
       }
