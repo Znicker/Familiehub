@@ -143,10 +143,10 @@ body{
 .side{display:flex;flex-direction:column;gap:14px;min-height:0}
 .side .panel{display:flex;flex-direction:column;min-height:0}
 .side .scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
-/* Rundingen skal ligge helt inntil kanten, bade i sidekolonnen og i
-   panelet som spretter opp naar sidekolonnen er borte */
+/* Rundingen skal ligge inntil kanten i sidekolonnen, men holde seg
+   innenfor i panelet, som har mindre luft aa gaa paa */
 .side-day .ev{margin-left:-16px}
-.dagpanel-liste .ev{margin-left:-14px}
+.dagpanel-liste .ev-stor-ini{width:32px;height:32px;font-size:var(--t-rute)}
 .side-day{flex:1 1 55%}
 .side-cals{flex:1 1 45%}
 
@@ -437,7 +437,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
    siden av. Da legger avtalen seg som et panel over en tredjedel av
    skjermen, paa motsatt side av det man trykket - som dagpanelet. */
 .boble.side{
-  top:0;bottom:0;width:33vw;min-width:320px;border-radius:0;
+  top:0;bottom:0;width:40vw;min-width:340px;border-radius:0;
   padding:22px 22px 26px;overflow-y:auto;-webkit-overflow-scrolling:touch;
   box-shadow:0 0 40px rgba(44,62,80,.22);
 }
@@ -751,7 +751,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
    du paa en dag i venstre halvdel, legger panelet seg til hoeyre, slik at
    dagen du valgte fortsatt er synlig ved siden av. */
 .dagpanel{
-  position:fixed;top:0;bottom:0;width:33vw;min-width:320px;z-index:70;
+  position:fixed;top:0;bottom:0;width:40vw;min-width:340px;z-index:70;
   background:var(--paper);
   display:flex;flex-direction:column;
   box-shadow:0 0 40px rgba(44,62,80,.22);
@@ -966,11 +966,6 @@ input,select,textarea{font-size:16px}
           <button data-m="week" onclick="settVisning('week')">Uke</button>
           <button data-m="day" onclick="settVisning('day')">Dag</button>
           <button data-m="liste" onclick="settVisning('liste')">Liste</button>
-        </div>
-        <div class="seg" id="listeSeg" hidden>
-          <button data-p="month" class="on" onclick="settListePeriode('month')">Måned</button>
-          <button data-p="week" onclick="settListePeriode('week')">Uke</button>
-          <button data-p="day" onclick="settListePeriode('day')">Dag</button>
         </div>
         <div class="mnav-btns">
           <button onclick="bla(-1)" title="Forrige">&lsaquo;</button>
@@ -1529,6 +1524,10 @@ async function loadCalendars(){
 
 /* Hvilken periode som skal hentes, ut fra valgt visning */
 function periode(){
+  if(S.vis === 'liste'){
+    const d = new Date(S.sel.getFullYear(), S.sel.getMonth(), S.sel.getDate());
+    return [d, plussDager(d, LISTE_DAGER)];
+  }
   if(S.modus === 'week'){
     const m = mandag(S.sel);
     return [m, plussDager(m, 7)];
@@ -2086,11 +2085,6 @@ function render(){
       knapper[i].dataset.m === (liste ? 'liste' : S.modus));
   }
 
-  const lSeg = $('listeSeg');
-  lSeg.hidden = !liste;
-  const lb = lSeg.children;
-  for(let i=0;i<lb.length;i++) lb[i].classList.toggle('on', lb[i].dataset.p === S.modus);
-
   $('monthTitle').textContent = tittel();
 
   /* Maaned, Uke og Dag bruker hele bredden. Dagen eller avtalen man
@@ -2300,18 +2294,26 @@ function visBoble(id, klikk){
   const mål = (klikk && (klikk.currentTarget || klikk.target)) || null;
   const r = mål && mål.getBoundingClientRect ? mål.getBoundingClientRect() : null;
 
-  /* Uten hoeyrekolonne: panel over en tredjedel, motsatt side av trykket */
+  /* Uten hoeyrekolonne vises avtalen som et sidepanel */
   const somPanel = $('app').classList.contains('uten-side');
   b.classList.toggle('side', somPanel);
   b.classList.remove('hoyre', 'venstre');
-  $('bobleBak').classList.toggle('dempet', somPanel);
+  $('bobleBak').classList.remove('dempet');
   if(somPanel){
-    const tilHoyre = r ? ((r.left + r.width / 2) < innerWidth / 2) : true;
+    /* Kommer trykket fra dagpanelet, legger avtalen seg paa motsatt
+       side, saa begge kan staa aapne samtidig. Ellers velges siden ut
+       fra hvor paa skjermen man trykket. */
+    let tilHoyre;
+    if(dagPanelEl && dagPanelEl.panel.contains(mål)){
+      tilHoyre = dagPanelEl.panel.classList.contains('venstre');
+    } else {
+      tilHoyre = r ? ((r.left + r.width / 2) < innerWidth / 2) : true;
+      lukkDagPanel();        /* trykket kom utenfra - bare avtalen vises */
+    }
     b.classList.add(tilHoyre ? 'hoyre' : 'venstre');
-    $('bobleBak').classList.add('dempet');
+    $('bobleBak').classList.toggle('dempet', !dagPanelEl);
     b.style.left = ''; b.style.top = '';
     b.dataset.side = '';
-    lukkDagPanel();          /* to paneler samtidig ville ligget oppaa hverandre */
     return;
   }
 
@@ -2875,15 +2877,6 @@ function renderUkePlan(dager){
 
 /* Fire visninger: Maaned (rutenett), Uke (kolonner), Dag (kolonner) og
    Liste. Liste bruker perioden man sto i, saa den fungerer som foer. */
-/* Liste har egen periodevelger. Den styrer det samme som Maaned/Uke/Dag
-   gjoer ellers, saa tittel, piler og henting fungerer som foer. */
-function settListePeriode(p){
-  if(S.modus === p) return;
-  S.modus = p;
-  if(p !== 'month') S.view = new Date(S.sel.getFullYear(), S.sel.getMonth(), 1);
-  naviger();
-}
-
 function settVisning(v){
   const knapper = $('seg').children;
   for(let i=0;i<knapper.length;i++){
@@ -3000,16 +2993,14 @@ function planItem(e){
   return it;
 }
 
+/* Lista begynner paa dagen man staar paa - i dag, eller den man har
+   valgt i maaned eller uke - og gaar framover derfra. */
+const LISTE_DAGER = 31;
+
 function listePeriode(){
-  if(S.modus === 'day') return [S.sel];
-  if(S.modus === 'week'){
-    const s = mandag(S.sel), a = [];
-    for(let i=0;i<7;i++) a.push(plussDager(s, i));
-    return a;
-  }
-  const y = S.view.getFullYear(), m = S.view.getMonth(), n = new Date(y, m+1, 0).getDate();
+  const start = new Date(S.sel.getFullYear(), S.sel.getMonth(), S.sel.getDate());
   const a = [];
-  for(let d=1; d<=n; d++) a.push(new Date(y, m, d));
+  for(let i = 0; i < LISTE_DAGER; i++) a.push(plussDager(start, i));
   return a;
 }
 
@@ -3017,7 +3008,7 @@ function renderListe(){
   const wrap = $('plan');
   wrap.innerHTML = '';
   const dager = listePeriode();
-  const hoppTomme = (S.modus === 'month');   /* måned: bare dager med avtaler */
+  const hoppTomme = true;   /* rullende liste: bare dager med avtaler */
   let noe = false;
 
   dager.forEach(function(d){
@@ -3030,8 +3021,8 @@ function renderListe(){
     const head = document.createElement('div');
     const hd = helligdag(d);
     head.className = 'plan-dhead';
-    head.innerHTML = esc(DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase()
-      + ' · Uke ' + ukeNr(d)) + (hd ? ' <span class="plan-helg">· '+esc(hd)+'</span>' : '');
+    head.innerHTML = esc(DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase())
+      + (hd ? ' <span class="plan-helg">· '+esc(hd)+'</span>' : '');
     if(hd) sec.classList.add('helligdag');
     sec.appendChild(head);
 
@@ -3056,6 +3047,12 @@ function renderListe(){
 }
 
 function tittel(){
+  /* Lista ruller framover fra dagen man staar paa */
+  if(S.vis === 'liste'){
+    const d = S.sel, idag = new Date();
+    return (sameDay(d, idag) ? 'Fra i dag' : 'Fra ' + d.getDate() + '. '
+      + MND[d.getMonth()].toLowerCase());
+  }
   if(S.modus === 'month') return MND[S.view.getMonth()] + ' ' + S.view.getFullYear();
   if(S.modus === 'day'){
     return DAG[S.sel.getDay()] + ' ' + S.sel.getDate() + '. ' + MND[S.sel.getMonth()].toLowerCase()
@@ -3071,6 +3068,13 @@ function tittel(){
 
 
 function bla(n){
+  /* I lista blar vi en uke om gangen fra startdagen */
+  if(S.vis === 'liste'){
+    S.sel = plussDager(S.sel, 7*n);
+    S.view = new Date(S.sel.getFullYear(), S.sel.getMonth(), 1);
+    naviger();
+    return;
+  }
   if(S.modus === 'month'){
     S.view = new Date(S.view.getFullYear(), S.view.getMonth()+n, 1);
     /* la valgt dag følge med inn i den nye måneden */
