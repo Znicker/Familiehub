@@ -178,7 +178,11 @@ body{
   border-bottom:1px solid var(--grid);
   transition:background .12s ease;
 }
-.cal-cell.blank{background:var(--bg-2);cursor:default}
+/* Dager i nabomaanedene som hoerer til samme uke. Vises dempet, saa
+   uka er hel uten aa ta oppmerksomhet fra maaneden man staar i. */
+.cal-cell.utenfor{background:var(--bg-2)}
+.cal-cell.utenfor .cal-num{opacity:.45}
+.cal-cell.utenfor .cal-evs{opacity:.55}
 .cal-wk{
   border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);
   background:var(--bg-2);display:flex;align-items:center;justify-content:center;
@@ -200,7 +204,7 @@ body{
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px;
 }
 .plan-helg{color:#B4443A;font-weight:700}
-@media(hover:hover){.cal-cell:not(.blank):hover{background:#F2F5F7}}
+@media(hover:hover){.cal-cell:hover{background:#F2F5F7}}
 .cal-cell.today{box-shadow:inset 0 0 0 2px var(--ink)}
 .cal-cell.sel{background:var(--ink)}
 .cal-cell.sel:hover{background:var(--ink)}
@@ -338,6 +342,41 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   width:8px;height:8px;border-radius:50%;background:#B4443A;
 }
 
+/* ---------- Dagvisning med tidsakse ---------- */
+.dagtid{flex:1;min-height:0;display:flex;flex-direction:column}
+.dagtid-heldag{
+  flex-shrink:0;display:flex;flex-direction:column;gap:5px;
+  padding:0 0 10px;margin-bottom:8px;border-bottom:1px solid var(--grid);
+}
+.dagtid-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
+.dagtid-inner{position:relative}
+/* Timeakse paa begge sider, saa man kan lese av uansett hvor paa
+   skjermen avtalen ligger */
+.dagtid-akse{position:absolute;top:0;bottom:0;width:46px}
+.dagtid-akse.venstre{left:0;border-right:1px solid var(--grid)}
+.dagtid-akse.hoyre{right:0;border-left:1px solid var(--grid)}
+.dagtid-akse span{
+  position:absolute;transform:translateY(-50%);
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-rute);color:var(--ink-soft);
+}
+.dagtid-akse.venstre span{right:7px}
+.dagtid-akse.hoyre span{left:7px}
+.dagtid-linje{position:absolute;left:46px;right:46px;height:1px;background:var(--grid);opacity:.55}
+.dagtid-felt{position:absolute;top:0;bottom:0;left:52px;right:52px}
+.dagtid-ev{
+  position:absolute;border-radius:8px;border:1px solid;
+  padding:4px 8px;overflow:hidden;cursor:pointer;
+  box-shadow:0 1px 3px rgba(44,62,80,.14);
+}
+.dagtid-ev-t{
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-rute);
+  color:var(--ink-soft);font-variant-numeric:tabular-nums;
+}
+.dagtid-ev-n{
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
+  line-height:1.3;color:var(--ink);margin-top:1px;
+}
+
 /* Visningsvelger */
 .seg{display:flex;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;padding:2px}
 .seg button{
@@ -346,7 +385,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   border:none;background:none;color:var(--ink-soft);
   padding:7px 14px;border-radius:999px;cursor:pointer;
 }
-.seg button.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 4px rgba(44,62,80,.14)}
+.seg button.on{background:var(--blaa);color:#fff;box-shadow:0 1px 4px rgba(44,62,80,.18)}
 
 /* ---------- Meldinger ---------- */
 .msg{font-size:var(--t-brod);color:var(--ink-soft);padding:8px 0;line-height:1.55}
@@ -884,6 +923,11 @@ input,select,textarea{font-size:16px}
           <button data-m="week" onclick="settVisning('week')">Uke</button>
           <button data-m="day" onclick="settVisning('day')">Dag</button>
           <button data-m="liste" onclick="settVisning('liste')">Liste</button>
+        </div>
+        <div class="seg" id="listeSeg" hidden>
+          <button data-p="month" class="on" onclick="settListePeriode('month')">Måned</button>
+          <button data-p="week" onclick="settListePeriode('week')">Uke</button>
+          <button data-p="day" onclick="settListePeriode('day')">Dag</button>
         </div>
         <div class="mnav-btns">
           <button onclick="bla(-1)" title="Forrige">&lsaquo;</button>
@@ -1450,8 +1494,13 @@ function periode(){
     const d = new Date(S.sel.getFullYear(), S.sel.getMonth(), S.sel.getDate());
     return [d, plussDager(d, 1)];
   }
+  /* Maanedsrutenettet viser hele uker, ogsaa dagene som hoerer til
+     nabomaanedene. De maa hentes med, ellers staar de tomme. */
   const y = S.view.getFullYear(), m = S.view.getMonth();
-  return [new Date(y, m, 1), new Date(y, m+1, 1)];
+  const lead = (new Date(y, m, 1).getDay() + 6) % 7;
+  const days = new Date(y, m+1, 0).getDate();
+  const trailing = (7 - ((lead + days) % 7)) % 7;
+  return [new Date(y, m, 1 - lead), new Date(y, m, days + trailing + 1)];
 }
 
 /* Bredere vindu enn selve visningen — så nabo-måneder/uker allerede
@@ -1635,7 +1684,7 @@ let mndKart = null;
 
 /* Hvor mange avtaler får plass i én rute — ut fra faktisk rutehøyde */
 function evsPerCell(){
-  const cell = document.querySelector('.cal-cell:not(.blank)');
+  const cell = document.querySelector('.cal-cell');
   if(!cell) return 3;
   const h = cell.clientHeight - 24;
   return Math.max(1, Math.min(5, Math.floor(h / 21)));
@@ -1761,22 +1810,18 @@ function renderCal(){
 
     for(let c=0; c<7; c++){
       const dnum = r*7 + c - lead + 1;              /* dag i måneden */
-      if(dnum < 1 || dnum > days){
-        const b = document.createElement('div');
-        b.className = 'cal-cell blank';
-        grid.appendChild(b);
-        continue;
-      }
+      const utenfor = (dnum < 1 || dnum > days);     /* nabomaaned, samme uke */
       const date = new Date(y, m, dnum);
       const cell = document.createElement('div');
       cell.className = 'cal-cell'
+        + (utenfor ? ' utenfor' : '')
         + (sameDay(date,today) ? ' today' : '')
         + (sameDay(date,S.sel) ? ' sel' : '')
         + ((date.getDay()===0 || date.getDay()===6) ? ' weekend' : '');
 
       const num = document.createElement('div');
       num.className = 'cal-num';
-      num.textContent = dnum;
+      num.textContent = date.getDate();
       cell.appendChild(num);
 
       const hnavn = helligdag(date);
@@ -1954,6 +1999,11 @@ function render(){
       knapper[i].dataset.m === (liste ? 'liste' : S.modus));
   }
 
+  const lSeg = $('listeSeg');
+  lSeg.hidden = !liste;
+  const lb = lSeg.children;
+  for(let i=0;i<lb.length;i++) lb[i].classList.toggle('on', lb[i].dataset.p === S.modus);
+
   $('monthTitle').textContent = tittel();
 
   /* Maaned, Uke og Dag bruker hele bredden. Dagen eller avtalen man
@@ -1972,7 +2022,7 @@ function render(){
   } else if(S.modus === 'week'){
     renderUkePlan();
   } else {
-    renderUkePlan([S.sel]);
+    renderDagTid();
   }
 
   if(!bred) renderDay();
@@ -2480,6 +2530,134 @@ function planSpor(evs){
   return spor;
 }
 
+/* ============================================================
+   Dagvisning med tidsakse
+
+   Timene staar loddrett paa begge sider. Avtalene plasseres etter
+   klokkeslett og er like hoeye som de varer. Overlappende avtaler
+   fordeles paa parallelle spor.
+   ============================================================ */
+function renderDagTid(){
+  const d = S.sel;
+  const paa = {};
+  S.calendars.forEach(function(c){ if(c.on) paa[c.id] = true; });
+
+  const tg = $('tg');
+  tg.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'dagtid';
+
+  const evs = S.events.filter(function(e){
+    if(!paa[e.calId]) return false;
+    return erBånd(e) ? dekkerDag(e, d) : sameDay(e.start, d);
+  }).sort(function(a, b){ return a.start - b.start; });
+
+  /* Heldags oeverst, utenfor tidsaksen */
+  const heldags = evs.filter(erBånd);
+  if(heldags.length){
+    const rad = document.createElement('div');
+    rad.className = 'dagtid-heldag';
+    heldags.forEach(function(e){
+      const el = planFarget(e);
+      el.classList.add('heldags');
+      rad.appendChild(el);
+    });
+    wrap.appendChild(rad);
+  }
+
+  const scroll = document.createElement('div');
+  scroll.className = 'dagtid-scroll';
+
+  const inner = document.createElement('div');
+  inner.className = 'dagtid-inner';
+  inner.style.height = (24 * TIME_H) + 'px';
+
+  /* Timeakse paa begge sider, og en strek tvers over for hver time */
+  const venstre = document.createElement('div');
+  venstre.className = 'dagtid-akse venstre';
+  const hoyre = document.createElement('div');
+  hoyre.className = 'dagtid-akse hoyre';
+  for(let t = 0; t < 24; t++){
+    const linje = document.createElement('div');
+    linje.className = 'dagtid-linje';
+    linje.style.top = (t * TIME_H) + 'px';
+    inner.appendChild(linje);
+
+    [venstre, hoyre].forEach(function(akse){
+      const lab = document.createElement('span');
+      lab.style.top = (t * TIME_H) + 'px';
+      lab.textContent = pad(t) + '.00';
+      akse.appendChild(lab);
+    });
+  }
+
+  const felt = document.createElement('div');
+  felt.className = 'dagtid-felt';
+
+  const timede = evs.filter(function(e){ return !erBånd(e); });
+  const spor = planSpor(timede);
+  const antSpor = Math.max(1, spor.length);
+
+  spor.forEach(function(liste, i){
+    liste.forEach(function(e){
+      const fra = minutter(e.start);
+      const til = sameDay(e.end, d) ? minutter(e.end) : 24 * 60;
+      const hoyde = Math.max(22, (til - fra) / 60 * TIME_H);
+
+      const el = document.createElement('div');
+      el.className = 'dagtid-ev';
+      el.style.top = (fra / 60 * TIME_H) + 'px';
+      el.style.height = hoyde + 'px';
+      el.style.left = (i / antSpor * 100) + '%';
+      el.style.width = 'calc(' + (100 / antSpor) + '% - 5px)';
+      el.style.background = dus(e.color, .18);
+      el.style.borderColor = dus(e.color, .45);
+
+      const tid = document.createElement('div');
+      tid.className = 'dagtid-ev-t';
+      tid.textContent = tid2str(e.start) + '–' + tid2str(e.end);
+
+      const nav = document.createElement('div');
+      nav.className = 'dagtid-ev-n';
+      const ini = document.createElement('span');
+      ini.className = 'ev-ini';
+      ini.style.background = e.color;
+      ini.title = e.calName || '';
+      ini.textContent = initialFor(e.calId, e.calName);
+      nav.appendChild(ini);
+      nav.appendChild(document.createTextNode(e.title));
+
+      el.appendChild(tid);
+      el.appendChild(nav);
+      el.title = e.title;
+      el.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; visBoble(e.id, ev); };
+      felt.appendChild(el);
+    });
+  });
+
+  /* Rød strek for naa, hvis vi ser paa dagen i dag */
+  if(sameDay(d, new Date())){
+    const naa = document.createElement('div');
+    naa.className = 'tg-naa';
+    naa.style.top = (minutter(new Date()) / 60 * TIME_H) + 'px';
+    felt.appendChild(naa);
+  }
+
+  inner.appendChild(venstre);
+  inner.appendChild(felt);
+  inner.appendChild(hoyre);
+  scroll.appendChild(inner);
+  wrap.appendChild(scroll);
+  tg.appendChild(wrap);
+
+  /* Start litt foer foerste avtale, ellers klokka 8 */
+  const tidligst = timede.length
+    ? timede.reduce(function(a, e){ return Math.min(a, minutter(e.start)); }, 24*60)
+    : 8*60;
+  scroll.scrollTop = Math.max(0, (Math.min(tidligst, 8*60) / 60 * TIME_H) - 12);
+}
+
 function renderUkePlan(dager){
   if(!dager){
     const s0 = mandag(S.sel);
@@ -2597,6 +2775,15 @@ function renderUkePlan(dager){
 
 /* Fire visninger: Maaned (rutenett), Uke (kolonner), Dag (kolonner) og
    Liste. Liste bruker perioden man sto i, saa den fungerer som foer. */
+/* Liste har egen periodevelger. Den styrer det samme som Maaned/Uke/Dag
+   gjoer ellers, saa tittel, piler og henting fungerer som foer. */
+function settListePeriode(p){
+  if(S.modus === p) return;
+  S.modus = p;
+  if(p !== 'month') S.view = new Date(S.sel.getFullYear(), S.sel.getMonth(), 1);
+  naviger();
+}
+
 function settVisning(v){
   const knapper = $('seg').children;
   for(let i=0;i<knapper.length;i++){
