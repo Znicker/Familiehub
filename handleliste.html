@@ -383,9 +383,25 @@
   .new-fab{ background:var(--handling-ny); color:#FFFFFF; }
   /* Start og stopp handel er blå - egen, ny betydning: "begynn/avslutt noe",
      skilt fra de fire etablerte handlingsfargene. */
-  .start-fab{ background:var(--blue); color:#FFFFFF; padding-left:3px; }
-  .stop-fab{ background:var(--blue); color:#FFFFFF; font-size:16px; }
+  .start-fab{ background:var(--blue); color:#FFFFFF; }
+  .stop-fab{ background:var(--blue); color:#FFFFFF; }
   .new-fab:active, .start-fab:active, .stop-fab:active{ transform:scale(0.95); }
+  /* Foerste trykk utvider knappen med teksten, andre trykk bekrefter.
+     Bredden animeres, saa den vokser ut mot venstre fra sirkelen. */
+  .start-fab, .stop-fab{
+    width:48px; overflow:hidden; white-space:nowrap; gap:0;
+    transition:width .18s ease, gap .18s ease, background .15s;
+  }
+  .start-fab .fab-ikon, .stop-fab .fab-ikon{ flex-shrink:0; }
+  .stop-fab .fab-ikon{ font-size:16px; }
+  .fab-tekst{
+    max-width:0; opacity:0; overflow:hidden;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+    text-transform:uppercase; letter-spacing:0.02em;
+    transition:max-width .18s ease, opacity .13s ease;
+  }
+  .start-fab.spor, .stop-fab.spor{ width:auto; padding:0 18px; gap:8px; }
+  .start-fab.spor .fab-tekst, .stop-fab.spor .fab-tekst{ max-width:160px; opacity:1; }
 
   /* ---------- Buttons & fields ---------- */
   .btn{
@@ -408,6 +424,9 @@
   /* Gaar paa tvers av apper: leser inn fra Oppskriftsboka, laster ned eller
      slaar sammen varekatalogen som deles med den. */
   .btn-tvers{ background:var(--handling-tvers); color:#fff; }
+  /* Valgene naar en handletur stoppes - blaatt som start/stopp-knappene */
+  .btn-blaa{ background:var(--blue); color:#fff; width:100%; }
+  .btn-blaa:active{ background:var(--lime-dark); }
   .btn-tvers:active{ background:var(--handling-tvers-moerk); }
 
   .field{ margin-bottom:12px; }
@@ -789,8 +808,8 @@ input,select,textarea{font-size:16px}
 <div class="toast" id="toast"></div>
 
 <div class="bottom-bar" id="bottom-bar">
-  <button type="button" class="start-fab" id="start-fab" onclick="startHandel()" title="Start handel" style="display:none;">▶</button>
-  <button type="button" class="stop-fab" id="stop-fab" onclick="openStopp()" title="Stopp handel" style="display:none;">■</button>
+  <button type="button" class="start-fab" id="start-fab" onclick="fabBekreft('start')" title="Start handel" style="display:none;"><span class="fab-ikon">▶</span><span class="fab-tekst">Start handel</span></button>
+  <button type="button" class="stop-fab" id="stop-fab" onclick="fabBekreft('stopp')" title="Stopp handel" style="display:none;"><span class="fab-ikon">■</span><span class="fab-tekst">Stopp handel</span></button>
   <button type="button" class="new-fab" onclick="openAddItem()" title="Legg til vare">+</button>
 </div>
 
@@ -850,11 +869,8 @@ input,select,textarea{font-size:16px}
     <h3>Tømme lista?</h3>
     <p class="lead">Varene legges i papirkurven, og kan hentes tilbake derfra.</p>
 
-    <button class="btn btn-primary" style="margin-top:0; background:var(--danger);" onclick="tomListe('uke')">
+    <button class="btn btn-primary" style="margin-top:0; background:var(--danger);" onclick="tomListe()">
       <span id="tom-uke-tekst"></span>
-    </button>
-    <button class="btn btn-primary" style="margin-top:10px; background:var(--danger);" onclick="tomListe('alt')">
-      <span id="tom-alt-tekst"></span>
     </button>
     <button class="btn btn-ghost" style="margin-top:10px;" onclick="closeModal('tom-modal')">Avbryt</button>
   </div>
@@ -863,8 +879,15 @@ input,select,textarea{font-size:16px}
 <!-- Ny handel -->
 <div class="modal-backdrop" id="nyhandel-modal">
   <div class="modal-card">
-    <h3>Ny handel?</h3>
-    <p class="lead">Det opprettes en ny handletur, <strong id="nyhandel-navn"></strong>. Den blir tom, og du kan legge til varer i den.</p>
+    <h3>Ny handel</h3>
+    <p class="lead">Velg hvilken uke handleturen skal ligge i.</p>
+
+    <div class="field">
+      <label for="nyhandel-uke">Uke</label>
+      <input type="text" id="nyhandel-uke" autocomplete="off" inputmode="numeric" oninput="oppdaterNyHandelNavn()">
+      <p class="field-note" id="nyhandel-navn-note"></p>
+    </div>
+
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('nyhandel-modal')">Avbryt</button>
       <button class="btn btn-primary" style="margin-top:0;" onclick="bekreftNyHandel()">Opprett</button>
@@ -878,12 +901,17 @@ input,select,textarea{font-size:16px}
     <h3>Avslutte handelen?</h3>
     <p class="lead" id="stopp-lead"></p>
 
+    <!-- Gjenoppta senere gjelder uansett om alt er handlet eller ei -->
+    <button class="btn btn-blaa" style="margin-top:0;" onclick="stoppHandel('pause')">
+      Gjenoppta senere
+    </button>
+
     <!-- Vises bare når det står igjen varer som ikke er krysset av -->
     <div id="stopp-valg" style="display:none;">
-      <button class="btn btn-primary" id="stopp-flytt-btn" style="margin-top:0;" onclick="stoppHandel('flytt')">
+      <button class="btn btn-blaa" id="stopp-flytt-btn" style="margin-top:10px;" onclick="stoppHandel('flytt')">
         <span id="stopp-flytt-tekst">Flytt til neste handel</span>
       </button>
-      <button class="btn btn-primary" style="margin-top:10px; background:var(--handling-tvers);" onclick="stoppHandel('ny')">
+      <button class="btn btn-blaa" style="margin-top:10px;" onclick="stoppHandel('ny')">
         Flytt til en ny handel
       </button>
       <button class="btn btn-primary" style="margin-top:10px; background:var(--danger);" onclick="stoppHandel('forkast')">
@@ -893,7 +921,7 @@ input,select,textarea{font-size:16px}
 
     <!-- Vises når alt er handlet -->
     <div id="stopp-enkel" style="display:none;">
-      <button class="btn btn-primary" style="margin-top:0;" onclick="stoppHandel('ferdig')">Avslutt handelen</button>
+      <button class="btn btn-blaa" style="margin-top:10px;" onclick="stoppHandel('ferdig')">Avslutt handelen</button>
     </div>
 
     <button class="btn btn-ghost" style="margin-top:10px;" onclick="closeModal('stopp-modal')">Avbryt</button>
@@ -1243,17 +1271,23 @@ function renderOktLabel(){
 /* ============================================================
    Handleøkter
    ============================================================ */
-const ROMERTALL = ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+const ROMERTALL = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 
 function oktNavn(okt){
-  return 'Uke ' + okt.uke + (okt.suffiks ? ' ' + okt.suffiks : '');
+  return 'Uke ' + okt.uke + ' ' + (okt.suffiks || 'I');
+}
+
+// Sorteringsverdi for lopenummeret, saa I kommer foer II osv.
+function oktRang(okt){
+  const i = ROMERTALL.indexOf(okt.suffiks || 'I');
+  return i === -1 ? 99 : i;
 }
 
 function sorterteOkter(){
   return data.okter.slice().sort((a, b) => {
     if (a.aar !== b.aar) return a.aar - b.aar;
     if (a.uke !== b.uke) return a.uke - b.uke;
-    return ROMERTALL.indexOf(a.suffiks) - ROMERTALL.indexOf(b.suffiks);
+    return oktRang(a) - oktRang(b);
   });
 }
 
@@ -1295,24 +1329,79 @@ function sikreAktivOkt(){
 function nesteOktNavn(){
   const naa = isoWeek(new Date());
   const alt = data.okter.filter(o => o.uke === naa.week && o.aar === naa.year).length;
-  return 'Uke ' + naa.week + (ROMERTALL[alt] ? ' ' + ROMERTALL[alt] : '');
+  return 'Uke ' + naa.week + ' ' + (ROMERTALL[alt] || String(alt + 1));
 }
 
 function openNyHandel(){
-  document.getElementById('nyhandel-navn').textContent = nesteOktNavn();
+  const naa = isoWeek(new Date());
+  document.getElementById('nyhandel-uke').value = String(naa.week);
+  oppdaterNyHandelNavn();
   document.getElementById('nyhandel-modal').classList.add('active');
 }
 
-async function bekreftNyHandel(){
-  closeModal('nyhandel-modal');
+// Uka man har skrevet inn, begrenset til et fornuftig ISO-ukenummer
+function nyHandelUke(){
   const naa = isoWeek(new Date());
-  const okt = opprettOkt(naa.week, naa.year);
+  const n = parseInt(document.getElementById('nyhandel-uke').value, 10);
+  if (isNaN(n) || n < 1 || n > 53) return null;
+  // Uker som er passert i aar hoerer til neste aar
+  const aar = (n < naa.week - 26) ? naa.year + 1 : naa.year;
+  return { uke: n, aar };
+}
+
+function oppdaterNyHandelNavn(){
+  const valg = nyHandelUke();
+  const note = document.getElementById('nyhandel-navn-note');
+  if (!valg){
+    note.textContent = 'Skriv et ukenummer mellom 1 og 53.';
+    return;
+  }
+  const alt = data.okter.filter(o => o.uke === valg.uke && o.aar === valg.aar).length;
+  const navn = 'Uke ' + valg.uke + ' ' + (ROMERTALL[alt] || String(alt + 1));
+  note.textContent = 'Handleturen får navnet ' + navn + ', ' + valg.aar + '.';
+}
+
+async function bekreftNyHandel(){
+  const valg = nyHandelUke();
+  if (!valg){ document.getElementById('nyhandel-uke').focus(); return; }
+  closeModal('nyhandel-modal');
+  const okt = opprettOkt(valg.uke, valg.aar);
   viewOktId = okt.id;
   renderOktLabel();
   render();
   const ok = await medLaas(async () => await save());
   if (ok === false) visMelding('Klarte ikke lagre.');
   visMelding('Ny handletur: ' + oktNavn(okt) + '.');
+}
+
+/* Foerste trykk paa start/stopp utvider knappen og viser hva den gjoer.
+   Andre trykk utfoerer. Sporet lukkes av seg selv etter noen sekunder,
+   saa en knapp aldri blir staaende aapen og bli trykket ved et uhell. */
+let fabSporTimer = null;
+
+function fabLukkSpor(){
+  clearTimeout(fabSporTimer); fabSporTimer = null;
+  ['start-fab', 'stop-fab'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('spor');
+  });
+}
+
+function fabBekreft(hva){
+  const btn = document.getElementById(hva === 'start' ? 'start-fab' : 'stop-fab');
+  if (!btn) return;
+
+  // Andre trykk - utfoer
+  if (btn.classList.contains('spor')){
+    fabLukkSpor();
+    if (hva === 'start') startHandel(); else openStopp();
+    return;
+  }
+
+  // Foerste trykk - vis teksten
+  fabLukkSpor();
+  btn.classList.add('spor');
+  fabSporTimer = setTimeout(fabLukkSpor, 4000);
 }
 
 async function startHandel(){
@@ -1337,7 +1426,8 @@ function openStopp(){
 
   if (igjen.length){
     lead.textContent = 'Det står igjen ' + igjen.length +
-      (igjen.length === 1 ? ' vare' : ' varer') + ' som ikke er krysset av. Hva vil du gjøre med dem?';
+      (igjen.length === 1 ? ' vare' : ' varer') + ' som ikke er krysset av. ' +
+      'Du kan ta opp igjen handleturen senere, eller avslutte den nå.';
     valg.style.display = 'block';
     enkel.style.display = 'none';
 
@@ -1347,7 +1437,7 @@ function openStopp(){
       neste ? ('Flytt til ' + oktNavn(neste)) : 'Flytt til neste handel';
     document.getElementById('stopp-flytt-btn').style.display = neste ? 'inline-flex' : 'none';
   } else {
-    lead.textContent = 'Alle varene er handlet. Handleturen avsluttes.';
+    lead.textContent = 'Alle varene er handlet.';
     valg.style.display = 'none';
     enkel.style.display = 'block';
   }
@@ -1367,6 +1457,17 @@ async function stoppHandel(handling){
   if (!okt) return closeModal('stopp-modal');
 
   const igjen = oktVarer().filter(v => !v.done);
+
+  // Gjenoppta senere: bare gaa ut av handlemodus, alt staar som det er
+  if (handling === 'pause'){
+    okt.startet = false;
+    closeModal('stopp-modal');
+    render();
+    const okP = await medLaas(async () => await save());
+    if (okP === false) visMelding('Klarte ikke lagre.');
+    visMelding('Handleturen er satt på pause. Trykk start for å ta den opp igjen.');
+    return;
+  }
 
   if (handling === 'flytt'){
     const neste = nesteOkt(okt);
@@ -1397,6 +1498,7 @@ async function stoppHandel(handling){
 
 // Play vises før handelen er startet, stopp mens den pågår
 function oppdaterStartKnapp(){
+  fabLukkSpor();
   const okt = aktivOkt();
   const start = document.getElementById('start-fab');
   const stopp = document.getElementById('stop-fab');
@@ -1427,7 +1529,9 @@ function acBind(inputId, getList, opts){
   const drop = document.getElementById('ac-drop-' + inputId);
   if (!inp || !drop) return;
 
-  inp.addEventListener('focus', () => acOpen(inputId));
+  // Varenavnfeltet har over tusen oppslag - aa vise alt naar man bare
+  // trykker i feltet er stoey. Der venter vi til noe er skrevet.
+  inp.addEventListener('focus', () => { if (!opts.krevSok) acOpen(inputId); });
   inp.addEventListener('input', () => acOpen(inputId));
   inp.addEventListener('blur', () => setTimeout(() => acClose(inputId), 150));
   inp.addEventListener('keydown', e => {
@@ -1448,9 +1552,23 @@ function acOpen(inputId){
   const drop = document.getElementById('ac-drop-' + inputId);
   const q = (inp.value || '').trim().toLowerCase();
   const alle = st.getList();
-  const treff = alle.filter(v => !q || v.toLowerCase().includes(q));
 
   drop.innerHTML = '';
+
+  // Krever soek: ingen liste foer man har skrevet noe
+  if (st.opts.krevSok && !q){
+    drop.classList.remove('open');
+    return;
+  }
+
+  let treff = alle.filter(v => !q || v.toLowerCase().includes(q));
+  if (q && st.opts.rangert){
+    treff = treff
+      .map(v => ({ v, r: acRang(v, q) }))
+      .sort((a, b) => (a.r - b.r) || a.v.localeCompare(b.v, 'nb'))
+      .slice(0, 40)
+      .map(x => x.v);
+  }
 
   treff.forEach(v => {
     const d = document.createElement('div');
@@ -1490,6 +1608,50 @@ function acOpen(inputId){
   drop.classList.toggle('open', drop.children.length > 0);
 }
 
+/* Rangering av treff i varenavnfeltet.
+   Lavere tall = hoeyere opp. Rekkefoelgen er:
+     1) varer huset faktisk handler ofte
+     2) treff i starten av navnet, eller i starten av et ord i navnet
+     3) korte navn foer lange - "Melk" foer "Melkesjokolade med nougat"
+   Slik havner Lettmelk over Kokosmelk naar man skriver "melk", fordi
+   den ligger i handlehistorikken. */
+let _brukTeller = null;
+
+function varebrukTeller(){
+  if (_brukTeller) return _brukTeller;
+  _brukTeller = {};
+  const tell = v => {
+    const n = (v && v.name || '').trim().toLowerCase();
+    if (n) _brukTeller[n] = (_brukTeller[n] || 0) + 1;
+  };
+  (data.items || []).forEach(tell);
+  (data.trash || []).forEach(tell);
+  return _brukTeller;
+}
+
+// Kalles naar lista endres, saa rangeringen foelger med
+function nullstillVarebruk(){ _brukTeller = null; }
+
+function acRang(navn, q){
+  const n = navn.toLowerCase();
+  const bruk = varebrukTeller()[n] || 0;
+
+  let plass;
+  if (n === q) plass = 0;                                  // eksakt treff
+  else if (n.startsWith(q)) plass = 1;                     // starter med
+  else if (new RegExp('\\b' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(n)) plass = 2;  // starten av et ord
+  else plass = 3;                                          // et sted inni
+
+  // Handlehistorikk veier tungt: "Lettmelk" har ingen ordgrense foran
+  // "melk" og havner nederst paa ren tekstmatching, men er det huset
+  // faktisk kjoeper. Noen handleturer holder for aa loefte den forbi
+  // navn som bare tilfeldigvis starter likt. Eksakt treff ligger paa 0
+  // og blir uansett liggende oeverst.
+  const loft = bruk ? Math.min(2.5, 1.2 * Math.log2(bruk + 1)) : 0;
+
+  return (plass - loft) * 1000 + Math.min(n.length, 999);
+}
+
 function acMoveFocus(inputId, dir){
   const drop = document.getElementById('ac-drop-' + inputId);
   const items = Array.from(drop.querySelectorAll('.ac-opt,.ac-ny'));
@@ -1504,6 +1666,8 @@ function acVelg(inputId, value){
   const inp = document.getElementById(inputId);
   if (inp) inp.value = value;
   acClose(inputId);
+  // Valg fra lista utloeser ingen input-hendelse, saa flagget settes her
+  if (inputId === 'f-cat') typeRortAvBruker = true;
   if (inputId === 'f-name') setTimeout(() => onNameInput(), 0);
 }
 
@@ -1578,6 +1742,8 @@ function openAddItem(omrade){
   document.getElementById('f-by').value = '';
   document.getElementById('f-notes').value = '';
   document.getElementById('f-name-hint').style.display = 'none';
+  const fcEl = document.getElementById('f-cat'); if (fcEl) fcEl.value = '';
+  typeRortAvBruker = false;
   settOmrade(omrade || aktivOmrade());
 
   showView('add');
@@ -1590,22 +1756,64 @@ function aktivOmrade(){
 }
 
 // Fyller butikk og kategori automatisk når varenavn velges
+/* Stikkord som avgjoer varetype naar katalogen ikke vet noe fra foer.
+   Foerste treff vinner, saa de mest spesifikke ordene maa staa oeverst
+   i hver liste: "melkesjokolade" er snacks, ikke meieri. */
+const TYPE_STIKKORD = [
+  ['Snacks',            ['melkesjokolade','sjokolade','potetgull','snacks','godteri','chips','popcorn','kjeks','nam','saltstenger','seigmenn','lakris','tyggegummi','nøtter','peanøtt']],
+  ['Drikke',            ['melkedrikk','brus','cola','pepsi','fanta','sprite','juice','saft','kaffe','te ','vann','farris','øl','vin','cider','energidrikk','iste','smoothie','solo','urge','battery','red bull']],
+  ['Frysevarer',        ['frossen','fryst','iskrem','is ','pizza','fiskepinner','pommes','løvetann']],
+  ['Hermetikk',         ['hermetisk','tomatpuré','kokosmelk','bønner i','mais i','ananas i','boks']],
+  ['Meieri',            ['melk','fløte','rømme','yoghurt','ost','smør','margarin','kesam','skyr','cottage','creme fraiche','kefir','egg']],
+  ['Frukt',             ['banan','eple','pære','appelsin','klementin','druer','jordbær','blåbær','bringebær','melon','ananas','mango','kiwi','sitron','lime','fersken','nektarin','plomme','avokado']],
+  ['Grønnsaker',        ['agurk','tomat','salat','løk','hvitløk','gulrot','potet','brokkoli','blomkål','paprika','squash','aubergine','spinat','kål','purre','sopp','mais','erter','bønner','reddik','selleri','ingefær']],
+  ['Kjøtt',             ['kjøttdeig','kylling','kalkun','svin','storfe','biff','koteletter','pølse','bacon','skinke','lam','karbonade','medisterkake','kjøttbolle']],
+  ['Fisk og sjømat',    ['laks','torsk','sei','makrell','reker','krabbe','tunfisk','sild','ørret','fiskekake','fiskeboller','scampi','blåskjell']],
+  ['Pålegg',            ['pålegg','leverpostei','servelat','salami','kaviar','syltetøy','nugatti','peanøttsmør','prim','majones','makrellsalat']],
+  ['Brød og bakevarer', ['brød','rundstykke','baguette','knekkebrød','lompe','tortilla','pita','bolle','kake','croissant','wienerbrød','pølsebrød','hamburgerbrød']],
+  ['Tørrvarer',         ['pasta','spaghetti','ris','mel','sukker','havregryn','müsli','cornflakes','frokostblanding','couscous','bulgur','quinoa','linser','gryn','bakepulver','gjær']],
+  ['Krydder og saus',   ['krydder','salt','pepper','ketchup','sennep','dressing','olje','eddik','soyasaus','buljong','karri','paprikapulver','oregano','basilikum','kanel','vanilje','saus']]
+];
+
+// Gjetter varetype ut fra navnet. Returnerer tom streng om ingenting passer.
+function gjettVaretype(navn){
+  const n = String(navn || '').trim().toLowerCase();
+  if (!n) return '';
+  for (const [type, ord] of TYPE_STIKKORD){
+    if (ord.some(o => n.includes(o))) return type;
+  }
+  return '';
+}
+
+// Varetypen for et navn: katalogen foerst, deretter stikkordene
+function foreslaattType(navn){
+  const oppf = katalogOppslag(navn);
+  if (oppf && oppf.type && VARETYPER.includes(oppf.type)) return oppf.type;
+  return gjettVaretype(navn);
+}
+
+// Settes naar brukeren skriver i typefeltet selv, saa vi ikke overstyrer
+// et bevisst valg. Nullstilles hver gang skjemaet aapnes.
+let typeRortAvBruker = false;
+
 function onNameInput(){
   const navn = document.getElementById('f-name').value.trim().toLowerCase();
   const hint = document.getElementById('f-name-hint');
 
   if (nyttOmrade !== 'mat'){ hint.style.display = 'none'; return; }
 
-  const oppf = katalogOppslag(navn);
   const butikk = data.butikkvalg[navn];
   const deler = [];
 
   const catEl = document.getElementById('f-cat');
   const storeEl = document.getElementById('f-store');
 
-  if (oppf && oppf.type && VARETYPER.includes(oppf.type) && catEl && !catEl.value){
-    catEl.value = oppf.type;
-    deler.push(oppf.type);
+  // Typen foelger varenavnet helt til brukeren overstyrer den selv.
+  // Bytter man fra Lettmelk til Bananer, skal typen bytte med.
+  const type = foreslaattType(navn);
+  if (catEl && type && !typeRortAvBruker && catEl.value !== type){
+    catEl.value = type;
+    deler.push(type);
   }
   if (butikk && data.stores.includes(butikk) && storeEl &&
       (!storeEl.value || storeEl.value === standardButikk())){
@@ -1614,7 +1822,7 @@ function onNameInput(){
   }
 
   if (deler.length){
-    hint.textContent = 'Fylt ut fra forrige gang: ' + deler.join(' · ');
+    hint.textContent = 'Fylt ut automatisk: ' + deler.join(' · ') + '. Du kan endre det.';
     hint.style.display = 'block';
   } else {
     hint.style.display = 'none';
@@ -4846,24 +5054,17 @@ async function importerKatalog(){
 function openTomListe(){
   const okt = aktivOkt();
   const iOkt = oktVarer().length;
-  const alt = data.items.length;
-  if (!alt) return visMelding('Lista er allerede tom.');
+  if (!iOkt) return visMelding('Handleturen er allerede tom.');
 
   document.getElementById('tom-uke-tekst').textContent =
     'Tøm ' + (okt ? oktNavn(okt) : 'denne handleturen') + ' (' + iOkt + ')';
-  document.getElementById('tom-alt-tekst').textContent =
-    'Tøm alle handleturer (' + alt + ')';
-  document.getElementById('tom-uke-tekst').parentElement.style.display =
-    iOkt ? 'flex' : 'none';
 
   document.getElementById('tom-modal').classList.add('active');
 }
 
-async function tomListe(omfang){
+async function tomListe(){
   const naa = Date.now();
-  const skalBort = (omfang === 'alt')
-    ? data.items.slice()
-    : oktVarer();
+  const skalBort = oktVarer();
 
   if (!skalBort.length) return closeModal('tom-modal');
 
@@ -5203,6 +5404,7 @@ function oktVarer(omrade){
 }
 
 function render(){
+  nullstillVarebruk();
   oppdaterStartKnapp();
   tegnOmrade('mat',   document.getElementById('stores-container'));
   tegnOmrade('annet', document.getElementById('annet-container'));
@@ -5503,6 +5705,8 @@ async function init(){
     data.items.forEach(v => { if (!v.omrade) v.omrade = 'mat'; });
     data.butikkvalg = data.butikkvalg || {};
     data.okter = data.okter || [];
+    // Eldre oekter kunne ha tomt lopenummer - naa er romertall gjennomgaaende
+    data.okter.forEach(o => { if (!o.suffiks){ o.suffiks = 'I'; flyttet = true; } });
 
     // Flytt over fra den gamle known-strukturen, der butikk lå sammen med typen
     if (lagret.known){
@@ -5568,13 +5772,19 @@ function initAcFields(){
   const FAMILY = ['Magne','Andrea','Emma','Nina'];
 
   // Skjema - varenavn med bilde i dropdown
-  acBind('f-name', () => VARE_NAVN, { canAddOnce: true });
+  acBind('f-name', () => VARE_NAVN, { canAddOnce: true, krevSok: true, rangert: true });
 
   acBind('f-store', () => { const egne = butikkListe(nyttOmrade); return [...new Set([...egne, ...ALLE_BUTIKKER])]; }, {
     canAddOnce: true, canAddPerm: true,
     onPerm: v => { huskButikk(nyttOmrade, v); save(); }
   });
   acBind('f-cat',  () => VARETYPER,              { closed: true });
+  // Skriver eller velger man type selv, slutter den aa foelge varenavnet
+  const fCat = document.getElementById('f-cat');
+  if (fCat){
+    fCat.addEventListener('input', () => { typeRortAvBruker = true; });
+    fCat.addEventListener('change', () => { typeRortAvBruker = true; });
+  }
   acBind('f-unit', () => ENHETER.filter(e => e), { closed: true });
   acBind('f-by',   () => FAMILY,                 { closed: true });
 
