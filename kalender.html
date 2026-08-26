@@ -259,12 +259,6 @@ body{
 .ev-body{flex:1;min-width:0}
 .ev-title{font-size:var(--t-brod);font-weight:700;line-height:1.35}
 .ev-meta{font-size:var(--t-meta);color:var(--ink-soft);margin-top:3px;font-weight:500}
-.ev-ini{
-  display:inline-flex;align-items:center;justify-content:center;
-  min-width:18px;height:18px;border-radius:999px;padding:0 5px;margin-right:6px;
-  color:#fff;font-family:'Archivo',sans-serif;
-  font-size:var(--t-rute);font-weight:700;line-height:1;vertical-align:middle;
-}
 
 /* ---------- Kalenderfiltre ---------- */
 .cal-row{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:var(--t-brod);cursor:pointer}
@@ -384,7 +378,15 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   position:absolute;border-radius:8px;border:1px solid;
   padding:4px 8px;overflow:hidden;cursor:pointer;
   box-shadow:0 1px 3px rgba(44,62,80,.14);
+  display:flex;gap:7px;align-items:flex-start;
 }
+.dagtid-ini{
+  flex-shrink:0;width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-family:'Archivo',sans-serif;font-size:var(--t-rute);
+  font-weight:700;line-height:1;
+}
+.dagtid-tekst{min-width:0;flex:1}
 /* Korte avtaler: fargeflaten stopper der avtalen slutter, men teksten
    faar henge videre i en uttonet hale saa den er mulig aa lese. */
 .dagtid-ev.kort{
@@ -644,7 +646,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .plan-item{
   display:flex;gap:12px;align-items:flex-start;
   padding:11px 13px;margin:0 0 8px;background:var(--paper);
-  border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;
+  border:1px solid var(--line);border-radius:12px;
   cursor:pointer;transition:background .12s ease;
 }
 @media(hover:hover){.plan-item:hover{background:#F5F7F4}}
@@ -879,7 +881,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   }
   .pu-topp{display:flex;align-items:center;gap:5px;margin-bottom:2px}
   .pu-ini{
-    width:16px;height:16px;border-radius:50%;color:#fff;flex-shrink:0;
+    width:21px;height:21px;border-radius:50%;color:#fff;flex-shrink:0;
     font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
     display:flex;align-items:center;justify-content:center;line-height:1;
   }
@@ -903,7 +905,6 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .pu-spor-kol{display:flex;flex-direction:column;gap:6px;min-width:0}
   .pu.endag .pu-tittel{font-size:var(--t-brod)}
   .pu.endag .pu-tid{font-size:var(--t-meta)}
-  .pu.endag .pu-ini{width:19px;height:19px;font-size:var(--t-etikett)}
   @media(hover:hover){ .pu-ev:hover{filter:brightness(.96)} }
 
 /* ---------- Laast ramme ----------
@@ -2543,7 +2544,7 @@ function planFarget(e){
   tid.className = 'pu-tid';
   tid.textContent = e.allDay
     ? 'Hele dagen'
-    : pad(e.start.getHours())+'.'+pad(e.start.getMinutes());
+    : tid2str(e.start) + '–' + tid2str(e.end);
   topp.appendChild(tid);
 
   /* Sted og notat vises ikke her - de ligger i boblen ved trykk. En liten
@@ -2698,22 +2699,27 @@ function renderDagTid(){
       el.style.background = dus(e.color, .18);
       el.style.borderColor = dus(e.color, .45);
 
+      const rund = document.createElement('div');
+      rund.className = 'dagtid-ini';
+      rund.style.background = e.color;
+      rund.title = e.calName || '';
+      rund.textContent = initialFor(e.calId, e.calName);
+
+      const tekst = document.createElement('div');
+      tekst.className = 'dagtid-tekst';
+
       const tid = document.createElement('div');
       tid.className = 'dagtid-ev-t';
       tid.textContent = tid2str(e.start) + '–' + tid2str(e.end);
 
       const nav = document.createElement('div');
       nav.className = 'dagtid-ev-n';
-      const ini = document.createElement('span');
-      ini.className = 'ev-ini';
-      ini.style.background = e.color;
-      ini.title = e.calName || '';
-      ini.textContent = initialFor(e.calId, e.calName);
-      nav.appendChild(ini);
-      nav.appendChild(document.createTextNode(e.title));
+      nav.textContent = e.title;
 
-      el.appendChild(tid);
-      el.appendChild(nav);
+      tekst.appendChild(tid);
+      tekst.appendChild(nav);
+      el.appendChild(rund);
+      el.appendChild(tekst);
       el.title = e.title;
       el.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; visBoble(e.id, ev); };
       felt.appendChild(el);
@@ -2927,7 +2933,13 @@ function planEvs(d){
 function planItem(e){
   const it = document.createElement('div');
   it.className = 'plan-item';
-  it.style.borderLeftColor = e.color;
+
+  const rund = document.createElement('div');
+  rund.className = 'ev-stor-ini';
+  rund.style.background = e.color;
+  rund.title = e.calName || '';
+  rund.textContent = initialFor(e.calId, e.calName);
+  it.appendChild(rund);
 
   const tid = document.createElement('div');
   tid.className = 'plan-time';
@@ -2945,17 +2957,13 @@ function planItem(e){
   tittelEl.textContent = e.title;
   main.appendChild(tittelEl);
 
-  // Initialen forteller hvem det gjelder - kalendernavnet er overfloedig
-  const m = document.createElement('div');
-  m.className = 'plan-meta';
-  const ini = document.createElement('span');
-  ini.className = 'ev-ini';
-  ini.style.background = e.color;
-  ini.title = e.calName || '';
-  ini.textContent = initialFor(e.calId, e.calName);
-  m.appendChild(ini);
-  if(e.where) m.appendChild(document.createTextNode(e.where));
-  main.appendChild(m);
+  // Rundingen foran raden sier hvem det gjelder - her staar bare stedet
+  if(e.where){
+    const m = document.createElement('div');
+    m.className = 'plan-meta';
+    m.textContent = e.where;
+    main.appendChild(m);
+  }
 
   const note = (e.note || '').trim();
   if(note){
