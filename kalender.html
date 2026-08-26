@@ -210,6 +210,26 @@ body{
 .cal-cell.weekend .cal-num{color:var(--ink-soft)}
 
 .cal-evs{display:flex;flex-direction:column;gap:3px;min-height:0}
+/* Brikker i maanedsrutenettet: én per kalender som har noe den dagen,
+   med initial og antall. Kalendere uten avtaler vises ikke. */
+.cal-inis{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;min-height:0;overflow:hidden}
+.cal-ini{
+  position:relative;width:21px;height:21px;border-radius:50%;
+  border:none;padding:0;color:#fff;cursor:pointer;flex-shrink:0;
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.cal-ini:active{transform:scale(.92)}
+/* Antallet henger som et lite merke naar det er mer enn én */
+.cal-ini-n{
+  position:absolute;right:-3px;bottom:-3px;
+  min-width:13px;height:13px;border-radius:999px;padding:0 3px;
+  background:var(--ink);color:#fff;border:1.5px solid var(--paper);
+  font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.cal-cell.sel .cal-ini-n{border-color:var(--ink)}
+
 .cal-ev{
   font-family:'Archivo',sans-serif;
   font-size:var(--t-etikett);font-weight:600;line-height:1.28;
@@ -608,35 +628,6 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 #app .side-cals{display:none}
 #app .side-day{flex:1 1 100%}
 
-/* ---------- Kalenderoversikt under maanedsrutenettet ----------
-   Hvem som har hva denne maaneden, med samme initial og farge som
-   avtalene i rutenettet. Inntil tre kolonner og fire rader. */
-.kaloversikt{
-  flex-shrink:0;margin-top:12px;padding-top:12px;
-  border-top:1px solid var(--line);
-  display:grid;grid-template-columns:repeat(3,1fr);gap:6px 14px;
-}
-.kalo{
-  display:flex;align-items:center;gap:8px;min-width:0;
-  background:none;border:none;padding:4px 2px;cursor:pointer;text-align:left;
-  font-family:'Archivo',sans-serif;
-}
-.kalo.av{opacity:.4}
-.kalo-ini{
-  width:22px;height:22px;border-radius:50%;color:#fff;flex-shrink:0;
-  font-size:var(--t-etikett);font-weight:700;
-  display:flex;align-items:center;justify-content:center;line-height:1;
-}
-.kalo-navn{
-  flex:1;min-width:0;font-size:var(--t-meta);font-weight:600;color:var(--ink);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.kalo-tall{
-  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);
-  color:var(--ink-soft);flex-shrink:0;
-}
-@media(max-width:900px){ .kaloversikt{grid-template-columns:repeat(2,1fr)} }
-
 /* ---------- Handlingsknapper nede til hoeyre ----------
    Samme moenster som handleliste og oppskrifter: runde knapper stablet
    i hjoernet i stedet for spredt utover topplinja og bunnlinja. */
@@ -886,7 +877,6 @@ input,select,textarea{font-size:16px}
       <div class="cal" id="cal"></div>
       <div class="tg" id="tg" hidden></div>
       <div class="plan" id="plan" hidden></div>
-      <div class="kaloversikt" id="kaloversikt" hidden></div>
       <div class="msg" id="calMsg" hidden></div>
     </section>
 
@@ -1632,14 +1622,17 @@ function fyllAvtaler(){
       if(bars.children.length) box.appendChild(bars);
     }
 
-    /* --- Tidsbestemte (én-dags) avtaler --- */
+    /* --- Tidsbestemte avtaler: én brikke per kalender med antall ---
+       Rutenettet skal svare paa "hvem har noe i dag, og hvor mye", ikke
+       ramse opp titlene. Kalendere uten avtaler den dagen staar over. */
     const timed = S.events
       .filter(function(e){ return !erBånd(e) && sameDay(e.start, d); })
       .sort(function(a, b){ return a.start - b.start; });
-    if(timed.length){
-      const rest = visNotat
-        ? Math.max(1, Math.ceil((evsPerCell() - linjer) / 2))
-        : Math.max(1, evsPerCell() - linjer);
+
+    /* Plan-visningen i maaned skal fortsatt vise titler og notater -
+       der er poenget aa lese innholdet, ikke telle det. */
+    if(timed.length && visNotat){
+      const rest = Math.max(1, Math.ceil((evsPerCell() - linjer) / 2));
       const vis = timed.slice(0, rest);
       vis.forEach(function(e){
         const row = document.createElement('div');
@@ -1657,7 +1650,7 @@ function fyllAvtaler(){
         row.appendChild(dot);
         row.appendChild(txt);
         box.appendChild(row);
-        const note = visNotat ? (e.note || '').trim() : '';
+        const note = (e.note || '').trim();
         if(note){
           const nl = document.createElement('div');
           nl.className = 'cal-ev-note';
@@ -1671,6 +1664,47 @@ function fyllAvtaler(){
         more.textContent = '+' + (timed.length - vis.length) + ' til';
         box.appendChild(more);
       }
+      return;
+    }
+
+    if(timed.length){
+      const perKal = [];
+      timed.forEach(function(e){
+        const funnet = perKal.filter(function(x){ return x.calId === e.calId; })[0];
+        if(funnet){ funnet.antall++; }
+        else perKal.push({ calId:e.calId, navn:e.calName, farge:e.color, antall:1 });
+      });
+
+      const chips = document.createElement('div');
+      chips.className = 'cal-inis';
+      perKal.forEach(function(k){
+        const chip = document.createElement('button');
+        chip.className = 'cal-ini';
+        chip.style.background = k.farge;
+        chip.title = k.navn + ': ' + k.antall +
+          (k.antall === 1 ? ' avtale' : ' avtaler');
+        chip.textContent = (k.navn || '?').trim().charAt(0).toUpperCase();
+
+        if(k.antall > 1){
+          const n = document.createElement('span');
+          n.className = 'cal-ini-n';
+          n.textContent = k.antall;
+          chip.appendChild(n);
+        }
+
+        // Trykk paa brikka viser dagen, ikke en enkelt avtale
+        chip.onclick = function(ev){
+          ev.stopPropagation();
+          if(skjulTrykk) return;
+          S.sel = d;
+          render();
+          if($('app').classList.contains('uten-side')){
+            apneDagPanel(d, chip.closest('.cal-cell') || chip);
+          }
+        };
+        chips.appendChild(chip);
+      });
+      box.appendChild(chips);
     }
   });
 }
@@ -1800,53 +1834,6 @@ function renderCal(medNotat){
   fyllAvtaler();
 }
 
-/* Oversikt over kalenderne i maaneden man ser paa: initial, navn og
-   antall oppfoeringer. Maks tolv - tre kolonner og fire rader. */
-function renderKalOversikt(){
-  const el = $('kaloversikt');
-  if(!el) return;
-
-  const y = S.view.getFullYear(), m = S.view.getMonth();
-  const iMnd = function(e){
-    return e.start.getFullYear() === y && e.start.getMonth() === m;
-  };
-
-  const rader = S.calendars.map(function(c){
-    return {
-      c: c,
-      antall: S.events.filter(function(e){ return e.calId === c.id && iMnd(e); }).length
-    };
-  }).filter(function(r){ return r.antall > 0 || r.c.on; })
-    .slice(0, 12);
-
-  if(!rader.length){ el.hidden = true; return; }
-  el.hidden = false;
-  el.innerHTML = '';
-
-  rader.forEach(function(r){
-    const b = document.createElement('button');
-    b.className = 'kalo' + (r.c.on ? '' : ' av');
-    b.title = r.c.name;
-    b.onclick = function(){ toggleCal(r.c.id); };
-
-    const ini = document.createElement('span');
-    ini.className = 'kalo-ini';
-    ini.style.background = r.c.color;
-    ini.textContent = (r.c.name || '?').trim().charAt(0).toUpperCase();
-
-    const navn = document.createElement('span');
-    navn.className = 'kalo-navn';
-    navn.textContent = r.c.name;
-
-    const tall = document.createElement('span');
-    tall.className = 'kalo-tall';
-    tall.textContent = r.antall;
-
-    b.appendChild(ini); b.appendChild(navn); b.appendChild(tall);
-    el.appendChild(b);
-  });
-}
-
 function renderDay(){
   const d = S.sel;
   const evs = eventsOn(d);
@@ -1967,13 +1954,6 @@ function render(){
   } else {                                  /* dag */
     if(plan) renderUkePlan([S.sel]);
     else renderTid();
-  }
-
-  // Oversikten hoerer til maanedsrutenettet
-  const kalo = $('kaloversikt');
-  if(kalo){
-    if(!liste && !plan && S.modus === 'month') renderKalOversikt();
-    else kalo.hidden = true;
   }
 
   if(!bred) renderDay();
