@@ -813,10 +813,20 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 @media(hover:hover){.dagpop-ev:hover{background:var(--bg-2)}}
 .dagpop-ev:active{background:var(--bg-2)}
-.dagpop-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+/* Bolkoverskrift i dagmenyen */
+.dagpop-bolk{
+  padding:14px 16px 4px;font-family:'Archivo',sans-serif;
+  font-size:var(--t-rute);font-weight:700;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--ink-soft);
+}
+.dagpop-ini{
+  width:24px;height:24px;border-radius:50%;flex-shrink:0;color:#fff;
+  font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
 .dagpop-tid{
-  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);
-  min-width:40px;font-variant-numeric:tabular-nums;
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-rute);color:var(--ink-soft);
+  min-width:76px;font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0;
 }
 .dagpop-navn{
   font-size:var(--t-brod);font-weight:600;line-height:1.3;overflow:hidden;
@@ -3247,17 +3257,25 @@ function dagMeny(d){
   ny.onclick = function(){ lukkDagMeny(); S.sel = d; render(); nyAvtale(); };
   card.appendChild(ny);
 
+  /* Overskrift over lista, saa det er tydelig at et trykk her gaar
+     rett til redigering og ikke bare viser detaljene. */
+  const endreTit = document.createElement('div');
+  endreTit.className = 'dagpop-bolk';
+  endreTit.textContent = 'Endre';
+  card.appendChild(endreTit);
+
   const liste = document.createElement('div');
   liste.className = 'dagpop-liste';
   evs.forEach(function(e){
     const row = document.createElement('button');
     row.className = 'dagpop-ev';
     const tid = e.allDay ? 'Hele dagen'
-      : pad(e.start.getHours()) + '.' + pad(e.start.getMinutes());
-    row.innerHTML = '<span class="dagpop-dot" style="background:'+e.color+'"></span>'
+      : tid2str(e.start) + '–' + tid2str(e.end);
+    row.innerHTML = '<span class="dagpop-ini" style="background:'+e.color+'" title="'
+      + esc(e.calName || '')+'">'+esc(initialFor(e.calId, e.calName))+'</span>'
       + '<span class="dagpop-tid">'+esc(tid)+'</span>'
       + '<span class="dagpop-navn">'+esc(e.title)+'</span>';
-    row.onclick = function(ev){ lukkDagMeny(); visBoble(e.id, ev); };
+    row.onclick = function(){ lukkDagMeny(); endreAvtale(e.id); };
     liste.appendChild(row);
   });
   card.appendChild(liste);
