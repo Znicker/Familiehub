@@ -372,36 +372,16 @@
     pointer-events:none;
   }
   .bottom-bar > *{ pointer-events:auto; }
-  /* To vertikalt stablede FAB-knapper nede til høyre: Start handel og Ny handel */
-  .new-fab, .start-fab, .stop-fab{
+  /* Én FAB nede til høyre: legg til vare */
+  .new-fab{
     position:relative; width:48px; height:48px; border-radius:50%;
     border:none; padding:0; font-size:var(--t-pil);
     display:flex; align-items:center; justify-content:center;
     cursor:pointer; box-shadow:0 4px 14px rgba(44,62,80,.18);
     touch-action:manipulation;
+    background:var(--handling-ny); color:#FFFFFF;
   }
-  .new-fab{ background:var(--handling-ny); color:#FFFFFF; }
-  /* Start og stopp handel er blå - egen, ny betydning: "begynn/avslutt noe",
-     skilt fra de fire etablerte handlingsfargene. */
-  .start-fab{ background:var(--blue); color:#FFFFFF; }
-  .stop-fab{ background:var(--blue); color:#FFFFFF; }
-  .new-fab:active, .start-fab:active, .stop-fab:active{ transform:scale(0.95); }
-  /* Foerste trykk utvider knappen med teksten, andre trykk bekrefter.
-     Bredden animeres, saa den vokser ut mot venstre fra sirkelen. */
-  .start-fab, .stop-fab{
-    width:48px; overflow:hidden; white-space:nowrap; gap:0;
-    transition:width .18s ease, gap .18s ease, background .15s;
-  }
-  .start-fab .fab-ikon, .stop-fab .fab-ikon{ flex-shrink:0; }
-  .stop-fab .fab-ikon{ font-size:16px; }
-  .fab-tekst{
-    max-width:0; opacity:0; overflow:hidden;
-    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
-    text-transform:uppercase; letter-spacing:0.02em;
-    transition:max-width .18s ease, opacity .13s ease;
-  }
-  .start-fab.spor, .stop-fab.spor{ width:auto; padding:0 18px; gap:8px; }
-  .start-fab.spor .fab-tekst, .stop-fab.spor .fab-tekst{ max-width:160px; opacity:1; }
+  .new-fab:active{ transform:scale(0.95); }
 
   /* ---------- Buttons & fields ---------- */
   .btn{
@@ -686,8 +666,10 @@ input,select,textarea{font-size:16px}
         <div id="annet-container"></div>
       </div>
 
+      <button class="btn btn-blaa" id="btn-start" style="margin-top:14px;" onclick="startHandel()">Start handel</button>
+      <button class="btn btn-blaa" id="btn-stopp" style="margin-top:14px; display:none;" onclick="openStopp()">Stopp handel</button>
       <button class="btn btn-primary" onclick="openNyHandel()">Ny handel</button>
-      <button type="button" class="btn-quiet" id="btn-tom" onclick="openTomListe()">Tøm lista</button>
+      <button class="btn btn-primary" id="btn-tom" style="background:var(--danger);" onclick="openTomListe()">Slett</button>
     </div>
   </section>
 
@@ -808,8 +790,6 @@ input,select,textarea{font-size:16px}
 <div class="toast" id="toast"></div>
 
 <div class="bottom-bar" id="bottom-bar">
-  <button type="button" class="start-fab" id="start-fab" onclick="fabBekreft('start')" title="Start handel" style="display:none;"><span class="fab-ikon">▶</span><span class="fab-tekst">Start handel</span></button>
-  <button type="button" class="stop-fab" id="stop-fab" onclick="fabBekreft('stopp')" title="Stopp handel" style="display:none;"><span class="fab-ikon">■</span><span class="fab-tekst">Stopp handel</span></button>
   <button type="button" class="new-fab" onclick="openAddItem()" title="Legg til vare">+</button>
 </div>
 
@@ -863,14 +843,17 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
-<!-- Tøm lista -->
+<!-- Slett -->
 <div class="modal-backdrop" id="tom-modal">
   <div class="modal-card">
-    <h3>Tømme lista?</h3>
+    <h3>Hva vil du slette?</h3>
     <p class="lead">Varene legges i papirkurven, og kan hentes tilbake derfra.</p>
 
-    <button class="btn btn-primary" style="margin-top:0; background:var(--danger);" onclick="tomListe()">
-      <span id="tom-uke-tekst"></span>
+    <button class="btn btn-primary" id="tom-varer-btn" style="margin-top:0; background:var(--danger);" onclick="tomListe('varer')">
+      <span id="tom-varer-tekst"></span>
+    </button>
+    <button class="btn btn-primary" style="margin-top:10px; background:var(--danger);" onclick="tomListe('handletur')">
+      <span id="tom-hele-tekst"></span>
     </button>
     <button class="btn btn-ghost" style="margin-top:10px;" onclick="closeModal('tom-modal')">Avbryt</button>
   </div>
@@ -1374,36 +1357,6 @@ async function bekreftNyHandel(){
   visMelding('Ny handletur: ' + oktNavn(okt) + '.');
 }
 
-/* Foerste trykk paa start/stopp utvider knappen og viser hva den gjoer.
-   Andre trykk utfoerer. Sporet lukkes av seg selv etter noen sekunder,
-   saa en knapp aldri blir staaende aapen og bli trykket ved et uhell. */
-let fabSporTimer = null;
-
-function fabLukkSpor(){
-  clearTimeout(fabSporTimer); fabSporTimer = null;
-  ['start-fab', 'stop-fab'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('spor');
-  });
-}
-
-function fabBekreft(hva){
-  const btn = document.getElementById(hva === 'start' ? 'start-fab' : 'stop-fab');
-  if (!btn) return;
-
-  // Andre trykk - utfoer
-  if (btn.classList.contains('spor')){
-    fabLukkSpor();
-    if (hva === 'start') startHandel(); else openStopp();
-    return;
-  }
-
-  // Foerste trykk - vis teksten
-  fabLukkSpor();
-  btn.classList.add('spor');
-  fabSporTimer = setTimeout(fabLukkSpor, 4000);
-}
-
 async function startHandel(){
   const okt = aktivOkt();
   if (!okt || okt.startet) return;
@@ -1498,12 +1451,11 @@ async function stoppHandel(handling){
 
 // Play vises før handelen er startet, stopp mens den pågår
 function oppdaterStartKnapp(){
-  fabLukkSpor();
   const okt = aktivOkt();
-  const start = document.getElementById('start-fab');
-  const stopp = document.getElementById('stop-fab');
-  if (start) start.style.display = (okt && !okt.startet) ? 'flex' : 'none';
-  if (stopp) stopp.style.display = (okt && okt.startet) ? 'flex' : 'none';
+  const start = document.getElementById('btn-start');
+  const stopp = document.getElementById('btn-stopp');
+  if (start) start.style.display = (okt && !okt.startet) ? 'inline-flex' : 'none';
+  if (stopp) stopp.style.display = (okt && okt.startet) ? 'inline-flex' : 'none';
 }
 
 /* ============================================================
@@ -1721,9 +1673,9 @@ function settOmrade(omrade){
   document.getElementById('f-name').placeholder =
     omrade === 'mat' ? 'Melk, brokkoli, kaffe …' : 'Skruer, maling, pensel …';
 
-  // Sett foreslått butikk
+  // Dagligvarer staar fast paa standardbutikken; andre varer har ingen
   const inp = document.getElementById('f-store');
-  if (inp) inp.value = '';
+  if (inp) inp.value = (omrade === 'mat') ? standardButikk() : '';
 }
 
 function openAddItem(omrade){
@@ -1802,11 +1754,8 @@ function onNameInput(){
 
   if (nyttOmrade !== 'mat'){ hint.style.display = 'none'; return; }
 
-  const butikk = data.butikkvalg[navn];
   const deler = [];
-
   const catEl = document.getElementById('f-cat');
-  const storeEl = document.getElementById('f-store');
 
   // Typen foelger varenavnet helt til brukeren overstyrer den selv.
   // Bytter man fra Lettmelk til Bananer, skal typen bytte med.
@@ -1815,11 +1764,10 @@ function onNameInput(){
     catEl.value = type;
     deler.push(type);
   }
-  if (butikk && data.stores.includes(butikk) && storeEl &&
-      (!storeEl.value || storeEl.value === standardButikk())){
-    storeEl.value = butikk;
-    deler.push(butikk);
-  }
+
+  // Butikken settes ikke av historikken. Dagligvarer staar paa Kiwi til
+  // man velger noe annet - det er mer forutsigbart enn at feltet
+  // skifter av seg selv fordi varen ble kjoept et annet sted en gang.
 
   if (deler.length){
     hint.textContent = 'Fylt ut automatisk: ' + deler.join(' · ') + '. Du kan endre det.';
@@ -5053,26 +5001,48 @@ async function importerKatalog(){
    ============================================================ */
 function openTomListe(){
   const okt = aktivOkt();
+  if (!okt) return visMelding('Ingen handletur er valgt.');
   const iOkt = oktVarer().length;
-  if (!iOkt) return visMelding('Handleturen er allerede tom.');
 
-  document.getElementById('tom-uke-tekst').textContent =
-    'Tøm ' + (okt ? oktNavn(okt) : 'denne handleturen') + ' (' + iOkt + ')';
+  document.getElementById('tom-varer-tekst').textContent =
+    'Fjern varene (' + iOkt + ')';
+  document.getElementById('tom-varer-btn').style.display = iOkt ? 'inline-flex' : 'none';
+  document.getElementById('tom-hele-tekst').textContent =
+    'Slett hele ' + oktNavn(okt);
 
   document.getElementById('tom-modal').classList.add('active');
 }
 
-async function tomListe(){
+// 'varer'      - varene gaar i papirkurven, handleturen blir staaende tom
+// 'handletur'  - varene gaar i papirkurven og selve handleturen fjernes
+async function tomListe(omfang){
+  const okt = aktivOkt();
+  if (!okt) return closeModal('tom-modal');
+
   const naa = Date.now();
   const skalBort = oktVarer();
 
-  if (!skalBort.length) return closeModal('tom-modal');
+  if (skalBort.length){
+    const ider = new Set(skalBort.map(v => v.id));
+    skalBort.forEach(v => { v.slettet = naa; });
+    data.trash = skalBort.concat(data.trash);
+    if (data.trash.length > 200) data.trash.length = 200;
+    data.items = data.items.filter(v => !ider.has(v.id));
+  }
 
-  const ider = new Set(skalBort.map(v => v.id));
-  skalBort.forEach(v => { v.slettet = naa; });
-  data.trash = skalBort.concat(data.trash);
-  if (data.trash.length > 200) data.trash.length = 200;
-  data.items = data.items.filter(v => !ider.has(v.id));
+  let melding = skalBort.length
+    ? (skalBort.length + ' varer flyttet til papirkurven.')
+    : 'Handleturen var tom.';
+
+  if (omfang === 'handletur'){
+    const navn = oktNavn(okt);
+    data.okter = data.okter.filter(o => o.id !== okt.id);
+    // Vis naboen i stedet, ellers blank tilstand
+    const igjen = sorterteOkter();
+    viewOktId = igjen.length ? igjen[igjen.length - 1].id : null;
+    renderOktLabel();
+    melding = navn + ' er slettet.';
+  }
 
   closeModal('tom-modal');
   const ok = await medLaas(async () => await save());
@@ -5081,7 +5051,7 @@ async function tomListe(){
   render();
   oppdaterKurvMerke();
   oppdaterRyddMerke();
-  visMelding(skalBort.length + ' varer flyttet til papirkurven.');
+  visMelding(melding);
 }
 
 /* ============================================================
@@ -5779,6 +5749,25 @@ function initAcFields(){
     onPerm: v => { huskButikk(nyttOmrade, v); save(); }
   });
   acBind('f-cat',  () => VARETYPER,              { closed: true });
+
+  /* Trykker man i et felt som allerede har innhold, toemmes det, saa man
+     begynner paa blank rute i stedet for aa maatte markere og slette.
+     Notatfeltet holdes utenfor - der vil man som regel skrive videre. */
+  ['f-name', 'f-count', 'f-amt', 'f-unit', 'f-store', 'f-cat', 'f-by'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('focus', () => {
+      if (!el.value) return;
+      el.value = '';
+      if (id === 'f-cat') typeRortAvBruker = false;
+      if (id === 'f-name'){
+        const h = document.getElementById('f-name-hint');
+        if (h) h.style.display = 'none';
+      }
+      // Naa som feltet er tomt skal forslagslista oppdatere seg
+      if (_acState[id]) acOpen(id);
+    });
+  });
   // Skriver eller velger man type selv, slutter den aa foelge varenavnet
   const fCat = document.getElementById('f-cat');
   if (fCat){
