@@ -47,6 +47,7 @@
   --handling-endre-moerk:#9E7230;
   --blaa:#4A7FA8;
   --danger:#A64D3C;
+  --boks-mild:#EDF3F8;
 }
 /* iPad: leses paa avstand, alt et hakk opp */
 @media(min-width:700px){
@@ -647,6 +648,8 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   cursor:pointer;transition:background .12s ease;
 }
 @media(hover:hover){.plan-item:hover{background:#F5F7F4}}
+/* Raden man har valgt - detaljene vises i panelet til hoeyre */
+.plan-item.valgt{background:var(--boks-mild);box-shadow:inset 0 0 0 1px var(--blaa)}
 .plan-time{
   font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);
   min-width:48px;text-align:right;line-height:1.35;font-variant-numeric:tabular-nums;flex-shrink:0;
@@ -1931,6 +1934,48 @@ function renderCal(){
   fyllAvtaler();
 }
 
+/* ============================================================
+   Valgt avtale (listevisning)
+
+   I lista er hoeyrepanelet en detaljrute: den viser avtalen man har
+   trykket paa, ikke hele dagen.
+   ============================================================ */
+let valgtAvtaleId = null;
+
+function tegnValgtAvtale(){
+  const list = $('dayList');
+  const e = S.events.filter(function(x){ return x.id === valgtAvtaleId; })[0];
+
+  if(!e){
+    list.innerHTML = '<div class="msg">Velg en avtale i lista for å se detaljene.</div>';
+    return;
+  }
+
+  const tid = e.allDay
+    ? 'Hele dagen'
+    : tid2str(e.start) + '–' + tid2str(e.end);
+  const dato = DAG[e.start.getDay()] + ' ' + e.start.getDate() + '. '
+             + MND[e.start.getMonth()].toLowerCase();
+
+  let html = '';
+  if(e.kanEndre){
+    html += '<button class="boble-knapp" onclick="endreAvtale(\''
+      + e.id.replace(/'/g, "\\'") + '\')">Endre avtale</button>';
+  }
+  html += '<div class="boble-topp">'
+    + '<span class="boble-ini" style="background:' + e.color + '" title="'
+    + esc(e.calName || '') + '">' + esc(initialFor(e.calId, e.calName)) + '</span>'
+    + '</div>'
+    + '<div class="boble-tittel">' + esc(e.title) + '</div>'
+    + '<div class="boble-tid">' + esc(dato) + ' · ' + esc(tid) + '</div>'
+    + (e.where ? '<div class="boble-sted">' + esc(e.where) + '</div>' : '')
+    + (e.note
+        ? '<div class="boble-notat">' + esc(e.note) + '</div>'
+        : '<div class="boble-notat ingen">Ingen notater.</div>');
+
+  list.innerHTML = html;
+}
+
 function renderDay(){
   const d = S.sel;
   const evs = eventsOn(d);
@@ -2056,7 +2101,8 @@ function render(){
     renderDagTid();
   }
 
-  if(!bred) renderDay();
+  if(liste) tegnValgtAvtale();
+  else if(!bred) renderDay();
   else if(dagPanelEl) tegnDagPanel();   /* holder en aapen popup i takt */
   renderCalList();
 }
@@ -2923,9 +2969,13 @@ function planItem(e){
 
   it.appendChild(main);
 
+  if(e.id === valgtAvtaleId) it.classList.add('valgt');
+
   it.onclick = function(){
     if(skjulTrykk) return;               /* nettopp langt trykk / sveip */
-    if(note) it.classList.toggle('open');
+    valgtAvtaleId = e.id;
+    renderListe();                       /* markerer raden man valgte */
+    tegnValgtAvtale();                   /* detaljene i panelet til hoeyre */
   };
   langtTrykk(it, function(){ endreAvtale(e.id); });
 
