@@ -77,7 +77,7 @@
   }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-  button, .item-row, .trash-row, .store-header{ touch-action: manipulation; }
+  button, .item-row, .store-header{ touch-action: manipulation; }
   html,body{ margin:0; padding:0; color:var(--ink); width:100%; overflow-x:clip; }
   body{
     font-family:'Archivo', sans-serif;
@@ -175,19 +175,6 @@
     font-family:'Archivo',sans-serif; font-size:16px; background:#fff; color:var(--ink);
   }
 
-  .trash-row{
-    display:flex; gap:12px; align-items:center; padding:13px 4px;
-    border-bottom:1px solid var(--line);
-  }
-  .trash-row:last-child{ border-bottom:none; }
-  .trash-body{ flex:1; min-width:0; }
-  .trash-name{ font-size:var(--t-brod); font-weight:600; line-height:1.3; color:var(--ink); }
-  .trash-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; }
-  .trash-back{
-    border:none; border-radius:999px; padding:7px 13px; font-size:var(--t-meta); font-weight:700;
-    font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.02em;
-    background:var(--lime); color:#fff; flex-shrink:0;
-  }
   .topbar-back{
     width:40px; height:40px; margin:-4px 0 -4px -8px; font-size:var(--t-pil);
     background:none; border:none; color:var(--ink); cursor:pointer;
@@ -313,9 +300,19 @@
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
   }
   .done-wrap{ opacity:0.6; }
+  /* Avsluttet handletur - alt staar dempet og utenfor rekkevidde */
+  .okt-avsluttet{ opacity:0.5; }
+  .okt-avsluttet .item-row{ pointer-events:none; }
+  .okt-avsluttet .item-name{ text-decoration:line-through; color:var(--ink-soft); }
   .done-wrap .store-header{ background:var(--ink-soft); box-shadow:none; }
   .done-wrap .category-header{ background:var(--ink-soft); box-shadow:none; }
 
+  /* Liten pilleknapp i lista over avviste sammenslaaingsforslag */
+  .ta-opp-igjen{
+    border:none; border-radius:999px; padding:7px 13px; font-size:var(--t-meta); font-weight:700;
+    font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.02em;
+    background:var(--lime); color:#fff; flex-shrink:0;
+  }
   .btn-quiet{
     display:block; width:100%; background:none; border:none; padding:12px 10px;
     color:var(--ink-soft); font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:600;
@@ -372,6 +369,14 @@
     pointer-events:none;
   }
   .bottom-bar > *{ pointer-events:auto; }
+  /* Legg til vare-knappen svever over hoeyre kant av de lange knappene.
+     Den ytterste femtedelen av dem tas derfor ut av bruk, saa man ikke
+     treffer "Ny handel" naar man sikter paa plussknappen. */
+  .btn-lang{ position:relative; }
+  .btn-lang::after{
+    content:''; position:absolute; top:0; right:0; bottom:0; width:20%;
+    border-radius:0 999px 999px 0; background:rgba(0,0,0,0.10);
+  }
   /* Én FAB nede til høyre: legg til vare */
   .new-fab{
     position:relative; width:48px; height:48px; border-radius:50%;
@@ -683,11 +688,12 @@ input,select,textarea{font-size:16px}
         <div id="annet-container"></div>
       </div>
 
-      <button class="btn btn-blaa" id="btn-start" style="margin-top:14px;" onclick="startHandel()">Start handel</button>
-      <button class="btn btn-blaa" id="btn-stopp" style="margin-top:14px; display:none;" onclick="openStopp()">Stopp handel</button>
-      <button class="btn btn-tvers" id="btn-hent" style="margin-top:14px; width:100%;" onclick="openImport()">Hent varer fra Oppskriftsboka</button>
-      <button class="btn btn-primary" id="btn-ny" onclick="openNyHandel()">Ny handel</button>
-      <button class="btn btn-primary" id="btn-tom" style="background:var(--danger);" onclick="openTomListe()">Slett</button>
+      <button class="btn btn-blaa btn-lang" id="btn-start" style="margin-top:14px;" onclick="startHandel()">Start handel</button>
+      <button class="btn btn-blaa btn-lang" id="btn-stopp" style="margin-top:14px; display:none;" onclick="openStopp()">Stopp handel</button>
+      <button class="btn btn-blaa btn-lang" id="btn-gjenopprett" style="margin-top:14px; display:none;" onclick="openGjenopprett()">Gjenopprett handel</button>
+      <button class="btn btn-tvers btn-lang" id="btn-hent" style="margin-top:14px; width:100%;" onclick="openImport()">Hent varer fra Oppskriftsboka</button>
+      <button class="btn btn-primary btn-lang" id="btn-ny" onclick="openNyHandel()">Ny handel</button>
+      <button class="btn btn-primary btn-lang" id="btn-tom" style="background:var(--danger);" onclick="openTomListe()">Slett</button>
 
       <!-- Utkvitterte varer ligger helt nederst, under knappene -->
       <div class="donepane active" id="done-mat"></div>
@@ -794,16 +800,6 @@ input,select,textarea{font-size:16px}
     </div>
   </section>
 
-  <!-- PAPIRKURV -->
-  <section class="view" id="view-trash">
-    <div class="card-panel punched" style="margin-top:20px;">
-      <h2>Papirkurv</h2>
-      <p class="field-note" style="margin:4px 0 16px;">Slettede varer ligger her til du tømmer kurven.</p>
-      <div id="trash-container"></div>
-      <button type="button" class="btn-quiet" id="btn-tom-kurv" onclick="openEmptyTrash()">Tøm papirkurven</button>
-      <button class="btn btn-ghost" style="margin-top:8px;" onclick="goHome()">Tilbake</button>
-    </div>
-  </section>
 
 
 </main>
@@ -869,7 +865,7 @@ input,select,textarea{font-size:16px}
 <div class="modal-backdrop" id="tom-modal">
   <div class="modal-card">
     <h3>Hva vil du slette?</h3>
-    <p class="lead">Varene legges i papirkurven, og kan hentes tilbake derfra.</p>
+    <p class="lead">Dette kan ikke angres.</p>
 
     <button class="btn btn-primary" id="tom-varer-btn" style="margin-top:0; background:var(--danger);" onclick="tomListe('varer')">
       <span id="tom-varer-tekst"></span>
@@ -896,6 +892,32 @@ input,select,textarea{font-size:16px}
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="avbrytNyHandel()">Avbryt</button>
       <button class="btn btn-primary" style="margin-top:0;" onclick="bekreftNyHandel()">Opprett</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gjenopprett handel: velg hvor varene skal kopieres -->
+<div class="modal-backdrop" id="gjenopprett-modal">
+  <div class="modal-card">
+    <h3>Gjenopprett handel</h3>
+    <p class="lead">Hvor skal varene kopieres?</p>
+
+    <button class="btn btn-blaa" style="margin-top:0;" onclick="velgKopiMaal('ny')">En ny handletur</button>
+    <div id="gjenopprett-liste"></div>
+
+    <button class="btn btn-ghost" style="margin-top:10px;" onclick="closeModal('gjenopprett-modal')">Avbryt</button>
+  </div>
+</div>
+
+<!-- Gjenopprett handel: velg hvilke varer som blir med -->
+<div class="modal-backdrop" id="kopi-modal">
+  <div class="modal-card">
+    <h3>Velg varer</h3>
+    <p class="lead" id="kopi-lead"></p>
+    <div id="kopi-liste" style="max-height:46vh; overflow-y:auto; margin-bottom:6px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('kopi-modal')">Avbryt</button>
+      <button class="btn btn-blaa" id="kopi-knapp" style="margin-top:0;" onclick="bekreftKopi()">Kopier</button>
     </div>
   </div>
 </div>
@@ -952,7 +974,7 @@ input,select,textarea{font-size:16px}
 <div class="modal-backdrop" id="delete-modal">
   <div class="modal-card">
     <h3>Slette varen?</h3>
-    <p class="lead"><strong id="del-name"></strong> legges i papirkurven, og kan hentes tilbake derfra.</p>
+    <p class="lead"><strong id="del-name"></strong> fjernes fra handleturen.</p>
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('delete-modal')">Avbryt</button>
       <button class="btn btn-primary" style="margin-top:0; background:var(--danger);" onclick="confirmDelete()">Slett</button>
@@ -1020,17 +1042,6 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
-<!-- Tøm papirkurven -->
-<div class="modal-backdrop" id="empty-trash-modal">
-  <div class="modal-card">
-    <h3>Tøm papirkurven?</h3>
-    <p class="lead"><strong id="tom-antall">0</strong> varer slettes for godt. Dette kan ikke angres.</p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('empty-trash-modal')">Avbryt</button>
-      <button class="btn btn-primary" style="margin-top:0; background:var(--danger);" onclick="confirmEmptyTrash()">Slett alt</button>
-    </div>
-  </div>
-</div>
 
 <!-- Sammendrag av ferdig handleliste -->
 <div class="modal-backdrop" id="sum-modal">
@@ -1238,7 +1249,6 @@ let data = {
   andreStores: [],             // butikker for andre varer, husket etter hvert som de skrives inn
   cats: VARETYPER.slice(),
   butikkvalg: {},     // varenavn (lowercase) -> butikk. Handle sitt eget, ikke katalogens.
-  trash: [],          // slettede varer, med slettet-tidspunkt
   raalinjer: {},      // "2026-W33" -> ingrediensene slik de sto i oppskriftene
   collapsed: []       // butikker som er slått sammen
 };
@@ -1368,9 +1378,14 @@ function openNyHandel(){
    naa. Settes naar man avslutter en handel og velger "flytt til en ny". */
 let flyttTilNyHandel = null;
 
+/* Varer som skal kopieres inn i handleturen som opprettes naa.
+   Settes av Gjenopprett handel. */
+let kopierTilNyHandel = null;
+
 // Avbryter man, blir varene liggende i handleturen de allerede sto i
 function avbrytNyHandel(){
   flyttTilNyHandel = null;
+  kopierTilNyHandel = null;
   closeModal('nyhandel-modal');
 }
 
@@ -1391,13 +1406,147 @@ async function bekreftNyHandel(){
   }
   flyttTilNyHandel = null;
 
+  // Gjenopprett handel: varene kopieres, originalene blir staaende
+  let kopiert = 0;
+  if (kopierTilNyHandel && kopierTilNyHandel.length){
+    const ider = new Set(kopierTilNyHandel);
+    const nye = data.items.filter(v => ider.has(v.id)).map(v => kopiAvVare(v, okt.id));
+    nye.forEach(v => data.items.push(v));
+    kopiert = nye.length;
+  }
+  kopierTilNyHandel = null;
+
   renderOktLabel();
   render();
   const ok = await medLaas(async () => await save());
   if (ok === false) visMelding('Klarte ikke lagre.');
-  visMelding(antall
-    ? (oktNavn(okt) + ' opprettet med ' + antall + ' varer fra forrige handel.')
-    : ('Ny handletur: ' + oktNavn(okt) + '.'));
+
+  if (kopiert){
+    visMelding(oktNavn(okt) + ' opprettet med ' + kopiert +
+      (kopiert === 1 ? ' kopiert vare.' : ' kopierte varer.'));
+  } else {
+    visMelding(antall
+      ? (oktNavn(okt) + ' opprettet med ' + antall + ' varer fra forrige handel.')
+      : ('Ny handletur: ' + oktNavn(okt) + '.'));
+  }
+}
+
+/* ============================================================
+   Gjenopprett handel
+
+   En avsluttet handletur kan brukes som mal: velg hvor varene skal,
+   huk av hvilke som blir med, og de kopieres over som nye varer.
+   Originalen blir staaende urort som en kvittering.
+   ============================================================ */
+let kopiFraOktId = null;   // handleturen det kopieres fra
+let kopiMaal = null;       // 'ny' eller id-en til en eksisterende handletur
+let kopiValg = [];         // {id, name, med}
+
+function openGjenopprett(){
+  const okt = aktivOkt();
+  if (!okt) return;
+  kopiFraOktId = okt.id;
+
+  // Andre handleturer i samme omraade kan tas imot varene
+  const c = document.getElementById('gjenopprett-liste');
+  c.innerHTML = '';
+  sorterteOkter(oktOmrade(okt))
+    .filter(o => o.id !== okt.id && !erAvsluttet(o))
+    .forEach(o => {
+      const b = document.createElement('button');
+      b.className = 'btn btn-blaa';
+      b.style.marginTop = '10px';
+      b.textContent = oktNavn(o);
+      b.onclick = () => velgKopiMaal(o.id);
+      c.appendChild(b);
+    });
+
+  document.getElementById('gjenopprett-modal').classList.add('active');
+}
+
+function velgKopiMaal(maal){
+  kopiMaal = maal;
+  closeModal('gjenopprett-modal');
+
+  const varer = data.items.filter(v => v.oktId === kopiFraOktId);
+  kopiValg = varer.map(v => ({ id: v.id, name: v.name, med: true }));
+
+  const maalNavn = (maal === 'ny')
+    ? 'en ny handletur'
+    : oktNavn(data.okter.find(o => o.id === maal));
+  document.getElementById('kopi-lead').textContent =
+    'Varene under kopieres til ' + maalNavn + '. Fjern haken på dem du ikke vil ha med.';
+
+  tegnKopiListe();
+  document.getElementById('kopi-modal').classList.add('active');
+}
+
+function tegnKopiListe(){
+  const c = document.getElementById('kopi-liste');
+  c.innerHTML = '';
+
+  kopiValg.forEach(v => {
+    const rad = document.createElement('label');
+    rad.className = 'pick-row';
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = v.med;
+    cb.onchange = () => { v.med = cb.checked; oppdaterKopiKnapp(); };
+
+    const t = document.createElement('span');
+    t.className = 'pick-title';
+    t.textContent = v.name;
+
+    rad.appendChild(cb);
+    rad.appendChild(t);
+    c.appendChild(rad);
+  });
+
+  oppdaterKopiKnapp();
+}
+
+function oppdaterKopiKnapp(){
+  const n = kopiValg.filter(v => v.med).length;
+  const b = document.getElementById('kopi-knapp');
+  b.textContent = n ? ('Kopier ' + n + (n === 1 ? ' vare' : ' varer')) : 'Kopier';
+  b.disabled = !n;
+}
+
+// Lager en fersk kopi av en vare, uten avkryssing og uten gammel id
+function kopiAvVare(v, oktId){
+  return Object.assign({}, v, {
+    id: 'i' + Date.now() + Math.random().toString(36).slice(2, 6),
+    oktId: oktId,
+    done: false
+  });
+}
+
+async function bekreftKopi(){
+  const valgte = kopiValg.filter(v => v.med).map(v => v.id);
+  if (!valgte.length) return;
+  closeModal('kopi-modal');
+
+  // Ny handletur: navnet velges foerst, kopieringen skjer etterpaa
+  if (kopiMaal === 'ny'){
+    kopierTilNyHandel = valgte;
+    openNyHandel();
+    return;
+  }
+
+  const maalOkt = data.okter.find(o => o.id === kopiMaal);
+  if (!maalOkt) return;
+
+  const ider = new Set(valgte);
+  const nye = data.items.filter(v => ider.has(v.id)).map(v => kopiAvVare(v, maalOkt.id));
+  nye.forEach(v => data.items.push(v));
+
+  viewOktId[oktOmrade(maalOkt)] = maalOkt.id;
+  renderOktLabel();
+  render();
+  const ok = await medLaas(async () => await save());
+  if (ok === false) visMelding('Klarte ikke lagre.');
+  visMelding(nye.length + (nye.length === 1 ? ' vare' : ' varer') + ' kopiert til ' + oktNavn(maalOkt) + '.');
 }
 
 /* ---- Endre navn ---- */
@@ -1479,6 +1628,7 @@ async function stoppHandel(handling){
   // Gjenoppta senere: bare gaa ut av handlemodus, alt staar som det er
   if (handling === 'pause'){
     okt.startet = false;
+    delete okt.avsluttet;
     closeModal('stopp-modal');
     render();
     const okP = await medLaas(async () => await save());
@@ -1504,11 +1654,7 @@ async function stoppHandel(handling){
     const neste = nesteOkt(okt);
     if (neste) igjen.forEach(v => { v.oktId = neste.id; });
   } else if (handling === 'forkast'){
-    const naaTid = Date.now();
     const ider = new Set(igjen.map(v => v.id));
-    igjen.forEach(v => { v.slettet = naaTid; });
-    data.trash = igjen.concat(data.trash);
-    if (data.trash.length > 200) data.trash.length = 200;
     data.items = data.items.filter(v => !ider.has(v.id));
   }
 
@@ -1517,7 +1663,6 @@ async function stoppHandel(handling){
 
   closeModal('stopp-modal');
   render();
-  oppdaterKurvMerke();
   const ok = await medLaas(async () => await save());
   if (ok === false) visMelding('Klarte ikke lagre.');
   visMelding('Handleturen er avsluttet.');
@@ -1527,24 +1672,31 @@ async function stoppHandel(handling){
 function oppdaterStartKnapp(){
   const okt = aktivOkt();
   const igang = !!(okt && okt.startet);
+  const ferdig = erAvsluttet(okt);
 
-  const start = document.getElementById('btn-start');
-  const stopp = document.getElementById('btn-stopp');
-  if (start) start.style.display = (okt && !okt.startet) ? 'inline-flex' : 'none';
-  if (stopp) stopp.style.display = igang ? 'inline-flex' : 'none';
-
-  // Mens man staar i butikken skal ikke hente, opprette og slette ligge
-  // i veien - da er det avkryssing som gjelder
-  ['btn-ny', 'btn-tom'].forEach(id => {
+  const vis = (id, paa) => {
     const el = document.getElementById(id);
-    if (el) el.style.display = igang ? 'none' : 'inline-flex';
-  });
+    if (el) el.style.display = paa ? 'inline-flex' : 'none';
+  };
 
-  // Oppskriftsboka gjelder bare mat - andre varer har ingen ingredienser
-  const hent = document.getElementById('btn-hent');
-  if (hent){
-    hent.style.display = (igang || aktivOmrade() !== 'mat') ? 'none' : 'inline-flex';
-  }
+  // En avsluttet handletur kan verken startes paa nytt eller fylles -
+  // den staar som en kvittering. Da er Gjenopprett veien videre.
+  vis('btn-start', !!okt && !igang && !ferdig);
+  vis('btn-stopp', igang);
+  vis('btn-gjenopprett', ferdig);
+
+  // Mens man staar i butikken skal ikke opprette og slette ligge i veien
+  vis('btn-ny', !igang);
+  vis('btn-tom', !igang);
+
+  // Oppskriftsboka gjelder bare mat, og bare i en handletur som er i bruk
+  vis('btn-hent', !igang && !ferdig && aktivOmrade() === 'mat');
+}
+
+// En handletur er avsluttet naar den er stoppet for godt, ikke bare satt
+// paa pause. Pause nullstiller avsluttet, saa den kan tas opp igjen.
+function erAvsluttet(okt){
+  return !!(okt && okt.avsluttet && !okt.startet);
 }
 
 /* ============================================================
@@ -1666,7 +1818,6 @@ function varebrukTeller(){
     if (n) _brukTeller[n] = (_brukTeller[n] || 0) + 1;
   };
   (data.items || []).forEach(tell);
-  (data.trash || []).forEach(tell);
   return _brukTeller;
 }
 
@@ -4935,7 +5086,7 @@ function renderAvviste(){
     t.textContent = deler[0] + '  ⟷  ' + (deler[1] || '');
 
     const kn = document.createElement('button');
-    kn.className = 'trash-back';
+    kn.className = 'ta-opp-igjen';
     kn.textContent = 'Ta opp igjen';
     kn.onclick = () => angreAvvisning(par);
 
@@ -5111,25 +5262,21 @@ function openTomListe(){
   document.getElementById('tom-modal').classList.add('active');
 }
 
-// 'varer'      - varene gaar i papirkurven, handleturen blir staaende tom
-// 'handletur'  - varene gaar i papirkurven og selve handleturen fjernes
+// 'varer'      - varene slettes, handleturen blir staaende tom
+// 'handletur'  - varene slettes og selve handleturen fjernes
 async function tomListe(omfang){
   const okt = aktivOkt();
   if (!okt) return closeModal('tom-modal');
 
-  const naa = Date.now();
   const skalBort = oktVarer();
 
   if (skalBort.length){
     const ider = new Set(skalBort.map(v => v.id));
-    skalBort.forEach(v => { v.slettet = naa; });
-    data.trash = skalBort.concat(data.trash);
-    if (data.trash.length > 200) data.trash.length = 200;
     data.items = data.items.filter(v => !ider.has(v.id));
   }
 
   let melding = skalBort.length
-    ? (skalBort.length + ' varer flyttet til papirkurven.')
+    ? (skalBort.length + (skalBort.length === 1 ? ' vare slettet.' : ' varer slettet.'))
     : 'Handleturen var tom.';
 
   if (omfang === 'handletur'){
@@ -5148,7 +5295,6 @@ async function tomListe(omfang){
   if (ok === false) visMelding('Klarte ikke lagre.');
 
   render();
-  oppdaterKurvMerke();
   oppdaterRyddMerke();
   visMelding(melding);
 }
@@ -5374,100 +5520,9 @@ function toggleDone(id, row){
 
 async function deleteItem(id){
   clearTimeout(omrokeringTimer); omrokeringTimer = null;
-  const v = data.items.find(x => x.id === id);
-  if (v){
-    v.slettet = Date.now();
-    data.trash.unshift(v);
-    if (data.trash.length > 200) data.trash.length = 200;
-  }
   data.items = data.items.filter(x => x.id !== id);
   await save();
   render();
-  oppdaterKurvMerke();
-}
-
-/* ============================================================
-   Papirkurv
-   ============================================================ */
-function openTrash(){ renderTrash(); showView('trash'); }
-
-function oppdaterKurvMerke(){ /* knapp fjernet – samles i panel senere */ }
-
-async function restoreItem(id){
-  const v = data.trash.find(x => x.id === id);
-  if (!v) return;
-  delete v.slettet;
-  data.items.push(v);
-  data.trash = data.trash.filter(x => x.id !== id);
-  await save();
-  renderTrash();
-  oppdaterKurvMerke();
-}
-
-function openEmptyTrash(){
-  if (!data.trash.length) return;
-  document.getElementById('tom-antall').textContent = data.trash.length;
-  document.getElementById('empty-trash-modal').classList.add('active');
-}
-
-async function confirmEmptyTrash(){
-  data.trash = [];
-  closeModal('empty-trash-modal');
-  await save();
-  renderTrash();
-  oppdaterKurvMerke();
-}
-
-function slettetTekst(tid){
-  if (!tid) return '';
-  const min = Math.floor((Date.now() - tid) / 60000);
-  if (min < 1) return 'nettopp';
-  if (min < 60) return min + ' min siden';
-  const t = Math.floor(min / 60);
-  if (t < 24) return t + ' t siden';
-  const d = Math.floor(t / 24);
-  return d === 1 ? 'i går' : d + ' dager siden';
-}
-
-function renderTrash(){
-  const c = document.getElementById('trash-container');
-  const knapp = document.getElementById('btn-tom-kurv');
-  if (knapp) knapp.style.display = data.trash.length ? 'block' : 'none';
-
-  if (!data.trash.length){
-    c.innerHTML = '<div class="empty-state" style="margin-top:20px;"><span class="big">🗑</span>' +
-      '<p>Papirkurven er tom.</p></div>';
-    return;
-  }
-
-  c.innerHTML = '';
-  data.trash.forEach(v => {
-    const row = document.createElement('div');
-    row.className = 'trash-row';
-
-    const body = document.createElement('div');
-    body.className = 'trash-body';
-    const navn = document.createElement('div');
-    navn.className = 'trash-name';
-    navn.textContent = v.name;
-    body.appendChild(navn);
-
-    const meta = document.createElement('div');
-    meta.className = 'trash-meta';
-    const oktForVare = data.okter.find(o => o.id === v.oktId);
-    meta.textContent = [v.qty, oktForVare ? oktNavn(oktForVare) : '', slettetTekst(v.slettet)]
-      .filter(Boolean).join(' · ');
-    body.appendChild(meta);
-
-    const angre = document.createElement('button');
-    angre.className = 'trash-back';
-    angre.textContent = 'Legg tilbake';
-    angre.onclick = () => restoreItem(v.id);
-
-    row.appendChild(body);
-    row.appendChild(angre);
-    c.appendChild(row);
-  });
 }
 
 async function toggleStore(navn){
@@ -5503,6 +5558,12 @@ function tegnOmrade(omrade, c, cDone){
   const varer = oktVarer(omrade);
   const utenType = (omrade === 'annet');
   if (cDone) cDone.innerHTML = '';
+
+  // En avsluttet handletur vises som en kvittering: alt er dempet og
+  // ingenting kan trykkes paa
+  const ferdigOkt = erAvsluttet(okt);
+  c.classList.toggle('okt-avsluttet', ferdigOkt);
+  if (cDone) cDone.classList.toggle('okt-avsluttet', ferdigOkt);
 
   if (!okt){
     c.innerHTML = '<div class="empty-state"><span class="big">🛒</span>' +
@@ -5822,7 +5883,6 @@ async function init(){
       flyttet = true;
     }
     data.collapsed = data.collapsed || [];
-    data.trash = data.trash || [];
     data.raalinjer = data.raalinjer || {};
 
     // Mengder lagret av en tidligere versjon kan ha usummerte like enheter
@@ -5857,7 +5917,7 @@ async function init(){
       oktForNokkel.set(nokkel, okt);
       return okt;
     };
-    [data.items, data.trash].forEach(liste => {
+    [data.items].forEach(liste => {
       (liste || []).forEach(v => {
         if (!v.oktId && v.week && v.year){
           v.oktId = sikreOktFor(v.week, v.year, v.omrade || 'mat').id;
@@ -5892,9 +5952,24 @@ async function init(){
 
   renderOktLabel();
   render();
-  oppdaterKurvMerke();
   oppdaterRyddMerke();
   initAcFields();
+  skjermLangeKnapper();
+}
+
+/* Sluker trykk i den ytterste femtedelen av de lange knappene, der
+   plussknappen svever over. Kjoeres i fangstfasen, saa knappens egen
+   onclick aldri faar hendelsen. */
+function skjermLangeKnapper(){
+  document.querySelectorAll('.btn-lang').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const r = btn.getBoundingClientRect();
+      if (e.clientX > r.right - r.width * 0.20){
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+  });
 }
 
 function initAcFields(){
@@ -5977,13 +6052,11 @@ async function synkroniserFraSky(){
       data.andreStores = data.andreStores || [];
       data.butikkvalg = data.butikkvalg || {};
       data.collapsed = data.collapsed || [];
-      data.trash = data.trash || [];
       data.raalinjer = data.raalinjer || {};
       data.okter = data.okter || [];
       data.items.forEach(v => { if (!v.omrade) v.omrade = 'mat'; });
       renderOktLabel();
       render();
-      oppdaterKurvMerke();
       oppdaterRyddMerke();
     }
   } catch(e){}
