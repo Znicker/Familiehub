@@ -1315,6 +1315,7 @@ function acVelg(inputId, value){
   const inp = document.getElementById(inputId);
   if (inp) inp.value = value;
   acClose(inputId);
+  if (inputId === 'f-name') setTimeout(() => onNameInput(), 0);
 }
 
 function acClose(inputId){
@@ -1395,7 +1396,7 @@ function aktivOmrade(){
   return document.getElementById('tab-annet').classList.contains('active') ? 'annet' : 'mat';
 }
 
-// Fyller butikk og kategori automatisk hvis vi har sett vara før
+// Fyller butikk og kategori automatisk når varenavn velges
 function onNameInput(){
   const navn = document.getElementById('f-name').value.trim().toLowerCase();
   const hint = document.getElementById('f-name-hint');
@@ -1406,18 +1407,16 @@ function onNameInput(){
   const butikk = data.butikkvalg[navn];
   const deler = [];
 
-  // cat og store settes via value-prop; acBind håndterer dropdown
   const catEl = document.getElementById('f-cat');
-  if (catEl) catEl.value = '';
+  const storeEl = document.getElementById('f-store');
 
-  if (oppf && oppf.type && VARETYPER.includes(oppf.type) && catSel.value === ''){
-    catSel.value = oppf.type;
+  if (oppf && oppf.type && VARETYPER.includes(oppf.type) && catEl && !catEl.value){
+    catEl.value = oppf.type;
     deler.push(oppf.type);
   }
-  if (butikk && data.stores.includes(butikk) &&
-      (storeSel.value === '' || storeSel.value === standardButikk()) &&
-      storeSel.value !== butikk){
-    storeSel.value = butikk;
+  if (butikk && data.stores.includes(butikk) && storeEl &&
+      (!storeEl.value || storeEl.value === standardButikk())){
+    storeEl.value = butikk;
     deler.push(butikk);
   }
 
@@ -5374,7 +5373,9 @@ async function init(){
 function initAcFields(){
   const FAMILY = ['Magne','Andrea','Emma','Nina'];
 
-  // Skjema
+  // Skjema - varenavn med bilde i dropdown
+  acBind('f-name', () => VARE_NAVN, { canAddOnce: true });
+
   acBind('f-store', () => { const egne = butikkListe(nyttOmrade); return [...new Set([...egne, ...ALLE_BUTIKKER])]; }, {
     canAddOnce: true, canAddPerm: true,
     onPerm: v => { huskButikk(nyttOmrade, v); save(); }
