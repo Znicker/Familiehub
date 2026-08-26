@@ -328,10 +328,9 @@
     overflow-wrap:anywhere; word-break:break-word;
   }
   .item-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; line-height:1.3; }
-  /* Mengden er ofte det viktigste på linja ved hylla - full farge, ikke grå */
-  .item-qty{
-    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
-    color:var(--ink); white-space:nowrap; text-align:right; flex-shrink:0;
+  /* Antall vises som "×N" til slutt paa varenavnet, ikke som egen kolonne */
+  .vare-antall{
+    color:var(--ink-soft); font-weight:700; margin-left:4px; white-space:nowrap;
   }
   .vare-stjerne{ color:var(--lime-dark); font-weight:700; margin-left:4px; }
   .liste-fotnote{
@@ -344,7 +343,6 @@
     font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
   }
-  .item-row.checked .item-qty{ color:var(--ink-soft); }
   /* Slett-knapp - fylt roed, likt slette-knappene i de andre appene */
   .item-btn{
     background:var(--danger); border:none; color:#fff; margin-left:8px;
@@ -432,6 +430,15 @@
   .vare-bilde{
     width:40px; height:40px; object-fit:contain; flex-shrink:0;
     border-radius:6px; background:transparent;
+  }
+  /* Bilde + mengde (amt/enhet) stablet under - antallet vises heller til slutt paa varenavnet */
+  .vare-bilde-wrap{
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    flex-shrink:0; width:44px;
+  }
+  .vare-mengde-liten{
+    font-size:var(--t-etikett); color:var(--ink-soft); font-weight:600;
+    text-align:center; line-height:1.1; max-width:44px;
   }
   .item-row{ display:flex; align-items:center; gap:10px; }
 
@@ -4866,8 +4873,6 @@ function toggleDone(id, row){
 
   if (row){
     row.classList.toggle('checked', v.done);
-    const q = row.querySelector('.item-qty');
-    if (q) q.style.color = v.done ? 'var(--ink-soft)' : '';
   }
   oppdaterSum();
 
@@ -5162,13 +5167,25 @@ function tegnSeksjon(c, varer, erHandlet, utenType){
         checkBtn.onclick = (e) => { e.stopPropagation(); toggleDone(v.id, row); };
         row.appendChild(checkBtn);
 
-        // Varebilde
+        // Varebilde, med mengde (amt + enhet) stablet under
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'vare-bilde-wrap';
         const vareImg = document.createElement('img');
         vareImg.src = varebildeSrc(v.name);
         vareImg.className = 'vare-bilde';
         vareImg.alt = '';
         vareImg.onerror = function(){ this.src = VARE_BILDE_DEFAULT; };
-        row.appendChild(vareImg);
+        imgWrap.appendChild(vareImg);
+
+        const amtUnit = [v.amt, v.unit].filter(Boolean).join(' ').trim();
+        const mengdeUnderBilde = amtUnit || (!v.count && v.qty ? v.qty : '');
+        if (mengdeUnderBilde){
+          const mLiten = document.createElement('div');
+          mLiten.className = 'vare-mengde-liten';
+          mLiten.textContent = mengdeUnderBilde;
+          imgWrap.appendChild(mLiten);
+        }
+        row.appendChild(imgWrap);
 
         const body2 = document.createElement('div');
         body2.className = 'item-body';
@@ -5180,6 +5197,13 @@ function tegnSeksjon(c, varer, erHandlet, utenType){
           stj.className = 'vare-stjerne';
           stj.textContent = '*';
           navn.appendChild(stj);
+        }
+        // Antall vises som "×N" til slutt på navnet
+        if (v.count){
+          const ant = document.createElement('span');
+          ant.className = 'vare-antall';
+          ant.textContent = '×' + v.count;
+          navn.appendChild(ant);
         }
         body2.appendChild(navn);
 
@@ -5194,17 +5218,6 @@ function tegnSeksjon(c, varer, erHandlet, utenType){
         navn.onclick = (e) => { e.stopPropagation(); visVarePopup(v); };
 
         row.appendChild(body2);
-
-        // Mengde: count + amt + unit via byggMengdeTekst
-        const visQty = (v.count || v.amt || v.unit)
-          ? byggMengdeTekst(v.count, v.amt, v.unit)
-          : (v.qty || '');
-        if (visQty){
-          const q = document.createElement('span');
-          q.className = 'item-qty';
-          q.textContent = visQty;
-          row.appendChild(q);
-        }
         row.appendChild(del);
         liste.appendChild(row);
       });
