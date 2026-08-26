@@ -228,7 +228,8 @@
   .week-nav button:active{ background:rgba(0,0,0,0.06); }
   .week-label{
     flex:1; text-align:center; font-family:'IBM Plex Mono', monospace;
-    font-size:var(--t-meta); font-weight:700; color:var(--ink);
+    font-size:calc(var(--t-meta) * 1.5); font-weight:700; color:var(--ink);
+    line-height:1.2;
   }
   .week-label small{
     display:block; font-weight:400; font-size:var(--t-etikett); color:var(--ink-soft);
@@ -897,12 +898,7 @@ input,select,textarea{font-size:16px}
 <div class="modal-backdrop" id="gjenopprett-modal">
   <div class="modal-card">
     <h3>Gjenopprett handel</h3>
-    <p class="lead">Velg hvilken handletur varene skal hentes fra, og hvor de skal kopieres.</p>
-
-    <div class="field">
-      <label for="gjenopprett-fra">Hent varer fra</label>
-      <select id="gjenopprett-fra"></select>
-    </div>
+    <p class="lead" id="gjenopprett-lead"></p>
 
     <div class="field">
       <label for="gjenopprett-til">Kopier til</label>
@@ -1453,26 +1449,15 @@ function openGjenopprett(){
   const okt = aktivOkt();
   if (!okt) return;
   const omr = oktOmrade(okt);
+  kopiFraOktId = okt.id;
 
-  // Alle handleturer i omraadet som har varer, i den rekkefoelgen de
-  // ble laget. Den man staar i er valgt fra foer.
-  const fra = document.getElementById('gjenopprett-fra');
-  fra.innerHTML = '';
-  sorterteOkter(omr)
-    .filter(o => data.items.some(v => v.oktId === o.id))
-    .forEach(o => {
-      const opt = document.createElement('option');
-      opt.value = o.id;
-      const ant = data.items.filter(v => v.oktId === o.id).length;
-      opt.textContent = oktNavn(o) + ' (' + ant + ')';
-      opt.selected = (o.id === okt.id);
-      fra.appendChild(opt);
-    });
-
-  if (!fra.children.length){
-    visMelding('Det finnes ingen handleturer med varer å hente fra.');
+  const antall = data.items.filter(v => v.oktId === okt.id).length;
+  if (!antall){
+    visMelding('Det er ingen varer i denne handleturen å kopiere.');
     return;
   }
+  document.getElementById('gjenopprett-lead').textContent =
+    'Varene fra ' + oktNavn(okt) + ' kopieres. Velg hvor de skal.';
 
   // Handleturer som kan ta imot varene, pluss en helt ny
   const til = document.getElementById('gjenopprett-til');
@@ -1495,7 +1480,6 @@ function openGjenopprett(){
 }
 
 function velgKopiMaal(){
-  kopiFraOktId = document.getElementById('gjenopprett-fra').value;
   const maal = document.getElementById('gjenopprett-til').value;
   kopiMaal = maal;
   closeModal('gjenopprett-modal');
@@ -5627,7 +5611,7 @@ function tegnOmrade(omrade, c, cDone){
     const alt = document.createElement('div');
     alt.className = 'empty-state';
     alt.style.padding = '26px 20px';
-    alt.innerHTML = '<span class="big">✅</span><p>Alt er handlet.</p>';
+    alt.innerHTML = '<span class="big">👍</span><p>Alt er handlet.</p>';
     c.appendChild(alt);
   }
 
