@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Familie Hub – Matlaging</title>
+<link rel="stylesheet" href="/felles-rot.css?v=1">
 <!-- Felles app-skall: sidemoensteret oppskrifter og handleliste deler.
      Maa lastes FOER <style> under, saa sida kan overstyre. -->
 <link rel="stylesheet" href="/felles-skall.css?v=1">
@@ -12,90 +13,9 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-  :root{
-    /* ---------- Typeskala ----------
-       Fem roller for tekst. Endre stoerrelsene HER, ikke nede i reglene.
-       Modus foelger skjermbredden av seg selv:
-         mobil  < 700px   kjapt, on the go
-         iPad   700-1300  display og betjening, leses paa avstand
-         PC     > 1300    oversikt, taaler tett informasjon
-       Merk: kjoekken-iPaden er primaerflaten for denne sida, og der er
-       broedteksten 17px - samme som fila hadde foer overalt.
-       Skjemafelt er BEVISST utenfor skalaen og staar paa faste verdier:
-       iOS Safari zoomer inn naar man trykker i et felt under 16px.
-       Samme skala som de andre filene - hold dem like. */
-    --t-etikett:11px;
-    --t-meta:13px;
-    --t-brod:15px;
-    --t-stor:20px;
-    --t-display:46px;
-    --t-pil:20px;
-    --t-ikon:28px;
-
-    --bg-1: #F5F5F5;
-    --bg-2: #FAFAFA;
-    /* Sidebakgrunnen. Egen variabel, ikke --bg-1/--bg-2: de to er
-       flatetoner som brukes paa topplinje, felt og celler, og de skal
-       ikke folge bakgrunnen naar den endres. */
-    --side-bakgrunn: linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
-    --bg-solid: #FFFFFF;
-    --paper: #FFFFFF;
-    --paper-soft: #F0F0F0;
-    /* Paletten foelger dashboardet: dempet skifer i stedet for den mettede
-       materialgroennen, lysere hjelpetekst, mykere skygge, samme hjoerner.
-       --lime beholder navnet av historiske grunner, men er naa aksentfargen. */
-    --ink: #2C3E50;
-    --ink-soft: #5A6C7D;
-    --lime: #4A7FA8;
-    --lime-dark: #3A6689;
-    --blue: #4A7FA8;
-    --blue-light: #E3ECF4;
-    /* Mild flate for grupperingsbokser. Egen variabel, ikke --blue-light:
-       den betyr "valgt" (sortering, suksess), og en boks skal ikke se
-       ut som et valg. Navnet er ment aa overleve flyttingen til 7.3. */
-    /* Opprett-handlinger: fylt flate i denne tonen. Regelen er "fylt flate
-       = denne skaper noe, tekst uten flate = denne tar deg et sted".
-       Egen farge fordi aksenten allerede betyr "valgt". */
-    --handling-ny: #4F8F5F;
-    --handling-ny-moerk: #427A4F;
-    /* Endrer noe. Maa holde avstand til --danger: en roedoransje ville
-       sett lik ut ved siden av Slett i samme meny. */
-    --handling-endre: #B8873A;
-    --handling-endre-moerk: #9E7230;
-    /* Paa tvers av apper - sender noe til en annen del av hubben.
-       Ikke en femte handlingstype, men en annen kategori: de fire andre
-       gjoer noe HER, denne flytter noe DIT.
-       Lilla staar alene i paletten: den deler ingen tone med aksenten,
-       okeren eller groennen, og trenger derfor ingen regel om hvordan
-       den skilles fra dem. Hvit tekst som de tre andre fylte flatene. */
-    --handling-tvers: #7A5EA8;
-    --handling-tvers-moerk: #66508C;
-    --boks-mild: #EDF3F8;
-    --boks-kant: #DCE6EF;
-    --mustard-light: #F0D9A6;
-    --line: #E4E8EC;
-    --danger: #A64D3C;
-    /* Trykktilstand for roedt, etter samme moenster som de andre
-       -moerk-verdiene. Verdien er den som alt sto i .rediger-topp-knapp. */
-    --danger-moerk: #8E4033;
-    --shadow: 0 2px 14px rgba(0,0,0,.06);
-    --radius: 18px;
-  }
-
   /* iPad: kjoekkenbenken. Leses paa avstand, alt et hakk opp. */
-  @media(min-width:700px){
-    :root{
-      --t-etikett:12px; --t-meta:14px; --t-brod:17px; --t-stor:22px;
-      --t-display:60px; --t-pil:22px; --t-ikon:32px;
-    }
-  }
+
   /* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen. */
-  @media(min-width:1300px){
-    :root{
-      --t-etikett:11px; --t-meta:13px; --t-brod:15px; --t-stor:20px;
-      --t-display:60px; --t-pil:20px; --t-ikon:28px;
-    }
-  }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
   html,body{
@@ -162,7 +82,7 @@
     background:none; border:1.5px solid var(--line); color:var(--ink-soft); border-radius:999px;
     padding:7px 14px; font-size:var(--t-brod); font-weight:600; font-family:'Archivo',sans-serif;
   }
-  .category-chip.active{ background:var(--lime); border-color:var(--lime); color:#FFFFFF; }
+  .category-chip.active{ background:var(--aksent); border-color:var(--aksent); color:#FFFFFF; }
 
   /* Kategorimerket og "paa menyen" er begge smaa fakta om retten og hoerer
    paa samme linje. Hver for seg ble kortet fire loese rader. */
@@ -193,7 +113,7 @@
     flex-shrink:0; background:none; border:none; color:var(--ink-soft); border-radius:999px;
     padding:5px 7px; font-size:var(--t-meta); font-weight:700; font-family:'Archivo',sans-serif; letter-spacing:0;
   }
-  .category-filter-chip.active{ background:var(--lime); color:#FFFFFF; }
+  .category-filter-chip.active{ background:var(--aksent); color:#FFFFFF; }
 
   /* Flytende runde knapper: ny oppskrift, sortering og tilbake */
   /* Sortering: eget hjoerne, likt uansett skjermformat. Egne klassenavn
@@ -376,7 +296,7 @@
     font-size:var(--t-meta); font-weight:700; padding:9px 12px;
     letter-spacing:.04em; cursor:pointer;
   }
-  .nullstill-knapp:active{ background:var(--blue-light); }
+  .nullstill-knapp:active{ background:var(--aksent-lys); }
 
   /* Ukemeny: to piller over sorteringsknappen. Fargene er hentet fra
      ikonene de erstatter, saa de er til aa kjenne igjen. Sorteringsknappen
@@ -407,7 +327,7 @@
   .uke-knapp.uke-ny .uke-ikon{ font-size:var(--t-ikon); line-height:1; font-weight:400; }
   .uke-knapp .uke-ikon{ position:relative; font-size:var(--t-pil); line-height:1; }
   .uke-knapp:active{ transform:scale(0.96); }
-  .uke-knapp.active{ background:var(--lime); border-color:var(--lime); color:#fff; }
+  .uke-knapp.active{ background:var(--aksent); border-color:var(--aksent); color:#fff; }
   /* Navnet vises foerst ved trykk. Uten bredde-overgang hopper knappen. */
   .uke-knapp .fab-tekst{
     display:block; max-width:0; overflow:hidden; white-space:nowrap;
@@ -426,12 +346,12 @@
   body:has(#view-home.view.active) .sorter-flyt{ display:block; }
   .sorter-knapp{
     width:48px; height:48px; border-radius:50%;
-    background:var(--lime); color:#FFFFFF;
+    background:var(--aksent); color:#FFFFFF;
     border:none; padding:0; font-size:var(--t-pil);
     display:flex; align-items:center; justify-content:center;
     cursor:pointer; box-shadow:0 6px 22px rgba(44,62,80,.14);
   }
-  .sorter-knapp:active{ transform:scale(0.95); background:var(--blue-light); }
+  .sorter-knapp:active{ transform:scale(0.95); background:var(--aksent-lys); }
   /* Menyen aapner oppover og forankres i hoeyre kant, som knappen. */
   .sorter-flyt .sort-fab-menu{ left:auto; right:0; transform:none; }
 
@@ -443,9 +363,9 @@
   }
   /* Én knapp baerer farge - den man bruker oftest. Resten er stille,
      ellers konkurrerer fire like sterke knapper om det samme blikket. */
-  .fab-pill .new-fab{ background:var(--lime); color:#FFFFFF; }
-  .fab-pill button:active{ background:var(--blue-light); }
-  .fab-pill .new-fab:active{ background:var(--lime-dark); }
+  .fab-pill .new-fab{ background:var(--aksent); color:#FFFFFF; }
+  .fab-pill button:active{ background:var(--aksent-lys); }
+  .fab-pill .new-fab:active{ background:var(--aksent-moerk); }
   .sort-fab{ font-size:var(--t-pil); }
   .new-fab{ font-size:var(--t-ikon); }
   .new-fab:active, .sort-fab:active{ transform:scale(0.95); }
@@ -462,7 +382,7 @@
     padding:10px 12px; font-size:var(--t-meta); color:var(--ink); border-radius:8px; cursor:pointer;
   }
   .sort-fab-menu button:hover{ background:var(--bg-1); }
-  .sort-fab-menu button.active{ background:var(--blue-light); color:var(--lime-dark); font-weight:700; }
+  .sort-fab-menu button.active{ background:var(--aksent-lys); color:var(--aksent-moerk); font-weight:700; }
 
   .rating-filter-bar{ margin-top:4px; padding:0 20px; margin-bottom:12px; display:flex; align-items:center; gap:12px; justify-content:center; }
   .rating-filter-row{ display:flex; align-items:center; gap:4px; flex-wrap:nowrap; margin:0; white-space:nowrap; }
@@ -476,20 +396,20 @@
     border-radius:999px; padding:5px 12px; font-size:var(--t-meta); font-family:'Archivo',sans-serif;
     font-weight:700; flex-shrink:0;
   }
-  .rating-filter-toggle.active{ background:var(--lime); color:#FFFFFF; }
+  .rating-filter-toggle.active{ background:var(--aksent); color:#FFFFFF; }
   .rating-people-panel{
     margin-top:8px; background:var(--bg-1); border-radius:12px; padding:10px 12px; display:none;
   }
   .rating-person-check{
     display:flex; align-items:center; gap:9px; padding:6px 2px; font-size:var(--t-brod); color:var(--ink);
   }
-  .rating-person-check input{ width:17px; height:17px; accent-color:var(--lime); flex-shrink:0; }
+  .rating-person-check input{ width:17px; height:17px; accent-color:var(--aksent); flex-shrink:0; }
   .rating-people-clear{
-    margin-top:4px; background:none; border:none; color:var(--lime); font-size:var(--t-meta);
+    margin-top:4px; background:none; border:none; color:var(--aksent); font-size:var(--t-meta);
     text-decoration:underline; padding:5px 2px; cursor:pointer;
   }
   .search-chip{
-    display:inline-flex; align-items:center; gap:5px; background:var(--lime); color:#FFFFFF;
+    display:inline-flex; align-items:center; gap:5px; background:var(--aksent); color:#FFFFFF;
     border-radius:999px; padding:5px 5px 5px 12px; font-size:var(--t-meta); font-weight:700;
     font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.01em;
   }
@@ -508,7 +428,7 @@
     color:var(--paper);
   }
   .icon-btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{
-    outline:2px solid var(--lime); outline-offset:2px;
+    outline:2px solid var(--aksent); outline-offset:2px;
   }
   .icon-btn:active{ background:rgba(255,255,255,0.1); }
 
@@ -519,7 +439,7 @@
     text-transform:uppercase; letter-spacing:0.02em;
   }
   .index-footer.active-mode{
-    background:var(--lime); border-style:solid; border-color:var(--lime); color:#FFFFFF;
+    background:var(--aksent); border-style:solid; border-color:var(--aksent); color:#FFFFFF;
   }
 
   .edit-badge{
@@ -561,7 +481,7 @@
   /* ---------- Add / edit form ---------- */
   .section-label{
     font-size:var(--t-meta); text-transform:uppercase; letter-spacing:0.09em;
-    color:var(--lime-dark); font-weight:700; margin:22px 0 8px;
+    color:var(--aksent-moerk); font-weight:700; margin:22px 0 8px;
   }
   .photo-row{ display:flex; gap:10px; flex-wrap:wrap; }
   .thumb, .add-photo-btn{ width:72px; height:72px; border-radius:10px; }
@@ -574,7 +494,7 @@
   }
   .thumb .rm{ top:2px; right:2px; width:20px; height:20px; font-size:var(--t-brod); }
   .add-photo-btn{
-    border:2px dashed var(--line); background:none; color:var(--lime-dark); font-size:var(--t-ikon);
+    border:2px dashed var(--line); background:none; color:var(--aksent-moerk); font-size:var(--t-ikon);
     display:flex; align-items:center; justify-content:center;
   }
   .detail-photo{
@@ -589,12 +509,12 @@
   }
   .crop-stage img{ width:100%; display:block; user-select:none; -webkit-user-drag:none; }
   .crop-box{
-    position:absolute; border:2px solid var(--lime); box-shadow:0 0 0 2000px rgba(0,0,0,0.55);
+    position:absolute; border:2px solid var(--aksent); box-shadow:0 0 0 2000px rgba(0,0,0,0.55);
     cursor:move; touch-action:none;
   }
   .crop-handle{
     position:absolute; width:20px; height:20px; border-radius:50%; background:#fff;
-    border:2px solid var(--lime); transform:translate(-50%,-50%); touch-action:none;
+    border:2px solid var(--aksent); transform:translate(-50%,-50%); touch-action:none;
   }
   .crop-handle[data-h="tl"]{ top:0; left:0; cursor:nwse-resize; }
   .crop-handle[data-h="tr"]{ top:0; left:100%; cursor:nesw-resize; }
@@ -659,8 +579,8 @@
   .btn-ny:active:not(:disabled){ background:var(--handling-ny-moerk); }
   .btn-slett{ background:var(--danger); color:#fff; }
   .btn-slett:active:not(:disabled){ background:var(--danger-moerk); }
-  .btn-blaa{ background:var(--blue); color:#fff; }
-  .btn-blaa:active:not(:disabled){ background:var(--lime-dark); }
+  .btn-blaa{ background:var(--aksent); color:#fff; }
+  .btn-blaa:active:not(:disabled){ background:var(--aksent-moerk); }
 
   .btn-ny:disabled,.btn-blaa:disabled,.btn-slett:disabled{ background:#B7C2D4; }
 
@@ -682,7 +602,7 @@
     flex-shrink:0; width:30px; height:30px; border-radius:50%; border:1.5px dashed var(--line);
     background:none; color:var(--ink-soft); font-size:var(--t-meta); font-weight:700; font-family:'IBM Plex Mono',monospace;
   }
-  .ing-nut-toggle.active{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .ing-nut-toggle.active{ background:var(--aksent); border-color:var(--aksent); color:#fff; }
   .ing-nut-editor{
     display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px 6px; margin-top:8px;
     background:var(--paper-soft); border-radius:10px; padding:10px;
@@ -714,7 +634,7 @@
   }
   .step-num{
     width:30px; height:26px; border-radius:8px;
-    background:var(--lime); color:#FFFFFF; border:none; padding:0;
+    background:var(--aksent); color:#FFFFFF; border:none; padding:0;
     font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); font-weight:700;
     text-align:center; -webkit-appearance:none;
   }
@@ -724,11 +644,11 @@
     color:var(--ink-soft); font-size:var(--t-etikett); line-height:1;
     cursor:pointer; border-radius:5px;
   }
-  .step-pil:active{ background:var(--blue-light); color:var(--lime-dark); }
+  .step-pil:active{ background:var(--aksent-lys); color:var(--aksent-moerk); }
   /* Kort glimt saa man ser hvor steget tok veien. */
   .step-row.nettopp-flyttet{ animation:flyttet .6s ease; }
   @keyframes flyttet{
-    0%{ background:var(--blue-light); }
+    0%{ background:var(--aksent-lys); }
     100%{ background:transparent; }
   }
   .step-row textarea{ flex:1; }
@@ -737,14 +657,14 @@
     font-size:var(--t-brod); width:36px; height:36px; flex-shrink:0; margin-top:1px; padding:0;
     display:flex; align-items:center; justify-content:center;
   }
-  .step-photo-toggle.active{ background:var(--blue); border-color:#20447F; color:#fff; }
+  .step-photo-toggle.active{ background:var(--aksent); border-color:#20447F; color:#fff; }
   .step-photo-panel{
     margin:8px 0 4px 34px; padding:12px; background:var(--paper-soft); border-radius:10px;
   }
   .lim-hint{ font-size:var(--t-meta); color:var(--ink-soft); margin:7px 0 0; text-align:center; }
   .step-photo-hent{
     width:100%; padding:13px; border-radius:10px; border:2px dashed var(--line);
-    background:none; color:var(--lime-dark);
+    background:none; color:var(--aksent-moerk);
     font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
   }
   .step-photo-valgt img{ width:100%; max-height:190px; object-fit:cover; border-radius:10px; display:block; }
@@ -761,10 +681,10 @@
     background:none; flex-shrink:0;
   }
   .step-photo-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .step-photo-thumb.active{ border-color:var(--blue); }
+  .step-photo-thumb.active{ border-color:var(--aksent); }
 
   .add-row-btn{
-    background:none; border:1.5px dashed var(--line); color:var(--lime-dark);
+    background:none; border:1.5px dashed var(--line); color:var(--aksent-moerk);
     border-radius:10px; padding:9px; width:100%; font-size:var(--t-brod); font-weight:700;
     margin-top:2px; text-transform:uppercase; letter-spacing:0.03em;
   }
@@ -772,13 +692,13 @@
   .status-msg{
     margin-top:14px; padding:12px 14px; border-radius:10px; font-size:var(--t-brod); line-height:1.5;
   }
-  .status-msg.loading{ background:var(--blue-light); color:#1E3E70; }
+  .status-msg.loading{ background:var(--aksent-lys); color:#1E3E70; }
   .status-msg.error{ background:#F4DCD5; color:var(--danger); }
-  .status-msg.success{ background:var(--blue-light); color:var(--lime-dark); }
+  .status-msg.success{ background:var(--aksent-lys); color:var(--aksent-moerk); }
 
   .spinner{
     display:inline-block; width:14px; height:14px; border-radius:50%;
-    border:2px solid rgba(46,92,166,0.25); border-top-color:var(--blue);
+    border:2px solid rgba(46,92,166,0.25); border-top-color:var(--aksent);
     animation:spin 0.8s linear infinite; margin-right:6px; vertical-align:-2px;
   }
   @keyframes spin{ to{ transform:rotate(360deg); } }
@@ -906,7 +826,7 @@
   body.steg-redigeres #tab-tips-btn.active,
   body.steg-redigeres #tab-comments-btn.active,
   body.steg-redigeres #tab-rating-btn.active{
-    background:var(--lime); color:#FFFFFF;
+    background:var(--aksent); color:#FFFFFF;
   }
   /* Ingredienser redigeres i skjemaet, ikke her. */
   body.steg-redigeres #tab-list-btn{ opacity:.4; pointer-events:none; }
@@ -924,7 +844,7 @@
     color:var(--ink); font-size:var(--t-brod); font-weight:700; display:flex; align-items:center; justify-content:center;
     padding:0; line-height:1;
   }
-  .servings-btn:active{ background:var(--lime); border-color:var(--lime-dark); color:#FFFFFF; }
+  .servings-btn:active{ background:var(--aksent); border-color:var(--aksent-moerk); color:#FFFFFF; }
   .servings-count{ font-family:'Archivo',sans-serif; font-weight:700; font-size:var(--t-stor); min-width:20px; text-align:center; }
 
   /* Allergen summary */
@@ -951,13 +871,13 @@
      liten aa treffe. Naa en ekte knapp med 20px flate. */
   .nutrition-flag{
     display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px;
-    border-radius:50%; border:1.5px solid var(--blue); color:var(--blue);
+    border-radius:50%; border:1.5px solid var(--aksent); color:var(--aksent);
     background:var(--paper); padding:0;
     font-family:'Archivo',sans-serif;
     font-size:var(--t-meta); font-weight:700; margin-left:6px; cursor:pointer;
     vertical-align:middle; line-height:1; flex-shrink:0;
   }
-  .nutrition-flag:active{ background:var(--blue-light); }
+  .nutrition-flag:active{ background:var(--aksent-lys); }
 
   .naering-bak{
     position:fixed; inset:0; z-index:60; background:rgba(44,62,80,.16);
@@ -1015,7 +935,7 @@
   .step-block{ display:flex; gap:13px; padding:14px 0; border-bottom:1px dashed var(--line); }
   .step-block:last-child{ border-bottom:none; padding-bottom:2px; }
   .step-block .num{
-    width:28px; height:28px; border-radius:50%; background:var(--lime); color:#FFFFFF;
+    width:28px; height:28px; border-radius:50%; background:var(--aksent); color:#FFFFFF;
     font-family:'Archivo',sans-serif; font-weight:700; font-size:var(--t-brod);
     display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;
   }
@@ -1039,7 +959,7 @@
   .shop-table tr.ing-bolk:first-child td{ padding-top:4px; }
   .shop-table tr.ing-bolk span{
     display:block; padding:8px 14px; border-radius:9px;
-    background:var(--lime-dark); color:#FFFFFF;
+    background:var(--aksent-moerk); color:#FFFFFF;
     font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
     box-shadow:0 2px 6px rgba(56,142,60,0.28);
@@ -1089,7 +1009,7 @@
   }
   .plan-fab:active, .plan-menu-fab:active{ transform:scale(0.95); }
   /* Midtknappen legger retter i ukemenyen. Grønn når modus er av, grågrønn når den er på. */
-  .plan-fab.active{ background:var(--lime); color:#FFFFFF; }
+  .plan-fab.active{ background:var(--aksent); color:#FFFFFF; }
   .plan-fab-plus{
     position:absolute; right:-3px; bottom:-3px; width:20px; height:20px; border-radius:50%;
     background:var(--handling-ny); color:#fff; border:2px solid var(--bg-solid);
@@ -1111,7 +1031,7 @@
   /* Banner på forsiden når man holder på å velge rett til en bestemt dag */
   .plan-target{
     display:flex; align-items:center; gap:10px; margin:8px 20px 4px;
-    background:var(--blue); color:#fff; border-radius:12px; padding:11px 14px;
+    background:var(--aksent); color:#fff; border-radius:12px; padding:11px 14px;
     font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
     box-shadow:0 4px 12px rgba(0,0,0,0.15);
   }
@@ -1133,7 +1053,7 @@
     max-width:calc(100% + 8px);
   }
   .plan-day-badge{
-    background:var(--blue); color:#fff; border:2px solid var(--bg-solid);
+    background:var(--aksent); color:#fff; border:2px solid var(--bg-solid);
     border-radius:999px; padding:3px 10px; line-height:1.2;
     font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700; white-space:nowrap;
     box-shadow:0 2px 6px rgba(0,0,0,0.18);
@@ -1145,7 +1065,7 @@
   }
   .plan-badge{
     width:26px; height:26px; border-radius:50%; flex-shrink:0;
-    background:var(--lime); color:#fff; border:2px solid var(--bg-solid); font-size:var(--t-pil); font-weight:700;
+    background:var(--aksent); color:#fff; border:2px solid var(--bg-solid); font-size:var(--t-pil); font-weight:700;
     display:flex; align-items:center; justify-content:center; line-height:1; padding:0;
   }
   .plan-badge.valgt{ background:var(--danger); }
@@ -1169,7 +1089,7 @@
   .busy-overlay.vis{ background:rgba(30,28,27,0.18); }
   .busy-overlay.vis::after{
     content:''; position:absolute; left:50%; top:50%; width:34px; height:34px; margin:-17px 0 0 -17px;
-    border:3px solid rgba(255,255,255,0.65); border-top-color:var(--lime); border-radius:50%;
+    border:3px solid rgba(255,255,255,0.65); border-top-color:var(--aksent); border-radius:50%;
     animation:busy-spin 0.7s linear infinite;
   }
   @keyframes busy-spin{ to{ transform:rotate(360deg); } }
@@ -1218,7 +1138,7 @@
     border:1px solid var(--line); border-radius:12px; background:var(--paper);
     padding:13px 14px; margin-bottom:9px;
   }
-  .plan-day-card.today{ border-color:var(--lime); border-width:2px; }
+  .plan-day-card.today{ border-color:var(--aksent); border-width:2px; }
   .plan-day-card.empty{ background:none; border-style:dashed; }
   .plan-day-label{
     flex:0 0 74px; font-family:'Archivo',sans-serif; font-size:var(--t-meta);
@@ -1243,8 +1163,8 @@
     border-radius:999px; padding:7px 14px; font-family:'Archivo',sans-serif;
     font-size:var(--t-meta); font-weight:700;
   }
-  .ing-toolbar button.active{ background:var(--lime); border-color:var(--lime); color:#FFFFFF; }
-  .ing-toolbar button.primary{ background:var(--blue); border-color:var(--blue); color:#FFFFFF; }
+  .ing-toolbar button.active{ background:var(--aksent); border-color:var(--aksent); color:#FFFFFF; }
+  .ing-toolbar button.primary{ background:var(--aksent); border-color:var(--aksent); color:#FFFFFF; }
   .ing-toolbar button:disabled{ opacity:0.4; }
   .ing-grip{ flex-shrink:0; padding:2px 6px 2px 0; color:var(--line); font-size:var(--t-brod); }
   /* pan-y: loddrett rulling fungerer som normalt, dra tar først over ved langt trykk */
@@ -1253,7 +1173,7 @@
   .plan-ing-row.ing-dragging{ opacity:0.35; }
   .plan-ing-row.ing-drop{
     background:rgba(46,111,183,0.12); border-radius:8px;
-    box-shadow:inset 0 0 0 2px var(--blue);
+    box-shadow:inset 0 0 0 2px var(--aksent);
   }
   .ing-ghost{
     position:fixed; z-index:70; pointer-events:none; opacity:0.95;
@@ -1297,7 +1217,7 @@
     padding:9px 0; border-bottom:1px dashed var(--line);
   }
   .ing-review-row:last-of-type{ border-bottom:none; }
-  .ing-review-row input{ width:20px; height:20px; margin-top:2px; flex-shrink:0; accent-color:var(--lime); }
+  .ing-review-row input{ width:20px; height:20px; margin-top:2px; flex-shrink:0; accent-color:var(--aksent); }
   .ing-review-row .navn{ flex:1; font-size:var(--t-brod); min-width:0; }
   .ing-review-row .kilde{ display:block; font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; }
   .ing-review-row .amt{
@@ -1312,13 +1232,13 @@
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
     border:1px solid var(--line);
   }
-  .ing-stjerne{ color:var(--lime-dark); font-weight:700; }
+  .ing-stjerne{ color:var(--aksent-moerk); font-weight:700; }
   /* Kategoriene er det man navigerer etter når man handler, så de skal treffe
      øyet før alt annet. Et bånd i full bredde med hvit tekst leses raskere enn
      en overskrift i samme farge og størrelse som resten av lista. */
   .ing-type-head{
     margin:26px 0 8px; padding:9px 14px; border-radius:9px;
-    background:var(--lime-dark); color:#FFFFFF;
+    background:var(--aksent-moerk); color:#FFFFFF;
     font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
     box-shadow:0 2px 6px rgba(56,142,60,0.28);
@@ -1553,7 +1473,7 @@
   }
   #view-home .category-filter-chip.active{ background:none; color:var(--ink); }
   #view-home .category-filter-chip.active::before{
-    background:var(--lime); border-color:var(--lime);
+    background:var(--aksent); border-color:var(--aksent);
   }
 
   /* Tre grupper i spalten: soek, filtre, handlinger. Uten bokser leser de
@@ -1583,7 +1503,7 @@
     padding:10px 12px;
   }
   #view-home .search-bar input:focus{
-    outline:none; border-color:var(--lime);
+    outline:none; border-color:var(--aksent);
     box-shadow:0 0 0 3px rgba(74,127,168,.16);
   }
   #view-home .category-filter-row{
@@ -1621,11 +1541,11 @@
   }
   #view-home .uke-knapp.uke-ny{ display:none; }
   #view-home .uke-knapp{
-    background:none; border:none; box-shadow:none; color:var(--lime);
+    background:none; border:none; box-shadow:none; color:var(--aksent);
     height:auto; border-radius:10px; padding:11px 12px;
     justify-content:flex-start; gap:11px;
   }
-  #view-home .uke-knapp.active{ background:var(--blue-light); color:var(--lime-dark); }
+  #view-home .uke-knapp.active{ background:var(--aksent-lys); color:var(--aksent-moerk); }
   /* Ikonene er borte her - teksten staar allerede og sier hva de gjoer. */
   #view-home .uke-ikon{ display:none; }
   #view-home .uke-knapp .fab-tekst{ max-width:none; opacity:1; transition:none; }
@@ -2105,7 +2025,7 @@ input,select,textarea{font-size:16px}
       <span style="flex:1"></span>
     </div>
     <label style="display:flex; align-items:center; gap:9px; margin:12px 0 6px; font-size:var(--t-brod);">
-      <input type="checkbox" id="ing-merge-basis" style="width:20px; height:20px; accent-color:var(--lime);">
+      <input type="checkbox" id="ing-merge-basis" style="width:20px; height:20px; accent-color:var(--aksent);">
       Basisvare - vis uten mengde
     </label>
     <p style="font-size:var(--t-meta); color:var(--ink-soft); margin:6px 0 14px;">Navnet lagres i varekatalogen og gjelder alle uker. Mengden gjelder bare denne uka; la den stå tom for å beholde de opprinnelige.</p>
@@ -2249,7 +2169,7 @@ input,select,textarea{font-size:16px}
     </div>
 
     <div class="field" style="display:flex; align-items:center; gap:9px;">
-      <input type="checkbox" id="comment-important" style="width:19px; height:19px; accent-color:var(--lime-dark); flex-shrink:0;" onchange="commentDraft.important = this.checked">
+      <input type="checkbox" id="comment-important" style="width:19px; height:19px; accent-color:var(--aksent-moerk); flex-shrink:0;" onchange="commentDraft.important = this.checked">
       <label style="margin:0; font-size:var(--t-brod); color:var(--ink);" for="comment-important">Veldig viktig kommentar <span style="color:var(--ink-soft); font-size:var(--t-meta);">(vises øverst under Steg for steg)</span></label>
     </div>
 
@@ -2317,7 +2237,7 @@ input,select,textarea{font-size:16px}
     <p style="font-weight:700; color:var(--ink); margin:0 0 8px;">Gjenopprett sikkerhetskopi</p>
     
     <div style="display:flex; gap:8px; margin-bottom:12px;">
-      <button class="btn" id="backup-paste-tab" onclick="switchBackupTab('paste')" style="flex:1; background:var(--lime); color:#FFFFFF;">📝 Paste tekst</button>
+      <button class="btn" id="backup-paste-tab" onclick="switchBackupTab('paste')" style="flex:1; background:var(--aksent); color:#FFFFFF;">📝 Paste tekst</button>
       <button class="btn" id="backup-file-tab" onclick="switchBackupTab('file')" style="flex:1; background:none; border:1px solid var(--line); color:var(--ink);">📁 Fra fil</button>
     </div>
 
@@ -3357,7 +3277,7 @@ function closeRestoreBackupModal(){ closeModal('restore-backup'); }
 function switchBackupTab(tab){
   const onPaste = tab === 'paste';
   const setTab = (el, active) => {
-    el.style.background = active ? 'var(--lime)' : 'none';
+    el.style.background = active ? 'var(--aksent)' : 'none';
     el.style.color = active ? '#FFFFFF' : 'var(--ink)';
   };
   setTab($('backup-paste-tab'), onPaste);
@@ -7197,7 +7117,7 @@ function glemAvvisninger(){
   $('avvist-liste').innerHTML = vareAvvist.map((n, i) => {
     const [a, b] = n.split('||');
     return `<label class="kat-rad" style="gap:9px;">
-        <input type="checkbox" class="avvist-valg" data-idx="${i}" style="width:20px; height:20px; accent-color:var(--lime);">
+        <input type="checkbox" class="avvist-valg" data-idx="${i}" style="width:20px; height:20px; accent-color:var(--aksent);">
         <span class="navn">${escapeHtml(a)} <span style="color:var(--ink-soft);">↔</span> ${escapeHtml(b)}</span>
       </label>`;
   }).join('');

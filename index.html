@@ -10,51 +10,21 @@
 <meta name="robots" content="noindex, nofollow, noarchive">
 <link rel="apple-touch-icon" href="/bilder/neam-robot.png">
 <title>Familie Hub</title>
+<link rel="stylesheet" href="/felles-rot.css?v=1">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-:root{
-  /* ---------- Typeskala ----------
-     Fem roller for tekst. Endre stoerrelsene HER, ikke nede i reglene.
-     Modus foelger skjermbredden av seg selv:
-       mobil  < 700px   kjapt, on the go
-       iPad   700-1300  display og betjening, leses paa avstand
-       PC     > 1300    oversikt, taaler tett informasjon
-     Ikoner og piler er glyffer, ikke tekst, og har egen skala.
-     Samme skala som dashboard.html - hold dem like. */
-  --t-etikett:11px;
-  --t-meta:13px;
-  --t-brod:15px;
-  --t-stor:20px;
-  --t-display:46px;
-  --t-pil:20px;     /* ikke i bruk her - beholdt saa skalaen er lik i alle fem filene */
-  --t-ikon:28px;
-
-  --bg-1:#F5F5F5; --bg-2:#FAFAFA; --paper:#FFFFFF;
-  /* Sidebakgrunnen. Egen variabel, ikke --bg-1/--bg-2: de to er flatetoner
-     som brukes paa knapper og kort, og skal ikke foelge bakgrunnen. */
-  --side-bakgrunn:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
-  --ink:#2C3E50; --ink-soft:#5A6C7D;
-  --line:#E4E8EC;
-  --shadow:0 2px 14px rgba(0,0,0,.06);
-  --shadow-lift:0 14px 30px rgba(44,62,80,.16);
-}
+  /* Sidespesifikke variabler. Palett og typeskala ligger i
+     felles-rot.css. */
+  :root{
+    --shadow-lift:0 14px 30px rgba(44,62,80,.16);
+  }
 
 /* iPad: leses paa avstand, alt et hakk opp */
-@media(min-width:700px){
-  :root{
-    --t-etikett:12px; --t-meta:14px; --t-brod:17px; --t-stor:22px;
-    --t-display:60px; --t-pil:22px; --t-ikon:32px;
-  }
-}
+
 /* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen,
    men klokka blir staaende stor. */
-@media(min-width:1300px){
-  :root{
-    --t-etikett:11px; --t-meta:13px; --t-brod:15px; --t-stor:20px;
-    --t-display:60px; --t-pil:20px; --t-ikon:28px;
-  }
-}
+
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;min-height:100%}
 body{

@@ -53,7 +53,7 @@
   letter-spacing:0.02em; font-family:'Archivo', sans-serif;
   font-size:var(--t-meta);
 }
-.tab-btn.active{ background:var(--lime); color:#FFFFFF; }
+.tab-btn.active{ background:var(--aksent); color:#FFFFFF; }
 .tabpane{ display:none; }
 .tabpane.active{ display:block; }
 

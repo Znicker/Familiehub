@@ -9,64 +9,21 @@
 <meta name="theme-color" content="#F5F5F5">
 <link rel="apple-touch-icon" href="/bilder/neam-robot.png">
 <title>Familie Hub · Kalender</title>
+<link rel="stylesheet" href="/felles-rot.css?v=1">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-:root{
-  /* ---------- Typeskala ----------
-     Fem roller for tekst, pluss en sjette for kalenderrutene.
-     Modus foelger skjermbredden av seg selv:
-       mobil  < 700px   kjapt, on the go
-       iPad   700-1300  display og betjening, leses paa avstand
-       PC     > 1300    oversikt, taaler tett informasjon
-     --t-rute er tekst inne i rutenettet: ukedagsforkortelser, ukenummer,
-     helgemerker, initialer og chips. Den finnes fordi maaneds- og
-     ukevisningen har celler med fast hoeyde - rundes den opp til
-     etikettstoerrelse, flyter innholdet ut av cellene.
-     Samme skala som de andre filene - hold dem like. */
-  --t-rute:10px;
-  --t-etikett:11px;
-  --t-meta:13px;
-  --t-brod:15px;
-  --t-stor:20px;
-  --t-display:46px;
-  --t-pil:20px;
-  --t-ikon:28px;
+  /* Sidespesifikke variabler. Palett og typeskala ligger i
+     felles-rot.css. */
+  :root{
+    --t-rute:10px;
+    --grid:rgba(44,62,80,.20);
+    --idag:#F5453C;
+  }
 
-  --bg-1:#F5F5F5; --bg-2:#FAFAFA; --paper:#FFFFFF;
-  /* Sidebakgrunnen. Egen variabel, ikke --bg-1/--bg-2: --bg-2 brukes som
-     flatetone paa rutenett, ukehode og celler, og skal ikke foelge den. */
-  --side-bakgrunn:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
-  --ink:#2C3E50; --ink-soft:#5A6C7D;
-  --line:#E4E8EC;
-  --grid:rgba(44,62,80,.20);
-  --shadow:0 2px 14px rgba(0,0,0,.06);
-  --radius:18px;
-  /* Handlingsfarger, samme som i handleliste og oppskrifter:
-     groenn skaper noe, blaa gjoer noe med det som finnes. */
-  --handling-ny:#4F8F5F;
-  --handling-ny-moerk:#427A4F;
-  --handling-endre:#B8873A;
-  --handling-endre-moerk:#9E7230;
-  --blaa:#4A7FA8;
-  --danger:#A64D3C;
-  --boks-mild:#EDF3F8;
-  --idag:#F5453C;          /* ringen rundt dagens dato */
-}
-/* iPad: leses paa avstand, alt et hakk opp */
-@media(min-width:700px){
-  :root{
-    --t-rute:11px; --t-etikett:12px; --t-meta:14px; --t-brod:17px;
-    --t-stor:22px; --t-display:60px; --t-pil:22px; --t-ikon:32px;
-  }
-}
-/* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen. */
-@media(min-width:1300px){
-  :root{
-    --t-rute:10px; --t-etikett:11px; --t-meta:13px; --t-brod:15px;
-    --t-stor:20px; --t-display:60px; --t-pil:20px; --t-ikon:28px;
-  }
-}
+  @media(min-width:700px){ :root{ --t-rute:11px; } }
+
+  @media(min-width:1300px){ :root{ --t-rute:10px; } }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 html,body{width:100%;height:100%}
@@ -458,7 +415,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   border:none;background:none;color:var(--ink-soft);
   padding:7px 14px;border-radius:999px;cursor:pointer;
 }
-.seg button.on{background:var(--blaa);color:#fff;box-shadow:0 1px 4px rgba(44,62,80,.18)}
+.seg button.on{background:var(--aksent);color:#fff;box-shadow:0 1px 4px rgba(44,62,80,.18)}
 
 /* ---------- Meldinger ---------- */
 .msg{font-size:var(--t-brod);color:var(--ink-soft);padding:8px 0;line-height:1.55}
@@ -511,12 +468,12 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
   font-family:'Archivo',sans-serif;color:var(--ink);max-width:300px;
 }
-.snu-ikon{color:var(--blaa)}
+.snu-ikon{color:var(--aksent)}
 .snu-ikon svg{width:76px;height:76px;display:block}
 .snu-tekst{font-size:var(--t-stor);font-weight:700}
 .snu-under{font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5}
 .snu-knapp{
-  margin-top:6px;border:none;border-radius:999px;background:var(--blaa);color:#fff;
+  margin-top:6px;border:none;border-radius:999px;background:var(--aksent);color:#fff;
   padding:12px 22px;cursor:pointer;
   font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
   text-transform:uppercase;letter-spacing:.06em;
@@ -580,7 +537,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .filviser-knapp svg{width:17px;height:17px;flex-shrink:0}
 .filviser-knapp:active{transform:scale(.96)}
 .filviser-knapp.last{
-  background:var(--blaa);border-color:var(--blaa);color:#fff;
+  background:var(--aksent);border-color:var(--aksent);color:#fff;
 }
 /* Paa telefon fyller bildet skjermen - da holder ikonene alene */
 @media(max-width:520px){
@@ -609,7 +566,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .vedlegg-navn{
   flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   border:none;background:none;padding:0;text-align:left;cursor:pointer;
-  font-family:'Archivo',sans-serif;font-size:var(--t-meta);color:var(--blaa);
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);color:var(--aksent);
   text-decoration:underline;text-underline-offset:2px;
 }
 .vedlegg-navn:disabled{opacity:.5;cursor:default}
@@ -653,7 +610,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* Sted som knapp til Google Maps, oeverst i avtalen */
 .boble-kart{
   display:flex;align-items:center;gap:9px;margin:0 0 12px;
-  background:var(--blaa);border:none;border-radius:999px;
+  background:var(--aksent);border:none;border-radius:999px;
   padding:8px 15px 8px 9px;text-decoration:none;color:#fff;
   font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
   min-width:0;
@@ -698,7 +655,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* Blaa - den gjoer noe med en fil som allerede finnes, samme rolle som
    "Last ned" i filviseren. Groent er for det som skaper noe nytt. */
 .vedlegg-aapne{
-  margin-top:6px;width:100%;border:none;background:var(--blaa);
+  margin-top:6px;width:100%;border:none;background:var(--aksent);
   color:#fff;border-radius:9px;padding:9px;cursor:pointer;
   font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
   letter-spacing:.04em;
@@ -953,7 +910,6 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .cal-cell.sel .cal-ev-note{color:rgba(255,255,255,.82)}
 
-
 /* ---------- Kalendervelger (dropdown i topplinjen) ---------- */
 .caldrop{position:relative}
 .caldrop-panel{
@@ -999,7 +955,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   letter-spacing:.06em;
   display:flex;align-items:center;justify-content:center;line-height:1;
 }
-.hk-alle.pa{background:var(--blaa);color:#fff;border-color:var(--blaa)}
+.hk-alle.pa{background:var(--aksent);color:#fff;border-color:var(--aksent)}
 
 /* ---------- Blapiler paa hver side ----------
    Bare paa brede skjermer. Paa nettbrett og telefon er det sveip som
@@ -1007,7 +963,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .blapil{
   position:fixed;top:50%;transform:translateY(-50%);z-index:40;
   width:44px;height:104px;border:none;border-radius:14px;
-  background:var(--blaa);color:#fff;
+  background:var(--aksent);color:#fff;
   display:none;align-items:center;justify-content:center;cursor:pointer;
   box-shadow:0 2px 12px rgba(44,62,80,.16);
   transition:opacity .13s ease;opacity:.82;
@@ -1043,7 +999,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .fab:active{transform:scale(.95)}
 .fab.ny{background:var(--handling-ny);font-size:var(--t-pil);line-height:1}
-.fab.blaa{background:var(--blaa)}
+.fab.blaa{background:var(--aksent)}
 /* I dag: dagens dato med den samme haandtegnede ringen rundt */
 .idag-fab{font-family:'Archivo',sans-serif}
 .idag-tall{
@@ -1400,7 +1356,6 @@ input,select,textarea{font-size:16px}
       </section>
     </div>
   </div>
-
 
 </div>
 
@@ -4299,8 +4254,6 @@ async function settFarge(navn, hex){
   await lagreFarger();       /* deles med alle via Cloudflare KV */
 }
 
-
-
 /* Avtaler som gjelder en dag (bånd-avtaler dekker hver dag de spenner over) */
 function planEvs(d){
   return S.events.filter(function(e){
@@ -4325,7 +4278,6 @@ function planItem(e, koll){
      farge, med en litt kraftigere kant i samme farge. */
   it.style.background  = dus(e.color, .18);
   it.style.borderColor = dus(e.color, .62);
-
 
   const rund = document.createElement('div');
   rund.className = 'ev-stor-ini';
@@ -4558,7 +4510,6 @@ function tittel(){
       + ' – ' + s.getDate() + '. ' + MND[s.getMonth()].toLowerCase().slice(0,3);
   return 'Uke ' + ukeNr(m) + ' · ' + sm;
 }
-
 
 function bla(n){
   /* I lista blar vi en uke om gangen fra startdagen */

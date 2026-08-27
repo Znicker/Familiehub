@@ -1,0 +1,100 @@
+/* ============================================================
+   Familie Hub - felles :root
+   ------------------------------------------------------------
+   Palett og typeskala for alle fem sidene. Flyttet ut 27. august
+   2026 (7.3). Dette er det ene laget alle fem deler - de deler
+   ikke struktur, men de deler farger og stoerrelser.
+
+   Lastes FOERST, foer felles-skall.css og foer sidens egen
+   <style>. Sidespesifikke variabler blir staaende i sidene.
+   ============================================================ */
+
+:root{
+  /* ---------- Typeskala ----------
+     Mobil er utgangspunktet. iPad og PC justerer nederst i fila. */
+  --t-etikett:11px;
+  --t-meta:13px;
+  --t-brod:15px;
+  --t-stor:20px;
+  --t-display:46px;
+  --t-pil:20px;
+  --t-ikon:28px;
+
+  /* ---------- Flater ---------- */
+  --bg-1:#F5F5F5;
+  --bg-2:#FAFAFA;
+  --bg-solid:#FFFFFF;
+  --paper:#FFFFFF;        /* kort - hvit tilhoerer kortene */
+  --paper-soft:#F0F0F0;
+  /* Sidebakgrunnen. Egen variabel, ikke --bg-1/--bg-2: de to er
+     flatetoner brukt paa topplinje, rutenett og celler, og skal
+     ikke foelge bakgrunnen naar den endres. */
+  --side-bakgrunn:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
+  /* Mild flate for grupperingsbokser. Egen variabel, ikke
+     --aksent-lys: den betyr "valgt", og en boks skal ikke se ut
+     som et valg. */
+  --boks-mild:#EDF3F8;
+  --boks-kant:#DCE6EF;
+
+  /* ---------- Tekst og kanter ---------- */
+  --ink:#2C3E50;
+  --ink-soft:#5A6C7D;
+  --line:#E4E8EC;
+
+  /* ---------- Fem betydninger ----------
+     Fylt flate = denne skaper eller endrer noe. Aksent = valgt,
+     eller alt annet. Roedt = sletter. Lilla gaar paa tvers av
+     apper: de andre gjoer noe HER, denne flytter noe DIT. */
+  --aksent:#4A7FA8;
+  --aksent-moerk:#3A6689;
+  --aksent-lys:#E3ECF4;   /* "valgt" - sortering, suksess */
+  --handling-ny:#4F8F5F;
+  --handling-ny-moerk:#427A4F;
+  /* Okeren maa holde avstand til --danger: en roedoransje ville
+     sett lik ut ved siden av Slett i samme meny. */
+  --handling-endre:#B8873A;
+  --handling-endre-moerk:#9E7230;
+  --handling-tvers:#7A5EA8;
+  --handling-tvers-moerk:#66508C;
+  --danger:#A64D3C;
+  --danger-moerk:#8E4033;
+  --mustard-light:#F0D9A6;
+
+  /* ---------- Form ---------- */
+  --radius:18px;
+  --shadow:0 2px 14px rgba(0,0,0,.06);
+}
+
+/* iPad: kjoekkenbenken og veggen. Leses paa avstand, alt et hakk opp. */
+@media(min-width:700px){
+  :root{
+    --t-etikett:12px;
+    --t-meta:14px;
+    --t-brod:17px;
+    --t-stor:22px;
+    --t-display:60px;
+    --t-pil:22px;
+    --t-ikon:32px;
+  }
+}
+
+/* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen,
+   men med den store displaystoerrelsen beholdt. */
+@media(min-width:1300px){
+  :root{
+    --t-etikett:11px;
+    --t-meta:13px;
+    --t-brod:15px;
+    --t-stor:20px;
+    --t-display:60px;
+    --t-pil:20px;
+    --t-ikon:28px;
+  }
+}
+
+/* ------------------------------------------------------------
+   Blir liggende i sidene, med vilje - de brukes bare ett sted:
+   - index:     --shadow-lift
+   - dashboard: --t-dagsnavn
+   - kalender:  --grid, --idag, --t-rute
+   ------------------------------------------------------------ */

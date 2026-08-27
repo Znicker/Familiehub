@@ -12,59 +12,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=1">
 <style>
-:root{
-  /* ---------- Typeskala ----------
-     Fem roller for tekst. Endre stoerrelsene HER, ikke nede i reglene.
-     Modus foelger skjermbredden av seg selv:
-       mobil  < 700px   kjapt, on the go
-       iPad   700-1300  display og betjening, leses paa avstand
-       PC     > 1300    oversikt, taaler tett informasjon
-     Ikoner og piler er glyffer, ikke tekst, og har egen skala. */
-  --t-etikett:11px;
-  --t-meta:13px;
-  --t-brod:15px;
-  --t-stor:20px;
-  --t-display:46px;
-  --t-dagsnavn:18px;
-  --t-pil:20px;
-  --t-ikon:28px;
-
-  --ink:#2C3E50;
-  --ink-soft:#5A6C7D;
-  /* Handlingsfarger, samme verdier som kalender, handleliste og
-     oppskrifter: groenn skaper, oransje endrer, roedt sletter. */
-  --gronn:#4F8F5F;
-  --gronn-mork:#427A4F;
-  --oransje:#B8873A;
-  --oransje-mork:#9E7230;
-  --rod:#A64D3C;
-  --bg-2:#EDF3F8;
-  /* Sidebakgrunnen sto hardkodet to steder. Egen variabel her ogsaa, saa
-     alle fem filene sier det samme. --bg-2 er en flatetone, ikke denne. */
-  --side-bakgrunn:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
-  --shadow:0 2px 14px rgba(0,0,0,.06);
-  --paper:#FFFFFF;
-  --line:#E4E8EC;
-  --lime:#C8E64B;
-  --blaa:#4A7FA8;
-}
-
-/* iPad: leses paa avstand, alt et hakk opp */
-@media(min-width:700px){
+  /* Sidespesifikke variabler. Palett og typeskala ligger i
+     felles-rot.css. */
   :root{
-    --t-etikett:12px; --t-meta:14px; --t-brod:17px; --t-stor:22px;
-    --t-display:60px; --t-dagsnavn:22px; --t-pil:22px; --t-ikon:32px;
+    --t-dagsnavn:18px;
   }
-}
-/* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen,
-   men klokka blir staaende stor. */
-@media(min-width:1300px){
-  :root{
-    --t-etikett:11px; --t-meta:13px; --t-brod:15px; --t-stor:20px;
-    --t-display:60px; --t-dagsnavn:20px; --t-pil:20px; --t-ikon:28px;
-  }
-}
+
+  @media(min-width:700px){ :root{ --t-dagsnavn:22px; } }
+
+  @media(min-width:1300px){ :root{ --t-dagsnavn:20px; } }
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -189,8 +147,6 @@ body{
 .vt-gr{font-size:var(--t-meta);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .vt-min{color:var(--ink-soft);font-weight:600;margin-left:3px}
 
-
-
 @media(max-width:1150px){ .vt-meta{display:none} }
 @media(max-width:900px){
   .vaer-stripe{gap:12px;margin:0}
@@ -303,7 +259,7 @@ body{
   display:flex;align-items:center;justify-content:center;line-height:1;
 }
 .detalj-tittel{font-size:var(--t-stor);font-weight:700;line-height:1.25;padding-right:30px}
-.detalj-tid{font-size:var(--t-brod);font-weight:600;color:var(--blaa);margin-top:6px;font-variant-numeric:tabular-nums}
+.detalj-tid{font-size:var(--t-brod);font-weight:600;color:var(--aksent);margin-top:6px;font-variant-numeric:tabular-nums}
 .detalj-linje{font-size:var(--t-brod);margin-top:12px;line-height:1.4}
 .detalj-linje span{
   display:block;font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;
@@ -326,11 +282,11 @@ body{
   padding:7px 15px;border-radius:999px;cursor:pointer;line-height:1.2;
   -webkit-tap-highlight-color:transparent;
 }
-.knapp-gronn{background:var(--gronn)}
-.knapp-gronn:active{background:var(--gronn-mork)}
-.knapp-endre{background:var(--oransje);margin-left:auto}
-.knapp-endre:active{background:var(--oransje-mork)}
-.knapp-slett{background:var(--rod);margin-right:auto}
+.knapp-gronn{background:var(--handling-ny)}
+.knapp-gronn:active{background:var(--handling-ny-moerk)}
+.knapp-endre{background:var(--handling-endre);margin-left:auto}
+.knapp-endre:active{background:var(--handling-endre-moerk)}
+.knapp-slett{background:var(--danger);margin-right:auto}
 .knapp-slett:active{opacity:.85}
 .knapp-gronn:disabled,.knapp-slett:disabled{opacity:.5;pointer-events:none}
 .knapp-slett[hidden]{display:none}
@@ -344,9 +300,9 @@ body{
 }
 .av-foot .hu-avbryt{background:var(--paper);border:1px solid var(--line);color:var(--ink)}
 .av-foot .knapp-slett,.av-foot .knapp-gronn,.av-foot .knapp-endre{border:1px solid transparent}
-.av-foot .knapp-slett{border-color:var(--rod)}
-.av-foot .knapp-gronn{border-color:var(--gronn)}
-.av-foot .knapp-endre{border-color:var(--oransje)}
+.av-foot .knapp-slett{border-color:var(--danger)}
+.av-foot .knapp-gronn{border-color:var(--handling-ny)}
+.av-foot .knapp-endre{border-color:var(--handling-endre)}
 
 /* Under dagens avtaler, i full bredde. */
 .ny-avtale{
@@ -388,7 +344,7 @@ a.middag:active{opacity:.72}
 .mid-tom{cursor:pointer;display:flex;align-items:baseline;gap:8px}
 .mid-legg{
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  color:#FFFFFF;background:var(--gronn);border:none;border-radius:999px;
+  color:#FFFFFF;background:var(--handling-ny);border:none;border-radius:999px;
   padding:4px 12px;flex-shrink:0;margin-left:auto;
 }
 .mid-tom:active .mid-legg{filter:brightness(.9)}
@@ -464,7 +420,7 @@ input,select,textarea{font-size:16px}
 
 /* ---------- Huskeliste ---------- */
 .hu-ny{
-  margin-left:auto;border:none;background:var(--gronn);
+  margin-left:auto;border:none;background:var(--handling-ny);
   color:#FFFFFF;font-family:inherit;font-size:var(--t-brod);font-weight:700;
   line-height:1;padding:3px 14px;border-radius:999px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
@@ -498,7 +454,7 @@ input,select,textarea{font-size:16px}
 }
 .hu-hake:active{filter:brightness(.9)}
 .hu-linje.ferdig .hu-hake{
-  opacity:1;border-color:var(--gronn);background:var(--gronn);color:#FFFFFF;
+  opacity:1;border-color:var(--handling-ny);background:var(--handling-ny);color:#FFFFFF;
 }
 .hu-verkt{display:flex;gap:2px;flex-shrink:0}
 .hu-knapp{
@@ -509,11 +465,11 @@ input,select,textarea{font-size:16px}
 /* Én knapp per foering: endre. Sletting ligger bak den, i skjemaet. */
 .hu-endre{
   width:26px;height:26px;padding:0;opacity:1;flex-shrink:0;
-  background:var(--oransje);color:#FFFFFF;border-radius:50%;
+  background:var(--handling-endre);color:#FFFFFF;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   font-size:var(--t-meta);
 }
-.hu-endre:active{opacity:1;background:var(--oransje);filter:brightness(.9)}
+.hu-endre:active{opacity:1;background:var(--handling-endre);filter:brightness(.9)}
 .hu-inn{flex:1;min-width:0}
 .hu-topp{display:flex;align-items:baseline;gap:6px;cursor:default}
 .hu-topp[onclick]{cursor:pointer}
@@ -562,7 +518,7 @@ input,select,textarea{font-size:16px}
 .vb-kl{font-family:'IBM Plex Mono',monospace;color:var(--ink-soft)}
 .vb-ik{font-size:var(--t-brod)}
 .vb-gr{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
-.vb-regn{color:var(--blaa);font-variant-numeric:tabular-nums;text-align:right}
+.vb-regn{color:var(--aksent);font-variant-numeric:tabular-nums;text-align:right}
 .vb-vind{color:var(--ink-soft);font-variant-numeric:tabular-nums;text-align:right}
 .vb-dag td{padding:6px 2px}
 .vb-dagnavn{font-weight:700;text-transform:capitalize}
@@ -580,7 +536,6 @@ input,select,textarea{font-size:16px}
 .hub-meta{font-size:var(--t-etikett);color:var(--ink-soft);margin-top:12px;padding-top:9px;
   border-top:1px solid rgba(44,62,80,.14);display:flex;align-items:center;gap:6px}
 .hub-prikk{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-
 
 .hu-felt{
   font-family:'Archivo',sans-serif;font-size:16px;color:var(--ink);
@@ -684,7 +639,7 @@ select.hu-felt{
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.04em;
   text-transform:uppercase;color:var(--ink-soft);height:42px;
 }
-.av-hele input{width:20px;height:20px;accent-color:var(--gronn);margin:0;flex-shrink:0}
+.av-hele input{width:20px;height:20px;accent-color:var(--handling-ny);margin:0;flex-shrink:0}
 .av-skjema.av-tre .av-serie{grid-area:serie}
 .av-skjema.av-tre .av-feil{grid-area:feil}
 .av-kol{display:flex;flex-direction:column;gap:9px;min-width:0}
@@ -709,17 +664,17 @@ select.hu-felt{
 /* Samme vedleggsrad som i kalenderen: navnet er lenken, roedt kryss fjerner. */
 .ved-rad{
   display:flex;align-items:center;gap:8px;min-width:0;
-  background:var(--bg-2);border:1px solid var(--line);border-radius:9px;
+  background:var(--boks-mild);border:1px solid var(--line);border-radius:9px;
   padding:7px 10px;font-size:var(--t-meta);color:var(--ink);
 }
-.ved-rad.ny{border-color:var(--gronn)}
+.ved-rad.ny{border-color:var(--handling-ny)}
 .ved-rad.ny .ved-navn{font-weight:600}
 .ved-rad.fjernet{opacity:.45}
 .ved-rad.fjernet .ved-navn{text-decoration:line-through}
 .ved-navn{
   flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   border:none;background:none;padding:0;text-align:left;cursor:pointer;
-  font-family:'Archivo',sans-serif;font-size:var(--t-meta);color:var(--blaa);
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);color:var(--aksent);
   text-decoration:underline;text-underline-offset:2px;
 }
 .ved-navn:disabled{opacity:.5;cursor:default;color:var(--ink);text-decoration:none}
@@ -728,18 +683,18 @@ select.hu-felt{
   color:var(--ink-soft);flex-shrink:0;
 }
 .ved-fjern{
-  border:none;background:none;color:var(--rod);cursor:pointer;
+  border:none;background:none;color:var(--danger);cursor:pointer;
   font-size:var(--t-brod);line-height:1;padding:2px 4px;flex-shrink:0;
 }
 /* Filvelgeren skal ikke synes, men den kan ikke vaere display:none -
    da nekter Safari aa aapne den programmatisk. */
 .ved-skjult{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .knapp-vedlegg{
-  border:none;background:var(--gronn);color:#FFFFFF;
+  border:none;background:var(--handling-ny);color:#FFFFFF;
   border-radius:9px;padding:8px;width:100%;cursor:pointer;
   font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
 }
-.knapp-vedlegg:active{background:var(--gronn-mork)}
+.knapp-vedlegg:active{background:var(--handling-ny-moerk)}
 
 /* ---------- Vedlegg i detaljkortet ----------
    Bilder og PDF forhaandsvises rett under notatet, som i kalenderen.
@@ -766,7 +721,7 @@ select.hu-felt{
 }
 /* Blaa - den gjoer noe med en fil som allerede finnes. */
 .ved-aapne{
-  margin-top:6px;width:100%;border:none;background:var(--blaa);
+  margin-top:6px;width:100%;border:none;background:var(--aksent);
   color:#FFFFFF;border-radius:9px;padding:9px;cursor:pointer;
   font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
   letter-spacing:.04em;
@@ -798,13 +753,13 @@ select.hu-felt{
 }
 .filviser-knapp{
   display:inline-flex;align-items:center;gap:7px;flex-shrink:0;
-  border:1px solid var(--line);background:var(--bg-2);color:var(--ink);
+  border:1px solid var(--line);background:var(--boks-mild);color:var(--ink);
   border-radius:999px;padding:9px 15px;cursor:pointer;
   font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
 }
 .filviser-knapp svg{width:17px;height:17px;flex-shrink:0}
 .filviser-knapp:active{transform:scale(.96)}
-.filviser-knapp.last{background:var(--blaa);border-color:var(--blaa);color:#FFFFFF}
+.filviser-knapp.last{background:var(--aksent);border-color:var(--aksent);color:#FFFFFF}
 @media(max-width:520px){
   .filviser-knapp span{display:none}
   .filviser-knapp{padding:10px 12px}
@@ -839,7 +794,6 @@ select.hu-felt{
   <div class="port-note" id="portNote"></div>
   <a class="port-hjem" id="portHjem" href="./index.html" hidden>Til forsiden</a>
 </div>
-
 
 <div class="filviser" id="filviser" hidden onclick="if(event.target===this) lukkViser()">
   <div class="filviser-kort">

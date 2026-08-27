@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Familie Hub – Handleliste</title>
+<link rel="stylesheet" href="/felles-rot.css?v=1">
 <!-- Felles app-skall: sidemoensteret oppskrifter og handleliste deler.
      Maa lastes FOER <style> under, saa sida kan overstyre. -->
 <link rel="stylesheet" href="/felles-skall.css?v=1">
@@ -12,85 +13,9 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-  :root{
-    /* ---------- Typeskala ----------
-       Fem roller for tekst. Endre stoerrelsene HER, ikke nede i reglene.
-       Modus foelger skjermbredden av seg selv:
-         mobil  < 700px   kjapt, on the go
-         iPad   700-1300  display og betjening, leses paa avstand
-         PC     > 1300    oversikt, taaler tett informasjon
-       Ikoner og piler er glyffer, ikke tekst, og har egen skala.
-       Samme skala som dashboard.html og index.html - hold dem like. */
-    --t-etikett:11px;
-    --t-meta:13px;
-    --t-brod:15px;
-    --t-stor:20px;
-    --t-display:46px;
-    --t-pil:20px;
-    --t-ikon:28px;
-
-    --bg-1: #F5F5F5;
-    --bg-2: #FAFAFA;
-    /* Sidebakgrunnen. Egen variabel, ikke --bg-1/--bg-2: de to er
-       flatetoner som brukes paa topplinje, felt og celler, og de skal
-       ikke folge bakgrunnen naar den endres. */
-    --side-bakgrunn: linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
-    --bg-solid: #FFFFFF;
-    --paper: #FFFFFF;
-    --paper-soft: #F0F0F0;
-    /* Paletten foelger designsystemet og oppskrifter.html: dempet skifer
-       i stedet for den mettede materialgroennen, lysere hjelpetekst,
-       mykere skygge, samme hjoerner.
-       --lime beholder navnet av historiske grunner, men er naa aksenten.
-       Doepes om til --aksent i 7.3, naar alle fem filene endres samtidig. */
-    --ink: #2C3E50;
-    /* Sekundaertekst. #7A8899 gav bare 3,6:1 mot hvitt og var under
-       WCAG AA (4,5:1) for smaa stoerrelser. #5A6C7D gir 5,4:1 og er
-       samme verdi som kalender.html og index.html bruker. */
-    --ink-soft: #5A6C7D;
-    --lime: #4A7FA8;
-    --lime-dark: #3A6689;
-    --blue: #4A7FA8;
-    /* "valgt" (sortering, suksess). Skal IKKE slaas sammen med --boks-mild. */
-    --blue-light: #E3ECF4;
-    /* Skaper noe - fylt flate i denne tonen. */
-    --handling-ny: #4F8F5F;
-    --handling-ny-moerk: #427A4F;
-    /* Endrer noe. Maa holde avstand til --danger. */
-    --handling-endre: #B8873A;
-    --handling-endre-moerk: #9E7230;
-    /* Paa tvers av apper - henter fra eller sender til en annen del av
-       hubben. Ikke en femte handlingstype, men en annen kategori. */
-    --handling-tvers: #7A5EA8;
-    --handling-tvers-moerk: #66508C;
-    /* Mild flate for grupperingsbokser. */
-    --boks-mild: #EDF3F8;
-    --boks-kant: #DCE6EF;
-    --mustard-light: #F0D9A6;
-    --line: #E4E8EC;
-    --danger: #A64D3C;
-    /* Trykktilstand for roedt, etter samme moenster som de andre
-       -moerk-verdiene. Sletteknappene hadde ingen egen - de arvet den
-       groenne, og ble derfor GROENNE naar man trykte paa dem. */
-    --danger-moerk: #8E4033;
-    --shadow: 0 2px 14px rgba(0,0,0,.06);
-    --radius: 18px;
-  }
-
   /* iPad: leses paa avstand, alt et hakk opp */
-  @media(min-width:700px){
-    :root{
-      --t-etikett:12px; --t-meta:14px; --t-brod:17px; --t-stor:22px;
-      --t-display:60px; --t-pil:22px; --t-ikon:32px;
-    }
-  }
+
   /* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen. */
-  @media(min-width:1300px){
-    :root{
-      --t-etikett:11px; --t-meta:13px; --t-brod:15px; --t-stor:20px;
-      --t-display:60px; --t-pil:20px; --t-ikon:28px;
-    }
-  }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
   /* button staar i felles-skall.css; disse to er handleliste-egne. */
@@ -111,7 +36,7 @@
 
   .topbar-home-actions{ display:flex; gap:4px; flex-shrink:0; margin-left:auto; }
   button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
-    outline:2px solid var(--lime); outline-offset:2px;
+    outline:2px solid var(--aksent); outline-offset:2px;
   }
 
   .par-kort{
@@ -124,7 +49,7 @@
     font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:600; color:var(--ink);
   }
   .par-navn.valgt{
-    border-color:var(--lime-dark); background:var(--lime-dark); color:#FFFFFF;
+    border-color:var(--aksent-moerk); background:var(--aksent-moerk); color:#FFFFFF;
   }
   .par-hint{ font-size:var(--t-meta); color:var(--ink-soft); margin:0 0 10px; }
   .klynge-rad{
@@ -132,7 +57,7 @@
     border-bottom:1px solid var(--line);
   }
   .klynge-rad:last-of-type{ border-bottom:none; }
-  .klynge-rad input{ width:18px; height:18px; accent-color:var(--lime); flex-shrink:0; }
+  .klynge-rad input{ width:18px; height:18px; accent-color:var(--aksent); flex-shrink:0; }
   .klynge-navn{ flex:1; min-width:0; font-size:var(--t-brod); word-break:break-word; }
   .klynge-mengde{
     font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
@@ -145,13 +70,13 @@
     letter-spacing:0.07em; padding:3px 8px; border-radius:999px; margin-bottom:9px;
     background:var(--paper-soft); color:var(--ink-soft);
   }
-  .par-sikker.hoy{ background:var(--lime-dark); color:#fff; }
+  .par-sikker.hoy{ background:var(--aksent-moerk); color:#fff; }
   .par-valg{ display:flex; gap:8px; margin-top:4px; }
   .par-valg button{
     flex:1; border:none; border-radius:999px; padding:10px; font-size:var(--t-meta); font-weight:700;
     font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.02em;
   }
-  .par-ja{ background:var(--lime); color:#fff; }
+  .par-ja{ background:var(--aksent); color:#fff; }
   .par-nei{ background:none; color:var(--ink-soft); border:1.5px solid var(--line) !important; }
 
   .type-rad{
@@ -210,7 +135,7 @@
   .category-group{ margin:0; }
   .category-header{
     margin:26px 0 8px; padding:9px 14px; border-radius:9px;
-    background:var(--lime-dark); color:#FFFFFF;
+    background:var(--aksent-moerk); color:#FFFFFF;
     font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
     text-transform:uppercase; letter-spacing:0.09em; text-align:center;
     box-shadow:0 2px 6px rgba(44,62,80,.16);
@@ -261,7 +186,7 @@
   .ta-opp-igjen{
     border:none; border-radius:999px; padding:7px 13px; font-size:var(--t-meta); font-weight:700;
     font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.02em;
-    background:var(--lime); color:#fff; flex-shrink:0;
+    background:var(--aksent); color:#fff; flex-shrink:0;
   }
   .btn-quiet{
     display:block; width:100%; background:none; border:none; padding:12px 10px;
@@ -283,7 +208,7 @@
   .vare-antall{
     color:var(--ink-soft); font-weight:700; margin-left:4px; white-space:nowrap;
   }
-  .vare-stjerne{ color:var(--lime-dark); font-weight:700; margin-left:4px; }
+  .vare-stjerne{ color:var(--aksent-moerk); font-weight:700; margin-left:4px; }
   .liste-fotnote{
     font-size:var(--t-meta); color:var(--ink-soft); margin:14px 0 0; padding-top:2px;
   }
@@ -357,8 +282,8 @@
      slaar sammen varekatalogen som deles med den. */
   .btn-tvers{ background:var(--handling-tvers); color:#fff; }
   .btn-tvers:active:not(:disabled){ background:var(--handling-tvers-moerk); }
-  .btn-blaa{ background:var(--blue); color:#fff; }
-  .btn-blaa:active:not(:disabled){ background:var(--lime-dark); }
+  .btn-blaa{ background:var(--aksent); color:#fff; }
+  .btn-blaa:active:not(:disabled){ background:var(--aksent-moerk); }
 
   .btn-ny:disabled,.btn-blaa:disabled,.btn-slett:disabled,.btn-endre:disabled{ background:#C3CBD4; }
 
@@ -379,7 +304,7 @@
      Regelen "input,select,textarea{font-size:16px}" nederst i arket taper
      mot en klasseselektor, saa 16 maa staa her ogsaa. */
 
-  .field-hint{ font-size:var(--t-etikett); color:var(--lime-dark); margin:4px 0 0; font-weight:600; }
+  .field-hint{ font-size:var(--t-etikett); color:var(--aksent-moerk); margin:4px 0 0; font-weight:600; }
   .field-note{ font-size:var(--t-etikett); color:var(--ink-soft); margin:4px 0 0; }
 
   /* ---- Varebilder ---- */
@@ -396,7 +321,7 @@
   .ac-wrap{ position:relative; }
   .ac-drop{
     position:absolute; left:0; right:0; top:calc(100% + 3px);
-    background:var(--paper); border:1.5px solid var(--lime);
+    background:var(--paper); border:1.5px solid var(--aksent);
     border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.10);
     z-index:200; overflow:hidden; max-height:220px; overflow-y:auto;
     display:none;
@@ -524,7 +449,7 @@
   /* ---------- Import ---------- */
   .pick-group{
     font-size:var(--t-etikett); text-transform:uppercase; letter-spacing:0.09em;
-    color:var(--lime-dark); font-weight:700; margin:16px 0 7px;
+    color:var(--aksent-moerk); font-weight:700; margin:16px 0 7px;
   }
   .pick-group:first-child{ margin-top:4px; }
   .pick-row{
@@ -532,7 +457,7 @@
     background:var(--paper-soft); border:1px solid var(--line);
     border-radius:10px; margin-bottom:6px;
   }
-  .pick-row input{ width:18px; height:18px; accent-color:var(--lime); flex-shrink:0; }
+  .pick-row input{ width:18px; height:18px; accent-color:var(--aksent); flex-shrink:0; }
   .pick-title{ flex:1; min-width:0; font-size:var(--t-brod); font-weight:500; }
   .pick-serv{ font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); color:var(--ink-soft); flex-shrink:0; }
   .import-error{
@@ -546,7 +471,7 @@
     font-family:'Archivo',sans-serif; text-transform:uppercase; letter-spacing:0.03em;
     margin-bottom:12px;
   }
-  .file-btn:active{ border-color:var(--lime); color:var(--lime-dark); }
+  .file-btn:active{ border-color:var(--aksent); color:var(--aksent-moerk); }
 
 /* ---------- Laast ramme ----------
    Siden skal ikke kunne dras sidelengs eller zoomes ved uhell.
