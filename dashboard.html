@@ -650,6 +650,8 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
    havner knappene. */
 .av-skjema.av-tre{
   grid-template-columns:1fr 1fr 1.7fr;
+  grid-auto-rows:min-content;
+  align-items:start;
   grid-template-areas:
     "navn  sted  notat"
     "dato  kal   notat"
@@ -663,7 +665,7 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
 .a-dato{grid-area:dato}
 .a-kal{grid-area:kal}
 .a-tid{grid-area:tid}
-.a-notat{grid-area:notat}
+.a-notat{grid-area:notat;align-self:stretch}
 /* Fra, til og hele dagen paa samme rad. Klokkeslettene er smale nok til
    at avkrysningen faar plass ved siden av. */
 .av-tidrad{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
@@ -680,9 +682,11 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
 .av-kol{display:flex;flex-direction:column;gap:9px;min-width:0}
 .av-rad{display:flex;gap:9px}
 .av-rad label,.av-felt{
-  flex:1;min-width:0;font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
+  flex:1;min-width:0;font-size:var(--t-etikett);font-weight:700;letter-spacing:.06em;
   text-transform:uppercase;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px;
+  white-space:nowrap;line-height:1.35;
 }
+.av-rad label > *,.av-felt > *{white-space:normal}
 .av-vokser{flex:1 1 auto}
 .av-vokser textarea{flex:1 1 auto;min-height:68px}
 .av-serie,.av-feil{grid-column:1/-1}
