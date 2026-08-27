@@ -405,6 +405,18 @@
      og kolonner, ikke med hoeyde. Bredden slaas paa av showView(), for
      resten av sidene skal fortsatt vaere en smal spalte. */
   body.vis-add main{ max-width:900px; }
+  /* Tilbakepila tok en hel linje for seg selv over kortet. Er det bredde
+     nok, staar den heller rett til venstre for kortet, utenfor det - og
+     linja den laa paa gaar til skjemaet. Paa smalere skjermer er det
+     ingen plass ved siden av, og topplinja staar som foer. */
+  @media (min-width:980px){
+    body.vis-add .topbar{
+      position:absolute; z-index:30;
+      top:18px; left:calc((100vw - 900px) / 2 - 24px);
+      padding:0; background:none; box-shadow:none;
+    }
+    body.vis-add .topbar-back{ margin:0; }
+  }
   .add-grid{ display:grid; gap:0 18px; grid-template-columns:1fr; }
   @media (min-width:640px){ .add-grid{ grid-template-columns:1fr 1fr; } }
   @media (min-width:980px){ .add-grid{ grid-template-columns:1fr 1fr 1fr; } }
@@ -686,7 +698,7 @@ input,select,textarea{font-size:16px}
       <h2 id="add-title">Ny vare</h2>
       <p class="field-note" id="add-week-note" style="margin:4px 0 0;"></p>
 
-      <div class="tabs" style="margin:14px 0 18px;">
+      <div class="tabs" id="omr-faner" style="margin:14px 0 18px;">
         <button type="button" class="tab-btn active" id="omr-btn-mat" onclick="settOmrade('mat')">Dagligvare</button>
         <button type="button" class="tab-btn" id="omr-btn-annet" onclick="settOmrade('annet')">Andre varer</button>
       </div>
@@ -973,65 +985,6 @@ input,select,textarea{font-size:16px}
 </div>
 
 <!-- Rediger vare -->
-<div class="modal-backdrop" id="edit-modal">
-  <div class="modal-card">
-    <h3>Rediger</h3>
-
-    <div class="field">
-      <label for="e-name">Vare</label>
-      <input type="text" id="e-name">
-    </div>
-
-    <div class="field">
-      <label>Antall og mengde</label>
-      <div class="mengde-rad">
-        <input type="number" id="e-count" class="f-amt" min="0" step="1"
-               placeholder="antall" inputmode="numeric" style="flex:0 0 80px;">
-        <input type="text" id="e-amt" class="f-amt"
-               placeholder="mengde" autocomplete="off">
-        <div class="ac-wrap" id="ac-wrap-e-unit" style="flex:0 0 90px;">
-          <input type="text" id="e-unit" autocomplete="off" placeholder="enhet">
-          <div class="ac-drop" id="ac-drop-e-unit"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="field" id="e-cat-felt">
-      <label for="e-cat">Varetype</label>
-      <div class="ac-wrap" id="ac-wrap-e-cat">
-        <input type="text" id="e-cat" autocomplete="off" placeholder="Meieri, Grønnsaker …">
-        <div class="ac-drop" id="ac-drop-e-cat"></div>
-      </div>
-    </div>
-
-    <div class="field">
-      <label for="e-store">Butikk</label>
-      <div class="ac-wrap" id="ac-wrap-e-store">
-        <input type="text" id="e-store" autocomplete="off" placeholder="Kiwi, Rema …">
-        <div class="ac-drop" id="ac-drop-e-store"></div>
-      </div>
-    </div>
-
-    <div class="field">
-      <label for="e-notes">Notat</label>
-      <textarea id="e-notes"></textarea>
-    </div>
-
-    <div class="field">
-      <label for="e-by">Lagt til av</label>
-      <div class="ac-wrap" id="ac-wrap-e-by">
-        <input type="text" id="e-by" autocomplete="off" placeholder="Navn …">
-        <div class="ac-drop" id="ac-drop-e-by"></div>
-      </div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('edit-modal')">Avbryt</button>
-      <button class="btn btn-success" onclick="lagreEndring()">Lagre</button>
-    </div>
-  </div>
-</div>
-
 
 <!-- Sammendrag av ferdig handleliste -->
 <div class="modal-backdrop" id="sum-modal">
@@ -1771,7 +1724,7 @@ function acOpen(inputId){
     const d = document.createElement('div');
     d.className = 'ac-opt';
     // Logo for butikkfelter
-    if (inputId === 'f-store' || inputId === 'e-store'){
+    if (inputId === 'f-store'){
       const img = document.createElement('img');
       img.src = butikkLogoSrc(v);
       img.className = 'butikk-logo';
@@ -1907,9 +1860,14 @@ function settOmrade(omrade){
   // Andre varer har ingen faste varetyper
   document.getElementById('felt-type').style.display = omrade === 'mat' ? 'block' : 'none';
 
-  document.getElementById('add-title').textContent = 'Ny vare';
   document.getElementById('f-name').placeholder =
     omrade === 'mat' ? 'Melk, brokkoli, kaffe …' : 'Skruer, maling, pensel …';
+
+  /* Endrer man en vare som finnes, er skjemaet allerede fylt ut - da skal
+     hverken butikk, tittel eller notat under overskriften settes paa nytt. */
+  if (byttId) return;
+
+  document.getElementById('add-title').textContent = 'Ny vare';
 
   // Dagligvarer staar fast paa standardbutikken; andre varer har ingen
   const inp = document.getElementById('f-store');
@@ -1932,6 +1890,10 @@ function openAddItem(omrade){
     visMelding('Denne handleturen er avsluttet. Bruk «Gjenopprett handel» eller lag en ny.');
     return;
   }
+
+  byttId = null;                       /* dette er en ny vare, ikke en endring */
+  document.getElementById('omr-faner').style.display = '';
+  document.getElementById('add-week-note').style.display = '';
 
   document.getElementById('f-name').value = '';
   document.getElementById('f-count').value = '';
@@ -2024,6 +1986,7 @@ function onNameInput(){
 }
 
 async function saveItem(){
+  if (byttId) return lagreEndring();      /* samme skjema, to utfall */
   const name = document.getElementById('f-name').value.trim();
   if (!name){ document.getElementById('f-name').focus(); return; }
   // Omraadet velges i skjemaet og trenger ikke vaere fanen man kom fra
@@ -5454,37 +5417,48 @@ async function confirmDelete(){
    ============================================================ */
 let byttId = null;
 
+/* Endring bruker samme skjema som oppretting. Ett skjema betyr at et felt
+   som legges til, forsvinner eller flytter paa seg, gjoer det begge veier. */
 function openEdit(id){
   const v = data.items.find(x => x.id === id);
   if (!v) return;
   byttId = id;
-  const erMat = (v.omrade || 'mat') === 'mat';
+  const omrade = (v.omrade || 'mat');
 
-  document.getElementById('e-name').value = v.name || '';
+  /* Omraadet ligger fast: en vare flyttes ikke mellom dagligvarer og
+     andre varer ved aa endre den. Fanene ville lovet noe annet. */
+  settOmrade(omrade);
+  document.getElementById('omr-faner').style.display = 'none';
+  document.getElementById('add-week-note').style.display = 'none';
+  document.getElementById('add-title').textContent = 'Endre vare';
 
-  // Prøv å parse eksisterende qty til amt+unit, fall tilbake til fritekst i amt
+  document.getElementById('f-name').value = v.name || '';
+
+  // Proev aa parse eksisterende qty til amt+unit, fall tilbake til fritekst i amt
   const qtyStr = v.qty || '';
   const qtyParsed = parseMengde(qtyStr);
-  const eAmt = v.amt !== undefined ? String(v.amt) :
+  const fAmt = v.amt !== undefined ? String(v.amt) :
                (qtyParsed ? String(qtyParsed.tall) : (qtyStr ? qtyStr : ''));
-  const eUnit = v.unit !== undefined ? v.unit :
+  const fUnit = v.unit !== undefined ? v.unit :
                 (qtyParsed ? normEnhet(qtyParsed.enhet) : '');
-  document.getElementById('e-count').value = v.count || '';
-  document.getElementById('e-amt').value = eAmt;
-  const eUnitEl = document.getElementById('e-unit'); if (eUnitEl) eUnitEl.value = ENHETER.includes(eUnit) ? eUnit : eUnit;
+  document.getElementById('f-count').value = v.count || '';
+  document.getElementById('f-amt').value = fAmt;
+  const fUnitEl = document.getElementById('f-unit'); if (fUnitEl) fUnitEl.value = fUnit;
 
-  document.getElementById('e-notes').value = v.notes || '';
+  document.getElementById('f-notes').value = v.notes || '';
+  document.getElementById('f-name-hint').style.display = 'none';
+  typeRortAvBruker = true;             /* typen staar som den er lagret */
 
-  document.getElementById('e-cat-felt').style.display = erMat ? 'block' : 'none';
-  const eCatEl = document.getElementById('e-cat');
-  if (erMat && eCatEl) eCatEl.value = v.cat || '';
+  const fCatEl = document.getElementById('f-cat');
+  if (fCatEl) fCatEl.value = (omrade === 'mat') ? (v.cat || '') : '';
 
-  const eStoreEl = document.getElementById('e-store');
-  if (eStoreEl) eStoreEl.value = v.store || '';
+  const fStoreEl = document.getElementById('f-store');
+  if (fStoreEl) fStoreEl.value = v.store || '';
 
-  const eByEl = document.getElementById('e-by');
-  if (eByEl) eByEl.value = v.by || '';
-  document.getElementById('edit-modal').classList.add('active');
+  const fByEl = document.getElementById('f-by');
+  if (fByEl) fByEl.value = v.by || '';
+
+  showView('add');
 }
 
 /* ---- Vare-popup ---- */
@@ -5561,32 +5535,32 @@ function visVarePopup(v){
 
 async function lagreEndring(){
   const v = data.items.find(x => x.id === byttId);
-  if (!v){ byttId = null; return closeModal('edit-modal'); }
+  if (!v){ byttId = null; return goHome(); }
 
   const forrige = { name: v.name, qty: v.qty, count: v.count, amt: v.amt, unit: v.unit, by: v.by, cat: v.cat, store: v.store, notes: v.notes };
   const erMat = (v.omrade || 'mat') === 'mat';
 
-  const nyttNavn = document.getElementById('e-name').value.trim();
-  if (!nyttNavn){ document.getElementById('e-name').focus(); return; }
+  const nyttNavn = document.getElementById('f-name').value.trim();
+  if (!nyttNavn){ document.getElementById('f-name').focus(); return; }
 
-  const butikk = acVerdi('e-store');
+  const butikk = acVerdi('f-store');
   huskButikk(v.omrade || 'mat', butikk);
 
   v.name = nyttNavn;
 
-  const eCount2 = document.getElementById('e-count').value.trim();
-  const eAmt2 = document.getElementById('e-amt').value.trim();
-  const eUnit2 = (document.getElementById('e-unit') ? document.getElementById('e-unit').value.trim() : '') ||
+  const eCount2 = document.getElementById('f-count').value.trim();
+  const eAmt2 = document.getElementById('f-amt').value.trim();
+  const eUnit2 = (document.getElementById('f-unit') ? document.getElementById('f-unit').value.trim() : '') ||
                  (eAmt2 ? '' : 'stk');
   v.count = eCount2;
   v.amt = eAmt2;
   v.unit = eUnit2;
   v.qty = byggMengdeTekst(eCount2, eAmt2, eUnit2);
 
-  v.notes = document.getElementById('e-notes').value.trim();
-  v.by = document.getElementById('e-by') ? document.getElementById('e-by').value : (v.by || '');
+  v.notes = document.getElementById('f-notes').value.trim();
+  v.by = document.getElementById('f-by') ? document.getElementById('f-by').value : (v.by || '');
   v.store = butikk || '';
-  if (erMat) v.cat = acVerdi('e-cat');
+  if (erMat) v.cat = acVerdi('f-cat');
 
   if (erMat) katalogLagre(v.name, v.cat, !!v.basis);
   if (v.store) data.butikkvalg[v.name.toLowerCase()] = v.store;
@@ -5605,8 +5579,7 @@ async function lagreEndring(){
   }
 
   byttId = null;
-  closeModal('edit-modal');
-  render();
+  goHome();
 }/* ============================================================
    Liste
    ============================================================ */
@@ -5916,6 +5889,7 @@ function showView(navn){
 }
 
 function goHome(){
+  byttId = null;               /* en halvferdig endring hoerer til skjermen man forlot */
   clearTimeout(omrokeringTimer); omrokeringTimer = null;
   renderOktLabel();
   render();
@@ -6172,22 +6146,6 @@ function initAcFields(){
   acBind('f-unit', () => ENHETER.filter(e => e), { canAddOnce: true });
   acBind('f-by',   () => FAMILY,                 { closed: true });
 
-  // Rediger-modal
-  acBind('e-store', () => {
-    const item = data.items.find(x => x.id === byttId);
-    const egne = butikkListe(item ? (item.omrade || 'mat') : 'mat');
-    return [...new Set([...egne, ...ALLE_BUTIKKER])];
-  }, {
-    canAddOnce: true, canAddPerm: true,
-    onPerm: v => {
-      const item = data.items.find(x => x.id === byttId);
-      huskButikk(item ? (item.omrade || 'mat') : 'mat', v);
-      save();
-    }
-  });
-  acBind('e-cat',  () => VARETYPER,              { closed: true });
-  acBind('e-unit', () => ENHETER.filter(e => e), { canAddOnce: true });
-  acBind('e-by',   () => FAMILY,                 { closed: true });
 }
 
 /* ============================================================
