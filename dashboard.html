@@ -608,8 +608,13 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
    et felt som havner bak tastaturet er et felt man ikke ser hva man
    skriver i. To kolonner holder hoeyden nede. */
 .avtale-boks{
-  position:fixed;z-index:61;left:50%;top:10px;transform:translateX(-50%);
-  width:min(94vw,880px);max-height:min(52vh,520px);
+  position:fixed;z-index:61;left:50%;top:var(--dlg-topp,10px);transform:translateX(-50%);
+  width:min(94vw,880px);
+  /* Hoeyden settes fra visualViewport i JS. Naar tastaturet er oppe,
+     krymper det synlige vinduet - vh gjoer det ikke, og derfor havnet
+     bunnen av kortet bak tastaturet. Verdiene under er reserven for
+     nettlesere uten visualViewport. */
+  max-height:var(--dlg-hoyde,min(52vh,520px));
   display:flex;flex-direction:column;overflow:hidden;
   background:var(--paper);border:1px solid var(--line);border-radius:18px;
   padding:18px 20px 16px;box-shadow:0 18px 44px rgba(44,62,80,.28);
@@ -1854,6 +1859,25 @@ let nyeFiler = [];             /* filer valgt i skjemaet, ikke lastet opp enda *
 
 /* Staar et skjema aapent, skal verken hvilen, sveipen eller den
    automatiske oppdateringen rive det bort under hendene paa noen. */
+/* Det synlige vinduet er ikke det samme som siden naar tastaturet staar
+   oppe. visualViewport forteller hvor mye plass som faktisk er igjen, og
+   hvor toppen av det synlige omraadet ligger. Skjemaene faar hoeyden sin
+   derfra, saa knapperaden alltid staar over tastaturet. */
+function passSkjema(){
+  const vv = window.visualViewport;
+  const hoyde = vv ? vv.height : window.innerHeight;
+  const topp  = vv ? vv.offsetTop : 0;
+  const rot = document.documentElement.style;
+  rot.setProperty('--dlg-topp', Math.round(topp + 8) + 'px');
+  rot.setProperty('--dlg-hoyde', Math.max(220, Math.round(hoyde - 16)) + 'px');
+}
+if(window.visualViewport){
+  visualViewport.addEventListener('resize', passSkjema);
+  visualViewport.addEventListener('scroll', passSkjema);
+}
+window.addEventListener('resize', passSkjema);
+passSkjema();
+
 function skjemaAapent(){
   const viser = $('filviser') && !$('filviser').hidden;
   return avtaleAapen || huskeSkjema !== null || !!viser;
@@ -1989,6 +2013,7 @@ function apneAvtale(e){
   lagre.className = e ? 'knapp-endre' : 'knapp-gronn';
   lagre.style.marginLeft = '0';
 
+  passSkjema();
   $('avtaleBak').hidden = false;
   $('avtaleBoks').hidden = false;
   $('avTittel').focus();
@@ -2790,6 +2815,7 @@ function visHuskeSkjema(omfang, m){
   lagre.className = m ? 'knapp-endre' : 'knapp-gronn';
   lagre.style.marginLeft = '0';
 
+  passSkjema();
   $('huskeBak').hidden = false;
   $('huskeBoks').hidden = false;
   $('huOverskrift').focus();
