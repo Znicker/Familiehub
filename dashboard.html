@@ -588,9 +588,20 @@ input,select,textarea{font-size:16px}
   border:1px solid var(--line);border-radius:9px;padding:7px 9px;
   background:var(--paper);width:100%;min-width:0;box-sizing:border-box;
 }
-/* iOS gir dato-, tids- og nedtrekksfelt hver sin egenhoeyde, og da staar
-   ingen av radene paa linje. Én fast hoeyde retter opp hele rutenettet. */
-input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
+/* iOS tegner dato-, tids- og nedtrekksfelt med sin egen drakt: de faar
+   egen hoeyde, egen minstebredde og midtstilt tekst. Da sprenger de
+   kolonnen og staar ulikt naboene sine. Vi slaar av drakta og setter
+   maalene selv - da faar alle kontrollene samme form. */
+input.hu-felt,select.hu-felt{
+  height:42px;line-height:1.2;
+  -webkit-appearance:none;appearance:none;
+  text-align:left;display:block;
+}
+select.hu-felt{
+  padding-right:30px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A8899' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:13px;
+}
 .hu-omr{resize:vertical;line-height:1.45}
 .hu-knapper{display:flex;gap:7px;justify-content:flex-end}
 .hu-avbryt,.hu-lagre{
@@ -656,7 +667,6 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
     "navn  sted  notat"
     "dato  kal   notat"
     "tid   tid   notat"
-    ".     .     vedlegg"
     "serie serie serie"
     "feil  feil  feil";
 }
@@ -676,7 +686,6 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
   text-transform:uppercase;color:var(--ink-soft);height:42px;
 }
 .av-hele input{width:20px;height:20px;accent-color:var(--gronn);margin:0;flex-shrink:0}
-.a-vedlegg{grid-area:vedlegg}
 .av-skjema.av-tre .av-serie{grid-area:serie}
 .av-skjema.av-tre .av-feil{grid-area:feil}
 .av-kol{display:flex;flex-direction:column;gap:9px;min-width:0}
@@ -915,14 +924,16 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
           <input type="checkbox" id="avHele" onchange="avtaleHeleDagen()">Hele dagen
         </label>
       </div>
-      <label class="av-felt av-vokser a-notat">Notat
-        <textarea class="hu-felt hu-omr" id="avNotat" placeholder="Valgfritt"></textarea>
-      </label>
-      <div class="av-vedlegg a-vedlegg">
-        <div class="av-etikett">Vedlegg</div>
-        <div class="ved-liste" id="avVedleggListe"></div>
-        <input type="file" id="avFil" multiple class="ved-skjult" onchange="valgteFiler(event)">
-        <button class="knapp-vedlegg" onclick="velgVedlegg()">Legg ved fil</button>
+      <div class="av-kol a-notat">
+        <label class="av-felt av-vokser">Notat
+          <textarea class="hu-felt hu-omr" id="avNotat" placeholder="Valgfritt"></textarea>
+        </label>
+        <div class="av-vedlegg">
+          <div class="av-etikett">Vedlegg</div>
+          <div class="ved-liste" id="avVedleggListe"></div>
+          <input type="file" id="avFil" multiple class="ved-skjult" onchange="valgteFiler(event)">
+          <button class="knapp-vedlegg" onclick="velgVedlegg()">Legg ved fil</button>
+        </div>
       </div>
       <div class="av-serie" id="avSerie" hidden></div>
       <div class="av-feil" id="avFeil" hidden></div>
@@ -1540,6 +1551,19 @@ function tegnPlan(res){
     boks.innerHTML += '<div class="plan-meta feil" style="padding-top:10px">'
       + res.feilet + ' kalender(e) svarte ikke — prøv Oppdater.</div>';
   }
+
+  rullTilNaa(boks);
+}
+
+/* Det som er unnagjort skal ikke ta plassen til det som gjenstaar. Passerte
+   avtaler blir staaende - de ruller bare opp av seg selv, saa neste avtale
+   ligger oeverst. Man kommer til dem ved aa rulle tilbake. */
+function rullTilNaa(boks){
+  if(!viserIdag()) return;
+  const forste = boks.querySelector('.plan-rad:not(.forbi)');
+  if(!forste || !forste.previousElementSibling) return;
+  const topp = boks.getBoundingClientRect().top;
+  boks.scrollTop += forste.getBoundingClientRect().top - topp;
 }
 
 /* ---- Detaljer for én avtale, som en boble ved siden av raden ---- */
