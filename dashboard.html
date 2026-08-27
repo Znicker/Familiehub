@@ -410,21 +410,17 @@ a.middag:active{opacity:.72}
   padding-top:9px;border-top:1px solid var(--line);
 }
 
-/* ---------- Bunn ---------- */
-.bunn{
-  display:flex;align-items:center;gap:14px;flex-shrink:0;
-  font-size:var(--t-etikett);color:var(--ink-soft);font-weight:600;
-}
-.bunn .knapp{
-  margin-left:auto;background:none;border:1px solid var(--line);
+/* ---------- Feilkort ----------
+   Skjermen har ingen bunnrad lenger - den oppdaterer seg selv. Den eneste
+   knappen som staar igjen er veien ut av en feil. */
+.knapp{
+  background:none;border:1px solid var(--line);
   color:var(--ink-soft);font-family:inherit;font-size:var(--t-etikett);font-weight:700;
   padding:7px 14px;border-radius:999px;cursor:pointer;letter-spacing:.05em;
   text-transform:uppercase;
 }
-.bunn .knapp:active{background:#F0F2F4}
-/* .knapp har margin-left:auto for bunnraden. I et feilkort skal den staa
-   der teksten staar, ikke presses ut i hoeyre kant. */
-.tom.feil .knapp{margin-left:0;margin-top:10px}
+.knapp:active{background:#F0F2F4}
+.tom.feil .knapp{margin-top:10px}
 .feil{color:#B4443A}
 
 /* ---------- Innlogging ---------- */
@@ -1037,12 +1033,6 @@ select.hu-felt{
     </div>
   </div>
 
-  <div class="bunn">
-    <span id="status"></span>
-    <button class="knapp" onclick="oppdaterAlt(true)">Oppdater</button>
-    <button class="knapp" onclick="loggUt()">Logg ut</button>
-  </div>
-
 </div>
 
 <script>
@@ -1198,25 +1188,6 @@ async function gyldigToken(){
   }
   return fornyelse;
 }
-function loggUt(){
-  try{
-    localStorage.removeItem('fh_cal_auth');
-    localStorage.removeItem('fh_navn');
-    sessionStorage.clear();
-  }catch(e){}
-  S.token = null; S.refresh = null; S.expires = 0;
-  try{ sessionStorage.setItem('fh_ut', '1'); }catch(e){}
-  location.href = AUTH_BASE + '/logout?post_logout_redirect_uri='
-    + encodeURIComponent(location.origin + location.pathname);
-}
-(function fullfoerUtlogging(){
-  let flagg = null;
-  try{ flagg = sessionStorage.getItem('fh_ut'); }catch(e){}
-  if(!flagg) return;
-  try{ sessionStorage.removeItem('fh_ut'); }catch(e){}
-  location.replace('/cdn-cgi/access/logout');
-})();
-
 /* Skjermen skal ikke kjefte. Trace ID og Correlation ID hoerer i konsollen,
    ikke paa kjoekkenveggen - der trengs bare det man kan gjoere noe med. */
 function planFeil(e){
@@ -3276,7 +3247,6 @@ async function oppdaterAlt(manuelt){
   if(!manuelt && (skjemaAapent() || !$('detalj').hidden)) return;
   S.laster = true;
   if(manuelt){
-    $('status').textContent = 'Oppdaterer …';
     lukkDetalj();
     dagOffset = 0;           /* en manuell oppdatering betyr "vis meg naa" */
     bildeIndeks = null;      /* hent bildene på nytt ved manuell oppdatering */
@@ -3303,8 +3273,6 @@ async function oppdaterAlt(manuelt){
   ];
   try{
     await Promise.all(jobber);
-    $('status').textContent = 'Sist oppdatert '
-      + new Date().toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
   } finally {
     S.laster = false;
   }
