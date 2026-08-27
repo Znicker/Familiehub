@@ -1850,8 +1850,18 @@ async function hentVindu(a, b){
 
   async function hentEn(c){
     try{
-      const d = await graph('/me/calendars/' + c.id + '/calendarView' + q);
-      const events = (d.value||[]).map(function(e){
+      /* Graph gir maks noen hundre av gangen. Uten aa foelge nextLink
+         ble eldre avtaler klipt bort naar vinduet vokste, og lista saa
+         ut til aa stoppe paa en tilfeldig dato. */
+      let sti = '/me/calendars/' + c.id + '/calendarView' + q;
+      let raa = [];
+      for(let side = 0; side < 25 && sti; side++){
+        const d = await graph(sti);
+        (d.value || []).forEach(function(e){ raa.push(e); });
+        const neste = d['@odata.nextLink'];
+        sti = neste ? neste.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/, '') : null;
+      }
+      const events = raa.map(function(e){
         return {
           id:e.id,
           title:e.subject || '(uten tittel)',
@@ -2488,6 +2498,20 @@ function goToday(){
   S.view = new Date(t.getFullYear(), t.getMonth(), 1);
   S.sel  = t;
   naviger();
+
+  /* I lista holder det ikke aa sette datoen - man maa ogsaa rulle dit.
+     Seksjonen finnes foerst etter at lista er tegnet. */
+  if(S.vis === 'liste'){
+    const gaa = function(){
+      const el = $('plan');
+      if(!el) return;
+      const sec = el.querySelector('.plan-sec.idag');
+      el.scrollTop = sec ? Math.max(0, sec.offsetTop - 8) : 0;
+    };
+    gaa();
+    requestAnimationFrame(gaa);
+    setTimeout(gaa, 80);
+  }
 }
 async function last(force){
   if(!(S.token || S.refresh)) return;
@@ -3698,23 +3722,50 @@ function nullstillListe(){ listeVindu = LISTE_BOLK; listeBak = 0; }
 /* Ruller man mot bunnen hentes flere dager framover, mot toppen flere
    bakover. Ved bakoverutvidelse maa rullingen flyttes like mye, ellers
    ville lista hoppet under fingeren. */
+let listeUtvider = false;
+
+/* Dagen som staar oeverst i synsfeltet akkurat naa */
+function oeversteDag(el){
+  const topp = el.getBoundingClientRect().top;
+  const seksjoner = el.querySelectorAll('.plan-sec');
+  for(let i = 0; i < seksjoner.length; i++){
+    if(seksjoner[i].getBoundingClientRect().bottom > topp + 4){
+      return { dato: seksjoner[i].dataset.dato,
+               avvik: seksjoner[i].getBoundingClientRect().top - topp };
+    }
+  }
+  return null;
+}
+
+/* Ruller tilbake til samme dag etter at lista er tegnet paa nytt */
+function rullTilDag(el, anker){
+  if(!anker) return;
+  const sec = el.querySelector('.plan-sec[data-dato="' + anker.dato + '"]');
+  if(!sec) return;
+  el.scrollTop = sec.offsetTop - (anker.avvik || 0);
+}
+
 function listeRulling(){
   const el = $('plan');
-  if(!el || S.vis !== 'liste') return;
+  if(!el || S.vis !== 'liste' || listeUtvider) return;
 
   if(el.scrollTop + el.clientHeight > el.scrollHeight - 400){
+    listeUtvider = true;
     listeVindu += LISTE_BOLK;
     renderListe();
     last(false);
+    listeUtvider = false;
     return;
   }
 
   if(el.scrollTop < 300){
-    const foer = el.scrollHeight;
+    listeUtvider = true;
+    /* Hold blikket paa samme dag. Aa regne paa hoeyde bommet, fordi
+       tomme dager faller bort og seksjonene ikke er like hoeye. */
     listeBak += LISTE_BAK_BOLK;
-    renderListe();
-    el.scrollTop += (el.scrollHeight - foer);   /* hold blikket i ro */
+    renderListe();          /* holder selv blikket paa samme dag */
     last(false);
+    listeUtvider = false;
   }
 }
 
@@ -3738,6 +3789,11 @@ function renderListe(){
     wrap.addEventListener('scroll', listeRulling, {passive:true});
     listeLyttes = true;
   }
+
+  /* Lista tegnes ogsaa naar en henting blir ferdig. Uten dette hoppet
+     den tilbake til toppen midt i rullingen. */
+  const anker = wrap.scrollTop > 0 ? oeversteDag(wrap) : null;
+
   wrap.innerHTML = '';
   const dager = listePeriode();
   const hoppTomme = true;   /* rullende liste: bare dager med avtaler */
@@ -3750,6 +3806,7 @@ function renderListe(){
 
     const sec = document.createElement('div');
     sec.className = 'plan-sec' + (sameDay(d, new Date()) ? ' idag' : '');
+    sec.dataset.dato = dato2str(d);
     const head = document.createElement('div');
     const hd = helligdag(d);
     head.className = 'plan-dhead';
@@ -3779,6 +3836,8 @@ function renderListe(){
     tom.textContent = 'Ingen avtaler i perioden.';
     wrap.appendChild(tom);
   }
+
+  rullTilDag(wrap, anker);
 }
 
 function tittel(){
