@@ -618,9 +618,16 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* ---------- Heldags / fleredags bånd (måned) ---------- */
 .cal-bars{display:flex;flex-direction:column;gap:2px;margin:0 -7px 3px;overflow:visible}
 .cal-band{
-  height:16px;display:flex;align-items:center;color:#fff;
-  font-size:var(--t-etikett);font-weight:700;line-height:1;padding:0 6px;
-  white-space:nowrap;
+  height:16px;display:flex;align-items:center;gap:4px;color:#fff;
+  font-size:var(--t-etikett);font-weight:700;line-height:1;padding:0 5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cal-band.alene{justify-content:center}
+.cal-band-ini{
+  flex-shrink:0;min-width:13px;height:13px;border-radius:999px;padding:0 3px;
+  background:rgba(255,255,255,.35);color:#fff;
+  font-size:9px;font-weight:700;line-height:1;
+  display:flex;align-items:center;justify-content:center;
 }
 /* Strekker seg avtalen videre til neste dag, drar baandet seg over
    rutelinja saa det henger sammen i stedet for aa brytes opp. */
@@ -1795,7 +1802,18 @@ function fyllAvtaler(){
       if(erStart) band.classList.add('s');
       if(erSlutt) band.classList.add('e');
 
-      if(erStart) band.textContent = e.title;      /* tittel ved start/ukestart */
+      /* Initialen foerst, saa navnet - som paa avtalene ellers */
+      if(erStart){
+        const ini = document.createElement('span');
+        ini.className = 'cal-band-ini';
+        ini.style.background = dus(e.color, .5);
+        ini.textContent = initialFor(e.calId, e.calName);
+        band.appendChild(ini);
+        band.appendChild(document.createTextNode(e.title));
+      }
+      /* Dekker baandet bare denne ene dagen, staar teksten penest midtstilt.
+         Gaar det videre, skal den begynne til venstre saa den kan leses. */
+      if(erStart && erSlutt) band.classList.add('alene');
       band.title = e.title;
       band.style.cursor = 'pointer';
       band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; visBoble(e.id, ev); };
@@ -1927,10 +1945,12 @@ function renderCal(){
 
       cell.onclick = function(){
         if(skjulTrykk) return;
+        const r = cell.getBoundingClientRect();   /* maal foer render() */
+        const midt = r.left + r.width / 2;
         S.sel = date;
         render();
         // Uten hoeyrekolonne har dagen ingen annen plass aa vises paa
-        if($('app').classList.contains('uten-side')) apneDagPanel(date, cell);
+        if($('app').classList.contains('uten-side')) apneDagPanel(date, midt);
       };
       langtTrykk(cell, function(){ dagMeny(date); });
       grid.appendChild(cell);
@@ -2913,9 +2933,11 @@ function renderUkePlan(dager){
                 + (hd ? '<div class="uke-helg" title="'+esc(hd)+'">'+esc(hd)+'</div>' : '');
     c.onclick = function(){
       if(skjulTrykk) return;
+      const r = c.getBoundingClientRect();        /* maal foer render() */
+      const midt = r.left + r.width / 2;
       S.sel = d;
       render();
-      if($('app').classList.contains('uten-side')) apneDagPanel(d, c);
+      if($('app').classList.contains('uten-side')) apneDagPanel(d, midt);
     };
     langtTrykk(c, function(){ dagMeny(d); });
     head.appendChild(c);
@@ -3298,15 +3320,15 @@ function langtTrykk(el, handler){
    ============================================================ */
 let dagPanelEl = null;
 
-function apneDagPanel(dato, kilde){
+/* midtX er senterpunktet til det man trykket paa, maalt FOER render().
+   Etter render() er elementet byttet ut, og maalingen ville gitt 0 -
+   som gjorde at panelet alltid havnet paa hoeyre side. */
+function apneDagPanel(dato, midtX){
   lukkDagPanel();
 
-  // Hvilken halvdel ble trykket? Panelet gaar paa den andre siden.
-  let tilHoyre = true;
-  if(kilde && kilde.getBoundingClientRect){
-    const r = kilde.getBoundingClientRect();
-    tilHoyre = (r.left + r.width / 2) < window.innerWidth / 2;
-  }
+  const tilHoyre = (typeof midtX === 'number')
+    ? (midtX < window.innerWidth / 2)
+    : true;
 
   const bak = document.createElement('div');
   bak.className = 'dagpanel-bak';
