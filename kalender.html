@@ -146,7 +146,6 @@ body{
 .side .scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
 /* Rundingen skal ligge inntil kanten i sidekolonnen, men holde seg
    innenfor i panelet, som har mindre luft aa gaa paa */
-.side-day .ev{margin-left:-16px}
 .dagpanel-liste .ev-stor-ini{width:32px;height:32px;font-size:var(--t-rute)}
 .side-day{flex:1 1 55%}
 .side-cals{flex:1 1 45%}
@@ -260,17 +259,19 @@ body{
 .cal-more{font-size:var(--t-etikett);font-weight:700;color:var(--ink-soft);letter-spacing:.03em;padding-left:11px}
 
 /* ---------- Avtaleliste ---------- */
-/* Raden: stor initialrunding helt ute til venstre, saa tid og tekst.
-   Fargen ligger i rundingen og gaar helt ut til kanten av boksen. */
-.ev{display:flex;gap:11px;padding:11px 0;align-items:flex-start}
-.ev:first-child{padding-top:0}
+/* Raden: stor initialrunding til venstre, saa tid og tekst. Samme
+   tonede flate og kraftige kant som avtalene har ellers. */
+.ev{
+  display:flex;gap:11px;align-items:flex-start;
+  padding:10px 12px;margin-bottom:8px;
+  border:2px solid transparent;border-radius:12px;
+}
 .ev-stor-ini{
   flex-shrink:0;width:38px;height:38px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   color:#fff;font-family:'Archivo',sans-serif;font-size:var(--t-meta);
   font-weight:700;line-height:1;
 }
-.ev + .ev{border-top:1px solid var(--line)}
 .ev-time{
   font-family:'IBM Plex Mono',monospace;font-size:var(--t-meta);color:var(--ink-soft);
   min-width:48px;padding-top:2px;font-variant-numeric:tabular-nums;line-height:1.5;
@@ -534,6 +535,14 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   font-size:var(--t-brod);line-height:1.5;white-space:pre-wrap;word-wrap:break-word;
 }
 .boble-notat.ingen{color:var(--ink-soft);font-style:italic}
+/* Vedlegg i avtalevisningen */
+.boble-vedlegg{
+  margin-top:12px;padding-top:12px;border-top:1px solid var(--line);
+  display:flex;flex-direction:column;gap:6px;
+  font-size:var(--t-meta);color:var(--ink-soft);
+}
+.boble-vedlegg[hidden]{display:none}
+.boble-vedlegg .vedlegg-rad{background:rgba(255,255,255,.55)}
 .boble-knapp{
   margin:0 0 14px;width:100%;background:var(--handling-endre);color:#fff;border:none;
   border-radius:999px;padding:11px;font-family:inherit;font-size:var(--t-meta);
@@ -609,8 +618,8 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .btn.fare:active{opacity:.85}
 .btn[disabled]{opacity:.5;pointer-events:none}
 
-.ev.klikk{cursor:pointer;border-radius:8px;transition:background .12s ease}
-@media(hover:hover){.ev.klikk:hover{background:var(--bg-2)}}
+.ev.klikk{cursor:pointer;transition:filter .12s ease}
+@media(hover:hover){.ev.klikk:hover{filter:brightness(.97)}}
 
 /* ---------- Innlogging ---------- */
 .gate-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
@@ -751,10 +760,9 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .plan-item.har-note.open::after{transform:rotate(180deg)}
 /* Ukenummeret ligger til hoeyre i dagoverskriften */
-.plan-uke{
-  float:right;font-family:'IBM Plex Mono',monospace;font-size:var(--t-rute);
-  font-weight:600;color:var(--ink-soft);text-transform:none;letter-spacing:0;
-}
+/* Ukenummeret staar foerst i dagoverskriften, i samme skrift og
+   stoerrelse som resten av linja. */
+.plan-uke{color:var(--ink-soft)}
 .plan-tom{color:var(--ink-soft);font-size:var(--t-meta);padding:2px 4px 12px}
 
 /* Notat i uke-brikker (Uke + Plan) */
@@ -1107,9 +1115,6 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   /* Kollisjon: to avtaler ligger oppaa hverandre i tid. Markeres med en solid
      ring i personens egen farge, ikke med stiplet ramme. */
   .pu-ev.kollisjon .pu-tid{font-weight:700;color:var(--ink)}
-  .pu-ev.kollisjon .pu-tittel::after{
-    content:' ⚠';font-size:.9em;opacity:.7;
-  }
   /* Parallelle spor i dagvisning */
   .pu-spor{display:grid;gap:6px;align-items:start}
   .pu-spor-kol{display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -2265,7 +2270,7 @@ function renderDay(){
       : pad(e.start.getHours())+'.'+pad(e.start.getMinutes())
         + '<br>' + pad(e.end.getHours())+'.'+pad(e.end.getMinutes());
     const meta = e.where || '';
-    return '<div class="ev klikk" onclick="visBoble(\''+e.id+'\', event)">'
+    return '<div class="ev klikk" style="background:'+dus(e.color,.18)+';border-color:'+dus(e.color,.62)+'" onclick="visBoble(\''+e.id+'\', event)">'
       + '<div class="ev-stor-ini" style="background:'+e.color+'" title="'+esc(e.calName||'')+'">'
       +   esc(initialFor(e.calId, e.calName))+'</div>'
       + '<div class="ev-time">'+time+'</div>'
@@ -2620,6 +2625,7 @@ function lukkBoble(){
   apenAvtaleId = null;
   const b = $('boble');
   b.hidden = true;
+  b.style.background = '';
   b.classList.remove('side', 'hoyre', 'venstre');
   $('bobleBak').hidden = true;
 }
@@ -2657,12 +2663,17 @@ function visBoble(id, klikk){
     + (e.where ? '<div class="boble-sted">' + esc(e.where) + '</div>' : '')
     + (e.note
         ? '<div class="boble-notat">' + esc(e.note) + '</div>'
-        : '<div class="boble-notat ingen">Ingen notater.</div>');
+        : '<div class="boble-notat ingen">Ingen notater.</div>')
+    + '<div class="boble-vedlegg" id="bobleVedlegg" hidden></div>';
 
   const b = $('boble');
   $('bobleInn').innerHTML = html;
   $('bobleBak').hidden = false;
   b.hidden = false;
+  /* Panelet baerer avtalens farge, som brikkene i kalenderen */
+  b.style.background = dus(e.color, .16);
+  b.style.borderLeft = '';
+  vedleggIVisning(e);
 
   const mål = (klikk && (klikk.currentTarget || klikk.target)) || null;
   const r = mål && mål.getBoundingClientRect ? mål.getBoundingClientRect() : null;
@@ -2915,10 +2926,14 @@ async function lastVedlegg(eventId){
 
 /* Henter innholdet fra Graph og aapner det. Filen kommer som base64 og
    gjoeres om til en blob, saa nettleseren kan vise eller laste den ned. */
-async function aapneVedlegg(v, knapp){
+function aapneVedlegg(v, knapp){
+  return aapneVedleggFra(redigererId(), v, knapp);
+}
+
+async function aapneVedleggFra(eventId, v, knapp){
   if(knapp) knapp.disabled = true;
   try{
-    const a = await graph('/me/events/' + redigererId() + '/attachments/' + v.id);
+    const a = await graph('/me/events/' + eventId + '/attachments/' + v.id);
     if(!a.contentBytes) throw new Error('Vedlegget kunne ikke hentes.');
 
     const bin = atob(a.contentBytes);
@@ -2936,6 +2951,7 @@ async function aapneVedlegg(v, knapp){
     lenke.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
   }catch(err){
+    if(knapp) knapp.title = 'Klarte ikke åpne: ' + err.message;
     dlgFeil('Klarte ikke åpne vedlegget: ' + err.message);
   }finally{
     if(knapp) knapp.disabled = false;
@@ -2943,6 +2959,48 @@ async function aapneVedlegg(v, knapp){
 }
 
 function redigererId(){ return redigerer ? redigerer.id : ''; }
+
+/* Viser vedleggene i avtalevisningen, med lenke for aa aapne dem.
+   Hentes i bakgrunnen, saa panelet vises med det samme. */
+async function vedleggIVisning(e){
+  const boks = document.getElementById('bobleVedlegg');
+  if(!boks) return;
+  boks.innerHTML = '';
+  if(!e.vedlegg){ boks.hidden = true; return; }
+
+  boks.hidden = false;
+  boks.textContent = 'Henter vedlegg …';
+  try{
+    const d = await graph('/me/events/' + e.id + '/attachments?$select=id,name,size');
+    const liste = d.value || [];
+    boks.innerHTML = '';
+    if(!liste.length){ boks.hidden = true; return; }
+
+    liste.forEach(function(a){
+      const rad = document.createElement('div');
+      rad.className = 'vedlegg-rad';
+
+      const n = document.createElement('button');
+      n.type = 'button';
+      n.className = 'vedlegg-navn';
+      n.textContent = a.name;
+      n.title = 'Åpne ' + a.name;
+      n.onclick = function(ev){
+        ev.stopPropagation();
+        aapneVedleggFra(e.id, a, ev.currentTarget);
+      };
+
+      const t = document.createElement('span');
+      t.className = 'vedlegg-str';
+      t.textContent = filStr(a.size || 0);
+
+      rad.appendChild(n); rad.appendChild(t);
+      boks.appendChild(rad);
+    });
+  }catch(err){
+    boks.textContent = 'Klarte ikke hente vedlegg.';
+  }
+}
 
 function filTilBase64(f){
   return new Promise(function(ok, feil){
@@ -3695,8 +3753,8 @@ function renderListe(){
     const head = document.createElement('div');
     const hd = helligdag(d);
     head.className = 'plan-dhead';
-    head.innerHTML = esc(DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase())
-      + ' <span class="plan-uke">Uke ' + ukeNr(d) + '</span>'
+    head.innerHTML = '<span class="plan-uke">Uke ' + ukeNr(d) + '</span> · '
+      + esc(DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase())
       + (hd ? ' <span class="plan-helg">· '+esc(hd)+'</span>' : '');
     if(hd) sec.classList.add('helligdag');
     sec.appendChild(head);
@@ -3884,7 +3942,7 @@ function tegnDagPanel(){
         : pad(e.start.getHours())+'.'+pad(e.start.getMinutes())
           + '<br>' + pad(e.end.getHours())+'.'+pad(e.end.getMinutes());
       const meta = e.where || '';
-      return '<div class="ev klikk" onclick="visBoble(\''+e.id+'\', event)">'
+      return '<div class="ev klikk" style="background:'+dus(e.color,.18)+';border-color:'+dus(e.color,.62)+'" onclick="visBoble(\''+e.id+'\', event)">'
         + '<div class="ev-stor-ini" style="background:'+e.color+'" title="'+esc(e.calName||'')+'">'
         +   esc(initialFor(e.calId, e.calName))+'</div>'
         + '<div class="ev-time">'+time+'</div>'
