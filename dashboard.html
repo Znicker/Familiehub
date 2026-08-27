@@ -586,8 +586,11 @@ input,select,textarea{font-size:16px}
 .hu-felt{
   font-family:'Archivo',sans-serif;font-size:16px;color:var(--ink);
   border:1px solid var(--line);border-radius:9px;padding:7px 9px;
-  background:var(--paper);width:100%;box-sizing:border-box;
+  background:var(--paper);width:100%;min-width:0;box-sizing:border-box;
 }
+/* iOS gir dato-, tids- og nedtrekksfelt hver sin egenhoeyde, og da staar
+   ingen av radene paa linje. Én fast hoeyde retter opp hele rutenettet. */
+input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
 .hu-omr{resize:vertical;line-height:1.45}
 .hu-knapper{display:flex;gap:7px;justify-content:flex-end}
 .hu-avbryt,.hu-lagre{
@@ -629,12 +632,12 @@ input,select,textarea{font-size:16px}
    som teller - jo faerre felt over hverandre, jo lenger fra tastaturet
    havner knappene. */
 .av-skjema.av-tre{
-  grid-template-columns:1fr 1fr 2fr;
+  grid-template-columns:1fr 1fr 1.7fr;
   grid-template-areas:
     "navn  sted  notat"
     "dato  kal   notat"
-    "fra   til   notat"
-    "hint  hint  vedlegg"
+    "tid   tid   notat"
+    ".     .     vedlegg"
     "serie serie serie"
     "feil  feil  feil"
     "bunn  bunn  bunn";
@@ -643,10 +646,18 @@ input,select,textarea{font-size:16px}
 .a-sted{grid-area:sted}
 .a-dato{grid-area:dato}
 .a-kal{grid-area:kal}
-.a-fra{grid-area:fra}
-.a-til{grid-area:til}
-.a-hint{grid-area:hint;align-self:start}
+.a-tid{grid-area:tid}
 .a-notat{grid-area:notat}
+/* Fra, til og hele dagen paa samme rad. Klokkeslettene er smale nok til
+   at avkrysningen faar plass ved siden av. */
+.av-tidrad{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.av-tidrad .av-felt{flex:1 1 96px;min-width:96px}
+.av-hele{
+  flex:0 0 auto;display:flex;align-items:center;gap:8px;cursor:pointer;
+  font-size:var(--t-etikett);font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-soft);height:42px;
+}
+.av-hele input{width:20px;height:20px;accent-color:var(--gronn);margin:0;flex-shrink:0}
 .a-vedlegg{grid-area:vedlegg}
 .av-skjema.av-tre .av-serie{grid-area:serie}
 .av-skjema.av-tre .av-feil{grid-area:feil}
@@ -664,8 +675,6 @@ input,select,textarea{font-size:16px}
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--ink-soft);
 }
-.av-hint{font-size:var(--t-etikett);color:var(--ink-soft);font-weight:600;line-height:1.35}
-.av-hint[hidden]{display:none}
 .av-vedlegg{display:flex;flex-direction:column;gap:6px}
 .ved-liste{display:flex;flex-direction:column;gap:6px;max-height:118px;overflow-y:auto}
 .ved-liste:empty{display:none}
@@ -877,13 +886,17 @@ input,select,textarea{font-size:16px}
       <label class="av-felt a-kal">Kalender
         <select class="hu-felt" id="avKal"></select>
       </label>
-      <label class="av-felt a-fra">Fra
-        <input class="hu-felt" type="time" id="avFra" step="300">
-      </label>
-      <label class="av-felt a-til">Til
-        <input class="hu-felt" type="time" id="avTil" step="300">
-      </label>
-      <div class="av-hint a-hint">Uten klokkeslett varer avtalen hele dagen.</div>
+      <div class="av-tidrad a-tid" id="avTider">
+        <label class="av-felt">Fra
+          <input class="hu-felt" type="time" id="avFra" step="300">
+        </label>
+        <label class="av-felt">Til
+          <input class="hu-felt" type="time" id="avTil" step="300">
+        </label>
+        <label class="av-hele">
+          <input type="checkbox" id="avHele" onchange="avtaleHeleDagen()">Hele dagen
+        </label>
+      </div>
       <label class="av-felt av-vokser a-notat">Notat
         <textarea class="hu-felt hu-omr" id="avNotat" placeholder="Valgfritt"></textarea>
       </label>
@@ -1920,19 +1933,16 @@ function apneAvtale(e){
   const start = e ? e.start : dagenViser();
   $('avDato').value = datoNokkel(start);
 
-  /* Hele dagen er ikke en avkrysning lenger - den er det som skjer naar
-     begge klokkeslettene staar tomme. */
-  if(e && e.heleDagen){
-    $('avFra').value = '';
-    $('avTil').value = '';
-  }else if(e){
+  $('avHele').checked = !!(e && e.heleDagen);
+  if(e && !e.heleDagen){
     $('avFra').value = kl(e.start);
     $('avTil').value = kl(e.slutt);
-  }else{
+  }else if(!e){
     const fra = viserIdag() ? nesteTime() : new Date(2000, 0, 1, 12, 0);
     $('avFra').value = kl(fra);
     $('avTil').value = kl(new Date(fra.getTime() + 3600000));
   }
+  avtaleHeleDagen();
 
   $('avTittel').value = (e && e.tittel !== '(uten tittel)') ? e.tittel : '';
   $('avSted').value   = e ? (e.sted || '') : '';
@@ -2047,6 +2057,16 @@ function vekslFjernVedlegg(i){
   tegnSkjemaVedlegg();
 }
 
+/* Hele dagen: klokkeslettene har ingen mening da, saa de gaar i hvilemodus
+   i stedet for aa staa igjen med tall ingen bruker. */
+function avtaleHeleDagen(){
+  const hele = $('avHele').checked;
+  ['avFra', 'avTil'].forEach(function(id){
+    $(id).disabled = hele;
+    $(id).parentNode.style.opacity = hele ? '.4' : '';
+  });
+}
+
 function avtaleFeil(tekst){
   const f = $('avFeil');
   f.textContent = tekst;
@@ -2095,13 +2115,10 @@ async function lagreAvtale(){
   const dato = $('avDato').value;
   if(!dato){ avtaleFeil('Velg en dato.'); $('avDato').focus(); return; }
 
+  const hele = $('avHele').checked;
   const fra = $('avFra').value, til = $('avTil').value;
-  const hele = !fra && !til;          /* begge tomme = hele dagen */
   if(!hele){
-    if(!fra || !til){
-      avtaleFeil('Fyll inn både fra og til – eller la begge stå tomme for hele dagen.');
-      return;
-    }
+    if(!fra || !til){ avtaleFeil('Fyll inn både fra og til.'); return; }
     if(til <= fra){ avtaleFeil('Sluttidspunktet må være etter starten.'); return; }
   }
 
