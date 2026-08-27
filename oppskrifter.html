@@ -3831,8 +3831,10 @@ $('confirm-modal-yes').addEventListener('click', () => {
 function resetAddForm(){
   editingRecipeId = null;
   draftRecipeId = 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-  const saveBtn = document.querySelector('#view-add .btn-primary');
-  if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Lagre oppskrift'; }
+  /* Knappen het .btn-primary foer knappene ble doept om etter betydning.
+     Den klassen finnes ikke lenger - lagreknappen ligger i .rediger-topp. */
+  const saveBtn = document.querySelector('#view-add .rediger-topp-knapp.lagre');
+  if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Avslutt og lagre'; }
   const oldErr = $('save-error');
   if(oldErr) oldErr.remove();
   const oldCatHint = $('category-required-hint');
@@ -4940,7 +4942,8 @@ async function saveRecipe(){
       : Date.now()
   };
 
-  const saveBtn = document.querySelector('#view-add .btn-primary');
+  /* Samme omdoeping som i resetAddForm: .btn-primary er borte. */
+  const saveBtn = document.querySelector('#view-add .rediger-topp-knapp.lagre');
   const prevLabel = saveBtn ? saveBtn.textContent : '';
   if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Lagrer…'; }
 
@@ -5000,7 +5003,12 @@ async function saveRecipe(){
       msg = document.createElement('div');
       msg.id = 'save-error';
       msg.className = 'status-msg error';
-      saveBtn.insertAdjacentElement('afterend', msg);
+      /* .rediger-topp er en sticky flex-rad med bare knapper - feilmeldingen
+         skal legge seg UNDER raden, ikke inn i den. Faller tilbake til
+         toppen av skjemaet dersom knappen mot formodning ikke finnes. */
+      const knapperad = saveBtn ? saveBtn.closest('.rediger-topp') : null;
+      if(knapperad) knapperad.insertAdjacentElement('afterend', msg);
+      else $('view-add').prepend(msg);
     }
     msg.textContent = 'Klarte ikke å lagre oppskriften (' + (err.message || 'ukjent feil') + '). Størrelse: ' + sizeMb + ' MB. Prøv igjen om litt, eller fjern/forminsk noen av bildene.';
     if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = prevLabel; }
