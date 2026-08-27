@@ -708,15 +708,15 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .plan-sec.idag .plan-dhead::after{content:' · i dag';color:var(--ink-soft);font-weight:600}
 .plan-item{
   display:flex;gap:12px;align-items:flex-start;
-  padding:11px 13px;margin:0 0 8px;background:var(--paper);
-  border:1px solid var(--line);border-radius:12px;
-  cursor:pointer;transition:background .12s ease;
+  padding:11px 13px;margin:0 0 8px;
+  border:1px solid transparent;border-radius:12px;
+  cursor:pointer;transition:filter .12s ease;
 }
-@media(hover:hover){.plan-item:hover{background:#F5F7F4}}
+@media(hover:hover){.plan-item:hover{filter:brightness(.97)}}
 /* Raden man har valgt - detaljene vises i panelet til hoeyre */
-.plan-item.valgt{background:var(--boks-mild);box-shadow:inset 0 0 0 1px var(--blaa)}
+.plan-item.valgt{box-shadow:inset 0 0 0 2px var(--ink)}
 .plan-time{
-  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink);
   min-width:48px;text-align:right;line-height:1.35;font-variant-numeric:tabular-nums;flex-shrink:0;
 }
 .plan-main{min-width:0;flex:1}
@@ -1026,10 +1026,12 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .dagtid-tekst{width:100%;text-align:center}
   .dagtid-ev-t{font-size:9px}
   .dagtid-ev-n{font-size:var(--t-rute);line-height:1.2}
-  /* Smalere timeakse saa avtalene faar plassen */
-  .dagtid-akse{width:34px}
-  .dagtid-linje{left:34px;right:34px}
-  .dagtid-felt{left:38px;right:38px}
+  /* Bare én timeakse paa smal skjerm - to stjeler plass fra avtalene,
+     og da ble klokkeslettene klipt i begge ender. */
+  .dagtid-akse{width:38px}
+  .dagtid-akse.hoyre{display:none}
+  .dagtid-linje{left:38px;right:0}
+  .dagtid-felt{left:42px;right:4px}
 }
 
 /* Liggende telefon: panelene har lite hoeyde aa gaa paa, men god bredde */
@@ -3241,11 +3243,11 @@ function renderDagTid(){
   wrap.appendChild(scroll);
   tg.appendChild(wrap);
 
-  /* Start litt foer foerste avtale, ellers klokka 8 */
+  /* Hopp rett ned til foerste avtale. Har dagen ingen, staar vi paa 8. */
   const tidligst = timede.length
     ? timede.reduce(function(a, e){ return Math.min(a, minutter(e.start)); }, 24*60)
     : 8*60;
-  scroll.scrollTop = Math.max(0, (Math.min(tidligst, 8*60) / 60 * TIME_H) - 12);
+  scroll.scrollTop = Math.max(0, (tidligst / 60 * TIME_H) - 16);
 }
 
 function renderUkePlan(dager){
@@ -3485,9 +3487,18 @@ function smalSkjerm(){
   return window.matchMedia('(max-width:900px)').matches;
 }
 
-function planItem(e){
+function planItem(e, koll){
   const it = document.createElement('div');
   it.className = 'plan-item';
+  /* Samme fargespraak som uke- og dagvisningen: tonet flate i personens
+     farge, med en litt kraftigere kant i samme farge. */
+  it.style.background  = dus(e.color, .18);
+  it.style.borderColor = dus(e.color, .38);
+  /* Overlapper avtalen en annen samme dag, faar den samme kraftigere
+     ring som i uke- og dagvisningen. */
+  if(koll && koll.has(e.id)){
+    it.style.boxShadow = 'inset 0 0 0 2px ' + dus(e.color, .85);
+  }
 
   const rund = document.createElement('div');
   rund.className = 'ev-stor-ini';
@@ -3633,7 +3644,9 @@ function renderListe(){
       tom.textContent = '—';
       sec.appendChild(tom);
     } else {
-      evs.forEach(function(e){ sec.appendChild(planItem(e)); });
+      /* Regnes én gang per dag, ikke én gang per rad */
+      const koll = planKollisjoner(evs);
+      evs.forEach(function(e){ sec.appendChild(planItem(e, koll)); });
     }
     wrap.appendChild(sec);
   });
