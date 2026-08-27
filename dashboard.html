@@ -35,6 +35,7 @@
   /* Handlingsfarger: groenn = opprette, oransje = endre. */
   --gronn:#3E7C5A;
   --oransje:#C08A2E;
+  --rod:#B4443A;
   --paper:#FFFFFF;
   --line:#E4E8EC;
   --lime:#C8E64B;
@@ -278,6 +279,7 @@ body{
   font-size:8px;color:var(--ink-soft);flex-shrink:0;
   align-self:center;opacity:.55;
 }
+.plan-klips{font-size:var(--t-meta);flex-shrink:0;align-self:center;opacity:.6}
 
 /* ---------- Detaljer ---------- */
 /* Panelet scroller ikke — innholdet gjoer det, slik at krysset blir staaende. */
@@ -317,8 +319,10 @@ body{
 }
 .knapp-gronn{background:var(--gronn)}
 .knapp-endre{background:var(--oransje);margin-left:auto}
-.knapp-gronn:active,.knapp-endre:active{filter:brightness(.9)}
-.knapp-gronn:disabled{opacity:.55}
+.knapp-slett{background:var(--rod);margin-right:auto}
+.knapp-gronn:active,.knapp-endre:active,.knapp-slett:active{filter:brightness(.9)}
+.knapp-gronn:disabled,.knapp-slett:disabled{opacity:.55}
+.knapp-slett[hidden]{display:none}
 
 /* Under dagens avtaler, i full bredde. */
 .ny-avtale{
@@ -478,6 +482,14 @@ input,select,textarea{font-size:16px}
   font-size:var(--t-brod);line-height:1;cursor:pointer;padding:1px 3px;border-radius:6px;
 }
 .hu-knapp:active{opacity:1;background:rgba(44,62,80,.08)}
+/* Én knapp per foering: endre. Sletting ligger bak den, i skjemaet. */
+.hu-endre{
+  width:26px;height:26px;padding:0;opacity:1;flex-shrink:0;
+  background:var(--oransje);color:#FFFFFF;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-meta);
+}
+.hu-endre:active{opacity:1;background:var(--oransje);filter:brightness(.9)}
 .hu-inn{flex:1;min-width:0}
 .hu-topp{display:flex;align-items:baseline;gap:6px;cursor:default}
 .hu-topp[onclick]{cursor:pointer}
@@ -594,6 +606,52 @@ input,select,textarea{font-size:16px}
 .av-vokser{flex:1 1 auto}
 .av-vokser textarea{flex:1 1 auto;min-height:132px}
 .av-bunn,.av-serie,.av-feil{grid-column:1/-1}
+.av-etikett{
+  font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-soft);
+}
+.av-hint{font-size:var(--t-etikett);color:var(--ink-soft);font-weight:600;line-height:1.35}
+.av-hint[hidden]{display:none}
+.av-vedlegg{display:flex;flex-direction:column;gap:6px}
+.ved-liste{display:flex;flex-direction:column;gap:4px}
+.ved-tom{font-size:var(--t-meta);color:var(--ink-soft);font-style:italic}
+.ved-rad{
+  display:flex;align-items:center;gap:8px;
+  border:1px solid var(--line);border-radius:9px;padding:5px 8px;
+  font-size:var(--t-meta);
+}
+.ved-rad.ny{border-color:var(--gronn);background:rgba(62,124,90,.08)}
+.ved-rad.fjernet{opacity:.45}
+.ved-rad.fjernet .ved-navn{text-decoration:line-through}
+.ved-navn{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600}
+.ved-storr{color:var(--ink-soft);flex-shrink:0;font-variant-numeric:tabular-nums}
+.ved-fjern{
+  border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
+  font-size:var(--t-brod);line-height:1;padding:0 3px;border-radius:6px;flex-shrink:0;
+}
+.ved-fjern:active{background:rgba(44,62,80,.08)}
+/* Filvelgeren skal ikke synes, men den kan ikke vaere display:none -
+   da nekter Safari aa aapne den programmatisk. */
+.ved-skjult{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.knapp-vedlegg{
+  align-self:flex-start;border:1px dashed var(--line);background:transparent;
+  color:var(--ink-soft);font-family:'Archivo',sans-serif;font-size:var(--t-etikett);
+  font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:7px 14px;border-radius:999px;cursor:pointer;
+}
+.knapp-vedlegg:active{background:#F0F2F4}
+
+/* Vedlegg i detaljkortet: trykk laster ned. */
+.detalj-vedlegg{margin-top:14px;display:flex;flex-direction:column;gap:5px}
+.detalj-vedlegg .av-etikett{margin-bottom:2px}
+.ved-lenke{
+  display:flex;align-items:center;gap:8px;text-align:left;width:100%;
+  border:1px solid rgba(44,62,80,.16);background:rgba(255,255,255,.55);
+  border-radius:9px;padding:6px 9px;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);color:var(--ink);
+}
+.ved-lenke:active{filter:brightness(.96)}
+.ved-lenke[disabled]{cursor:default;opacity:.6}
 .av-bunn{margin-top:2px}
 @media(max-width:640px){
   .av-skjema{grid-template-columns:1fr}
@@ -669,6 +727,7 @@ input,select,textarea{font-size:16px}
           <label>Kalender<select class="hu-felt" id="avKal"></select></label>
           <label>Dato<input class="hu-felt" type="date" id="avDato"></label>
         </div>
+        <div class="av-hint" id="avKalHint" hidden></div>
         <div class="av-rad" id="avTider">
           <label>Fra<input class="hu-felt" type="time" id="avFra" step="300"></label>
           <label>Til<input class="hu-felt" type="time" id="avTil" step="300"></label>
@@ -682,6 +741,12 @@ input,select,textarea{font-size:16px}
         <label class="av-felt av-vokser">Notat
           <textarea class="hu-felt hu-omr" id="avNotat" placeholder="Valgfritt"></textarea>
         </label>
+        <div class="av-vedlegg">
+          <div class="av-etikett">Vedlegg</div>
+          <div class="ved-liste" id="avVedleggListe"></div>
+          <input type="file" id="avFil" multiple class="ved-skjult" onchange="valgteFiler(event)">
+          <button class="knapp-vedlegg" onclick="velgVedlegg()">Legg ved fil</button>
+        </div>
       </div>
       <div class="av-serie" id="avSerie" hidden>Del av en serie – endringen gjelder bare denne datoen.</div>
       <div class="av-feil" id="avFeil" hidden></div>
@@ -718,6 +783,7 @@ input,select,textarea{font-size:16px}
         </label>
       </div>
       <div class="hu-knapper av-bunn">
+        <button class="knapp-slett" id="huSlett" onclick="slettFraSkjema()" hidden>Slett</button>
         <button class="hu-avbryt" onclick="lukkHuskeSkjema()">Avbryt</button>
         <button class="knapp-gronn" id="huLagre" onclick="lagreHuske()">Legg til</button>
       </div>
@@ -1019,7 +1085,12 @@ async function graph(sti, valg){
     forsoek++;
   }
   const txt = await r.text();
-  if(!txt) return null;
+  if(!txt){
+    if(r.ok) return null;
+    const stum = new Error('Microsoft svarte ' + r.status);
+    stum.status = r.status;
+    throw stum;
+  }
   let d;
   try{ d = JSON.parse(txt); }catch(e){ throw new Error('Uventet svar fra Microsoft'); }
   if(!r.ok){
@@ -1201,7 +1272,7 @@ async function hentPlan(){
   const q = '?startDateTime=' + start.toISOString()
           + '&endDateTime=' + slutt.toISOString()
           + '&$orderby=start/dateTime&$top=100'
-          + '&$select=id,subject,isAllDay,start,end,location,body,type';
+          + '&$select=id,subject,isAllDay,start,end,location,body,type,hasAttachments';
 
   /* Maks tre samtidige kall, og en kalender som feiler skal ikke
      stilltiende bli borte — vi sier fra i stedet. */
@@ -1217,6 +1288,7 @@ async function hentPlan(){
             id: e.id,
             type: e.type || 'singleInstance',
             kalId: c.id,
+            harVedlegg: !!e.hasAttachments,
             tittel: e.subject || '(uten tittel)',
             heleDagen: !!e.isAllDay,
             start: new Date(e.start.dateTime + (e.start.timeZone === 'UTC' ? 'Z' : '')),
@@ -1283,6 +1355,7 @@ function tegnPlan(res){
       +   (meta ? '<div class="plan-meta">' + esc(meta) + '</div>' : '')
       + '</div>'
       + (e.notat ? '<div class="plan-notatprikk" title="Har notat">●</div>' : '')
+      + (e.harVedlegg ? '<span class="plan-klips" title="Har vedlegg">📎</span>' : '')
       + '</div>';
   }).join('');
 
@@ -1331,7 +1404,14 @@ function visDetalj(i){
     ? '<div class="detalj-notat">' + esc(e.notat) + '</div>'
     : '<div class="detalj-notat tom">Ingen notater.</div>';
 
+  if(e.harVedlegg){
+    html += '<div class="detalj-vedlegg" id="detaljVedlegg">'
+      + '<div class="av-etikett">Vedlegg</div>'
+      + '<div class="ved-tom">Henter …</div></div>';
+  }
+
   $('detaljInn').innerHTML = html;
+  if(e.harVedlegg) visDetaljVedlegg(i, e);
   $('detalj').hidden = false;
   HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = true; });
 
@@ -1356,6 +1436,106 @@ function lukkDetalj(){
 }
 
 /* ============================================================
+   Vedlegg
+   Graph gir vedleggene som base64 i selve svaret. Det holder til det
+   familien legger ved - bilder, PDF, en ukeplan fra skolen - saa lenge
+   filen er under grensen for et vanlig kall. Stoerre filer krever en
+   opplastingsoekt, og den sier vi heller fra om enn aa halvveis stoette.
+   ============================================================ */
+const VEDLEGG_MAKS = 3 * 1024 * 1024;
+const enc = encodeURIComponent;
+
+function storrelse(b){
+  const n = Number(b) || 0;
+  if(n < 1024) return n + ' B';
+  if(n < 1024 * 1024) return Math.round(n / 1024) + ' kB';
+  return (n / 1048576).toFixed(1).replace('.', ',') + ' MB';
+}
+function erFil(v){
+  return String(v && v['@odata.type'] || '').indexOf('fileAttachment') >= 0;
+}
+async function hentVedlegg(eventId){
+  const d = await graph('/me/events/' + enc(eventId)
+    + '/attachments?$select=id,name,contentType,size');
+  return (d && d.value) || [];
+}
+function filTilBase64(fil){
+  return new Promise(function(ok, nei){
+    const r = new FileReader();
+    r.onload  = function(){ ok(String(r.result).split(',')[1] || ''); };
+    r.onerror = function(){ nei(new Error('Kunne ikke lese ' + fil.name)); };
+    r.readAsDataURL(fil);
+  });
+}
+async function leggVedFil(eventId, fil){
+  const b64 = await filTilBase64(fil);
+  await graph('/me/events/' + enc(eventId) + '/attachments', {
+    method: 'POST',
+    body: {
+      '@odata.type': '#microsoft.graph.fileAttachment',
+      name: fil.name,
+      contentType: fil.type || 'application/octet-stream',
+      contentBytes: b64
+    }
+  });
+}
+
+/* ---- Nedlasting fra detaljkortet ---- */
+let detaljVedlegg = [];
+
+async function visDetaljVedlegg(i, e){
+  let liste;
+  try{
+    liste = await hentVedlegg(e.id);
+  }catch(err){
+    liste = null;
+  }
+  if(detaljIndeks !== i) return;              /* en annen avtale ble valgt */
+  const boks = $('detaljVedlegg');
+  if(!boks) return;
+  if(!liste){
+    boks.innerHTML = '<div class="av-etikett">Vedlegg</div>'
+      + '<div class="ved-tom">Kunne ikke hente vedleggene.</div>';
+    return;
+  }
+  detaljVedlegg = liste;
+  boks.innerHTML = '<div class="av-etikett">Vedlegg</div>'
+    + (liste.length
+        ? liste.map(function(v, n){
+            const fil = erFil(v);
+            return '<button class="ved-lenke"' + (fil ? '' : ' disabled')
+              + (fil ? ' onclick="lastNedVedlegg(' + n + ')"' : '') + '>'
+              + '<span class="ved-navn">' + esc(v.name || 'Vedlegg') + '</span>'
+              + '<span class="ved-storr">' + (fil ? storrelse(v.size) : 'kobling') + '</span>'
+              + '</button>';
+          }).join('')
+        : '<div class="ved-tom">Ingen vedlegg.</div>');
+}
+
+async function lastNedVedlegg(n){
+  const e = dagensAvtaler[detaljIndeks];
+  const v = detaljVedlegg[n];
+  if(!e || !v) return;
+  try{
+    const full = await graph('/me/events/' + enc(e.id) + '/attachments/' + enc(v.id));
+    const bin = atob(full.contentBytes || '');
+    const bytes = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([bytes],
+      {type: full.contentType || 'application/octet-stream'}));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = full.name || 'vedlegg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+  }catch(err){
+    alert('Fikk ikke hentet vedlegget: ' + err.message);
+  }
+}
+
+/* ============================================================
    Avtaler — opprette og endre
    Ett skjema for begge deler. Ny avtale skrives til den valgte
    kalenderen, endring gaar paa avtalen selv (PATCH /me/events/<id>).
@@ -1365,6 +1545,8 @@ function lukkDetalj(){
 let kalendere = [];            /* fylles av hentPlan() */
 let avtaleEndrer = null;       /* avtalen som endres, ellers null = ny */
 let avtaleAapen = false;
+let skjemaVedlegg = [];        /* vedlegg som ligger paa avtalen fra foer */
+let nyeFiler = [];             /* filer valgt i skjemaet, ikke lastet opp enda */
 
 /* Staar et skjema aapent, skal verken hvilen, sveipen eller den
    automatiske oppdateringen rive det bort under hendene paa noen. */
@@ -1375,6 +1557,31 @@ function nyAvtale(){ apneAvtale(null); }
 function redigerAvtale(){
   const e = dagensAvtaler[detaljIndeks];
   if(e) apneAvtale(e);
+}
+
+/* Flytting mellom kalendere finnes ikke i Graph. Vi lager avtalen paa
+   nytt i den nye kalenderen, tar med vedleggene, og sletter originalen
+   til slutt - i den rekkefoelgen, saa ingenting forsvinner om noe ryker
+   underveis. */
+async function flyttAvtale(e, nyKalId, kropp){
+  const ny = await graph('/me/calendars/' + enc(nyKalId) + '/events',
+                         {method:'POST', body:kropp});
+  if(!ny || !ny.id) throw new Error('Den nye avtalen ble ikke opprettet');
+  for(const v of skjemaVedlegg){
+    if(v.fjern || !v.fil) continue;
+    const full = await graph('/me/events/' + enc(e.id) + '/attachments/' + enc(v.id));
+    await graph('/me/events/' + enc(ny.id) + '/attachments', {
+      method: 'POST',
+      body: {
+        '@odata.type': '#microsoft.graph.fileAttachment',
+        name: full.name,
+        contentType: full.contentType || 'application/octet-stream',
+        contentBytes: full.contentBytes
+      }
+    });
+  }
+  await graph('/me/events/' + enc(e.id), {method:'DELETE'});
+  return ny.id;
 }
 
 /* Neste hele time, som utgangspunkt for en ny avtale i dag. */
@@ -1417,7 +1624,15 @@ function apneAvtale(e){
     return '<option value="' + esc(c.id) + '"' + (c.id === onsket ? ' selected' : '') + '>'
       + esc(c.navn) + '</option>';
   }).join('');
-  $('avKal').disabled = !!e;
+  /* Graph kan ikke flytte en avtale mellom kalendere. Vi lager den paa
+     nytt der i stedet - men det gaar bare paa en enkeltstaaende avtale,
+     ikke paa en enkeltdag i en serie. */
+  const serie = !!(e && e.type && e.type !== 'singleInstance');
+  $('avKal').disabled = serie;
+  $('avKalHint').hidden = !e;
+  $('avKalHint').textContent = serie
+    ? 'Avtalen hører til en serie og kan ikke flyttes til en annen kalender.'
+    : 'Bytter du kalender, lages avtalen på nytt der. Notat og vedlegg blir med.';
 
   const start = e ? e.start : dagenViser();
   $('avDato').value = datoNokkel(start);
@@ -1436,8 +1651,25 @@ function apneAvtale(e){
   $('avSted').value   = e ? (e.sted || '') : '';
   $('avNotat').value  = e ? (e.notat || '') : '';
 
-  $('avSerie').hidden = !(e && e.type && e.type !== 'singleInstance');
+  $('avSerie').hidden = !serie;
   $('avFeil').hidden = true;
+
+  /* Vedlegg: de som ligger der fra foer hentes i bakgrunnen, nye filer
+     samles opp og lastes opp naar avtalen lagres. */
+  skjemaVedlegg = [];
+  nyeFiler = [];
+  $('avFil').value = '';
+  tegnSkjemaVedlegg();
+  if(e && e.harVedlegg){
+    const mitt = e.id;
+    hentVedlegg(e.id).then(function(liste){
+      if(!avtaleAapen || !avtaleEndrer || avtaleEndrer.id !== mitt) return;
+      skjemaVedlegg = liste.map(function(v){
+        return {id:v.id, name:v.name, size:v.size, fil:erFil(v), fjern:false};
+      });
+      tegnSkjemaVedlegg();
+    }).catch(function(){});
+  }
 
   const lagre = $('avLagre');
   lagre.disabled = false;
@@ -1454,8 +1686,56 @@ function apneAvtale(e){
 function lukkAvtale(){
   avtaleAapen = false;
   avtaleEndrer = null;
+  skjemaVedlegg = [];
+  nyeFiler = [];
   $('avtaleBak').hidden = true;
   $('avtaleBoks').hidden = true;
+}
+
+function tegnSkjemaVedlegg(){
+  const boks = $('avVedleggListe');
+  if(!boks) return;
+  const rader = skjemaVedlegg.map(function(v, i){
+    return '<div class="ved-rad' + (v.fjern ? ' fjernet' : '') + '">'
+      + '<span class="ved-navn">' + esc(v.name || 'Vedlegg') + '</span>'
+      + '<span class="ved-storr">' + (v.fil ? storrelse(v.size) : 'kobling') + '</span>'
+      + '<button class="ved-fjern" onclick="vekslFjernVedlegg(' + i + ')" '
+      +   'aria-label="' + (v.fjern ? 'Angre' : 'Fjern') + '">'
+      +   (v.fjern ? '↺' : '×') + '</button>'
+      + '</div>';
+  }).concat(nyeFiler.map(function(f, i){
+    return '<div class="ved-rad ny">'
+      + '<span class="ved-navn">' + esc(f.name) + '</span>'
+      + '<span class="ved-storr">' + storrelse(f.size) + '</span>'
+      + '<button class="ved-fjern" onclick="fjernNyFil(' + i + ')" aria-label="Fjern">×</button>'
+      + '</div>';
+  }));
+  boks.innerHTML = rader.length ? rader.join('') : '<div class="ved-tom">Ingen vedlegg.</div>';
+}
+
+function velgVedlegg(){ $('avFil').click(); }
+
+function valgteFiler(ev){
+  const filer = Array.from(ev.target.files || []);
+  const forStore = filer.filter(function(f){ return f.size > VEDLEGG_MAKS; });
+  nyeFiler = nyeFiler.concat(filer.filter(function(f){ return f.size <= VEDLEGG_MAKS; }));
+  ev.target.value = '';
+  tegnSkjemaVedlegg();
+  if(forStore.length){
+    avtaleFeil('For stor til å legges ved (grensen er 3 MB): '
+      + forStore.map(function(f){ return f.name; }).join(', '));
+  }
+}
+
+function fjernNyFil(i){
+  nyeFiler.splice(i, 1);
+  tegnSkjemaVedlegg();
+}
+/* Fjerning skjer foerst naar avtalen lagres - da kan man ombestemme seg. */
+function vekslFjernVedlegg(i){
+  if(!skjemaVedlegg[i]) return;
+  skjemaVedlegg[i].fjern = !skjemaVedlegg[i].fjern;
+  tegnSkjemaVedlegg();
 }
 
 /* Hele dagen: klokkeslettene har ingen mening da, saa de gaar i hvilemodus
@@ -1506,7 +1786,8 @@ async function lagreAvtale(){
      Outlook har HTML-notat, og aa skrive tilbake ren tekst uten grunn
      ville strippet formateringen deres. */
   const notat = $('avNotat').value || '';
-  if(!e || notat.trim() !== String(e.notat || '').trim()){
+  const flytter = !!e && !$('avKal').disabled && $('avKal').value !== e.kalId;
+  if(!e || flytter || notat.trim() !== String(e.notat || '').trim()){
     kropp.body = { contentType: 'text', content: notat };
   }
 
@@ -1516,11 +1797,28 @@ async function lagreAvtale(){
   lagre.textContent = 'Lagrer …';
 
   try{
-    if(e){
-      await graph('/me/events/' + encodeURIComponent(e.id), {method:'PATCH', body:kropp});
+    let malId;
+    if(!e){
+      const ny = await graph('/me/calendars/' + enc($('avKal').value) + '/events',
+                             {method:'POST', body:kropp});
+      malId = ny && ny.id;
+    }else if(flytter){
+      malId = await flyttAvtale(e, $('avKal').value, kropp);
     }else{
-      await graph('/me/calendars/' + encodeURIComponent($('avKal').value) + '/events',
-                  {method:'POST', body:kropp});
+      await graph('/me/events/' + enc(e.id), {method:'PATCH', body:kropp});
+      malId = e.id;
+      /* Vedlegg som er merket bort fjernes foerst naar det lagres. */
+      for(const v of skjemaVedlegg){
+        if(v.fjern) await graph('/me/events/' + enc(e.id) + '/attachments/' + enc(v.id),
+                                {method:'DELETE'});
+      }
+    }
+    if(malId && nyeFiler.length){
+      try{
+        for(const f of nyeFiler) await leggVedFil(malId, f);
+      }catch(vf){
+        alert('Avtalen ble lagret, men et vedlegg kom ikke med: ' + vf.message);
+      }
     }
     lukkAvtale();
     /* Vis dagen avtalen havnet paa, slik at man ser resultatet. */
@@ -2019,10 +2317,8 @@ function huskeRad(m){
         ? '<button class="hu-knapp hu-hake" onclick="event.stopPropagation(); vekslFerdig(\'' + esc(m.id) + '\')" '
           + 'aria-label="' + (ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
         : '')
-    +     '<button class="hu-knapp" onclick="event.stopPropagation(); rediger(\'' + esc(m.id) + '\')" '
+    +     '<button class="hu-knapp hu-endre" onclick="event.stopPropagation(); rediger(\'' + esc(m.id) + '\')" '
     +       'aria-label="Endre">✎</button>'
-    +     '<button class="hu-knapp" onclick="event.stopPropagation(); slettHuske(\'' + esc(m.id) + '\')" '
-    +       'aria-label="Slett">×</button>'
     +   '</div>'
     + '</div>';
 }
@@ -2126,6 +2422,8 @@ function visHuskeSkjema(omfang, m){
     return '<option value="' + i + '"' + (i === nr ? ' selected' : '') + '>' + esc(n) + '</option>';
   }).join('');
 
+  $('huSlett').hidden = !m;
+
   const lagre = $('huLagre');
   lagre.textContent = m ? 'Lagre' : 'Legg til';
   lagre.className = m ? 'knapp-endre' : 'knapp-gronn';
@@ -2199,6 +2497,17 @@ async function lagreHuske(){
   }catch(e){
     alert('Fikk ikke lagret merknaden: ' + e.message);
   }
+}
+
+/* Sletting ligger bak endre-knappen, ikke i lista - der er den for lett
+   aa treffe ved et uhell. */
+async function slettFraSkjema(){
+  const id = huskeSkjema && huskeSkjema.id;
+  if(!id) return;
+  const m = (huskeliste || []).find(function(x){ return x.id === id; });
+  if(!confirm('Slette «' + ((m && m.overskrift) || 'merknaden') + '»?')) return;
+  lukkHuskeSkjema();
+  await slettHuske(id);
 }
 
 async function slettHuske(id){
