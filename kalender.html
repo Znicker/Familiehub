@@ -142,9 +142,6 @@ body{
   background:none;box-shadow:none;padding:0;
 }
 .side{display:flex;flex-direction:column;gap:14px;min-height:0}
-/* Lista har knapperaden over seg. Hoeyrekolonnen trekkes ned like mye,
-   saa toppen ligger i flukt med foerste dato. */
-.grid.liste .side{padding-top:var(--mnav-h,0px)}
 .side .panel{display:flex;flex-direction:column;min-height:0}
 .side .scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
 /* Rundingen skal ligge inntil kanten i sidekolonnen, men holde seg
@@ -155,19 +152,10 @@ body{
 .side-cals{flex:1 1 45%}
 
 /* ---------- Månedsnavigasjon ---------- */
-.mnav{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-bottom:12px;flex-shrink:0}
-.mnav-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-/* Tittel til venstre, kalendervelger til hoeyre paa samme linje */
-.mnav-topp{display:flex;align-items:center;gap:14px}
+.mnav{display:flex;flex-direction:column;align-items:stretch;gap:10px;flex-shrink:0}
+/* Tittel, visningsvelger og kalenderinitialer paa samme linje */
+.mnav-topp{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .mnav-title{font-size:var(--t-stor);font-weight:700;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
-.mnav-btns{margin-left:auto;display:flex;gap:8px}
-.mnav-btns button{
-  height:34px;min-width:34px;padding:0 12px;border-radius:999px;
-  border:1px solid var(--line);background:var(--bg-2);color:var(--ink);
-  font-family:'Archivo',sans-serif;font-size:var(--t-brod);cursor:pointer;line-height:1;
-}
-.mnav-btns button.txt{font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-.mnav-btns button:active{transform:scale(.94)}
 
 /* ---------- Kalenderrutenett ---------- */
 .cal{
@@ -802,6 +790,19 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .fab:active{transform:scale(.95)}
 .fab.ny{background:var(--handling-ny);font-size:var(--t-pil);line-height:1}
 .fab.blaa{background:var(--blaa)}
+/* I dag: dagens dato med den samme haandtegnede ringen rundt */
+.idag-fab{font-family:'Archivo',sans-serif}
+.idag-tall{
+  position:relative;display:flex;align-items:center;justify-content:center;
+  min-width:22px;height:22px;
+  font-size:var(--t-meta);font-weight:700;line-height:1;color:#fff;
+}
+.idag-tall::before{
+  content:'';position:absolute;left:-6px;right:-6px;top:-6px;bottom:-6px;
+  pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M73 17 C74 18 78 21 80 23 C83 25 85 27 87 30 C89 32 90 35 92 38 C93 41 94 44 94 47 C95 50 95 53 94 56 C94 59 93 63 92 66 C91 69 89 72 88 74 C86 77 83 79 81 81 C78 83 75 85 73 87 C70 88 66 89 63 90 C60 91 57 92 53 92 C50 92 47 92 43 91 C40 91 37 90 34 89 C31 88 28 86 25 84 C22 83 20 81 17 78 C15 76 13 73 12 71 C10 68 8 65 8 62 C7 59 6 56 6 53 C6 50 6 47 6 44 C7 41 8 38 9 35 C11 32 13 29 15 27 C17 24 19 22 22 20 C24 18 27 17 30 15 C33 14 36 13 39 12 C42 11 46 11 49 11 C52 11 56 11 59 12 C62 12 65 13 68 15 C71 17 73 19 75 21 C77 23 79 26 80 28 C81 31 81 35 82 37' fill='none' stroke='%23F5453C' stroke-width='5.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:center;background-size:100% 100%;
+}
 /* Oppdater: foerste trykk utvider og viser tidspunktet, andre trykk henter */
 .fab.aapen{
   width:auto;border-radius:999px;padding:0 16px;gap:9px;
@@ -911,8 +912,6 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .fs-logo:active{transform:scale(.94)}
 .fs-logo img{width:100%;height:auto;display:block;border-radius:50%}
-#fsBtn{display:inline-flex;align-items:center;justify-content:center;padding:0 11px}
-#fsBtn svg{display:block}
 
 .shell.fullscreen .top{display:none}
 .shell.fullscreen .side{display:none}
@@ -1068,29 +1067,21 @@ input,select,textarea{font-size:16px}
     </section>
   </div>
 
+  <div class="mnav" id="mnav" hidden>
+    <div class="mnav-topp">
+      <div class="mnav-title" id="monthTitle">—</div>
+      <div class="seg" id="seg">
+        <button data-m="month" class="on" onclick="settVisning('month')">Måned</button>
+        <button data-m="week" onclick="settVisning('week')">Uke</button>
+        <button data-m="day" onclick="settVisning('day')">Dag</button>
+        <button data-m="liste" onclick="settVisning('liste')">Liste</button>
+      </div>
+      <div class="hurtigkal" id="hurtigKal" hidden></div>
+    </div>
+  </div>
   <div class="grid" id="app" hidden>
 
     <section class="panel cal-panel">
-      <div class="mnav">
-        <div class="mnav-topp">
-          <div class="mnav-title" id="monthTitle">—</div>
-          <div class="hurtigkal" id="hurtigKal" hidden></div>
-        </div>
-        <div class="mnav-row">
-        <div class="seg" id="seg">
-          <button data-m="month" class="on" onclick="settVisning('month')">Måned</button>
-          <button data-m="week" onclick="settVisning('week')">Uke</button>
-          <button data-m="day" onclick="settVisning('day')">Dag</button>
-          <button data-m="liste" onclick="settVisning('liste')">Liste</button>
-        </div>
-        <div class="mnav-btns">
-          <button onclick="bla(-1)" title="Forrige">&lsaquo;</button>
-          <button class="txt" onclick="goToday()">I dag</button>
-          <button onclick="bla(1)" title="Neste">&rsaquo;</button>
-          <button id="fsBtn" onclick="toggleFull()" title="Fullskjerm" aria-label="Fullskjerm"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
-        </div>
-        </div>
-      </div>
       <div class="cal" id="cal"></div>
       <div class="tg" id="tg" hidden></div>
       <div class="plan" id="plan" hidden></div>
@@ -1123,6 +1114,9 @@ input,select,textarea{font-size:16px}
   <button class="fab blaa" id="refreshBtn" onclick="oppdaterTrykk()" title="Oppdater" aria-label="Oppdater">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4.5V11h-6.5"/></svg>
     <span class="fab-tekst" id="refreshTekst"></span>
+  </button>
+  <button class="fab blaa idag-fab" onclick="goToday()" title="I dag" aria-label="I dag">
+    <span class="idag-tall" id="idagTall">–</span>
   </button>
 </div>
 
@@ -1517,8 +1511,6 @@ function toggleAuth(){ (S.token || S.refresh) ? loggUt() : login(); }
 function settFull(på){
   const shell = document.querySelector('.shell');
   shell.classList.toggle('fullscreen', på);
-  const btn = $('fsBtn');
-  if(btn) btn.title = på ? 'Avslutt fullskjerm' : 'Fullskjerm';
   const logo = $('fsLogo');
   if(på && logo){
     const kilde = document.querySelector('.brand-icon img');
@@ -2223,6 +2215,7 @@ function render(){
   $('app').hidden  = !inn;
   $('caldrop').hidden = !inn;
   $('bottomBar').hidden = !inn;
+  $('mnav').hidden = !inn;
   $('hurtigKal').hidden = !inn;
   if(!inn) return;
 
@@ -2241,13 +2234,6 @@ function render(){
   const bred = !liste;
   $('app').classList.toggle('uten-side', bred);
   $('app').classList.toggle('liste', liste);
-  if(liste){
-    const panel = document.querySelector('.cal-panel');
-    const pl = $('plan');
-    if(panel && pl){
-      $('app').style.setProperty('--mnav-h', (pl.offsetTop - panel.offsetTop) + 'px');
-    }
-  }
   $('cal').hidden  = liste || S.modus !== 'month';
   $('tg').hidden   = liste || S.modus === 'month';
   $('plan').hidden = !liste;
@@ -2267,6 +2253,8 @@ function render(){
   else if(dagPanelEl) tegnDagPanel();   /* holder en aapen popup i takt */
   renderCalList();
   renderHurtigKal();
+  const it = $('idagTall');
+  if(it) it.textContent = new Date().getDate();
 }
 
 /* ============================================================
