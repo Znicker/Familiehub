@@ -498,9 +498,6 @@
     width:18px; height:18px; display:flex; align-items:center; justify-content:center;
     font-size:var(--t-meta); padding:0; flex-shrink:0;
   }
-  .topbar-back{
-    width:40px; height:40px; margin:-4px 0 -4px -8px; font-size:var(--t-pil); background:none; border:none; color:var(--ink); cursor:pointer;
-  }
   .home-hero{
     display:flex; flex-direction:column; align-items:center; text-align:center;
     padding:8px 0 2px; position:relative; z-index:1;
@@ -1757,7 +1754,6 @@ input,select,textarea{font-size:16px}
 <body>
 
 <div class="topbar" id="topbar">
-  <button class="icon-btn topbar-back" id="topbar-back" onclick="goHome()" style="display:none;" title="Tilbake">←</button>
   <div class="topbar-brand">
   </div>
 </div>
@@ -2676,6 +2672,35 @@ function makeThumbnail(dataUrl, maxDim){
 }
 
 /* ---------------- View switching ---------------- */
+/* ---- Visningene i nettleserhistorikken ----
+   Visningene byttes uten sidelasting. Uten dette legger de ikke igjen noe i
+   historikken, og tilbakesveipen paa iPhone forlater hele appen i stedet for
+   aa gaa ett steg tilbake. Naar visningene foerst ligger der, tar den samme
+   sveipen deg videre ut til sida du kom fra - forsiden eller Kjoekken dash -
+   fordi de er ekte sidelastinger. Paa PC gjoer nettleserens tilbakepil det
+   samme. Ingenting av dette vises paa skjermen. */
+const HJEM = 'view-home';
+let fraHistorikk = false;      /* sann bare mens en popstate behandles */
+let historikkStartet = false;
+
+function huskVisning(visning){
+  const s = { fh:true, visning };
+  /* Foerste visning ERSTATTER oppfoeringen sida ble aapnet med. Legges den
+     til i stedet, maa man tilbake to ganger for aa komme seg ut av appen. */
+  if(historikkStartet) history.pushState(s, '');
+  else history.replaceState(s, '');
+  historikkStartet = true;
+}
+
+window.addEventListener('popstate', e => {
+  const v = (e.state && e.state.fh) ? e.state.visning : HJEM;
+  /* Flagget hindrer at tilbakesteget selv legger igjen en ny oppfoering -
+     uten det kommer man aldri ut, bare fram og tilbake mellom to visninger. */
+  fraHistorikk = true;
+  if(v === HJEM) goHome(); else showView(v);
+  fraHistorikk = false;
+});
+
 function showView(id){
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   $(id).classList.add('active');
@@ -2685,25 +2710,11 @@ function showView(id){
   document.body.style.overscrollBehavior = '';
 
   const topbar = $('topbar');
-  const backBtn = $('topbar-back');
-  /* Tittelen i toppbaren finnes ikke i markupen. Den sto i vakten her, og
-     siden den alltid var null ble hele blokka hoppet over - tilbakeknappen
-     viste seg aldri, og toppbaren fikk aldri subview-stilen. */
-  if(topbar && backBtn){
-    if(id === 'view-home'){
-      topbar.classList.remove('subview');
-      backBtn.style.display = 'none';
-    }else{
-      topbar.classList.add('subview');
-      /* Skjemaet har sine egne to knapper oeverst - en pil i tillegg ville
-         vaert en tredje vei ut, uten aa si om den lagrer. */
-      backBtn.style.display = (id === 'view-add') ? 'none' : 'flex';
-      backBtn.onclick = goHome;
-    }
-  }
+  if(topbar) topbar.classList.toggle('subview', id !== 'view-home');
   document.body.classList.toggle('vis-detalj', id === 'view-detail');
   updateTopbarHeightVar();
   window.scrollTo(0,0);
+  if(!fraHistorikk) huskVisning(id);
 }
 function updateTopbarHeightVar(){
   const tb = $('topbar');
@@ -7713,7 +7724,9 @@ function settBusy(på){
   try{
     const rett = new URLSearchParams(location.search).get('rett');
     if(rett){
-      history.replaceState({}, '', location.pathname);
+      /* Bare adressen skal ryddes - tilstanden maa staa. Med {} her mistet
+         oppfoeringen fh-merket, og et tilbakesteg fant ingen visning. */
+      history.replaceState(history.state, '', location.pathname);
       await openRecipe(rett);
     }
   }catch(e){ console.warn('Kunne ikke aapne oppskrift fra lenke:', e); }

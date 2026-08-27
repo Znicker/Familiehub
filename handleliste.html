@@ -172,10 +172,6 @@
     font-family:'Archivo',sans-serif; font-size:16px; background:#fff; color:var(--ink);
   }
 
-  .topbar-back{
-    width:40px; height:40px; margin:-4px 0 -4px -8px; font-size:var(--t-pil);
-    background:none; border:none; color:var(--ink); cursor:pointer;
-  }
   .topbar h1{
     font-size:var(--t-brod); color:var(--ink); text-transform:uppercase; text-align:center;
     letter-spacing:0.04em; line-height:1.15;
@@ -421,18 +417,6 @@
      og kolonner, ikke med hoeyde. Bredden slaas paa av showView(), for
      resten av sidene skal fortsatt vaere en smal spalte. */
   body.vis-add main{ max-width:900px; }
-  /* Tilbakepila tok en hel linje for seg selv over kortet. Er det bredde
-     nok, staar den heller rett til venstre for kortet, utenfor det - og
-     linja den laa paa gaar til skjemaet. Paa smalere skjermer er det
-     ingen plass ved siden av, og topplinja staar som foer. */
-  @media (min-width:980px){
-    body.vis-add .topbar{
-      position:absolute; z-index:30;
-      top:18px; left:calc((100vw - 900px) / 2 - 24px);
-      padding:0; background:none; box-shadow:none;
-    }
-    body.vis-add .topbar-back{ margin:0; }
-  }
   .add-grid{ display:grid; gap:0 18px; grid-template-columns:1fr; }
   @media (min-width:640px){ .add-grid{ grid-template-columns:1fr 1fr; } }
   @media (min-width:980px){ .add-grid{ grid-template-columns:1fr 1fr 1fr; } }
@@ -660,7 +644,6 @@ input,select,textarea{font-size:16px}
 <body>
 
 <div class="topbar" id="topbar">
-  <button class="topbar-back" id="topbar-back" onclick="goHome()" style="display:none;" title="Tilbake">←</button>
   <div class="topbar-brand" id="topbar-brand"></div>
   <div class="topbar-home-actions" id="topbar-home-actions">
     <!-- Import ligger som egen knapp i panelet under -->
@@ -5894,6 +5877,35 @@ function tegnSeksjon(c, varer, erHandlet, utenType, handlemodus){
 /* ============================================================
    Navigasjon
    ============================================================ */
+/* ---- Visningene i nettleserhistorikken ----
+   Visningene byttes uten sidelasting. Uten dette legger de ikke igjen noe i
+   historikken, og tilbakesveipen paa iPhone forlater hele appen i stedet for
+   aa gaa ett steg tilbake. Naar visningene foerst ligger der, tar den samme
+   sveipen deg videre ut til sida du kom fra - forsiden eller Kjoekken dash -
+   fordi de er ekte sidelastinger. Paa PC gjoer nettleserens tilbakepil det
+   samme. Ingenting av dette vises paa skjermen. */
+const HJEM = 'home';
+let fraHistorikk = false;      /* sann bare mens en popstate behandles */
+let historikkStartet = false;
+
+function huskVisning(visning){
+  const s = { fh:true, visning };
+  /* Foerste visning ERSTATTER oppfoeringen sida ble aapnet med. Legges den
+     til i stedet, maa man tilbake to ganger for aa komme seg ut av appen. */
+  if(historikkStartet) history.pushState(s, '');
+  else history.replaceState(s, '');
+  historikkStartet = true;
+}
+
+window.addEventListener('popstate', e => {
+  const v = (e.state && e.state.fh) ? e.state.visning : HJEM;
+  /* Flagget hindrer at tilbakesteget selv legger igjen en ny oppfoering -
+     uten det kommer man aldri ut, bare fram og tilbake mellom to visninger. */
+  fraHistorikk = true;
+  if(v === HJEM) goHome(); else showView(v);
+  fraHistorikk = false;
+});
+
 function showView(navn){
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + navn).classList.add('active');
@@ -5901,10 +5913,10 @@ function showView(navn){
   /* Bare skjemaet for ny vare bruker den brede spalten. */
   document.body.classList.toggle('vis-add', navn === 'add');
   document.getElementById('topbar').classList.toggle('subview', !hjem);
-  document.getElementById('topbar-back').style.display = hjem ? 'none' : 'flex';
   document.getElementById('topbar-home-actions').style.display = hjem ? 'flex' : 'none';
   document.getElementById('bottom-bar').style.display = hjem ? 'flex' : 'none';
   window.scrollTo(0, 0);
+  if(!fraHistorikk) huskVisning(navn);
 }
 
 function goHome(){
