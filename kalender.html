@@ -1796,6 +1796,11 @@ function toggleFull(){
    ============================================================ */
 const TZ = 'Europe/Oslo';
 
+/* Id-ene fra Graph er base64-aktige og kan inneholde tegn som deler opp
+   en URL-sti. Dashboard har alltid kodet dem; kalender limte dem rett inn,
+   og det var derfor sletting av vedlegg feilet i det stille. */
+const enc = encodeURIComponent;
+
 async function graph(path, method, payload){
   const t = await validToken();
   if(!t) throw new Error('Ikke innlogget');
@@ -3339,7 +3344,7 @@ function vedleggRad(navn, str, fjern, aapne){
 async function lastVedlegg(eventId){
   vedleggFinnes = [];
   try{
-    const d = await graph('/me/events/' + eventId + '/attachments?$select=id,name,size');
+    const d = await graph('/me/events/' + enc(eventId) + '/attachments?$select=id,name,size');
     vedleggFinnes = (d.value || []).map(function(a){
       return { id:a.id, name:a.name, size:a.size };
     });
@@ -3356,7 +3361,7 @@ function aapneVedlegg(v, knapp){
 async function aapneVedleggFra(eventId, v, knapp){
   if(knapp) knapp.disabled = true;
   try{
-    const a = await graph('/me/events/' + eventId + '/attachments/' + v.id);
+    const a = await graph('/me/events/' + enc(eventId) + '/attachments/' + enc(v.id));
     if(!a.contentBytes) throw new Error('Vedlegget kunne ikke hentes.');
     if(!a.name) a.name = v.name;
     /* Bilder og PDF vises i appen, resten lastes ned */
@@ -3420,7 +3425,7 @@ function klipsHtml(e){
 /* Henter innholdet foerst hvis det ikke fulgte med i lista */
 async function hentOgTegn(eventId, a, boks){
   try{
-    const d = await graph('/me/events/' + eventId + '/attachments/' + a.id);
+    const d = await graph('/me/events/' + enc(eventId) + '/attachments/' + enc(a.id));
     if(!d.contentBytes) return;
     tegnForhaand(d, boks);
   }catch(err){ /* uten innhold vises det ingenting - bedre enn en feil */ }
@@ -3443,7 +3448,7 @@ async function vedleggIVisning(e){
   boks.hidden = false;
   boks.textContent = 'Henter vedlegg …';
   try{
-    const d = await graph('/me/events/' + e.id + '/attachments');
+    const d = await graph('/me/events/' + enc(e.id) + '/attachments');
     if(min !== vedleggOekt) return;      /* en annen avtale er aapnet */
     const liste = d.value || [];
     boks.innerHTML = '';
@@ -3492,14 +3497,23 @@ async function vedleggIVisning(e){
 async function lagreVedlegg(eventId){
   while(vedleggSlett.length){
     const id = vedleggSlett[0];
-    try{ await graph('/me/events/' + eventId + '/attachments/' + id, 'DELETE'); }
-    catch(err){ /* alt fjernet fra foer - ikke noe aa gjoere */ }
+    try{
+      await graph('/me/events/' + enc(eventId) + '/attachments/' + enc(id), 'DELETE');
+    }catch(err){
+      /* 404 betyr at vedlegget alt er borte - da er jobben gjort. Alt
+         annet er en ekte feil og skal fram. Foer svelget denne blokka
+         alle feil, saa en mislykket sletting saa ut som en vellykket:
+         vinduet lukket seg, og fila laa der fortsatt. */
+      if(!/404|not ?found|finnes ikke/i.test(err.message || '')){
+        throw new Error('Kunne ikke fjerne et vedlegg: ' + (err.message || 'ukjent feil'));
+      }
+    }
     vedleggSlett.shift();
   }
   while(vedleggNye.length){
     const f = vedleggNye[0];
     const data = await filTilBase64(f);
-    await graph('/me/events/' + eventId + '/attachments', 'POST', {
+    await graph('/me/events/' + enc(eventId) + '/attachments', 'POST', {
       '@odata.type': '#microsoft.graph.fileAttachment',
       name: f.name,
       contentType: f.type || 'application/octet-stream',
@@ -3520,10 +3534,10 @@ async function lagreAvtale(){
   try{
     let id;
     if(redigerer){
-      await graph('/me/events/' + redigerer.id, 'PATCH', p);
+      await graph('/me/events/' + enc(redigerer.id), 'PATCH', p);
       id = redigerer.id;
     } else {
-      const laget = await graph('/me/calendars/' + $('fCal').value + '/events', 'POST', p);
+      const laget = await graph('/me/calendars/' + enc($('fCal').value) + '/events', 'POST', p);
       id = laget && laget.id;
     }
     if(id && (vedleggNye.length || vedleggSlett.length)){
@@ -3546,7 +3560,7 @@ async function slettAvtale(){
 
   $('btnSlett').disabled = true;
   try{
-    await graph('/me/events/' + redigerer.id, 'DELETE');
+    await graph('/me/events/' + enc(redigerer.id), 'DELETE');
     lukk();
     await refresh();
   }catch(err){
