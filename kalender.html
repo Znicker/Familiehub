@@ -156,7 +156,9 @@ body{
 /* ---------- Månedsnavigasjon ---------- */
 .mnav{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-bottom:12px;flex-shrink:0}
 .mnav-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.mnav-title{font-size:var(--t-stor);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+/* Tittel til venstre, kalendervelger til hoeyre paa samme linje */
+.mnav-topp{display:flex;align-items:center;gap:14px}
+.mnav-title{font-size:var(--t-stor);font-weight:700;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
 .mnav-btns{margin-left:auto;display:flex;gap:8px}
 .mnav-btns button{
   height:34px;min-width:34px;padding:0 12px;border-radius:999px;
@@ -732,15 +734,16 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
    Initialrundingene langs hoeyre skjermkant, rett under toppen. Trykk
    paa en for aa se bare den, trykk paa flere for aa legge dem til. */
 .hurtigkal{
-  display:flex;flex-wrap:wrap;justify-content:flex-end;align-content:flex-start;
-  gap:6px;margin-bottom:8px;
-  /* To rekker: hoeyden holder akkurat to rader med rundinger */
-  max-height:62px;overflow:hidden;
+  flex:1;min-width:0;
+  display:flex;flex-wrap:wrap;justify-content:flex-end;align-content:center;
+  gap:6px;
+  /* To rekker med rundinger */
+  max-height:70px;overflow:hidden;
 }
 .hk-ini{
-  width:26px;height:26px;border-radius:50%;border:2px solid transparent;
+  width:31px;height:31px;border-radius:50%;border:2px solid transparent;
   padding:0;flex-shrink:0;cursor:pointer;color:#fff;
-  font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
   display:flex;align-items:center;justify-content:center;line-height:1;
   transition:opacity .12s ease,transform .12s ease;
 }
@@ -749,7 +752,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .hk-ini.av{opacity:.28}
 .hk-ini.valgt{border-color:var(--ink)}
 .hk-alle{
-  height:26px;padding:0 10px;border-radius:999px;flex-shrink:0;cursor:pointer;
+  height:31px;padding:0 12px;border-radius:999px;flex-shrink:0;cursor:pointer;
   border:1.5px solid var(--line);background:var(--paper);color:var(--ink-soft);
   font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
   letter-spacing:.06em;
@@ -927,6 +930,14 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .pu-kol.helligdag{background:rgba(180,68,58,.08)}
   .pu-kol.idag{background:rgba(184,217,71,.10)}
   .pu-kol.rolig{opacity:.55}          /* rolige dager skal faktisk se rolige ut */
+  .pu-ev.skjult{display:none}
+  .pu-mer-lapp{
+    border:1px dashed var(--line);background:none;color:var(--ink-soft);
+    border-radius:9px;padding:5px 7px;cursor:pointer;width:100%;
+    font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
+    text-align:center;letter-spacing:.03em;
+  }
+  .pu-mer-lapp:active{background:var(--bg-2)}
 
   /* Fyll og rammefarge settes i JS fra kalenderfargen. */
   .pu-ev{
@@ -1003,8 +1014,10 @@ input,select,textarea{font-size:16px}
 
     <section class="panel cal-panel">
       <div class="mnav">
-        <div class="mnav-title" id="monthTitle">—</div>
-        <div class="hurtigkal" id="hurtigKal" hidden></div>
+        <div class="mnav-topp">
+          <div class="mnav-title" id="monthTitle">—</div>
+          <div class="hurtigkal" id="hurtigKal" hidden></div>
+        </div>
         <div class="mnav-row">
         <div class="seg" id="seg">
           <button data-m="month" class="on" onclick="settVisning('month')">Måned</button>
@@ -3026,6 +3039,64 @@ function renderUkePlan(dager){
   scroll.appendChild(rad);
   wrap.appendChild(scroll);
   tg.appendChild(wrap);
+
+  /* Kolonner som er fulle skal ikke dytte innholdet nedover. Det som
+     ikke faar plass skjules bak "+N avtaler", og kommer fram naar man
+     ruller - da er det plass til det. */
+  requestAnimationFrame(function(){ klippKolonner(scroll); });
+}
+
+function klippKolonner(scroll){
+  if(!scroll || !scroll.isConnected) return;
+  const plass = scroll.clientHeight;
+  if(!plass) return;
+
+  scroll.querySelectorAll('.pu-kol').forEach(function(kol){
+    // Rydd bort en eventuell tidligere merkelapp
+    const gammel = kol.querySelector('.pu-mer-lapp');
+    if(gammel) gammel.remove();
+    kol.querySelectorAll('.skjult').forEach(function(el){ el.classList.remove('skjult'); });
+
+    const barn = Array.prototype.slice.call(kol.children);
+    if(barn.length < 2) return;
+
+    const stil = getComputedStyle(kol);
+    const luft = parseFloat(stil.rowGap || stil.gap || 0) || 0;
+    const tak = plass - parseFloat(stil.paddingTop) - parseFloat(stil.paddingBottom) - 22;
+
+    let brukt = 0, synlige = 0;
+    for(let i = 0; i < barn.length; i++){
+      const h = barn[i].offsetHeight + (i ? luft : 0);
+      if(brukt + h > tak && synlige > 0) break;
+      brukt += h; synlige++;
+    }
+    if(synlige >= barn.length) return;
+
+    for(let i = synlige; i < barn.length; i++) barn[i].classList.add('skjult');
+
+    const antall = barn.length - synlige;
+    const lapp = document.createElement('button');
+    lapp.className = 'pu-mer-lapp';
+    lapp.textContent = '+' + antall + (antall === 1 ? ' avtale' : ' avtaler');
+    lapp.onclick = function(ev){ ev.stopPropagation(); visAlleIKolonne(kol); };
+    kol.appendChild(lapp);
+  });
+
+  /* Ruller man nedover, er det plass til resten - da vises alt */
+  if(!scroll.dataset.lytter){
+    scroll.dataset.lytter = '1';
+    scroll.addEventListener('scroll', function(){
+      if(scroll.scrollTop > 4){
+        scroll.querySelectorAll('.pu-kol').forEach(visAlleIKolonne);
+      }
+    }, {passive:true});
+  }
+}
+
+function visAlleIKolonne(kol){
+  const lapp = kol.querySelector('.pu-mer-lapp');
+  if(lapp) lapp.remove();
+  kol.querySelectorAll('.skjult').forEach(function(el){ el.classList.remove('skjult'); });
 }
 
 /* Fire visninger: Maaned (rutenett), Uke (kolonner), Dag (kolonner) og
