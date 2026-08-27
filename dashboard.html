@@ -32,10 +32,14 @@
 
   --ink:#2C3E50;
   --ink-soft:#7A8899;
-  /* Handlingsfarger: groenn = opprette, oransje = endre. */
-  --gronn:#3E7C5A;
-  --oransje:#C08A2E;
-  --rod:#B4443A;
+  /* Handlingsfarger, samme verdier som kalender, handleliste og
+     oppskrifter: groenn skaper, oransje endrer, roedt sletter. */
+  --gronn:#4F8F5F;
+  --gronn-mork:#427A4F;
+  --oransje:#B8873A;
+  --oransje-mork:#9E7230;
+  --rod:#A64D3C;
+  --bg-2:#EDF3F8;
   --paper:#FFFFFF;
   --line:#E4E8EC;
   --lime:#C8E64B;
@@ -318,11 +322,26 @@ body{
   -webkit-tap-highlight-color:transparent;
 }
 .knapp-gronn{background:var(--gronn)}
+.knapp-gronn:active{background:var(--gronn-mork)}
 .knapp-endre{background:var(--oransje);margin-left:auto}
+.knapp-endre:active{background:var(--oransje-mork)}
 .knapp-slett{background:var(--rod);margin-right:auto}
-.knapp-gronn:active,.knapp-endre:active,.knapp-slett:active{filter:brightness(.9)}
-.knapp-gronn:disabled,.knapp-slett:disabled{opacity:.55}
+.knapp-slett:active{opacity:.85}
+.knapp-gronn:disabled,.knapp-slett:disabled{opacity:.5;pointer-events:none}
 .knapp-slett[hidden]{display:none}
+
+/* Knapperaden nederst i skjemaene har samme form og stoerrelse som
+   .btn i kalenderen, saa Slett ser lik ut paa begge sider. */
+.av-bunn .knapp-gronn,.av-bunn .knapp-endre,
+.av-bunn .knapp-slett,.av-bunn .hu-avbryt{
+  font-size:var(--t-brod);letter-spacing:.02em;padding:13px 18px;
+  border-radius:999px;text-transform:uppercase;
+}
+.av-bunn .hu-avbryt{background:var(--paper);border:1px solid var(--line);color:var(--ink)}
+.av-bunn .knapp-slett,.av-bunn .knapp-gronn,.av-bunn .knapp-endre{border:1px solid transparent}
+.av-bunn .knapp-slett{border-color:var(--rod)}
+.av-bunn .knapp-gronn{border-color:var(--gronn)}
+.av-bunn .knapp-endre{border-color:var(--oransje)}
 
 /* Under dagens avtaler, i full bredde. */
 .ny-avtale{
@@ -617,45 +636,121 @@ input,select,textarea{font-size:16px}
 .av-hint{font-size:var(--t-etikett);color:var(--ink-soft);font-weight:600;line-height:1.35}
 .av-hint[hidden]{display:none}
 .av-vedlegg{display:flex;flex-direction:column;gap:6px}
-.ved-liste{display:flex;flex-direction:column;gap:4px}
+.ved-liste{display:flex;flex-direction:column;gap:6px}
 .ved-tom{font-size:var(--t-meta);color:var(--ink-soft);font-style:italic}
+/* Samme vedleggsrad som i kalenderen: navnet er lenken, roedt kryss fjerner. */
 .ved-rad{
-  display:flex;align-items:center;gap:8px;
-  border:1px solid var(--line);border-radius:9px;padding:5px 8px;
-  font-size:var(--t-meta);
+  display:flex;align-items:center;gap:8px;min-width:0;
+  background:var(--bg-2);border:1px solid var(--line);border-radius:9px;
+  padding:7px 10px;font-size:var(--t-meta);color:var(--ink);
 }
-.ved-rad.ny{border-color:var(--gronn);background:rgba(62,124,90,.08)}
+.ved-rad.ny{border-color:var(--gronn)}
+.ved-rad.ny .ved-navn{font-weight:600}
 .ved-rad.fjernet{opacity:.45}
 .ved-rad.fjernet .ved-navn{text-decoration:line-through}
-.ved-navn{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600}
-.ved-storr{color:var(--ink-soft);flex-shrink:0;font-variant-numeric:tabular-nums}
-.ved-fjern{
-  border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
-  font-size:var(--t-brod);line-height:1;padding:0 3px;border-radius:6px;flex-shrink:0;
+.ved-navn{
+  flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  border:none;background:none;padding:0;text-align:left;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);color:var(--blaa);
+  text-decoration:underline;text-underline-offset:2px;
 }
-.ved-fjern:active{background:rgba(44,62,80,.08)}
+.ved-navn:disabled{opacity:.5;cursor:default;color:var(--ink);text-decoration:none}
+.ved-storr{
+  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);
+  color:var(--ink-soft);flex-shrink:0;
+}
+.ved-fjern{
+  border:none;background:none;color:var(--rod);cursor:pointer;
+  font-size:var(--t-brod);line-height:1;padding:2px 4px;flex-shrink:0;
+}
 /* Filvelgeren skal ikke synes, men den kan ikke vaere display:none -
    da nekter Safari aa aapne den programmatisk. */
 .ved-skjult{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .knapp-vedlegg{
-  align-self:flex-start;border:1px dashed var(--line);background:transparent;
-  color:var(--ink-soft);font-family:'Archivo',sans-serif;font-size:var(--t-etikett);
-  font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-  padding:7px 14px;border-radius:999px;cursor:pointer;
+  margin-top:2px;border:none;background:var(--gronn);color:#FFFFFF;
+  border-radius:9px;padding:10px;width:100%;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
 }
-.knapp-vedlegg:active{background:#F0F2F4}
+.knapp-vedlegg:active{background:var(--gronn-mork)}
 
-/* Vedlegg i detaljkortet: trykk laster ned. */
-.detalj-vedlegg{margin-top:14px;display:flex;flex-direction:column;gap:5px}
-.detalj-vedlegg .av-etikett{margin-bottom:2px}
-.ved-lenke{
-  display:flex;align-items:center;gap:8px;text-align:left;width:100%;
-  border:1px solid rgba(44,62,80,.16);background:rgba(255,255,255,.55);
-  border-radius:9px;padding:6px 9px;cursor:pointer;
-  font-family:'Archivo',sans-serif;font-size:var(--t-meta);color:var(--ink);
+/* ---------- Vedlegg i detaljkortet ----------
+   Bilder og PDF forhaandsvises rett under notatet, som i kalenderen.
+   Resten staar som en rad man kan aapne. */
+.detalj-vedlegg{
+  margin-top:13px;padding-top:12px;border-top:1px solid rgba(44,62,80,.14);
+  display:flex;flex-direction:column;gap:8px;
+  font-size:var(--t-meta);color:var(--ink-soft);
 }
-.ved-lenke:active{filter:brightness(.96)}
-.ved-lenke[disabled]{cursor:default;opacity:.6}
+.detalj-vedlegg[hidden]{display:none}
+.detalj-vedlegg .ved-rad{background:#FFFFFF}
+.ved-bilde{margin:0}
+.ved-bilde figcaption{
+  font-size:var(--t-etikett);color:var(--ink-soft);margin-top:4px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ved-bilde img{
+  display:block;width:100%;max-height:340px;object-fit:contain;
+  border-radius:10px;background:#FFFFFF;border:1px solid var(--line);cursor:zoom-in;
+}
+.ved-pdf{
+  display:block;width:100%;height:300px;border:1px solid var(--line);
+  border-radius:10px;background:#FFFFFF;
+}
+/* Blaa - den gjoer noe med en fil som allerede finnes. */
+.ved-aapne{
+  margin-top:6px;width:100%;border:none;background:var(--blaa);
+  color:#FFFFFF;border-radius:9px;padding:9px;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
+  letter-spacing:.04em;
+}
+.ved-aapne:active{opacity:.85}
+
+/* ---------- Filviser ----------
+   Samme viser som i kalenderen: bilder og PDF i full stoerrelse,
+   med nedlasting. Andre filtyper lastes ned direkte. */
+.filviser{
+  position:fixed;inset:0;z-index:95;background:rgba(44,62,80,.62);
+  display:flex;align-items:center;justify-content:center;padding:18px;
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+}
+.filviser[hidden]{display:none}
+.filviser-kort{
+  background:var(--paper);border-radius:18px;
+  width:100%;max-width:1000px;height:92dvh;
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 20px 50px rgba(44,62,80,.34);
+}
+.filviser-topp{
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+  padding:10px 12px;border-bottom:1px solid var(--line);
+}
+.filviser-navn{
+  flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:'Archivo',sans-serif;font-weight:700;font-size:var(--t-meta);
+}
+.filviser-knapp{
+  display:inline-flex;align-items:center;gap:7px;flex-shrink:0;
+  border:1px solid var(--line);background:var(--bg-2);color:var(--ink);
+  border-radius:999px;padding:9px 15px;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+}
+.filviser-knapp svg{width:17px;height:17px;flex-shrink:0}
+.filviser-knapp:active{transform:scale(.96)}
+.filviser-knapp.last{background:var(--blaa);border-color:var(--blaa);color:#FFFFFF}
+@media(max-width:520px){
+  .filviser-knapp span{display:none}
+  .filviser-knapp{padding:10px 12px}
+}
+.filviser-inn{
+  flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+  background:#2B2B2B;
+}
+.filviser-inn img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.filviser-inn iframe{width:100%;height:100%;border:none;background:#FFFFFF}
+@media(max-width:700px){
+  .filviser{padding:0}
+  .filviser-kort{height:100dvh;border-radius:0;max-width:none}
+}
 .av-bunn{margin-top:2px}
 @media(max-width:640px){
   .av-skjema{grid-template-columns:1fr}
@@ -682,6 +777,23 @@ input,select,textarea{font-size:16px}
   <a class="port-hjem" id="portHjem" href="./index.html" hidden>Til forsiden</a>
 </div>
 
+
+<div class="filviser" id="filviser" hidden onclick="if(event.target===this) lukkViser()">
+  <div class="filviser-kort">
+    <div class="filviser-topp">
+      <span class="filviser-navn" id="filviserNavn"></span>
+      <button type="button" class="filviser-knapp last" onclick="lastNedFraViser()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"/></svg>
+        <span>Last ned</span>
+      </button>
+      <button type="button" class="filviser-knapp" onclick="lukkViser()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        <span>Lukk</span>
+      </button>
+    </div>
+    <div class="filviser-inn" id="filviserInn"></div>
+  </div>
+</div>
 
 <div class="skjerm" id="skjerm">
 
@@ -1411,8 +1523,7 @@ function visDetalj(i){
 
   if(e.harVedlegg){
     html += '<div class="detalj-vedlegg" id="detaljVedlegg">'
-      + '<div class="av-etikett">Vedlegg</div>'
-      + '<div class="ved-tom">Henter …</div></div>';
+      + '<div class="ved-tom">Henter vedlegg …</div></div>';
   }
 
   $('detaljInn').innerHTML = html;
@@ -1485,58 +1596,195 @@ async function leggVedFil(eventId, fil){
   });
 }
 
-/* ---- Nedlasting fra detaljkortet ---- */
-let detaljVedlegg = [];
+/* ---- Filviser: bilder og PDF i full stoerrelse, med nedlasting ---- */
+let viserUrl = null;
 
-async function visDetaljVedlegg(i, e){
-  let liste;
-  try{
-    liste = await hentVedlegg(e.id);
-  }catch(err){
-    liste = null;
-  }
-  if(detaljIndeks !== i) return;              /* en annen avtale ble valgt */
-  const boks = $('detaljVedlegg');
-  if(!boks) return;
-  if(!liste){
-    boks.innerHTML = '<div class="av-etikett">Vedlegg</div>'
-      + '<div class="ved-tom">Kunne ikke hente vedleggene.</div>';
-    return;
-  }
-  detaljVedlegg = liste;
-  boks.innerHTML = '<div class="av-etikett">Vedlegg</div>'
-    + (liste.length
-        ? liste.map(function(v, n){
-            const fil = erFil(v);
-            return '<button class="ved-lenke"' + (fil ? '' : ' disabled')
-              + (fil ? ' onclick="lastNedVedlegg(' + n + ')"' : '') + '>'
-              + '<span class="ved-navn">' + esc(v.name || 'Vedlegg') + '</span>'
-              + '<span class="ved-storr">' + (fil ? storrelse(v.size) : 'kobling') + '</span>'
-              + '</button>';
-          }).join('')
-        : '<div class="ved-tom">Ingen vedlegg.</div>');
+function erBilde(a){
+  /* Bare vanlige filvedlegg kan vises. En avtale eller e-post lagt ved
+     har en helt annen form. */
+  if(!erFil(a)) return false;
+  if(a.contentType && /^image\//i.test(a.contentType)) return true;
+  /* Outlook sender av og til bilder som generisk filtype, saa navnet
+     faar avgjoere naar typen ikke sier noe. */
+  return /\.(png|jpe?g|gif|webp|heic|heif|bmp|tiff?)$/i.test(a.name || '');
+}
+function erPdf(a){
+  if(!erFil(a)) return false;
+  if(a.contentType && /pdf/i.test(a.contentType)) return true;
+  return /\.pdf$/i.test(a.name || '');
 }
 
-async function lastNedVedlegg(n){
-  const e = dagensAvtaler[detaljIndeks];
-  const v = detaljVedlegg[n];
-  if(!e || !v) return;
+function blobAv(bytes, type){
+  const bin = atob(bytes || '');
+  const buf = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return new Blob([buf], {type: type || 'application/octet-stream'});
+}
+
+function lukkViser(){
+  const v = $('filviser');
+  if(v) v.hidden = true;
+  const inn = $('filviserInn');
+  if(inn) inn.innerHTML = '';
+  if(viserUrl){ URL.revokeObjectURL(viserUrl); viserUrl = null; }
+}
+
+function lastNedFraViser(){
+  const v = $('filviser');
+  if(!v || !viserUrl) return;
+  const a = document.createElement('a');
+  a.href = viserUrl;
+  a.download = v.dataset.navn || 'vedlegg';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function aapneViser(a){
+  if(viserUrl) URL.revokeObjectURL(viserUrl);
+  viserUrl = URL.createObjectURL(blobAv(a.contentBytes, a.contentType));
+
+  const v = $('filviser');
+  v.dataset.navn = a.name || 'vedlegg';
+  $('filviserNavn').textContent = a.name || '';
+
+  const inn = $('filviserInn');
+  inn.innerHTML = '';
+
+  if(erBilde(a)){
+    const img = document.createElement('img');
+    img.src = viserUrl;
+    img.alt = a.name || '';
+    inn.appendChild(img);
+  }else if(erPdf(a)){
+    const ramme = document.createElement('iframe');
+    ramme.src = viserUrl;
+    ramme.title = a.name || 'PDF';
+    inn.appendChild(ramme);
+  }else{
+    /* Kan ikke vises - da er nedlasting det eneste fornuftige */
+    lastNedFraViser();
+    lukkViser();
+    return;
+  }
+  v.hidden = false;
+}
+
+/* Henter innholdet fra Graph og aapner det. */
+async function aapneVedleggFra(eventId, v, knapp){
+  if(knapp) knapp.disabled = true;
   try{
-    const full = await graph('/me/events/' + enc(e.id) + '/attachments/' + enc(v.id));
-    const bin = atob(full.contentBytes || '');
-    const bytes = new Uint8Array(bin.length);
-    for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const url = URL.createObjectURL(new Blob([bytes],
-      {type: full.contentType || 'application/octet-stream'}));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = full.name || 'vedlegg';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+    const a = await graph('/me/events/' + enc(eventId) + '/attachments/' + enc(v.id));
+    if(!a || !a.contentBytes) throw new Error('Vedlegget kunne ikke hentes.');
+    if(!a.name) a.name = v.name;
+    aapneViser(a);
   }catch(err){
-    alert('Fikk ikke hentet vedlegget: ' + err.message);
+    alert('Klarte ikke åpne vedlegget: ' + err.message);
+  }finally{
+    if(knapp) knapp.disabled = false;
+  }
+}
+
+/* ---- Forhaandsvisning i detaljkortet ----
+   Bilder vises som bilde, PDF som en liten side man kan bla i - samme
+   som i kalenderen. Resten staar som en rad man kan aapne. */
+function tegnForhaand(a, boks){
+  const ramme = document.createElement('figure');
+  ramme.className = 'ved-bilde';
+
+  const kilde = 'data:' + (a.contentType || 'application/octet-stream')
+              + ';base64,' + a.contentBytes;
+
+  if(erPdf(a)){
+    const vis = document.createElement('iframe');
+    vis.className = 'ved-pdf';
+    vis.src = kilde + '#toolbar=0&navpanes=0&view=FitH';
+    vis.title = a.name || 'PDF';
+    ramme.appendChild(vis);
+  }else{
+    const vis = document.createElement('img');
+    vis.src = kilde;
+    vis.alt = a.name || '';
+    vis.loading = 'lazy';
+    vis.onclick = function(ev){ ev.stopPropagation(); aapneViser(a); };
+    ramme.appendChild(vis);
+  }
+
+  const tekst = document.createElement('figcaption');
+  tekst.textContent = a.name || '';
+  ramme.appendChild(tekst);
+
+  const aapne = document.createElement('button');
+  aapne.type = 'button';
+  aapne.className = 'ved-aapne';
+  aapne.textContent = 'Åpne i full størrelse';
+  aapne.onclick = function(ev){ ev.stopPropagation(); aapneViser(a); };
+  ramme.appendChild(aapne);
+
+  boks.appendChild(ramme);
+  return ramme;
+}
+
+/* Henter innholdet foerst hvis det ikke fulgte med i lista */
+async function hentOgTegn(eventId, a, boks){
+  try{
+    const d = await graph('/me/events/' + enc(eventId) + '/attachments/' + enc(a.id));
+    if(!d || !d.contentBytes) return;
+    tegnForhaand(d, boks);
+  }catch(err){ /* uten innhold vises det ingenting - bedre enn en feil */ }
+}
+
+let vedleggOekt = 0;
+
+async function visDetaljVedlegg(i, e){
+  const boks = $('detaljVedlegg');
+  if(!boks) return;
+  vedleggOekt++;
+  const min = vedleggOekt;
+  try{
+    /* Uten $select foelger innholdet med, saa smaa filer kan vises uten
+       et ekstra kall per vedlegg. */
+    const d = await graph('/me/events/' + enc(e.id) + '/attachments');
+    if(min !== vedleggOekt || detaljIndeks !== i) return;   /* en annen avtale */
+    const liste = (d && d.value) || [];
+    boks.innerHTML = '';
+    if(!liste.length){ boks.hidden = true; return; }
+
+    liste.forEach(function(a){
+      if(erBilde(a) || erPdf(a)){
+        if(a.contentBytes) tegnForhaand(a, boks);
+        else hentOgTegn(e.id, a, boks);
+        return;
+      }
+      const rad = document.createElement('div');
+      rad.className = 'ved-rad';
+
+      const n = document.createElement('button');
+      n.type = 'button';
+      n.className = 'ved-navn';
+      n.textContent = a.name || 'Vedlegg';
+      if(erFil(a)){
+        n.title = 'Åpne ' + (a.name || '');
+        n.onclick = function(ev){
+          ev.stopPropagation();
+          aapneVedleggFra(e.id, a, ev.currentTarget);
+        };
+      }else{
+        n.disabled = true;
+        n.title = 'Kobling – kan ikke åpnes her';
+      }
+
+      const t = document.createElement('span');
+      t.className = 'ved-storr';
+      t.textContent = erFil(a) ? storrelse(a.size || 0) : 'kobling';
+
+      rad.appendChild(n);
+      rad.appendChild(t);
+      boks.appendChild(rad);
+    });
+  }catch(err){
+    if(min !== vedleggOekt) return;
+    boks.innerHTML = '<div class="ved-tom">Klarte ikke hente vedlegg.</div>';
   }
 }
 
@@ -1555,7 +1803,10 @@ let nyeFiler = [];             /* filer valgt i skjemaet, ikke lastet opp enda *
 
 /* Staar et skjema aapent, skal verken hvilen, sveipen eller den
    automatiske oppdateringen rive det bort under hendene paa noen. */
-function skjemaAapent(){ return avtaleAapen || huskeSkjema !== null; }
+function skjemaAapent(){
+  const viser = $('filviser') && !$('filviser').hidden;
+  return avtaleAapen || huskeSkjema !== null || !!viser;
+}
 
 function nyAvtale(){ apneAvtale(null); }
 
@@ -1707,7 +1958,9 @@ function tegnSkjemaVedlegg(){
   if(!boks) return;
   const rader = skjemaVedlegg.map(function(v, i){
     return '<div class="ved-rad' + (v.fjern ? ' fjernet' : '') + '">'
-      + '<span class="ved-navn">' + esc(v.name || 'Vedlegg') + '</span>'
+      + '<button class="ved-navn" onclick="apneSkjemaVedlegg(' + i + ', this)"'
+      +   (v.fil ? '' : ' disabled') + ' title="Åpne ' + esc(v.name || '') + '">'
+      +   esc(v.name || 'Vedlegg') + '</button>'
       + '<span class="ved-storr">' + (v.fil ? storrelse(v.size) : 'kobling') + '</span>'
       + '<button class="ved-fjern" onclick="vekslFjernVedlegg(' + i + ')" '
       +   'aria-label="' + (v.fjern ? 'Angre' : 'Fjern') + '">'
@@ -1715,7 +1968,7 @@ function tegnSkjemaVedlegg(){
       + '</div>';
   }).concat(nyeFiler.map(function(f, i){
     return '<div class="ved-rad ny">'
-      + '<span class="ved-navn">' + esc(f.name) + '</span>'
+      + '<button class="ved-navn" onclick="apneNyFil(' + i + ')">' + esc(f.name) + '</button>'
       + '<span class="ved-storr">' + storrelse(f.size) + '</span>'
       + '<button class="ved-fjern" onclick="fjernNyFil(' + i + ')" aria-label="Fjern">×</button>'
       + '</div>';
@@ -1724,6 +1977,21 @@ function tegnSkjemaVedlegg(){
 }
 
 function velgVedlegg(){ $('avFil').click(); }
+
+/* Vedlegg som alt ligger paa avtalen hentes og vises i filviseren. */
+function apneSkjemaVedlegg(i, knapp){
+  const v = skjemaVedlegg[i];
+  if(!v || !avtaleEndrer) return;
+  aapneVedleggFra(avtaleEndrer.id, v, knapp);
+}
+/* En fil som ikke er lastet opp ennaa aapnes rett fra maskinen. */
+function apneNyFil(i){
+  const f = nyeFiler[i];
+  if(!f) return;
+  const url = URL.createObjectURL(f);
+  window.open(url, '_blank');
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+}
 
 function valgteFiler(ev){
   const filer = Array.from(ev.target.files || []);
@@ -2812,7 +3080,8 @@ function kobleLukking(){
     if(vaerBobleAapen && !t.closest('.vaer-boble') && !t.closest('.vt-naa')) lukkVaerBoble();
     if($('detalj') && !$('detalj').hidden && !skjemaAapent()
        && !t.closest('#detalj') && !t.closest('.plan-rad')
-       && !t.closest('#avtaleBoks') && !t.closest('#huskeBoks')) lukkDetalj();
+       && !t.closest('#avtaleBoks') && !t.closest('#huskeBoks')
+       && !t.closest('#filviser')) lukkDetalj();
   });
 }
 
@@ -3036,6 +3305,7 @@ async function oppdaterAlt(manuelt){
 
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
+  if($('filviser') && !$('filviser').hidden){ lukkViser(); return; }
   if(avtaleAapen){ lukkAvtale(); return; }
   if(huskeSkjema){ lukkHuskeSkjema(); return; }
   if(huBobleId) lukkHuskeBoble();
