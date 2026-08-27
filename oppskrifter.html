@@ -500,15 +500,13 @@
      toppstilt bilde - da dekker merket den hvite sirkelen helt. Baandet
      nederst stikker ut under sirkelen; margen nedenfor er oekt tilsvarende. */
   .home-hero-icon{
-    width:80px; height:80px; border-radius:50%; background:var(--paper);
+    /* 125px, ikke 80: tittelen og undertittelen som sto under merket er
+       fjernet, og merket fyller hoeyden de tok. Hero-en er like hoey som foer. */
+    width:125px; height:125px; border-radius:50%; background:var(--paper);
     display:flex; align-items:flex-start; justify-content:center; padding:0;
     box-shadow:0 3px 10px rgba(0,0,0,0.28); margin-bottom:11px;
   }
   .home-hero-icon img{ width:100%; height:auto; display:block; flex:none; }
-  .home-hero-title{
-    font-size:var(--t-stor); font-weight:700; color:var(--ink); text-transform:uppercase;
-    letter-spacing:0.05em; margin:0; line-height:1.2;
-  }
   .home-hero-sub{
     font-size:var(--t-brod); color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.1em;
     margin:3px 0 0; font-weight:600;
@@ -1756,9 +1754,10 @@ input,select,textarea{font-size:16px}
   <!-- HOME -->
   <section class="view active" id="view-home">
     <div class="home-hero">
-      <a href="/" class="home-hero-icon" title="Til Familie Hub" style="display:block;text-decoration:none"><img src="/bilder/merke-matlaging.png" alt="" width="256" height="270"></a>
-      <h2 class="home-hero-title">Familie Hub</h2>
-      <p class="home-hero-sub">Matlaging</p>
+      <!-- Navnet staar i merkelappen, ikke ved siden av den. Teksten som laa
+           her er fjernet og merket gjort stoerre for aa fylle plassen. Navnet
+           ligger i alt og aria-label, saa skjermlesere finner det fortsatt. -->
+      <a href="/" class="home-hero-icon" title="Til Familie Hub" aria-label="Matlaging - til Familie Hub" style="display:block;text-decoration:none"><img src="/bilder/merke-matlaging.png" alt="Matlaging" width="256" height="270"></a>
       <p class="home-hero-sub" id="innlogget-navn" style="font-weight:600"></p>
     </div>
     <!-- Venstrespalten i landskap: filtre og knapper hoerer sammen og skal
