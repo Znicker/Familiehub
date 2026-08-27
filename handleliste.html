@@ -638,7 +638,10 @@
    det som faktisk virker er touch-action mot dobbelttrykk, og 16px i
    skjemafelt saa iOS ikke zoomer inn naar man trykker i dem. */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+/* clip, ikke hidden: hidden gjoer dokumentroten til en rullebeholder, og da
+   slutter .topbar sin position:sticky aa virke. Denne regelen staar etter
+   html,body i toppen av arket og vant over clip-en der. */
+html,body{max-width:100%;overflow-x:clip;overscroll-behavior-x:none}
 body{touch-action:manipulation}
 input,select,textarea{font-size:16px}
 </style>

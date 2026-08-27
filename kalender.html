@@ -1775,7 +1775,11 @@ function msg(el, text, isErr){
   el.textContent = text || '';
 }
 function esc(s){
-  return String(s||'').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  /* Apostrofen maa med: et navn som "Emma's bursdag" bryter ellers ut av et
+     attributt skrevet med enkle hermetegn. Samme versjon som i dashboard. */
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
 }
 
 /* ============================================================
