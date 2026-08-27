@@ -467,6 +467,16 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .boble[data-side="ned"]::after{top:-6px;left:var(--peker,24px)}
 .boble[data-side="opp"]::after{bottom:-6px;left:var(--peker,24px)}
 .boble-topp{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+/* Vei ut av panelet. Vises bare naar panelet dekker hele skjermen -
+   ellers rekker man bakteppet utenfor. */
+.boble-tilbake{display:none}
+.boble.side .boble-tilbake{
+  display:block;margin:0 0 12px;padding:0;border:none;background:none;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+  color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;cursor:pointer;
+}
+.boble.side .boble-tilbake:active{color:var(--ink)}
+
 /* Initialen erstatter prikken og kalendernavnet - samme merke som
    avtalene har ellers i kalenderen. */
 .boble-ini{
@@ -1674,6 +1684,12 @@ function periode(){
 /* Bredere vindu enn selve visningen — så nabo-måneder/uker allerede
    ligger i cachen når man blar, og bladding blir umiddelbar. */
 function ønsketVindu(){
+  /* Lista henter det den faktisk viser, med litt margin i hver ende
+     saa neste bolk allerede ligger klar naar man ruller videre. */
+  if(S.vis === 'liste'){
+    const omr = periode();
+    return [plussDager(omr[0], -7), plussDager(omr[1], 7)];
+  }
   if(S.modus === 'week'){
     const m = mandag(S.sel);
     return [plussDager(m,-7), plussDager(m,14)];        /* 3 uker */
@@ -2478,15 +2494,25 @@ function lukkSidepaneler(){
 }
 
 function lukkBoble(){
+  apenAvtaleId = null;
   const b = $('boble');
   b.hidden = true;
   b.classList.remove('side', 'hoyre', 'venstre');
   $('bobleBak').hidden = true;
 }
 
+let apenAvtaleId = null;
+
 function visBoble(id, klikk){
   const e = S.events.filter(function(x){ return x.id === id; })[0];
   if(!e) return;
+
+  /* Samme avtale en gang til lukker den igjen */
+  if(apenAvtaleId === id && !$('boble').hidden){
+    lukkBoble();
+    return;
+  }
+  apenAvtaleId = id;
 
   const tid = e.allDay
     ? 'Hele dagen'
@@ -2498,6 +2524,7 @@ function visBoble(id, klikk){
     html += '<button class="boble-knapp" onclick="lukkBoble(); endreAvtale(\''
       + e.id.replace(/'/g, "\\'") + '\')">Endre avtale</button>';
   }
+  html += '<button class="boble-tilbake" onclick="lukkBoble()">&larr; Lukk</button>';
   html += '<div class="boble-topp">'
     + '<span class="boble-ini" style="background:' + e.color + '" title="'
     + esc(e.calName || '') + '">' + esc(initialFor(e.calId, e.calName)) + '</span>'
@@ -3289,8 +3316,8 @@ function planItem(e){
    valgt i maaned eller uke - og gaar framover derfra. */
 /* Lista rekker to aar fram, men henter tre maaneder om gangen og
    utvider seg naar man ruller mot bunnen. */
-const LISTE_MAKS = 730;      /* to aar framover */
-const LISTE_BAK_MAKS = 365;  /* ett aar bakover */
+/* Ingen yttergrense - lista utvider seg saa langt man orker aa rulle.
+   Den henter fortsatt bare en bolk om gangen. */
 const LISTE_BOLK = 92;       /* tre maaneder om gangen framover */
 const LISTE_BAK_BOLK = 31;   /* en maaned om gangen bakover */
 let listeVindu = LISTE_BOLK;
@@ -3305,16 +3332,16 @@ function listeRulling(){
   const el = $('plan');
   if(!el || S.vis !== 'liste') return;
 
-  if(el.scrollTop + el.clientHeight > el.scrollHeight - 400 && listeVindu < LISTE_MAKS){
-    listeVindu = Math.min(LISTE_MAKS, listeVindu + LISTE_BOLK);
+  if(el.scrollTop + el.clientHeight > el.scrollHeight - 400){
+    listeVindu += LISTE_BOLK;
     renderListe();
     last(false);
     return;
   }
 
-  if(el.scrollTop < 300 && listeBak < LISTE_BAK_MAKS){
+  if(el.scrollTop < 300){
     const foer = el.scrollHeight;
-    listeBak = Math.min(LISTE_BAK_MAKS, listeBak + LISTE_BAK_BOLK);
+    listeBak += LISTE_BAK_BOLK;
     renderListe();
     el.scrollTop += (el.scrollHeight - foer);   /* hold blikket i ro */
     last(false);
