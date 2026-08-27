@@ -36,7 +36,7 @@
        materialgroennen, lysere hjelpetekst, mykere skygge, samme hjoerner.
        --lime beholder navnet av historiske grunner, men er naa aksentfargen. */
     --ink: #2C3E50;
-    --ink-soft: #7A8899;
+    --ink-soft: #5A6C7D;
     --lime: #4A7FA8;
     --lime-dark: #3A6689;
     --blue: #4A7FA8;
@@ -98,7 +98,7 @@
     padding-bottom:calc(172px + max(0px, env(safe-area-inset-bottom)));
     /* Fire lag med radialgradienter ga en moerk vignett som ikke fantes
        noen andre steder. Dashboardets ene lineaere gradient i stedet. */
-    background:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
+    background:linear-gradient(160deg,var(--bg-1),var(--bg-2));
     background-attachment: fixed;
     -webkit-font-smoothing:antialiased;
   }
@@ -202,16 +202,6 @@
   /* Sortering: eget hjoerne, likt uansett skjermformat. Egne klassenavn
    (.sorter-flyt / .sorter-knapp) fordi den skal kunne loeftes rett ut i
    fellesfila og gjenbrukes paa de andre sidene under 7.3. */
-  /* Erstatter soeppelboette-ikonet i soekefeltet. Full bredde, dempet -
-     den skal vaere lett aa finne, ikke lett aa treffe ved uhell. */
-  .ny-oppskrift-bunn{
-    display:block; width:100%; margin:14px 0 8px;
-    background:none; border:1px solid var(--line); border-radius:12px;
-    color:var(--lime); font-family:'Archivo',sans-serif;
-    font-size:var(--t-brod); font-weight:700; padding:13px 16px; cursor:pointer;
-  }
-  .ny-oppskrift-bunn:active{ background:var(--blue-light); }
-
   /* Blyant og soeppelboette var to ikoner ingen kunne skille paa avstand.
      Ett ord i endre-fargen sier det de gjorde. Slett hoerer ikke ved siden
      av tittelen - den kommer i menyen under Rediger. */
@@ -398,6 +388,13 @@
     transition:padding .18s ease, gap .18s ease;
   }
   .uke-knapp.vis{ padding:0 18px 0 15px; gap:9px; justify-content:flex-start; }
+  /* Ny oppskrift skaper noe - fylt groenn flate, som "legg til"-knappene
+     paa de andre sidene. De to under tar deg et sted og er hvite. */
+  .uke-knapp.uke-ny{
+    background:var(--handling-ny); color:#FFFFFF; border-color:var(--handling-ny);
+  }
+  .uke-knapp.uke-ny:active{ background:var(--handling-ny-moerk); }
+  .uke-knapp.uke-ny .uke-ikon{ font-size:var(--t-ikon); line-height:1; font-weight:400; }
   .uke-knapp .uke-ikon{ position:relative; font-size:var(--t-pil); line-height:1; }
   .uke-knapp:active{ transform:scale(0.96); }
   .uke-knapp.active{ background:var(--lime); border-color:var(--lime); color:#fff; }
@@ -672,7 +669,8 @@
 
   /* ---------- Generic modal backdrop (used by the delete-confirm dialog) ---------- */
   .modal-backdrop{
-    display:none; position:fixed; inset:0; background:rgba(10,14,7,0.85); z-index:100;
+    display:none; position:fixed; inset:0; background:rgba(44,62,80,.45); z-index:100;
+    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
     align-items:center; justify-content:center; padding:20px;
   }
   .modal-backdrop.active{ display:flex; }
@@ -1672,6 +1670,7 @@
     background:var(--boks-mild); border:1px solid var(--boks-kant);
     border-radius:14px; padding:6px; margin-bottom:10px;
   }
+  #view-home .uke-knapp.uke-ny{ display:none; }
   #view-home .uke-knapp{
     background:none; border:none; box-shadow:none; color:var(--lime);
     height:auto; border-radius:10px; padding:11px 12px;
@@ -1689,8 +1688,6 @@
   #view-home .fab-pill{
     background:none; border:none; border-radius:0; padding:0; width:100%;
   }
-  /* Knappen nederst i lista hoerer bare til portrett. */
-  #view-home .ny-oppskrift-bunn{ display:none; }
 
   #view-home .sticky-sub{ padding:0; }
   /* Luft mellom navnet paa sida og innholdet under. */
@@ -1796,6 +1793,9 @@ input,select,textarea{font-size:16px}
          venstrespalten med teksten alltid synlig. Rekkefoelge i landskap:
          aapne oeverst, legg i midten, ny oppskrift nederst. -->
     <div class="uke-flyt" id="uke-flyt">
+      <button type="button" class="uke-knapp uke-ny" onclick="openNewRecipeModal()" title="Ny oppskrift">
+        <span class="uke-ikon">+</span><span class="fab-tekst">Ny oppskrift</span>
+      </button>
       <button type="button" class="uke-knapp uke-apne" onclick="ukeTrykk(this, openPlanView)" title="Åpne ukemenyen">
         <span class="uke-ikon">📋</span><span class="fab-tekst">Åpne ukemeny</span>
       </button>
@@ -2793,8 +2793,7 @@ function renderHome(){
       <div class="empty-state">
         <span class="big">📇</span>
         <h3>Ingen oppskrifter ennå</h3>
-        <p>Trykk på "⚙ Rediger indeks" nederst for å legge inn<br>din første oppskrift.</p>
-        <button type="button" class="btn btn-primary" style="margin-top:16px; width:auto; padding:12px 28px;" onclick="openNewRecipeModal()">➕ Ny oppskrift</button>
+        <p>Trykk på den grønne knappen for å legge inn<br>din første oppskrift.</p>
       </div>` + footerHtml;
     return;
   }
@@ -2842,11 +2841,10 @@ function renderHome(){
   `).join('') + `</div>` + footerHtml;
 }
 function renderIndexFooterHtml(){
-  /* I portrett ligger "Ny oppskrift" nederst i lista, rett over
-     "Rediger indeks". Den brukes sjelden paa telefon, og trenger ikke
-     ligge og flyte. I landskap skjules den - der staar den i spalten. */
-  const ny = `<button type="button" class="ny-oppskrift-bunn" onclick="openNewRecipeModal()">+ Ny oppskrift</button>`;
-  return ny + renderIndexFooterInner();
+  /* "Ny oppskrift" ligger i knappestabelen nede til hoeyre, sammen med
+     ukemeny og sortering. Da staar alt som skaper eller endrer noe paa
+     ett sted, i stedet for spredt nederst i lista. */
+  return renderIndexFooterInner();
 }
 function renderIndexFooterInner(){
   if(homeMode === 'edit' || homeMode === 'delete'){
