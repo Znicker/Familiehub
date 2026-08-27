@@ -2672,25 +2672,19 @@ function showView(id){
 
   const topbar = $('topbar');
   const backBtn = $('topbar-back');
-  const title = $('topbar-title');
-  /* Logg ut-knappen er fjernet - utloggingen bor paa index. Den maa derfor
-     ogsaa ut av vakten under: sto den igjen, ville hele blokka blitt hoppet
-     over og tilbakeknappen aldri vist seg. */
-  if(topbar && backBtn && title){
+  /* Tittelen i toppbaren finnes ikke i markupen. Den sto i vakten her, og
+     siden den alltid var null ble hele blokka hoppet over - tilbakeknappen
+     viste seg aldri, og toppbaren fikk aldri subview-stilen. */
+  if(topbar && backBtn){
     if(id === 'view-home'){
       topbar.classList.remove('subview');
       backBtn.style.display = 'none';
-      title.style.display = 'none';
     }else{
       topbar.classList.add('subview');
       /* Skjemaet har sine egne to knapper oeverst - en pil i tillegg ville
          vaert en tredje vei ut, uten aa si om den lagrer. */
       backBtn.style.display = (id === 'view-add') ? 'none' : 'flex';
       backBtn.onclick = goHome;
-      title.style.display = 'block';
-      title.textContent = (id === 'view-add')
-        ? ($('add-heading').textContent || 'Oppskrift')
-        : ($('d-title').textContent || 'Oppskrift');
     }
   }
   document.body.classList.toggle('vis-detalj', id === 'view-detail');
@@ -2783,9 +2777,6 @@ function renderHome(){
   if(recipes.length === 0) homeMode = null;
   renderRatingFilterBar();
   renderCategoryFilterRow();
-  const sortSelect = $('sort-select');
-  if(sortSelect) sortSelect.value = sortMode;
-
   const footerHtml = renderIndexFooterHtml();
 
   if(recipes.length === 0){
