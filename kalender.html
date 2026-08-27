@@ -76,7 +76,7 @@ body{
 .shell{
   height:100%;height:100dvh;
   max-width:1600px;margin:0 auto;
-  padding:16px 62px calc(12px + env(safe-area-inset-bottom)) 20px;
+  padding:16px 20px calc(12px + env(safe-area-inset-bottom));
   display:flex;flex-direction:column;gap:14px;
 }
 
@@ -84,9 +84,6 @@ body{
 .top{
   display:flex;align-items:center;justify-content:center;gap:16px;flex-shrink:0;
   padding-bottom:12px;border-bottom:1px solid var(--line);
-  /* Skallet har en bredere hoeyremarg til hurtigvelgeren. Toppen
-     strekkes tilbake, saa logoen staar midt paa skjermen. */
-  margin-right:-42px;
 }
 .brand{display:flex;align-items:center;gap:12px;flex-shrink:0;text-decoration:none;color:inherit}
 .brand-icon{
@@ -735,18 +732,16 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
    Initialrundingene langs hoeyre skjermkant, rett under toppen. Trykk
    paa en for aa se bare den, trykk paa flere for aa legge dem til. */
 .hurtigkal{
-  position:fixed;right:14px;z-index:44;
-  top:calc(96px + env(safe-area-inset-top));
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  max-height:calc(100dvh - 210px);overflow-y:auto;
-  -webkit-overflow-scrolling:touch;padding:2px;
+  display:flex;flex-wrap:wrap;justify-content:flex-end;align-content:flex-start;
+  gap:6px;margin-bottom:8px;
+  /* To rekker: hoeyden holder akkurat to rader med rundinger */
+  max-height:62px;overflow:hidden;
 }
 .hk-ini{
-  width:34px;height:34px;border-radius:50%;border:2px solid transparent;
+  width:26px;height:26px;border-radius:50%;border:2px solid transparent;
   padding:0;flex-shrink:0;cursor:pointer;color:#fff;
-  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+  font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
   display:flex;align-items:center;justify-content:center;line-height:1;
-  box-shadow:0 2px 8px rgba(44,62,80,.18);
   transition:opacity .12s ease,transform .12s ease;
 }
 .hk-ini:active{transform:scale(.92)}
@@ -754,11 +749,11 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .hk-ini.av{opacity:.28}
 .hk-ini.valgt{border-color:var(--ink)}
 .hk-alle{
-  width:34px;height:34px;border-radius:50%;flex-shrink:0;cursor:pointer;
+  height:26px;padding:0 10px;border-radius:999px;flex-shrink:0;cursor:pointer;
   border:1.5px solid var(--line);background:var(--paper);color:var(--ink-soft);
   font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
+  letter-spacing:.06em;
   display:flex;align-items:center;justify-content:center;line-height:1;
-  box-shadow:0 2px 8px rgba(44,62,80,.14);
 }
 .hk-alle.pa{background:var(--blaa);color:#fff;border-color:var(--blaa)}
 
@@ -1009,6 +1004,7 @@ input,select,textarea{font-size:16px}
     <section class="panel cal-panel">
       <div class="mnav">
         <div class="mnav-title" id="monthTitle">—</div>
+        <div class="hurtigkal" id="hurtigKal" hidden></div>
         <div class="mnav-row">
         <div class="seg" id="seg">
           <button data-m="month" class="on" onclick="settVisning('month')">Måned</button>
@@ -1045,8 +1041,6 @@ input,select,textarea{font-size:16px}
 
 </div>
 
-<div class="hurtigkal" id="hurtigKal" hidden></div>
-
 <div class="bottom-bar" id="bottomBar" hidden>
   <div class="caldrop" id="caldrop" hidden>
     <div class="caldrop-panel" id="caldropPanel" hidden></div>
@@ -1062,7 +1056,7 @@ input,select,textarea{font-size:16px}
 </div>
 
 <!-- Dialogvindu for ny/endret avtale -->
-<div class="boble-bak" id="bobleBak" hidden onclick="lukkBoble()"></div>
+<div class="boble-bak" id="bobleBak" hidden onclick="lukkSidepaneler()"></div>
 <div class="boble" id="boble" hidden>
   <div id="bobleInn"></div>
 </div>
@@ -2234,7 +2228,17 @@ function renderHurtigKal(){
   el.hidden = false;
   el.innerHTML = '';
 
-  S.calendars.forEach(function(c){
+  /* Husstanden foerst, i den rekkefoelgen de staar i INITIAL_PRI,
+     saa de fem viktigste ligger paa samme plass hver gang. */
+  const rang = function(c){
+    const n = String(c.name || '').replace(/[<(].*$/, '').trim().toLowerCase();
+    const i = INITIAL_PRI.findIndex(function(p){ return n.indexOf(p.toLowerCase()) === 0; });
+    return i === -1 ? INITIAL_PRI.length : i;
+  };
+
+  S.calendars.slice().sort(function(a, b){
+    return (rang(a) - rang(b)) || String(a.name||'').localeCompare(String(b.name||''), 'no');
+  }).forEach(function(c){
     const b = document.createElement('button');
     b.className = 'hk-ini'
       + (c.on ? '' : ' av')
@@ -2394,6 +2398,13 @@ function nyAvtale(time, minutt, calId){
 
 /* ---------- Detaljboble ----------
    Viser hele notatet uten aa aapne redigeringsskjemaet. */
+/* Trykk utenfor panelene lukker alt som staar aapent, saa man slipper
+   aa trykke to ganger naar bade dagen og en avtale er framme. */
+function lukkSidepaneler(){
+  lukkBoble();
+  lukkDagPanel();
+}
+
 function lukkBoble(){
   const b = $('boble');
   b.hidden = true;
@@ -3028,6 +3039,11 @@ function settVisning(v){
   if(v === 'liste'){
     if(S.vis === 'liste') return;
     S.vis = 'liste';
+    /* Lista begynner paa dagen man har valgt. Har man ikke valgt noe
+       fram i tid, begynner den paa i dag - pilene tar deg bakover. */
+    const idag = new Date();
+    const nullstilt = new Date(idag.getFullYear(), idag.getMonth(), idag.getDate());
+    if(S.sel < nullstilt) S.sel = nullstilt;
     naviger();
     return;
   }
@@ -3332,7 +3348,7 @@ function apneDagPanel(dato, midtX){
 
   const bak = document.createElement('div');
   bak.className = 'dagpanel-bak';
-  bak.onclick = lukkDagPanel;
+  bak.onclick = lukkSidepaneler;
 
   const panel = document.createElement('div');
   panel.className = 'dagpanel ' + (tilHoyre ? 'hoyre' : 'venstre');
