@@ -762,7 +762,7 @@ input,select,textarea{font-size:16px}
       </div><!-- /add-grid -->
 
       <div class="add-knapper">
-        <button class="btn btn-ghost" onclick="goHome()">Avbryt</button>
+        <button class="btn btn-ghost" onclick="avbrytSkjema('view-add', goHome)">Avbryt</button>
         <button class="btn btn-blokk btn-ny" onclick="saveItem()">Lagre vare</button>
       </div>
     </div>
@@ -828,7 +828,7 @@ input,select,textarea{font-size:16px}
     <button type="button" class="btn-quiet" id="import-tekst" style="display:none;" onclick="importSomTekst()"></button>
 
     <div class="modal-actions">
-      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('import-modal')">Avbryt</button>
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="avbrytSkjema('import-modal', () => closeModal('import-modal'))">Avbryt</button>
       <button class="btn btn-tvers" onclick="parseImport()">Les inn</button>
     </div>
   </div>
@@ -853,7 +853,7 @@ input,select,textarea{font-size:16px}
     </div>
 
     <div class="modal-actions">
-      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('katalog-modal')">Lukk</button>
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="avbrytSkjema('katalog-modal', () => closeModal('katalog-modal'))">Lukk</button>
       <button class="btn btn-tvers" onclick="importerKatalog()">Slå sammen</button>
     </div>
   </div>
@@ -888,7 +888,7 @@ input,select,textarea{font-size:16px}
     </div>
 
     <div class="modal-actions">
-      <button class="btn btn-ghost" style="margin-top:0;" onclick="avbrytNyHandel()">Avbryt</button>
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="avbrytSkjema('nyhandel-modal', avbrytNyHandel)">Avbryt</button>
       <button class="btn btn-blokk btn-ny" style="margin-top:0;" onclick="bekreftNyHandel()">Opprett</button>
     </div>
   </div>
@@ -934,7 +934,7 @@ input,select,textarea{font-size:16px}
       <input type="text" id="omdop-navn" autocomplete="off">
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('omdop-modal')">Avbryt</button>
+      <button class="btn btn-ghost" style="margin-top:0;" onclick="avbrytSkjema('omdop-modal', () => closeModal('omdop-modal'))">Avbryt</button>
       <button class="btn btn-endre" style="margin-top:0;" onclick="bekreftOmdop()">Lagre</button>
     </div>
   </div>
@@ -1312,7 +1312,7 @@ function sikreAktivOkt(omrade){
 /* ---- Ny handel ---- */
 function openNyHandel(){
   document.getElementById('nyhandel-navn').value = foreslaattOktNavn(aktivOmrade());
-  document.getElementById('nyhandel-modal').classList.add('active');
+  huskSkjema('nyhandel-modal'); document.getElementById('nyhandel-modal').classList.add('active');
   setTimeout(() => document.getElementById('nyhandel-navn').select(), 30);
 }
 
@@ -1509,7 +1509,7 @@ function openOmdop(){
   const okt = aktivOkt();
   if (!okt) return;
   document.getElementById('omdop-navn').value = okt.navn || '';
-  document.getElementById('omdop-modal').classList.add('active');
+  huskSkjema('omdop-modal'); document.getElementById('omdop-modal').classList.add('active');
   setTimeout(() => document.getElementById('omdop-navn').select(), 30);
 }
 
@@ -2063,7 +2063,7 @@ function openImport(){
   document.getElementById('import-file').value = '';
   document.getElementById('import-error').style.display = 'none';
   document.getElementById('import-tekst').style.display = 'none';
-  document.getElementById('import-modal').classList.add('active');
+  huskSkjema('import-modal'); document.getElementById('import-modal').classList.add('active');
 }
 
 function readImportFile(input){
@@ -5272,7 +5272,7 @@ function openKatalog(){
   document.getElementById('kat-avvist').textContent = katalog.avvist.length;
   document.getElementById('kat-error').style.display = 'none';
   document.getElementById('kat-text').value = '';
-  document.getElementById('katalog-modal').classList.add('active');
+  huskSkjema('katalog-modal'); document.getElementById('katalog-modal').classList.add('active');
 }
 
 function eksporterKatalog(){
@@ -5912,6 +5912,9 @@ function showView(navn){
   const hjem = navn === 'home';
   /* Bare skjemaet for ny vare bruker den brede spalten. */
   document.body.classList.toggle('vis-add', navn === 'add');
+  /* Avtrykk av vareskjemaet naar det aapnes - begge inngangene (ny vare og
+     endre vare) fyller feltene foer de kaller showView. */
+  if(navn === 'add') huskSkjema('view-add');
   document.getElementById('topbar').classList.toggle('subview', !hjem);
   document.getElementById('topbar-home-actions').style.display = hjem ? 'flex' : 'none';
   document.getElementById('bottom-bar').style.display = hjem ? 'flex' : 'none';
@@ -5948,6 +5951,35 @@ function switchTab(navn){
 }
 
 function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+
+/* ---- Avbryt-regelen (se designsystemet) ----
+   Avbryt er alltid noeytral - roedt er reservert for sletting. Advarselen
+   ligger derfor ikke i fargen, men i en bekreftelse, og bare naar det finnes
+   noe aa miste: tekst, tall eller filer som er lagt inn siden skjemaet ble
+   aapnet. Valg i nedtrekk og avkryssinger teller ikke - de koster ingenting
+   aa gjoere om. Er ingenting endret, gaar Avbryt rett ut uten dialog: en
+   dialog man faar hver gang, er en dialog man slutter aa lese.
+
+   Bekreftelsen bruker nettleserens egen confirm() slik dashboard og kalender
+   alt gjoer. Oppskrifter har en egen modal for samme formaal - aa samle de to
+   i én komponent hoerer til fellesfil-jobben (7.3), ikke hit. */
+const modalAvtrykk = {};
+function avtrykkAv(id){
+  const rot = document.getElementById(id);
+  if(!rot) return '';
+  const felt = rot.querySelectorAll('textarea, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])');
+  return Array.from(felt).map(el => el.value).join('\u241F');
+}
+function huskSkjema(id){ modalAvtrykk[id] = avtrykkAv(id); }
+function skjemaEndret(id){
+  const foer = modalAvtrykk[id];
+  return foer != null && avtrykkAv(id) !== foer;
+}
+function avbrytSkjema(id, lukk){
+  if(skjemaEndret(id) &&
+     !confirm('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.')) return;
+  lukk();
+}
 
 window.addEventListener('scroll', () => {
   document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 10);

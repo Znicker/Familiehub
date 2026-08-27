@@ -1473,11 +1473,11 @@ input,select,textarea{font-size:16px}
   <div id="bobleInn"></div>
 </div>
 
-<div class="veil" id="veil" hidden onclick="if(event.target===this) lukk()">
+<div class="veil" id="veil" hidden onclick="if(event.target===this) avbrytDialog()">
   <div class="dlg">
     <div class="dlg-head">
       <span class="dlg-title" id="dlgTitle">Ny avtale</span>
-      <button class="dlg-x" onclick="lukk()" title="Lukk">&times;</button>
+      <button class="dlg-x" onclick="avbrytDialog()" title="Lukk">&times;</button>
     </div>
 
     <div class="dlg-body">
@@ -1536,7 +1536,7 @@ input,select,textarea{font-size:16px}
     <div class="dlg-foot">
       <button class="btn fare" id="btnSlett" onclick="slettAvtale()" hidden>Slett</button>
       <div class="right">
-        <button class="btn" onclick="lukk()">Avbryt</button>
+        <button class="btn" onclick="avbrytDialog()">Avbryt</button>
         <button class="btn solid" id="btnLagre" onclick="lagreAvtale()">Lagre</button>
       </div>
     </div>
@@ -3100,6 +3100,7 @@ function nyAvtale(time, minutt, calId){
   allDagToggle();
   dlgFeil(antall ? '' : 'Ingen av kalenderne dine kan skrives til.');
   $('btnLagre').disabled = !antall;
+  huskDialog();
   $('veil').hidden = false;
   setTimeout(function(){ $('fTitle').focus(); }, 60);
 }
@@ -3255,6 +3256,7 @@ function endreAvtale(id){
     : (e.serie ? 'Dette er én gjentakelse i en serie. Endringen gjelder bare denne dagen.' : ''));
   if(e.serie && e.kanEndre) $('dlgMsg').style.color = 'var(--ink-soft)';
 
+  huskDialog();
   $('veil').hidden = false;
 }
 
@@ -3269,6 +3271,32 @@ function lukk(){
   $('veil').hidden = true;
   $('fCal').disabled = false;
   redigerer = null;
+}
+
+/* ---- Avbryt-regelen (se designsystemet) ----
+   Avbryt er alltid noeytral - roedt er reservert for sletting. Advarselen
+   ligger derfor ikke i fargen, men i en bekreftelse, og bare naar det finnes
+   noe aa miste: tekst, tall eller filer som er lagt inn siden dialogen ble
+   aapnet. Valg i nedtrekk og avkryssinger teller ikke - de koster ingenting
+   aa gjoere om. Er ingenting endret, lukker dialogen seg uten dialog: en
+   dialog man faar hver gang, er en dialog man slutter aa lese.
+
+   lukk() selv er urort - den kalles ogsaa etter lagring og sletting, og da
+   skal det ikke spoerres om noe. Bare de fire veiene brukeren avbryter paa
+   gaar gjennom avbrytDialog(): Avbryt, krysset, klikk utenfor og Escape. */
+let dlgAvtrykk = null;
+function dlgFelter(){
+  const rot = $('veil');
+  if(!rot) return '';
+  const felt = rot.querySelectorAll('textarea, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])');
+  return Array.from(felt).map(function(el){ return el.value; }).join('\u241F');
+}
+function huskDialog(){ dlgAvtrykk = dlgFelter(); }
+function avbrytDialog(){
+  if(dlgAvtrykk !== null && dlgFelter() !== dlgAvtrykk &&
+     !confirm('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.')) return;
+  dlgAvtrykk = null;
+  lukk();
 }
 
 function bygg(){
@@ -3742,7 +3770,7 @@ async function slettAvtale(){
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
   if(!$('filviser').hidden){ lukkViser(); return; }
-  if(!$('veil').hidden) lukk();
+  if(!$('veil').hidden) avbrytDialog();
 });
 
 /* ============================================================

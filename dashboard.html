@@ -935,7 +935,7 @@ select.hu-felt{
     </div>
     <div class="av-foot">
       <button class="knapp-slett" id="avSlett" onclick="slettAvtale()" hidden>Slett</button>
-      <button class="hu-avbryt" onclick="lukkAvtale()">Avbryt</button>
+      <button class="hu-avbryt" onclick="avbrytSkjema('avtaleBoks', lukkAvtale)">Avbryt</button>
       <button class="knapp-gronn" id="avLagre" onclick="lagreAvtale()">Legg til</button>
     </div>
   </div>
@@ -968,7 +968,7 @@ select.hu-felt{
     </div>
     <div class="av-foot">
       <button class="knapp-slett" id="huSlett" onclick="slettFraSkjema()" hidden>Slett</button>
-      <button class="hu-avbryt" onclick="lukkHuskeSkjema()">Avbryt</button>
+      <button class="hu-avbryt" onclick="avbrytSkjema('huskeBoks', lukkHuskeSkjema)">Avbryt</button>
       <button class="knapp-gronn" id="huLagre" onclick="lagreHuske()">Legg til</button>
     </div>
   </div>
@@ -2012,9 +2012,35 @@ function apneAvtale(e){
   lagre.style.marginLeft = '0';
 
   passSkjema();
+  huskSkjema('avtaleBoks');
   $('avtaleBak').hidden = false;
   $('avtaleBoks').hidden = false;
   $('avTittel').focus();
+}
+
+/* ---- Avbryt-regelen (se designsystemet) ----
+   Avbryt er alltid noeytral - roedt er reservert for sletting. Advarselen
+   ligger derfor ikke i fargen, men i en bekreftelse, og bare naar det finnes
+   noe aa miste: tekst, tall eller filer som er lagt inn siden skjemaet ble
+   aapnet. Valg i nedtrekk og avkryssinger teller ikke - de koster ingenting
+   aa gjoere om. Er ingenting endret, gaar Avbryt rett ut uten dialog: en
+   dialog man faar hver gang, er en dialog man slutter aa lese. */
+const modalAvtrykk = {};
+function avtrykkAv(id){
+  const rot = $(id);
+  if(!rot) return '';
+  const felt = rot.querySelectorAll('textarea, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])');
+  return Array.from(felt).map(function(el){ return el.value; }).join('\u241F');
+}
+function huskSkjema(id){ modalAvtrykk[id] = avtrykkAv(id); }
+function skjemaEndret(id){
+  const foer = modalAvtrykk[id];
+  return foer != null && avtrykkAv(id) !== foer;
+}
+function avbrytSkjema(id, lukk){
+  if(skjemaEndret(id) &&
+     !confirm('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.')) return;
+  lukk();
 }
 
 function lukkAvtale(){
@@ -2814,6 +2840,7 @@ function visHuskeSkjema(omfang, m){
   lagre.style.marginLeft = '0';
 
   passSkjema();
+  huskSkjema('huskeBoks');
   $('huskeBak').hidden = false;
   $('huskeBoks').hidden = false;
   $('huOverskrift').focus();
@@ -2972,6 +2999,11 @@ function apneMiddagNotat(){
   if(f){ f.focus(); f.select(); }
 }
 function lukkMiddagNotat(){
+  /* Avbryt-regelen: feltet er forhaandsfylt med det lagrede notatet, saa vi
+     spoer bare hvis teksten faktisk er en annen. */
+  const f = $('middagFelt');
+  if(f && (f.value || '').trim() !== middagNotat().trim() &&
+     !confirm('Du har endret middagsnotatet. Forkaster du endringen nå, er den borte.')) return;
   middagRedig = false;
   tegnMiddag(sisteRetter || []);
 }

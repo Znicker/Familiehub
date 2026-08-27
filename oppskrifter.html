@@ -228,8 +228,16 @@
     letter-spacing:.03em; cursor:pointer;
     box-shadow:0 6px 22px rgba(44,62,80,.18);
   }
-  .rediger-topp-knapp.avbryt{ background:var(--danger); }
-  .rediger-topp-knapp.avbryt:active{ background:#8E4033; }
+  /* Avbryt er noeytral, ikke roed. Roedt er reservert for sletting
+     (--danger, samme farge som "Slett for godt"), og en farge kan ikke bety
+     to ting i samme app. Fylt hvit flate framfor gjennomsiktig: raden er
+     sticky over rullende tekst, og en ghost-knapp blir uleselig der.
+     Faren ved aa forkaste utkastet baeres naa av bekreftelsen i
+     goAddBack(), ikke av fargen. */
+  .rediger-topp-knapp.avbryt{
+    background:var(--paper); color:var(--ink); border:1.5px solid var(--line);
+  }
+  .rediger-topp-knapp.avbryt:active{ background:var(--paper-soft); }
   .rediger-topp-knapp.lagre{ background:var(--handling-ny); }
   .rediger-topp-knapp.lagre:active{ background:var(--handling-ny-moerk); }
 
@@ -324,7 +332,12 @@
   .rediger-valg-knapp.endre{ background:var(--handling-endre); }
   .rediger-valg-knapp.slett{ background:var(--danger); }
   .rediger-valg-knapp.lagre{ background:var(--handling-ny); }
-  .rediger-valg-knapp.avbryt{ background:var(--danger); }
+  /* Noeytral etter avbryt-regelen. Den angrer og skriver tilbake, men roedt
+     er reservert for sletting - bekreftelsen i avbrytStegRedigering() baerer
+     advarselen i stedet. */
+  .rediger-valg-knapp.avbryt{
+    background:var(--paper); color:var(--ink); border:1px solid var(--line);
+  }
   /* Lagre over Avbryt, der Ferdig sto. Rediger-knappen skjules mens
      modusen staar paa - de to her er veiene ut. */
   /* Sletting hoerer nederst, langt fra alt annet - ikke i samme hjoerne
@@ -2072,7 +2085,7 @@ input,select,textarea{font-size:16px}
     </div>
     <div id="nytt-tips-status"></div>
     <div class="row" style="display:flex; gap:8px; margin-top:12px;">
-      <button class="btn btn-ghost" style="flex:1; margin-top:0;" onclick="closeModal('nytt-tips')">Avbryt</button>
+      <button class="btn btn-ghost" style="flex:1; margin-top:0;" onclick="avbrytSkjema('nytt-tips-modal', () => closeModal('nytt-tips'))">Avbryt</button>
       <button class="btn btn-pille btn-ny" style="flex:1;" onclick="saveNewTip()">Lagre tips</button>
     </div>
   </div>
@@ -2087,7 +2100,7 @@ input,select,textarea{font-size:16px}
     </div>
     <p style="font-size:var(--t-meta); color:var(--ink-soft); margin:4px 0 14px;">.json legges til automatisk.</p>
     <div class="row" style="display:flex; gap:8px;">
-      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('export-name')">Avbryt</button>
+      <button class="btn btn-ghost" style="flex:1;" onclick="avbrytSkjema('export-name-modal', () => closeModal('export-name'))">Avbryt</button>
       <button class="btn btn-blokk btn-blaa" style="flex:1;" onclick="closeModal('export-name'); exportBackup();">Last ned</button>
     </div>
   </div>
@@ -2165,7 +2178,7 @@ input,select,textarea{font-size:16px}
     </label>
     <p style="font-size:var(--t-meta); color:var(--ink-soft); margin:6px 0 14px;">Navnet lagres i varekatalogen og gjelder alle uker. Mengden gjelder bare denne uka; la den stå tom for å beholde de opprinnelige.</p>
     <div class="row" style="display:flex; gap:10px;">
-      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('ing-merge')">Avbryt</button>
+      <button class="btn btn-ghost" style="flex:1;" onclick="avbrytSkjema('ing-merge-modal', () => closeModal('ing-merge'))">Avbryt</button>
       <button class="btn btn-blokk btn-blaa" style="flex:1;" onclick="confirmIngMerge()">Slå sammen</button>
     </div>
   </div>
@@ -2214,7 +2227,7 @@ input,select,textarea{font-size:16px}
       <textarea id="import-web-text" rows="8" style="width:100%; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line); font-size:15px; font-family:inherit; color:var(--ink);"></textarea>
       <div id="import-web-paste-status"></div>
       <div class="row" style="margin-top:14px;">
-        <button class="btn btn-ghost" onclick="closeImportWebModal()">Avbryt</button>
+        <button class="btn btn-ghost" onclick="avbrytSkjema('import-web-modal', closeImportWebModal)">Avbryt</button>
         <button class="btn btn-blokk btn-blaa" id="import-web-paste-btn" style="margin-top:0;" onclick="submitWebImportPaste()">Tolk med AI</button>
       </div>
     </div>
@@ -2232,7 +2245,7 @@ input,select,textarea{font-size:16px}
     <input type="file" id="physical-photo-input" accept="image/*" multiple style="display:none">
     <div id="physical-import-status"></div>
     <div class="row" style="margin-top:14px;">
-      <button class="btn btn-ghost" onclick="closePhysicalImportModal()">Avbryt</button>
+      <button class="btn btn-ghost" onclick="avbrytSkjema('physical-import-modal', closePhysicalImportModal)">Avbryt</button>
       <button class="btn btn-blokk btn-blaa" id="physical-import-btn" style="margin-top:0;" onclick="submitPhysicalImport()" disabled>Tolk med AI</button>
     </div>
   </div>
@@ -2274,7 +2287,7 @@ input,select,textarea{font-size:16px}
     </div>
 
     <div class="row" style="margin-top:16px;">
-      <button class="btn btn-ghost" onclick="closeTastingModal()">Avbryt</button>
+      <button class="btn btn-ghost" onclick="avbrytSkjema('tasting-modal', closeTastingModal)">Avbryt</button>
       <button class="btn btn-blokk btn-ny" style="margin-top:0;" onclick="saveTasting()">Lagre</button>
     </div>
   </div>
@@ -2315,7 +2328,7 @@ input,select,textarea{font-size:16px}
     <div id="comment-status"></div>
 
     <div class="row" style="margin-top:16px;">
-      <button class="btn btn-ghost" onclick="closeCommentModal()">Avbryt</button>
+      <button class="btn btn-ghost" onclick="avbrytSkjema('comment-modal', closeCommentModal)">Avbryt</button>
       <button class="btn btn-blokk btn-ny" style="margin-top:0;" onclick="saveComment()">Lagre</button>
     </div>
   </div>
@@ -2347,7 +2360,7 @@ input,select,textarea{font-size:16px}
     </div>
 
     <div class="row" style="margin-top:16px;">
-      <button class="btn btn-ghost" onclick="closeChefModal()">Avbryt</button>
+      <button class="btn btn-ghost" onclick="avbrytSkjema('chef-modal', closeChefModal)">Avbryt</button>
       <button class="btn btn-blokk btn-blaa" style="margin-top:0;" onclick="closeChefModal()">Ferdig</button>
     </div>
   </div>
@@ -2390,7 +2403,7 @@ input,select,textarea{font-size:16px}
     <div id="restore-backup-status"></div>
 
     <div class="row" style="margin-top:14px;">
-      <button class="btn btn-ghost" onclick="closeRestoreBackupModal()">Avbryt</button>
+      <button class="btn btn-ghost" onclick="avbrytSkjema('restore-backup-modal', closeRestoreBackupModal)">Avbryt</button>
       <button class="btn btn-blokk btn-blaa" id="restore-backup-btn" style="margin-top:0;" onclick="submitRestoreBackup()">Gjenopprett</button>
     </div>
   </div>
@@ -2563,7 +2576,36 @@ input,select,textarea{font-size:16px}
 function $(id){ return document.getElementById(id); }
 // Standardutsnitt = hele bildet. Nytt objekt hver gang, så to bilder aldri deler samme crop.
 function fullCrop(){ return {x:0, y:0, width:1, height:1}; }
-function openModal(name){ $(name + '-modal').classList.add('active'); }
+/* ---- Avbryt-regelen (se designsystemet) ----
+   Avbryt er alltid noeytral. Roedt er reservert for sletting - en farge kan
+   ikke bety to ting. Advarselen ligger derfor ikke i fargen, men i en
+   bekreftelse, og bare naar det finnes noe aa miste: tekst, tall eller filer
+   som er lagt inn siden skjemaet ble aapnet. Valg i nedtrekk og avkryssinger
+   teller ikke - de koster ingenting aa gjoere om.
+   Er ingenting endret, gaar Avbryt rett ut uten dialog. Det er hele poenget:
+   en dialog man faar hver gang, er en dialog man slutter aa lese. */
+const modalAvtrykk = {};
+function avtrykkAv(rot){
+  if(!rot) return '';
+  const felt = rot.querySelectorAll('textarea, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])');
+  return Array.from(felt).map(el => el.value).join('\u241F');
+}
+function huskSkjema(id){ modalAvtrykk[id] = avtrykkAv($(id)); }
+function skjemaEndret(id){
+  const foer = modalAvtrykk[id];
+  return foer != null && avtrykkAv($(id)) !== foer;
+}
+/* lukk er funksjonen som faktisk lukker - hver modal har sin egen opprydding. */
+function avbrytSkjema(id, lukk){
+  if(skjemaEndret(id)){
+    showConfirmModal('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.',
+      lukk, 'Forkast');
+    return;
+  }
+  lukk();
+}
+
+function openModal(name){ huskSkjema(name + '-modal'); $(name + '-modal').classList.add('active'); }
 function closeModal(name){ $(name + '-modal').classList.remove('active'); }
 
 /* ---------------- State ---------------- */
@@ -2713,7 +2755,47 @@ window.addEventListener('resize', updateTopbarHeightVar);
 /* Redigerer man en eksisterende oppskrift, hoerer veien ut tilbake til
    den oppskriften - ikke til forsiden. Ny oppskrift har ingen aa gaa
    tilbake til, saa den lander paa forsiden som foer. */
+/* ---- Ulagrede endringer i skjemaet ----
+   Avbryt forkaster alt som ikke er lagret, og det finnes ingen angre. Foer
+   bekreftelsen laa hele advarselen i at knappen var roed - men roedt betyr
+   sletting i denne appen, og en farge kan ikke bety to ting. Derfor: vi tar
+   et avtrykk av skjemaet naar det aapnes, sammenligner naar man gaar ut, og
+   spoer bare hvis noe faktisk er endret. Aapner du og lukker uten aa roere
+   noe, skjer det ingenting - ellers laerer man seg aa klikke bort dialogen.
+
+   Avtrykket dekker feltene, radene (hver rad har egne felt, saa lagt til
+   eller fjernet rad slaar ut), kategoriene, rettbildet og stegbildene.
+   Bildene teller med lengde, ikke innhold - vi trenger bare aa vite AT noe
+   er annerledes. */
+let skjemaAvtrykk = null;
+function skjemaFingeravtrykk(){
+  const felt = Array.from(document.querySelectorAll('#view-add input, #view-add textarea, #view-add select'))
+    .map(el => (el.type === 'checkbox' || el.type === 'radio') ? (el.checked ? '1' : '0') : el.value)
+    .join('\u241F');
+  return JSON.stringify({
+    felt,
+    kategorier: selectedCategories,
+    rettbilde: pendingDishPhoto ? pendingDishPhoto.length : 0,
+    stegbilder: Object.keys(stepPhotoState || {}).length
+  });
+}
+function taSkjemaAvtrykk(){ skjemaAvtrykk = skjemaFingeravtrykk(); }
+function skjemaErEndret(){
+  return skjemaAvtrykk !== null && skjemaFingeravtrykk() !== skjemaAvtrykk;
+}
+
 function goAddBack(){
+  if(skjemaErEndret()){
+    showConfirmModal(
+      'Du har endringer som ikke er lagret. Forkaster du dem nå, er de borte.',
+      () => { skjemaAvtrykk = null; forlatAddSkjema(); },
+      'Forkast endringene'
+    );
+    return;
+  }
+  forlatAddSkjema();
+}
+function forlatAddSkjema(){
   const id = editingRecipeId;
   if(id){
     editingRecipeId = null;
@@ -3812,8 +3894,13 @@ async function submitPhysicalImport(){
 
 /* ---- Generic in-app confirm modal (native confirm() is blocked in this sandbox) ---- */
 let confirmModalCallback = null;
-function showConfirmModal(message, onYes){
+/* jaTekst er valgfri. Standard er "Slett" fordi alle de opprinnelige
+   kallstedene sletter noe - men modalen brukes naa ogsaa til aa forkaste
+   et utkast, og da er "Slett" feil ord. */
+function showConfirmModal(message, onYes, jaTekst){
   $('confirm-modal-text').textContent = message;
+  const ja = $('confirm-modal-yes');
+  if(ja) ja.textContent = jaTekst || 'Slett';
   confirmModalCallback = onYes;
   openModal('confirm');
 }
@@ -3861,6 +3948,10 @@ function resetAddForm(){
   expandedStepId = null;
   addIngredientRow(); addIngredientRow();
   addStepRow(); addStepRow();
+  /* Avtrykk av det tomme skjemaet. Importstiene kaller resetAddForm foerst og
+     fyller ut etterpaa, saa det de fyller inn teller som ulagrede endringer -
+     som det skal: en importert oppskrift som ikke er lagret, er ikke lagret. */
+  taSkjemaAvtrykk();
 }
 
 let selectedCategories = [];
@@ -4994,6 +5085,7 @@ async function saveRecipe(){
     await persistRecipeIndex();
 
     if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = prevLabel; }
+    skjemaAvtrykk = null;   // lagret - det finnes ikke lenger noe ulagret aa advare om
     await openRecipe(recipe.id);
   }catch(err){
     console.error('Kunne ikke lagre oppskriften', err);
@@ -5651,7 +5743,21 @@ function startTipsRediger(i){
   const f = $('tips-felt-' + i);
   if(f){ f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
 }
-function avbrytTips(){ tipsRedigerer = null; renderTips(); }
+function avbrytTips(){
+  /* Avbryt-regelen: feltet er forhaandsfylt med det lagrede tipset, saa vi
+     spoer bare hvis teksten faktisk er en annen. */
+  const r = recipeCache[currentRecipeId];
+  const i = tipsRedigerer;
+  const felt = (i != null) ? $('tips-felt-' + i) : null;
+  const lagret = (r && Array.isArray(r.tips) && i != null) ? (r.tips[i] || '') : '';
+  if(felt && felt.value.trim() !== String(lagret).trim()){
+    showConfirmModal('Du har endret tipset. Forkaster du endringen nå, er den borte.',
+      () => { tipsRedigerer = null; renderTips(); }, 'Forkast endringen');
+    return;
+  }
+  tipsRedigerer = null;
+  renderTips();
+}
 
 async function lagreTips(i){
   const r = recipeCache[currentRecipeId];
@@ -5994,6 +6100,11 @@ async function editCurrentRecipe(){
   fyllMedSeksjoner('step', (r.steps.length ? r.steps : ['']).map(normalizeStep), s => addStepRow(s));
   (Array.isArray(r.tips) ? r.tips : []).forEach(t => addTipsRow(t));
 
+  /* Nytt avtrykk naa som den lagrede oppskriften staar i skjemaet - ellers
+     ville alt den fylte inn telt som ulagrede endringer, og Avbryt hadde
+     spurt selv om man ikke har roert noe. */
+  taSkjemaAvtrykk();
+
   showView('view-add');
 }
 /* ---- Redigering rett i oppskriften ----
@@ -6049,6 +6160,27 @@ function startStegRedigering(){
 }
 
 async function avbrytStegRedigering(){
+  const r = recipeCache[currentRecipeId];
+
+  /* Avbryt-regelen: spoer bare hvis noe faktisk ble endret. Sammenligningen
+     mot utkastFoer fantes alt lenger nede - den brukes naa til to ting:
+     avgjoere om vi skal spoerre, og avgjoere om vi skal skrive tilbake. */
+  if(r && utkastFoer){
+    const naaSjekk = JSON.stringify({
+      tips: r.tips || [],
+      chefComments: r.chefComments || [],
+      tastings: r.tastings || []
+    });
+    if(naaSjekk !== utkastFoer){
+      showConfirmModal('Du har endringer som ikke er lagret. Forkaster du dem nå, er de borte.',
+        () => gjennomfoerAvbrytSteg(), 'Forkast endringene');
+      return;
+    }
+  }
+  await gjennomfoerAvbrytSteg();
+}
+
+async function gjennomfoerAvbrytSteg(){
   const r = recipeCache[currentRecipeId];
   redigerModus = false;
   stegUtkast = null;
