@@ -486,6 +486,24 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .boble[data-side="ned"]::after{top:-6px;left:var(--peker,24px)}
 .boble[data-side="opp"]::after{bottom:-6px;left:var(--peker,24px)}
 .boble-topp{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+/* ---------- Laster ---------- */
+.laster{
+  position:fixed;left:50%;transform:translateX(-50%);z-index:80;
+  bottom:calc(24px + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:9px;
+  background:var(--ink);color:#fff;border-radius:999px;
+  padding:9px 18px;box-shadow:0 4px 18px rgba(44,62,80,.28);
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+  letter-spacing:.04em;pointer-events:none;
+}
+.laster[hidden]{display:none}
+.laster-hjul{
+  width:15px;height:15px;border-radius:50%;flex-shrink:0;
+  border:2px solid rgba(255,255,255,.32);border-top-color:#fff;
+  animation:lasterSnurr .8s linear infinite;
+}
+@keyframes lasterSnurr{ to{transform:rotate(360deg)} }
+
 /* ---------- Filviser ---------- */
 .filviser{
   position:fixed;inset:0;z-index:95;background:rgba(44,62,80,.62);
@@ -800,7 +818,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .cal-cell.sel .cal-band{box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
 
 /* ---------- Planvisning (Dagsplan / Ukeplan) ---------- */
-.plan{flex:1;min-height:0;overflow-y:auto;padding:2px 2px 8px}
+/* position:relative gjoer at offsetTop paa dagseksjonene maales mot
+   lista selv. Uten det ble den maalt mot et helt annet element, og
+   "I dag" landet feil sted. */
+.plan{position:relative;flex:1;min-height:0;overflow-y:auto;padding:2px 2px 8px}
 .plan-dhead{
   font-family:'Archivo',sans-serif;font-weight:700;text-transform:uppercase;
   letter-spacing:.05em;font-size:var(--t-meta);color:var(--ink);
@@ -1143,11 +1164,28 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .dagtid-felt{left:42px;right:4px}
 }
 
-/* Liggende telefon: panelene har lite hoeyde aa gaa paa, men god bredde */
-@media (orientation:landscape) and (max-height:500px){
+/* Liggende telefon: lite hoeyde, men god bredde. Uke/dato legges til
+   venstre og initialene til hoeyre paa samme linje, saa navigasjonen tar
+   én linje i stedet for tre - og kalenderen faar plassen. */
+@media (orientation:landscape) and (max-height:560px){
   .dlg{height:auto}
   .fld-notat textarea{min-height:120px}
   .dagpanel,.boble.side{width:52vw;min-width:0}
+
+  body{overflow:hidden}
+  .shell{height:100dvh;min-height:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));gap:8px}
+  .top{display:none}                       /* logoen tar for mye hoeyde */
+  .mnav-topp{
+    grid-template-columns:auto 1fr auto;justify-items:stretch;gap:10px;
+  }
+  .mnav-title{font-size:var(--t-brod);text-align:left;justify-self:start}
+  .mnav-topp > .seg{justify-self:center}
+  .hurtigkal{grid-column:auto;justify-self:end;justify-content:end}
+  .hk-ini{width:25px;height:25px;font-size:var(--t-rute)}
+  .hk-alle{height:25px;padding:0 9px}
+  .cal-panel{flex:1;min-height:0}
+  .tg{height:auto;flex:1;min-height:0}     /* kalenderen tar resten */
+  .plan{height:auto;flex:1;min-height:0}
 }
 
   /* ---------- Plan: kronologiske dagsoeyler ----------
@@ -1286,6 +1324,11 @@ input,select,textarea{font-size:16px}
 <button class="blapil hoyre" id="blaNeste" onclick="bla(1)" title="Neste" aria-label="Neste" hidden>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4l8 8-8 8"/></svg>
 </button>
+
+<div class="laster" id="laster" hidden>
+  <span class="laster-hjul"></span>
+  <span>Oppdateres</span>
+</div>
 
 <div class="filviser" id="filviser" hidden onclick="if(event.target===this) lukkViser()">
   <div class="filviser-kort">
@@ -2142,6 +2185,8 @@ function fyllAvtaler(){
       const rad = Math.floor((mndKart.lead + d.getDate() - 1) / 7);
       band.dataset.strekk = e.id + '|' + rad;
       band.dataset.tittel = e.title;
+      band.dataset.ini    = initialFor(e.calId, e.calName);
+      if(e.vedlegg) band.dataset.klips = '1';
       band.title = e.title;
       band.style.cursor = 'pointer';
       band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; visBoble(e.id, ev); };
@@ -2731,10 +2776,26 @@ function goToday(){
     setTimeout(gaa, 80);
   }
 }
+/* Roterende merke mens avtalene hentes. Vises foerst etter et lite
+   oeyeblikk, saa raske oppdateringer ikke gir et blink paa skjermen. */
+let lasterTimer = null;
+
+function visLaster(paa){
+  const el = $('laster');
+  if(!el) return;
+  clearTimeout(lasterTimer);
+  if(paa){
+    lasterTimer = setTimeout(function(){ el.hidden = false; }, 250);
+  } else {
+    el.hidden = true;
+  }
+}
+
 async function last(force){
   if(!(S.token || S.refresh)) return;
   if(S.loading){ S.ventende = S.ventende || force; return; }   /* slå sammen kall */
   S.loading = true;
+  visLaster(true);
   msg($('calMsg'), '');
   try{
     if(!S.calendars.length) await loadCalendars();
@@ -2752,6 +2813,7 @@ async function last(force){
     if(/Ikke innlogget|invalid_grant|expired/i.test(err.message)) nullstillLokalt();
   }finally{
     S.loading = false;
+    visLaster(false);
     if(S.ventende){ S.ventende = false; last(false); }
   }
 }
