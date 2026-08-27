@@ -32,6 +32,9 @@
 
   --ink:#2C3E50;
   --ink-soft:#7A8899;
+  /* Handlingsfarger: groenn = opprette, oransje = endre. */
+  --gronn:#3E7C5A;
+  --oransje:#C08A2E;
   --paper:#FFFFFF;
   --line:#E4E8EC;
   --lime:#C8E64B;
@@ -95,7 +98,7 @@ body{
 /* Detaljkortet fyller hoeyrekolonnen naar en avtale er valgt. */
 .detaljkort{flex:1 1 auto;min-height:0}
 .detalj-lukk{
-  margin-left:auto;border:none;background:transparent;color:var(--ink-soft);
+  margin-left:8px;border:none;background:transparent;color:var(--ink-soft);
   font-size:var(--t-pil);line-height:1;cursor:pointer;padding:0 4px;border-radius:8px;
 }
 .detalj-lukk:active{background:rgba(44,62,80,.08)}
@@ -283,11 +286,13 @@ body{
   max-height:min(64vh,470px);overflow-y:auto;
   -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
 }
-.detalj-topp{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.detalj-prikk{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.detalj-kal{
-  font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;
-  letter-spacing:.1em;color:var(--ink-soft);
+/* Kalendernavnet er ute her ogsaa - et stort bokstavmerke sier hvem det
+   gjelder, i samme farge som kortet er tonet i. */
+#detalj .kort-tittel{align-items:center;gap:10px}
+.detalj-ini{
+  width:42px;height:42px;border-radius:50%;color:#FFFFFF;flex-shrink:0;
+  font-family:'Archivo',sans-serif;font-size:var(--t-stor);font-weight:800;
+  display:flex;align-items:center;justify-content:center;line-height:1;
 }
 .detalj-tittel{font-size:var(--t-stor);font-weight:700;line-height:1.25;padding-right:30px}
 .detalj-tid{font-size:var(--t-brod);font-weight:600;color:var(--blaa);margin-top:6px;font-variant-numeric:tabular-nums}
@@ -301,6 +306,26 @@ body{
   font-size:var(--t-brod);line-height:1.5;white-space:pre-wrap;word-wrap:break-word;
 }
 .detalj-notat.tom{color:var(--ink-soft);font-style:italic}
+
+/* ---------- Handlingsknapper ---------- */
+/* Groenn oppretter, oransje endrer. Begge er vanlige knapper med fyll,
+   ikke omriss - de skal vaere lette aa treffe med finger paa avstand. */
+.knapp-gronn,.knapp-endre{
+  border:none;color:#FFFFFF;font-family:'Archivo',sans-serif;font-weight:700;
+  font-size:var(--t-etikett);letter-spacing:.06em;text-transform:uppercase;
+  padding:7px 15px;border-radius:999px;cursor:pointer;line-height:1.2;
+  -webkit-tap-highlight-color:transparent;
+}
+.knapp-gronn{background:var(--gronn)}
+.knapp-endre{background:var(--oransje);margin-left:auto}
+.knapp-gronn:active,.knapp-endre:active{filter:brightness(.9)}
+.knapp-gronn:disabled{opacity:.55}
+
+/* Under dagens avtaler, i full bredde. */
+.ny-avtale{
+  flex-shrink:0;width:100%;margin-top:12px;
+  font-size:var(--t-meta);padding:11px 15px;
+}
 
 /* ---------- Vær ---------- */
 .vaer-t{flex:1;text-align:center;padding:8px 2px;border-radius:11px;background:#F7F9FA}
@@ -336,10 +361,10 @@ a.middag:active{opacity:.72}
 .mid-tom{cursor:pointer;display:flex;align-items:baseline;gap:8px}
 .mid-legg{
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;
-  padding:2px 9px;flex-shrink:0;margin-left:auto;
+  color:#FFFFFF;background:var(--gronn);border:none;border-radius:999px;
+  padding:4px 12px;flex-shrink:0;margin-left:auto;
 }
-.mid-tom:active .mid-legg{background:rgba(44,62,80,.08)}
+.mid-tom:active .mid-legg{filter:brightness(.9)}
 .mid-notat{
   font-size:var(--t-brod);font-weight:600;line-height:1.35;cursor:pointer;
   white-space:pre-wrap;overflow-wrap:anywhere;
@@ -416,12 +441,13 @@ input,select,textarea{font-size:16px}
 
 /* ---------- Huskeliste ---------- */
 .hu-ny{
-  margin-left:auto;border:1px solid var(--line);background:transparent;
-  color:var(--ink-soft);font-family:inherit;font-size:var(--t-brod);font-weight:700;
-  line-height:1;width:22px;height:22px;border-radius:50%;cursor:pointer;
+  margin-left:auto;border:none;background:var(--gronn);
+  color:#FFFFFF;font-family:inherit;font-size:var(--t-brod);font-weight:700;
+  line-height:1;padding:3px 14px;border-radius:999px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
 }
-.hu-ny:active{background:rgba(44,62,80,.08)}
+.hu-ny:active{filter:brightness(.9)}
 /* Raden viser bare overskriften. Alt annet ligger i boblen. */
 .hu-rad{
   display:flex;align-items:center;gap:8px;
@@ -522,6 +548,44 @@ input,select,textarea{font-size:16px}
 }
 .hu-avbryt{border:1px solid var(--line);background:transparent;color:var(--ink-soft)}
 .hu-lagre{border:1px solid var(--ink);background:var(--ink);color:#FFFFFF}
+
+/* ---------- Avtaleskjema ---------- */
+/* Ett skjema for baade ny og endret avtale. Det legger seg midt paa
+   skjermen, over alt annet, saa det virker likt i alle tre bredder. */
+.avtale-bak{background:rgba(44,62,80,.30)}
+.avtale-boks{
+  position:fixed;z-index:61;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(92vw,520px);max-height:86vh;overflow-y:auto;overscroll-behavior:contain;
+  background:var(--paper);border:1px solid var(--line);border-radius:18px;
+  padding:18px 20px 16px;box-shadow:0 18px 44px rgba(44,62,80,.28);
+}
+.avtale-boks[hidden]{display:none}
+.av-tittel{
+  font-size:var(--t-stor);font-weight:700;line-height:1.2;
+  padding-right:26px;margin-bottom:14px;display:flex;align-items:center;gap:10px;
+}
+.av-merke{
+  width:34px;height:34px;border-radius:50%;color:#FFFFFF;flex-shrink:0;
+  font-family:'Archivo',sans-serif;font-size:var(--t-brod);font-weight:800;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.av-merke[hidden]{display:none}
+.av-skjema{display:flex;flex-direction:column;gap:9px}
+.av-rad{display:flex;gap:9px}
+.av-rad label{
+  flex:1;min-width:0;font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px;
+}
+.av-hele{
+  display:flex;align-items:center;gap:9px;cursor:pointer;
+  font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-soft);
+}
+.av-hele input{width:19px;height:19px;accent-color:var(--gronn);margin:0}
+#avNotat{min-height:96px}
+.av-serie{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
+.av-feil{color:#B4443A;font-size:var(--t-meta);font-weight:600}
+.av-feil[hidden],.av-serie[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -567,6 +631,39 @@ input,select,textarea{font-size:16px}
     <div id="vaerBobleInn"></div>
   </div>
 
+  <!-- Bakteppet stenger av resten av skjermen, men lukker ikke skjemaet:
+       et halvskrevet notat skal ikke ryke av et bomtrykk. -->
+  <div class="hu-boble-bak avtale-bak" id="avtaleBak" hidden></div>
+  <div class="avtale-boks" id="avtaleBoks" hidden role="dialog" aria-modal="true">
+    <button class="hub-lukk" onclick="lukkAvtale()" aria-label="Lukk">×</button>
+    <div class="av-tittel">
+      <span class="av-merke" id="avMerke" hidden></span>
+      <span id="avOverskrift">Ny avtale</span>
+    </div>
+    <div class="av-skjema">
+      <input class="hu-felt" id="avTittel" maxlength="120" placeholder="Hva skjer?">
+      <div class="av-rad">
+        <label>Kalender<select class="hu-felt" id="avKal"></select></label>
+        <label>Dato<input class="hu-felt" type="date" id="avDato"></label>
+      </div>
+      <div class="av-rad" id="avTider">
+        <label>Fra<input class="hu-felt" type="time" id="avFra" step="300"></label>
+        <label>Til<input class="hu-felt" type="time" id="avTil" step="300"></label>
+      </div>
+      <label class="av-hele">
+        <input type="checkbox" id="avHele" onchange="avtaleHeleDagen()">Hele dagen
+      </label>
+      <input class="hu-felt" id="avSted" maxlength="150" placeholder="Sted (valgfritt)">
+      <textarea class="hu-felt hu-omr" id="avNotat" rows="4" placeholder="Notat (valgfritt)"></textarea>
+      <div class="av-serie" id="avSerie" hidden>Del av en serie – endringen gjelder bare denne datoen.</div>
+      <div class="av-feil" id="avFeil" hidden></div>
+      <div class="hu-knapper">
+        <button class="hu-avbryt" onclick="lukkAvtale()">Avbryt</button>
+        <button class="knapp-gronn" id="avLagre" onclick="lagreAvtale()">Legg til</button>
+      </div>
+    </div>
+  </div>
+
   <div class="hu-boble-bak" id="huBobleBak" hidden onclick="lukkHuskeBoble()"></div>
   <div class="hu-boble" id="huBoble" hidden>
     <button class="hub-lukk" onclick="lukkHuskeBoble()" aria-label="Lukk">×</button>
@@ -589,13 +686,15 @@ input,select,textarea{font-size:16px}
       <div class="kort-kropp" id="plan">
         <div class="tom">Henter …</div>
       </div>
+      <button class="knapp-gronn ny-avtale" onclick="nyAvtale()">Legg til avtale i kalenderen</button>
     </div>
 
     <div class="hoyre">
 
       <div class="kort detaljkort" id="detalj" hidden>
         <div class="kort-tittel">
-          <span>Avtalen</span>
+          <span class="detalj-ini" id="detaljMerke"></span>
+          <button class="knapp-endre" onclick="redigerAvtale()">Endre</button>
           <button class="detalj-lukk" onclick="lukkDetalj()" aria-label="Lukk">×</button>
         </div>
         <div class="kort-kropp" id="detaljInn"></div>
@@ -833,15 +932,21 @@ function visPort(paa){
 /* ============================================================
    Microsoft Graph
    ============================================================ */
-async function graph(sti){
+/* valg: {method, body}. Uten valg er dette et vanlig GET, som foer. */
+async function graph(sti, valg){
   const t = await gyldigToken();
   if(!t) throw new Error('Ikke innlogget');
   const opt = {
+    method: (valg && valg.method) || 'GET',
     headers:{
       Authorization:'Bearer ' + t,
       Prefer:'outlook.timezone="' + TZ + '"'
     }
   };
+  if(valg && valg.body){
+    opt.headers['Content-Type'] = 'application/json';
+    opt.body = JSON.stringify(valg.body);
+  }
   /* Taaler struping — samme grunn som i kalenderen. */
   let forsoek = 0, r;
   while(true){
@@ -857,7 +962,11 @@ async function graph(sti){
   if(!txt) return null;
   let d;
   try{ d = JSON.parse(txt); }catch(e){ throw new Error('Uventet svar fra Microsoft'); }
-  if(!r.ok) throw new Error((d.error && d.error.message) || 'Graph-feil');
+  if(!r.ok){
+    const feil = new Error((d.error && d.error.message) || 'Graph-feil');
+    feil.status = r.status;
+    throw feil;
+  }
   return d;
 }
 
@@ -992,13 +1101,16 @@ async function hentPlan(){
 
   const kal = await graph('/me/calendars?$top=50');
   const aktive = (kal.value || []).map(function(c, i){
-    return { id:c.id, navn:c.name, farge:kalenderFarge(c.name, i) };
+    return { id:c.id, navn:c.name, farge:kalenderFarge(c.name, i),
+             kanSkrive: c.canEdit !== false };
   });
+  /* Skjemaet trenger den samme lista for aa vite hvor en ny avtale skal. */
+  kalendere = aktive;
 
   const q = '?startDateTime=' + start.toISOString()
           + '&endDateTime=' + slutt.toISOString()
           + '&$orderby=start/dateTime&$top=100'
-          + '&$select=subject,isAllDay,start,end,location,body';
+          + '&$select=id,subject,isAllDay,start,end,location,body,type';
 
   /* Maks tre samtidige kall, og en kalender som feiler skal ikke
      stilltiende bli borte — vi sier fra i stedet. */
@@ -1011,6 +1123,9 @@ async function hentPlan(){
         const d = await graph('/me/calendars/' + c.id + '/calendarView' + q);
         return (d.value || []).map(function(e){
           return {
+            id: e.id,
+            type: e.type || 'singleInstance',
+            kalId: c.id,
             tittel: e.subject || '(uten tittel)',
             heleDagen: !!e.isAllDay,
             start: new Date(e.start.dateTime + (e.start.timeZone === 'UTC' ? 'Z' : '')),
@@ -1102,11 +1217,20 @@ function visDetalj(i){
 
   const tid = e.heleDagen ? 'Hele dagen' : kl(e.start) + '–' + kl(e.slutt);
 
-  let html = '<div class="detalj-topp">'
-    + '<span class="detalj-prikk" style="background:' + e.farge + '"></span>'
-    + '<span class="detalj-kal">' + esc(e.kalender) + '</span>'
-    + '</div>'
-    + '<div class="detalj-tittel">' + esc(e.tittel) + '</div>'
+  /* Bokstavmerket i toppraden erstatter kalendernavnet, og hele kortet
+     tones i avtalens farge - da ser man hvem det gjelder paa avstand. */
+  const merke = $('detaljMerke');
+  if(merke){
+    merke.textContent = (e.kalender || '?').trim().charAt(0).toUpperCase();
+    merke.style.background = e.farge;
+    merke.title = e.kalender || '';
+  }
+  const kort = $('detalj');
+  kort.style.background = tett(e.farge, .16);
+  kort.style.boxShadow = 'inset 0 0 0 1px ' + dus(e.farge, .34)
+    + ', 0 2px 14px rgba(0,0,0,.06)';
+
+  let html = '<div class="detalj-tittel">' + esc(e.tittel) + '</div>'
     + '<div class="detalj-tid">' + esc(tid) + '</div>';
 
   if(e.sted) html += '<div class="detalj-linje"><span>Sted</span>' + esc(e.sted) + '</div>';
@@ -1128,11 +1252,192 @@ function visDetalj(i){
 
 function lukkDetalj(){
   detaljIndeks = null;
-  if($('detalj')) $('detalj').hidden = true;
+  if($('detalj')){
+    $('detalj').hidden = true;
+    $('detalj').style.background = '';
+    $('detalj').style.boxShadow = '';
+  }
   HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = false; });
   Array.from(document.querySelectorAll('.plan-rad.valgt'))
     .forEach(function(r){ r.classList.remove('valgt'); });
   if(typeof visTilIdag === 'function') visTilIdag();
+}
+
+/* ============================================================
+   Avtaler — opprette og endre
+   Ett skjema for begge deler. Ny avtale skrives til den valgte
+   kalenderen, endring gaar paa avtalen selv (PATCH /me/events/<id>).
+   Aa flytte en avtale mellom kalendere kan ikke gjoeres med en endring
+   i Graph, saa kalendervalget er laast naar man endrer.
+   ============================================================ */
+let kalendere = [];            /* fylles av hentPlan() */
+let avtaleEndrer = null;       /* avtalen som endres, ellers null = ny */
+let avtaleAapen = false;
+
+function nyAvtale(){ apneAvtale(null); }
+
+function redigerAvtale(){
+  const e = dagensAvtaler[detaljIndeks];
+  if(e) apneAvtale(e);
+}
+
+/* Neste hele time, som utgangspunkt for en ny avtale i dag. */
+function nesteTime(){
+  const n = new Date();
+  n.setMinutes(0, 0, 0);
+  n.setHours(n.getHours() + 1);
+  return n;
+}
+function dagenEtter(datotekst){
+  const b = String(datotekst).split('-');
+  return datoNokkel(new Date(+b[0], +b[1] - 1, +b[2] + 1));
+}
+
+function apneAvtale(e){
+  if(!kalendere.length){
+    alert('Kalenderne er ikke hentet ennå. Prøv Oppdater først.');
+    return;
+  }
+  avtaleEndrer = e || null;
+  avtaleAapen = true;
+  lukkHuskeBoble();
+  lukkVaerBoble();
+
+  const merke = $('avMerke');
+  merke.hidden = !e;
+  if(e){
+    merke.textContent = (e.kalender || '?').trim().charAt(0).toUpperCase();
+    merke.style.background = e.farge;
+  }
+  $('avOverskrift').textContent = e ? 'Endre avtale' : 'Ny avtale';
+
+  /* Kalendervalget: bare kalendere vi faktisk kan skrive i. */
+  const skrivbare = kalendere.filter(function(c){ return c.kanSkrive; });
+  const liste = skrivbare.length ? skrivbare : kalendere;
+  const onsket = e ? e.kalId
+    : (liste.filter(function(c){ return c.navn === 'Familie'; })[0] || liste[0]).id;
+  $('avKal').innerHTML = liste.map(function(c){
+    return '<option value="' + esc(c.id) + '"' + (c.id === onsket ? ' selected' : '') + '>'
+      + esc(c.navn) + '</option>';
+  }).join('');
+  $('avKal').disabled = !!e;
+
+  const start = e ? e.start : dagenViser();
+  $('avDato').value = datoNokkel(start);
+  $('avHele').checked = !!(e && e.heleDagen);
+
+  if(e && !e.heleDagen){
+    $('avFra').value = kl(e.start);
+    $('avTil').value = kl(e.slutt);
+  }else if(!e){
+    const fra = (dagOffset === 0) ? nesteTime() : new Date(2000, 0, 1, 12, 0);
+    $('avFra').value = kl(fra);
+    $('avTil').value = kl(new Date(fra.getTime() + 3600000));
+  }
+
+  $('avTittel').value = (e && e.tittel !== '(uten tittel)') ? e.tittel : '';
+  $('avSted').value   = e ? (e.sted || '') : '';
+  $('avNotat').value  = e ? (e.notat || '') : '';
+
+  $('avSerie').hidden = !(e && e.type && e.type !== 'singleInstance');
+  $('avFeil').hidden = true;
+
+  const lagre = $('avLagre');
+  lagre.disabled = false;
+  lagre.textContent = e ? 'Lagre' : 'Legg til';
+  lagre.className = e ? 'knapp-endre' : 'knapp-gronn';
+  lagre.style.marginLeft = '0';
+
+  avtaleHeleDagen();
+  $('avtaleBak').hidden = false;
+  $('avtaleBoks').hidden = false;
+  $('avTittel').focus();
+}
+
+function lukkAvtale(){
+  avtaleAapen = false;
+  avtaleEndrer = null;
+  $('avtaleBak').hidden = true;
+  $('avtaleBoks').hidden = true;
+}
+
+/* Hele dagen: klokkeslettene har ingen mening da, saa de gaar i hvilemodus
+   i stedet for aa staa igjen med tall ingen bruker. */
+function avtaleHeleDagen(){
+  const hele = $('avHele').checked;
+  $('avTider').style.opacity = hele ? '.4' : '';
+  $('avFra').disabled = hele;
+  $('avTil').disabled = hele;
+}
+
+function avtaleFeil(tekst){
+  const f = $('avFeil');
+  f.textContent = tekst;
+  f.hidden = false;
+}
+
+async function lagreAvtale(){
+  $('avFeil').hidden = true;
+
+  const tittel = ($('avTittel').value || '').trim();
+  if(!tittel){ avtaleFeil('Avtalen trenger en tittel.'); $('avTittel').focus(); return; }
+
+  const dato = $('avDato').value;
+  if(!dato){ avtaleFeil('Velg en dato.'); $('avDato').focus(); return; }
+
+  const hele = $('avHele').checked;
+  const fra = $('avFra').value, til = $('avTil').value;
+  if(!hele){
+    if(!fra || !til){ avtaleFeil('Fyll inn både fra og til.'); return; }
+    if(til <= fra){ avtaleFeil('Sluttidspunktet må være etter starten.'); return; }
+  }
+
+  const e = avtaleEndrer;
+  const kropp = {
+    subject: tittel,
+    isAllDay: hele,
+    location: { displayName: ($('avSted').value || '').trim() }
+  };
+  if(hele){
+    kropp.start = { dateTime: dato + 'T00:00:00', timeZone: TZ };
+    kropp.end   = { dateTime: dagenEtter(dato) + 'T00:00:00', timeZone: TZ };
+  }else{
+    kropp.start = { dateTime: dato + 'T' + fra + ':00', timeZone: TZ };
+    kropp.end   = { dateTime: dato + 'T' + til + ':00', timeZone: TZ };
+  }
+  /* Notatet skrives bare naar det faktisk er endret. Avtaler laget i
+     Outlook har HTML-notat, og aa skrive tilbake ren tekst uten grunn
+     ville strippet formateringen deres. */
+  const notat = $('avNotat').value || '';
+  if(!e || notat.trim() !== String(e.notat || '').trim()){
+    kropp.body = { contentType: 'text', content: notat };
+  }
+
+  const lagre = $('avLagre');
+  const merkelapp = lagre.textContent;
+  lagre.disabled = true;
+  lagre.textContent = 'Lagrer …';
+
+  try{
+    if(e){
+      await graph('/me/events/' + encodeURIComponent(e.id), {method:'PATCH', body:kropp});
+    }else{
+      await graph('/me/calendars/' + encodeURIComponent($('avKal').value) + '/events',
+                  {method:'POST', body:kropp});
+    }
+    lukkAvtale();
+    /* Vis dagen avtalen havnet paa, slik at man ser resultatet. */
+    const b = dato.split('-');
+    const mal = new Date(+b[0], +b[1] - 1, +b[2]);
+    dagOffset = Math.round((mal - idag0()) / 86400000);
+    await tegnPlanPaaNytt();
+  }catch(err){
+    lagre.disabled = false;
+    lagre.textContent = merkelapp;
+    avtaleFeil(err.status === 403
+      ? 'Kontoen mangler skrivetilgang til kalenderen. Logg ut og inn igjen, så Microsoft spør om den på nytt.'
+      : 'Fikk ikke lagret avtalen: ' + err.message);
+  }
 }
 
 /* ============================================================
@@ -1987,7 +2292,10 @@ function tilbakeTilStandard(){
 }
 function nullstillHvile(){
   clearTimeout(hvileTimer);
-  hvileTimer = setTimeout(tilbakeTilStandard, HVILE_MS);
+  hvileTimer = setTimeout(function(){
+    if(avtaleAapen) return;        /* et halvskrevet skjema skal ikke ryke */
+    tilbakeTilStandard();
+  }, HVILE_MS);
 }
 /* Trykk et annet sted paa siden lukker det som staar aapent. Trykk inne i
    detaljkortet eller paa en avtalerad regnes ikke som utenfor. */
@@ -1996,8 +2304,9 @@ function kobleLukking(){
     const t = ev.target;
     if(huBobleId && !t.closest('.hu-boble') && !t.closest('.hu-rad')) lukkHuskeBoble();
     if(vaerBobleAapen && !t.closest('.vaer-boble') && !t.closest('.vt-naa')) lukkVaerBoble();
-    if($('detalj') && !$('detalj').hidden
-       && !t.closest('#detalj') && !t.closest('.plan-rad')) lukkDetalj();
+    if($('detalj') && !$('detalj').hidden && !avtaleAapen
+       && !t.closest('#detalj') && !t.closest('.plan-rad')
+       && !t.closest('#avtaleBoks')) lukkDetalj();
   });
 }
 
@@ -2084,7 +2393,7 @@ async function oppdaterAlt(manuelt){
   if(S.laster) return;
   /* Ikke tegn planen om igjen under beina paa noen som leser detaljer —
      radene ville byttet plass og indeksene pekt feil. */
-  if(!manuelt && !$('detalj').hidden) return;
+  if(!manuelt && (avtaleAapen || !$('detalj').hidden)) return;
   S.laster = true;
   if(manuelt){
     $('status').textContent = 'Oppdaterer …';
@@ -2221,6 +2530,7 @@ async function oppdaterAlt(manuelt){
 
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
+  if(avtaleAapen){ lukkAvtale(); return; }
   if(huBobleId) lukkHuskeBoble();
   if(vaerBobleAapen) lukkVaerBoble();
   if($('detalj') && !$('detalj').hidden) lukkDetalj();
