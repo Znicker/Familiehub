@@ -228,12 +228,12 @@ body{
   min-width:22px;height:22px;
 }
 .cal-cell.today .cal-num::before{
-  content:'';position:absolute;left:-2px;right:-2px;top:-2px;bottom:-2px;
-  border:1.5px solid var(--idag);
-  /* Ujevne radier gir den haandtegnede, litt ovale streken */
-  border-radius:47% 53% 51% 49% / 55% 47% 53% 45%;
-  transform:rotate(-6deg);
+  content:'';position:absolute;left:-5px;right:-5px;top:-5px;bottom:-5px;
   pointer-events:none;
+  /* Ringen er tegnet som en aapen strek som gaar litt forbi seg selv
+     oeverst til hoeyre, slik en ring satt med tusj gjoer. */
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M73 17 C74 18 78 21 80 23 C83 25 85 27 87 30 C89 32 90 35 92 38 C93 41 94 44 94 47 C95 50 95 53 94 56 C94 59 93 63 92 66 C91 69 89 72 88 74 C86 77 83 79 81 81 C78 83 75 85 73 87 C70 88 66 89 63 90 C60 91 57 92 53 92 C50 92 47 92 43 91 C40 91 37 90 34 89 C31 88 28 86 25 84 C22 83 20 81 17 78 C15 76 13 73 12 71 C10 68 8 65 8 62 C7 59 6 56 6 53 C6 50 6 47 6 44 C7 41 8 38 9 35 C11 32 13 29 15 27 C17 24 19 22 22 20 C24 18 27 17 30 15 C33 14 36 13 39 12 C42 11 46 11 49 11 C52 11 56 11 59 12 C62 12 65 13 68 15 C71 17 73 19 75 21 C77 23 79 26 80 28 C81 31 81 35 82 37' fill='none' stroke='%23F5453C' stroke-width='5.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:center;background-size:100% 100%;
 }
 .cal-cell.sel{background:var(--ink)}
 .cal-cell.sel:hover{background:var(--ink)}
@@ -599,11 +599,12 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   min-width:26px;height:26px;color:var(--ink);
 }
 .uke-dcol.idag .uke-dnum::before{
-  content:'';position:absolute;left:-2px;right:-2px;top:-2px;bottom:-2px;
-  border:1.5px solid var(--idag);
-  border-radius:47% 53% 51% 49% / 55% 47% 53% 45%;
-  transform:rotate(-6deg);
+  content:'';position:absolute;left:-6px;right:-6px;top:-5px;bottom:-5px;
   pointer-events:none;
+  /* Ringen er tegnet som en aapen strek som gaar litt forbi seg selv
+     oeverst til hoeyre, slik en ring satt med tusj gjoer. */
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M73 17 C74 18 78 21 80 23 C83 25 85 27 87 30 C89 32 90 35 92 38 C93 41 94 44 94 47 C95 50 95 53 94 56 C94 59 93 63 92 66 C91 69 89 72 88 74 C86 77 83 79 81 81 C78 83 75 85 73 87 C70 88 66 89 63 90 C60 91 57 92 53 92 C50 92 47 92 43 91 C40 91 37 90 34 89 C31 88 28 86 25 84 C22 83 20 81 17 78 C15 76 13 73 12 71 C10 68 8 65 8 62 C7 59 6 56 6 53 C6 50 6 47 6 44 C7 41 8 38 9 35 C11 32 13 29 15 27 C17 24 19 22 22 20 C24 18 27 17 30 15 C33 14 36 13 39 12 C42 11 46 11 49 11 C52 11 56 11 59 12 C62 12 65 13 68 15 C71 17 73 19 75 21 C77 23 79 26 80 28 C81 31 81 35 82 37' fill='none' stroke='%23F5453C' stroke-width='5.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:center;background-size:100% 100%;
 }
 .uke-dcol.sel{background:#EDF1F4;box-shadow:inset 0 -3px 0 var(--ink)}
 .uke-dow{font-size:var(--t-rute);font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
@@ -966,11 +967,12 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
      Ingen navnekolonne. Farget kantstripe og initial baerer hvem det
      gjelder, saa tomme rader per person slutter aa spise hoeyde. */
   .pu-rad{display:grid;align-items:start;min-height:100%}
+  /* Ingen skillestreker mellom dagene - luften og brikkene holder dem
+     fra hverandre, og overskriftsraden viser hvor kolonnene gaar. */
   .pu-kol{
-    border-left:1px solid var(--grid);padding:6px 5px 12px;cursor:pointer;
+    padding:6px 5px 12px;cursor:pointer;
     min-width:0;display:flex;flex-direction:column;gap:5px;
   }
-  .pu-kol:first-of-type{border-left:none}
   .pu-kol.helg{background:var(--bg-2)}
   .pu-kol.helligdag{background:rgba(180,68,58,.08)}
   /* Ingen farge bak avtalene - ringen rundt datoen er markeringen */
@@ -978,7 +980,6 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .pu-mer-lapp{
     position:sticky;bottom:0;z-index:3;
     background:var(--paper);color:var(--ink-soft);
-    border-top:1px solid var(--line);
     padding:4px 6px;pointer-events:none;
     font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
     text-align:center;letter-spacing:.03em;
