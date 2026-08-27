@@ -498,6 +498,29 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .boble[data-side="ned"]::after{top:-6px;left:var(--peker,24px)}
 .boble[data-side="opp"]::after{bottom:-6px;left:var(--peker,24px)}
 .boble-topp{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+/* ---------- Snu telefonen ---------- */
+.snu{
+  position:fixed;inset:0;z-index:85;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  background:var(--bg-1);
+}
+.snu[hidden]{display:none}
+.snu-kort{
+  display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
+  font-family:'Archivo',sans-serif;color:var(--ink);max-width:300px;
+}
+.snu-ikon{color:var(--blaa)}
+.snu-ikon svg{width:76px;height:76px;display:block}
+.snu-tekst{font-size:var(--t-stor);font-weight:700}
+.snu-under{font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5}
+.snu-knapp{
+  margin-top:6px;border:none;border-radius:999px;background:var(--blaa);color:#fff;
+  padding:12px 22px;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.snu-knapp:active{opacity:.85}
+
 /* ---------- Laster ---------- */
 .laster{
   position:fixed;inset:0;z-index:80;pointer-events:none;
@@ -628,12 +651,12 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* Sted som knapp til Google Maps, oeverst i avtalen */
 .boble-kart{
   display:flex;align-items:center;gap:9px;margin:0 0 12px;
-  background:var(--paper);border:1px solid var(--line);border-radius:999px;
-  padding:8px 14px 8px 9px;text-decoration:none;color:var(--ink);
-  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:600;
+  background:var(--blaa);border:none;border-radius:999px;
+  padding:8px 15px 8px 9px;text-decoration:none;color:#fff;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
   min-width:0;
 }
-.boble-kart:active{background:var(--bg-2)}
+.boble-kart:active{opacity:.85}
 .boble-kart-ikon{
   width:24px;height:24px;flex-shrink:0;border-radius:50%;background:#fff;
   display:flex;align-items:center;justify-content:center;
@@ -828,16 +851,13 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .uke-chip-t{font-variant-numeric:tabular-nums;opacity:.9;margin-right:5px;font-size:var(--t-etikett)}
 
 /* ---------- Heldags / fleredags bånd (måned) ---------- */
-/* Baandene ligger inne i rulleomraadet, men skal staa i ro naar man
-   ruller i en enkelt dag. Titlene er plassert i piksler over rutenettet,
-   saa de ville ikke fulgt med om baandene flyttet seg. */
+/* Baandene ligger utenfor rulleomraadet. De maa naa helt ut til
+   cellekanten for aa henge sammen over dagsgrensene, og et rullefelt
+   ville klippet det negative margen. */
 .cal-bars{
   display:flex;flex-direction:column;gap:2px;margin:0 -7px 3px;
   overflow:visible;flex-shrink:0;
-  position:sticky;top:0;z-index:2;background:var(--paper);
 }
-.cal-cell.utenfor .cal-bars{background:var(--bg-2)}
-.cal-cell.sel .cal-bars{background:var(--ink)}
 .cal-band{
   height:16px;display:flex;align-items:center;gap:4px;color:#fff;
   font-size:var(--t-etikett);font-weight:700;line-height:1;padding:0 5px;
@@ -1389,6 +1409,24 @@ input,select,textarea{font-size:16px}
 <button class="blapil hoyre" id="blaNeste" onclick="bla(1)" title="Neste" aria-label="Neste" hidden>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4l8 8-8 8"/></svg>
 </button>
+
+<!-- Maaned og uke trenger sju kolonner. Paa en telefon i staaende
+     visning blir de uleselige, saa vi ber om at telefonen snus. -->
+<div class="snu" id="snu" hidden>
+  <div class="snu-kort">
+    <span class="snu-ikon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4.5" y="2.5" width="15" height="19" rx="2.5"/>
+        <path d="M9.5 19h5"/>
+        <path d="M2.2 12.5a9.8 9.8 0 0 0 2.3 5.6M21.8 11.5a9.8 9.8 0 0 0-2.3-5.6"/>
+      </svg>
+    </span>
+    <span class="snu-tekst">Snu telefonen</span>
+    <span class="snu-under">Måned og uke trenger liggende skjerm</span>
+    <button type="button" class="snu-knapp" onclick="settVisning('day')">Vis dagen i stedet</button>
+  </div>
+</div>
 
 <div class="laster" id="laster" hidden>
   <div class="laster-kort">
@@ -2226,6 +2264,10 @@ function fyllAvtaler(){
   const bokser = document.querySelectorAll('.cal-evs');
   bokser.forEach(function(box){
     box.innerHTML = '';
+    /* Egen beholder for baandene, som soesken til rulleomraadet */
+    const cell = box.parentNode;
+    let baandBoks = cell.querySelector('.cal-bars');
+    if(baandBoks) baandBoks.remove();
     const d = new Date(+box.dataset.t);
     const col = (mndKart.lead + d.getDate() - 1) % 7;
     const info = mndKart.celle[+d] || { multi: [], maxLane: -1, enkelt: [] };
@@ -2272,7 +2314,7 @@ function fyllAvtaler(){
       info.enkelt.forEach(function(e){
         if(linjer < MAX_BANER){ bars.appendChild(bygg(e, true)); linjer++; }
       });
-      if(bars.children.length) box.appendChild(bars);
+      if(bars.children.length) cell.insertBefore(bars, box);
     }
 
     /* --- Tidsbestemte avtaler: én brikke per kalender med antall ---
@@ -2524,10 +2566,7 @@ function tegnValgtAvtale(){
   const list = $('dayList');
   const e = S.events.filter(function(x){ return x.id === valgtAvtaleId; })[0];
 
-  if(!e){
-    list.innerHTML = '<div class="msg">Velg en avtale i lista for å se detaljene.</div>';
-    return;
-  }
+  if(!e){ list.innerHTML = ''; return; }
 
   const tid = e.allDay
     ? 'Hele dagen'
@@ -2684,6 +2723,7 @@ function render(){
   renderCalList();
   renderHurtigKal();
   oppdaterBlapiler();
+  sjekkSnu();
   const it = $('idagTall');
   if(it) it.textContent = new Date().getDate();
 }
@@ -2798,6 +2838,20 @@ function renderHurtigKal(){
 
 /* Pilene vises naar man er logget inn og staar i en kalendervisning.
    Lista ruller fritt og trenger dem ikke. */
+/* Nettleseren kan ikke tvinge telefonen til aa snu - iOS Safari
+   stoetter det ikke i det hele tatt. Vi ber om det i stedet, og lar
+   den som vil bli staaende hoppe til dagvisning. */
+function sjekkSnu(){
+  const el = $('snu');
+  if(!el) return;
+  const staaende = window.matchMedia('(max-width:560px) and (orientation:portrait)').matches;
+  const trengerBredde = (S.vis !== 'liste') && (S.modus === 'month' || S.modus === 'week');
+  el.hidden = !(staaende && trengerBredde && (S.token || S.refresh));
+}
+
+window.addEventListener('orientationchange', function(){ setTimeout(sjekkSnu, 120); });
+window.addEventListener('resize', sjekkSnu);
+
 function oppdaterBlapiler(){
   const vis = !!(S.token || S.refresh) && S.vis !== 'liste';
   ['blaFor', 'blaNeste'].forEach(function(id){
