@@ -1200,7 +1200,11 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   body{overflow:auto;overscroll-behavior-y:none}
   .shell{height:auto;min-height:100dvh;padding:16px 14px calc(16px + env(safe-area-inset-bottom))}
   .grid{display:flex;flex-direction:column}
-  .cal{height:auto;grid-template-rows:auto repeat(6,minmax(76px,auto))}
+  /* Fast hoeyde, ellers vokser rutene med innholdet og det finnes
+     ingenting aa rulle i. flex maa nullstilles: flex-basis overstyrer
+     height i en flex-kolonne. renderCal setter selv radene til
+     minmax(0,1fr), saa de blir like hoeye. */
+  .cal{flex:0 0 auto;height:74dvh;min-height:0}
   .side-day,.side-cals{flex:none}
   .side .scroll{overflow:visible}
   .brand-icon{width:46px;height:46px;padding:6px}
@@ -1269,7 +1273,9 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .hk-ini{width:25px;height:25px;font-size:var(--t-rute)}
   .hk-alle{height:25px;padding:0 9px}
   .cal-panel{flex:1;min-height:0}
-  .tg{height:auto;flex:1;min-height:0}     /* kalenderen tar resten */
+  /* Ta hele resthoeyden - her er hver piksel dyrebar */
+  .cal{flex:1;height:auto;min-height:0}
+  .tg{height:auto;flex:1;min-height:0}
   .plan{height:auto;flex:1;min-height:0}
 }
 
