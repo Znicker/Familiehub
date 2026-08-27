@@ -1442,7 +1442,7 @@ const CFG = {
   clientId : 'ccab6959-abc2-4d09-9212-4b33c0db025c',
   tenantId : '9fcd8ee6-9b49-4904-ae55-117ba14373c3',
   authority: 'common',
-  scopes   : 'openid profile offline_access User.Read Calendars.Read Calendars.ReadWrite'
+  scopes   : 'openid profile offline_access User.Read Calendars.Read Calendars.ReadWrite Calendars.ReadWrite.Shared'
 };
 const REDIRECT  = location.origin + location.pathname;
 const AUTH_BASE = 'https://login.microsoftonline.com/' + CFG.authority + '/oauth2/v2.0';
@@ -1797,9 +1797,21 @@ function toggleFull(){
 const TZ = 'Europe/Oslo';
 
 /* Id-ene fra Graph er base64-aktige og kan inneholde tegn som deler opp
-   en URL-sti. Dashboard har alltid kodet dem; kalender limte dem rett inn,
-   og det var derfor sletting av vedlegg feilet i det stille. */
+   en URL-sti. Dashboard har alltid kodet dem; kalender limte dem rett inn. */
 const enc = encodeURIComponent;
+
+/* Stien til én avtale.
+   /me/events/{id} betyr "avtalen i MIN postkasse". Det holdt saa lenge alle
+   kalenderne laa paa én konto og ble delt derfra. Naa deles standard-
+   kalenderen fra hver enkelt konto, og da bor avtalen i eierens postkasse -
+   der finner ikke /me/events den, og Graph svarer "The specified object was
+   not found in the store". Vi gaar derfor gjennom kalenderen avtalen ligger
+   i, som er samme vei vi leser den ut. */
+function avtaleSti(calId, eventId){
+  return calId
+    ? '/me/calendars/' + enc(calId) + '/events/' + enc(eventId)
+    : '/me/events/' + enc(eventId);
+}
 
 async function graph(path, method, payload){
   const t = await validToken();
@@ -3130,7 +3142,7 @@ function endreAvtale(id){
   $('fWhere').value = e.where;
   $('fNote').value  = e.note;
   vedleggNullstill();
-  if(e.vedlegg) lastVedlegg(e.id);   /* hentes i bakgrunnen */
+  if(e.vedlegg) lastVedlegg(e.calId, e.id);   /* hentes i bakgrunnen */
 
   if(e.allDay){
     const sisteDag = new Date(e.end.getTime() - 86400000);  // Graph slutter dagen etter
@@ -3345,10 +3357,10 @@ function vedleggRad(navn, str, fjern, aapne){
 }
 
 // Henter lista over vedlegg som allerede ligger paa avtalen
-async function lastVedlegg(eventId){
+async function lastVedlegg(calId, eventId){
   vedleggFinnes = [];
   try{
-    const d = await graph('/me/events/' + enc(eventId) + '/attachments?$select=id,name,size');
+    const d = await graph(avtaleSti(calId, eventId) + '/attachments?$select=id,name,size');
     vedleggFinnes = (d.value || []).map(function(a){
       return { id:a.id, name:a.name, size:a.size };
     });
@@ -3359,13 +3371,13 @@ async function lastVedlegg(eventId){
 /* Henter innholdet fra Graph og aapner det. Filen kommer som base64 og
    gjoeres om til en blob, saa nettleseren kan vise eller laste den ned. */
 function aapneVedlegg(v, knapp){
-  return aapneVedleggFra(redigererId(), v, knapp);
+  return aapneVedleggFra(redigerer && redigerer.calId, redigererId(), v, knapp);
 }
 
-async function aapneVedleggFra(eventId, v, knapp){
+async function aapneVedleggFra(calId, eventId, v, knapp){
   if(knapp) knapp.disabled = true;
   try{
-    const a = await graph('/me/events/' + enc(eventId) + '/attachments/' + enc(v.id));
+    const a = await graph(avtaleSti(calId, eventId) + '/attachments/' + enc(v.id));
     if(!a.contentBytes) throw new Error('Vedlegget kunne ikke hentes.');
     if(!a.name) a.name = v.name;
     /* Bilder og PDF vises i appen, resten lastes ned */
@@ -3427,9 +3439,9 @@ function klipsHtml(e){
    ============================================================ */
 
 /* Henter innholdet foerst hvis det ikke fulgte med i lista */
-async function hentOgTegn(eventId, a, boks){
+async function hentOgTegn(calId, eventId, a, boks){
   try{
-    const d = await graph('/me/events/' + enc(eventId) + '/attachments/' + enc(a.id));
+    const d = await graph(avtaleSti(calId, eventId) + '/attachments/' + enc(a.id));
     if(!d.contentBytes) return;
     tegnForhaand(d, boks);
   }catch(err){ /* uten innhold vises det ingenting - bedre enn en feil */ }
@@ -3452,7 +3464,7 @@ async function vedleggIVisning(e){
   boks.hidden = false;
   boks.textContent = 'Henter vedlegg …';
   try{
-    const d = await graph('/me/events/' + enc(e.id) + '/attachments');
+    const d = await graph(avtaleSti(e.calId, e.id) + '/attachments');
     if(min !== vedleggOekt) return;      /* en annen avtale er aapnet */
     const liste = d.value || [];
     boks.innerHTML = '';
@@ -3463,7 +3475,7 @@ async function vedleggIVisning(e){
          slipper vi et ekstra kall. */
       if(erBilde(a) || erPdf(a)){
         if(a.contentBytes) tegnForhaand(a, boks);
-        else hentOgTegn(e.id, a, boks);
+        else hentOgTegn(e.calId, e.id, a, boks);
         return;
       }
 
@@ -3477,7 +3489,7 @@ async function vedleggIVisning(e){
       n.title = 'Åpne ' + a.name;
       n.onclick = function(ev){
         ev.stopPropagation();
-        aapneVedleggFra(e.id, a, ev.currentTarget);
+        aapneVedleggFra(e.calId, e.id, a, ev.currentTarget);
       };
 
       const t = document.createElement('span');
@@ -3502,7 +3514,7 @@ async function vedleggIVisning(e){
    naar selve avtalen endres, og da svarer slettingen "The specified object
    was not found in the store" paa id-er vi hentet da dialogen ble aapnet.
    Det er grunnen til at sletting av vedlegg aldri har virket. */
-async function slettVedlegg(eventId){
+async function slettVedlegg(calId, eventId){
   if(!vedleggSlett.length) return;
 
   /* Id-ene vi fikk da dialogen ble aapnet svarte "The specified object was
@@ -3512,7 +3524,7 @@ async function slettVedlegg(eventId){
      rekkefoelge, saa riktig antall forsvinner. */
   let fersk = [];
   try{
-    const d = await graph('/me/events/' + enc(eventId) + '/attachments?$select=id,name,size');
+    const d = await graph(avtaleSti(calId, eventId) + '/attachments?$select=id,name,size');
     fersk = (d && d.value) || [];
   }catch(err){
     throw new Error('Fikk ikke lest vedleggene foer sletting: ' + (err.message || 'ukjent feil'));
@@ -3530,7 +3542,7 @@ async function slettVedlegg(eventId){
 
   for(const id of skalBort){
     try{
-      await graph('/me/events/' + enc(eventId) + '/attachments/' + enc(id), 'DELETE');
+      await graph(avtaleSti(calId, eventId) + '/attachments/' + enc(id), 'DELETE');
     }catch(err){
       if(err.status === 404) continue;      /* alt borte - jobben er gjort */
       throw new Error('Kunne ikke fjerne vedlegget ('
@@ -3540,11 +3552,11 @@ async function slettVedlegg(eventId){
   vedleggSlett = [];
 }
 
-async function lastOppVedlegg(eventId){
+async function lastOppVedlegg(calId, eventId){
   while(vedleggNye.length){
     const f = vedleggNye[0];
     const data = await filTilBase64(f);
-    await graph('/me/events/' + enc(eventId) + '/attachments', 'POST', {
+    await graph(avtaleSti(calId, eventId) + '/attachments', 'POST', {
       '@odata.type': '#microsoft.graph.fileAttachment',
       name: f.name,
       contentType: f.type || 'application/octet-stream',
@@ -3564,14 +3576,17 @@ async function lagreAvtale(){
   dlgFeil('');
   try{
     let id;
+    /* Ny avtale havner i kalenderen som er valgt i skjemaet; en eksisterende
+       ligger allerede i sin egen. */
+    const kalId = redigerer ? redigerer.calId : $('fCal').value;
     if(redigerer){
       /* Slettingen foerst, mens id-ene fortsatt gjelder - se slettVedlegg. */
       if(vedleggSlett.length){
         $('btnLagre').textContent = 'Fjerner vedlegg …';
-        await slettVedlegg(redigerer.id);
+        await slettVedlegg(redigerer.calId, redigerer.id);
       }
       $('btnLagre').textContent = 'Lagrer …';
-      await graph('/me/events/' + enc(redigerer.id), 'PATCH', p);
+      await graph(avtaleSti(redigerer.calId, redigerer.id), 'PATCH', p);
       id = redigerer.id;
     } else {
       const laget = await graph('/me/calendars/' + enc($('fCal').value) + '/events', 'POST', p);
@@ -3579,7 +3594,7 @@ async function lagreAvtale(){
     }
     if(id && vedleggNye.length){
       $('btnLagre').textContent = 'Laster opp …';
-      await lastOppVedlegg(id);
+      await lastOppVedlegg(kalId, id);
     }
     lukk();
     await refresh();
@@ -3597,7 +3612,7 @@ async function slettAvtale(){
 
   $('btnSlett').disabled = true;
   try{
-    await graph('/me/events/' + enc(redigerer.id), 'DELETE');
+    await graph(avtaleSti(redigerer.calId, redigerer.id), 'DELETE');
     lukk();
     await refresh();
   }catch(err){
