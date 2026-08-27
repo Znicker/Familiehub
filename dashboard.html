@@ -313,9 +313,11 @@ body{
 .detalj-notat.tom{color:var(--ink-soft);font-style:italic}
 
 /* ---------- Handlingsknapper ---------- */
-/* Groenn oppretter, oransje endrer. Begge er vanlige knapper med fyll,
-   ikke omriss - de skal vaere lette aa treffe med finger paa avstand. */
-.knapp-gronn,.knapp-endre{
+/* Groenn oppretter, oransje endrer, roedt sletter. Alle tre er vanlige
+   knapper med fyll, ikke omriss - de skal vaere lette aa treffe med
+   finger paa avstand. Slett stod tidligere uten denne drakta og arvet
+   nettleserens egen blaa knappetekst. */
+.knapp-gronn,.knapp-endre,.knapp-slett{
   border:none;color:#FFFFFF;font-family:'Archivo',sans-serif;font-weight:700;
   font-size:var(--t-etikett);letter-spacing:.06em;text-transform:uppercase;
   padding:7px 15px;border-radius:999px;cursor:pointer;line-height:1.2;
@@ -604,7 +606,8 @@ input,select,textarea{font-size:16px}
    skriver i. To kolonner holder hoeyden nede. */
 .avtale-boks{
   position:fixed;z-index:61;left:50%;top:10px;transform:translateX(-50%);
-  width:min(94vw,780px);max-height:46vh;overflow-y:auto;overscroll-behavior:contain;
+  width:min(94vw,880px);max-height:min(54vh,520px);
+  overflow-y:auto;overscroll-behavior:contain;
   background:var(--paper);border:1px solid var(--line);border-radius:18px;
   padding:18px 20px 16px;box-shadow:0 18px 44px rgba(44,62,80,.28);
 }
@@ -620,14 +623,18 @@ input,select,textarea{font-size:16px}
 }
 .av-merke[hidden]{display:none}
 .av-skjema{display:grid;grid-template-columns:1fr 1fr;gap:9px 18px;align-items:stretch}
+/* Avtaleskjemaet staar i tre kolonner. Hoeyden er det som teller: jo
+   faerre felt over hverandre, jo lenger unna tastaturet blir bunnen. */
+.av-skjema.av-tre{grid-template-columns:repeat(3,1fr)}
 .av-kol{display:flex;flex-direction:column;gap:9px;min-width:0}
+.av-kol-tid{display:flex;flex-direction:column;gap:9px}
 .av-rad{display:flex;gap:9px}
 .av-rad label,.av-felt{
   flex:1;min-width:0;font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px;
 }
 .av-vokser{flex:1 1 auto}
-.av-vokser textarea{flex:1 1 auto;min-height:84px}
+.av-vokser textarea{flex:1 1 auto;min-height:68px}
 .av-bunn,.av-serie,.av-feil{grid-column:1/-1}
 .av-etikett{
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
@@ -636,7 +643,8 @@ input,select,textarea{font-size:16px}
 .av-hint{font-size:var(--t-etikett);color:var(--ink-soft);font-weight:600;line-height:1.35}
 .av-hint[hidden]{display:none}
 .av-vedlegg{display:flex;flex-direction:column;gap:6px}
-.ved-liste{display:flex;flex-direction:column;gap:6px}
+.ved-liste{display:flex;flex-direction:column;gap:6px;max-height:118px;overflow-y:auto}
+.ved-liste:empty{display:none}
 .ved-tom{font-size:var(--t-meta);color:var(--ink-soft);font-style:italic}
 /* Samme vedleggsrad som i kalenderen: navnet er lenken, roedt kryss fjerner. */
 .ved-rad{
@@ -667,8 +675,8 @@ input,select,textarea{font-size:16px}
    da nekter Safari aa aapne den programmatisk. */
 .ved-skjult{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .knapp-vedlegg{
-  margin-top:2px;border:none;background:var(--gronn);color:#FFFFFF;
-  border-radius:9px;padding:10px;width:100%;cursor:pointer;
+  border:none;background:var(--gronn);color:#FFFFFF;
+  border-radius:9px;padding:8px;width:100%;cursor:pointer;
   font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
 }
 .knapp-vedlegg:active{background:var(--gronn-mork)}
@@ -753,8 +761,8 @@ input,select,textarea{font-size:16px}
 }
 .av-bunn{margin-top:2px}
 @media(max-width:640px){
-  .av-skjema{grid-template-columns:1fr}
-  .avtale-boks{max-height:52vh}
+  .av-skjema,.av-skjema.av-tre{grid-template-columns:1fr}
+  .avtale-boks{max-height:56vh}
 }
 .av-hele{
   display:flex;align-items:center;gap:9px;cursor:pointer;
@@ -836,24 +844,28 @@ input,select,textarea{font-size:16px}
       <span class="av-merke" id="avMerke" hidden></span>
       <span id="avOverskrift">Ny avtale</span>
     </div>
-    <div class="av-skjema">
+    <div class="av-skjema av-tre">
       <div class="av-kol">
         <input class="hu-felt" id="avTittel" maxlength="120" placeholder="Hva skjer?">
-        <div class="av-rad">
-          <label>Kalender<select class="hu-felt" id="avKal"></select></label>
-          <label>Dato<input class="hu-felt" type="date" id="avDato"></label>
-        </div>
+        <label class="av-felt">Kalender
+          <select class="hu-felt" id="avKal"></select>
+        </label>
         <div class="av-hint" id="avKalHint" hidden></div>
-        <div class="av-rad" id="avTider">
-          <label>Fra<input class="hu-felt" type="time" id="avFra" step="300"></label>
-          <label>Til<input class="hu-felt" type="time" id="avTil" step="300"></label>
-        </div>
+        <label class="av-felt">Dato
+          <input class="hu-felt" type="date" id="avDato">
+        </label>
+      </div>
+      <div class="av-kol">
         <label class="av-hele">
           <input type="checkbox" id="avHele" onchange="avtaleHeleDagen()">Hele dagen
         </label>
-        <input class="hu-felt" id="avSted" maxlength="150" placeholder="Sted (valgfritt)">
+        <div class="av-kol-tid" id="avTider">
+          <label class="av-felt">Fra<input class="hu-felt" type="time" id="avFra" step="300"></label>
+          <label class="av-felt">Til<input class="hu-felt" type="time" id="avTil" step="300"></label>
+        </div>
       </div>
       <div class="av-kol">
+        <input class="hu-felt" id="avSted" maxlength="150" placeholder="Sted (valgfritt)">
         <label class="av-felt av-vokser">Notat
           <textarea class="hu-felt hu-omr" id="avNotat" placeholder="Valgfritt"></textarea>
         </label>
@@ -1973,7 +1985,7 @@ function tegnSkjemaVedlegg(){
       + '<button class="ved-fjern" onclick="fjernNyFil(' + i + ')" aria-label="Fjern">×</button>'
       + '</div>';
   }));
-  boks.innerHTML = rader.length ? rader.join('') : '<div class="ved-tom">Ingen vedlegg.</div>';
+  boks.innerHTML = rader.join('');
 }
 
 function velgVedlegg(){ $('avFil').click(); }
