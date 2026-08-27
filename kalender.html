@@ -193,7 +193,7 @@ body{
 .cal-cell{
   background:var(--paper);
   padding:6px 7px;cursor:pointer;overflow:hidden;
-  display:flex;flex-direction:column;gap:3px;
+  display:flex;flex-direction:column;gap:3px;min-height:0;
   /* Bare vannrett skille mellom ukene. Ingen loddrett strek mellom
      dagene, saa fleredagsavtaler kan gaa ubrutt over cellegrensa. */
   border-bottom:1px solid var(--grid);
@@ -244,12 +244,20 @@ body{
 .cal-cell.sel{background:var(--ink)}
 .cal-cell.sel:hover{background:var(--ink)}
 .cal-cell.sel .cal-num,.cal-cell.sel .cal-ev,
-.cal-cell.sel .cal-ev-t,.cal-cell.sel .cal-more{color:#fff}
+.cal-cell.sel .cal-ev-t{color:#fff}
 .cal-ev-t{margin-left:1px}
 .cal-num{font-size:var(--t-brod);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;flex-shrink:0}
 .cal-cell.weekend .cal-num{color:var(--ink-soft)}
 
-.cal-evs{display:flex;flex-direction:column;gap:3px;min-height:0}
+.cal-evs{
+  display:flex;flex-direction:column;gap:3px;min-height:0;
+  flex:1;overflow-y:auto;overscroll-behavior:contain;
+  scrollbar-width:thin;
+}
+/* Smal, dempet rullefelt - en full rullelinje ville dominert ruta */
+.cal-evs::-webkit-scrollbar{width:4px}
+.cal-evs::-webkit-scrollbar-thumb{background:var(--line);border-radius:999px}
+.cal-evs::-webkit-scrollbar-track{background:transparent}
 .cal-ev{
   font-family:'Archivo',sans-serif;
   font-size:var(--t-etikett);font-weight:600;line-height:1.28;
@@ -264,7 +272,6 @@ body{
 }
 .cal-ev-x{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .cal-ev-t{font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums;margin-right:3px}
-.cal-more{font-size:var(--t-etikett);font-weight:700;color:var(--ink-soft);letter-spacing:.03em;padding-left:11px}
 
 /* ---------- Avtaleliste ---------- */
 /* Raden: stor initialrunding til venstre, saa tid og tekst. Samme
@@ -488,18 +495,17 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .boble-topp{display:flex;align-items:center;gap:7px;margin-bottom:8px}
 /* ---------- Laster ---------- */
 .laster{
-  position:fixed;left:50%;transform:translateX(-50%);z-index:80;
-  bottom:calc(24px + env(safe-area-inset-bottom));
-  display:flex;align-items:center;gap:9px;
-  background:var(--ink);color:#fff;border-radius:999px;
-  padding:9px 18px;box-shadow:0 4px 18px rgba(44,62,80,.28);
-  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
-  letter-spacing:.04em;pointer-events:none;
+  position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:80;
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  background:var(--ink);color:#fff;border-radius:var(--radius);
+  padding:34px 44px;box-shadow:0 12px 40px rgba(44,62,80,.34);
+  font-family:'Archivo',sans-serif;font-size:var(--t-stor);font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;pointer-events:none;
 }
 .laster[hidden]{display:none}
 .laster-hjul{
-  width:15px;height:15px;border-radius:50%;flex-shrink:0;
-  border:2px solid rgba(255,255,255,.32);border-top-color:#fff;
+  width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  border:4px solid rgba(255,255,255,.28);border-top-color:#fff;
   animation:lasterSnurr .8s linear infinite;
 }
 @keyframes lasterSnurr{ to{transform:rotate(360deg)} }
@@ -787,7 +793,16 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .uke-chip-t{font-variant-numeric:tabular-nums;opacity:.9;margin-right:5px;font-size:var(--t-etikett)}
 
 /* ---------- Heldags / fleredags bånd (måned) ---------- */
-.cal-bars{display:flex;flex-direction:column;gap:2px;margin:0 -7px 3px;overflow:visible}
+/* Baandene ligger inne i rulleomraadet, men skal staa i ro naar man
+   ruller i en enkelt dag. Titlene er plassert i piksler over rutenettet,
+   saa de ville ikke fulgt med om baandene flyttet seg. */
+.cal-bars{
+  display:flex;flex-direction:column;gap:2px;margin:0 -7px 3px;
+  overflow:visible;flex-shrink:0;
+  position:sticky;top:0;z-index:2;background:var(--paper);
+}
+.cal-cell.utenfor .cal-bars{background:var(--bg-2)}
+.cal-cell.sel .cal-bars{background:var(--ink)}
 .cal-band{
   height:16px;display:flex;align-items:center;gap:4px;color:#fff;
   font-size:var(--t-etikett);font-weight:700;line-height:1;padding:0 5px;
@@ -811,14 +826,6 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 /* Midtstilles bare naar hele navnet faktisk faar plass */
 .cal-tittel.midt{justify-content:center}
-/* Hvit pille med farget bokstav - lesbar mot alle kalenderfargene,
-   i motsetning til hvit tekst paa en halvgjennomsiktig flate. */
-.cal-band-ini{
-  flex-shrink:0;min-width:15px;height:14px;border-radius:999px;padding:0 4px;
-  background:#fff;color:var(--ink);
-  font-family:'Archivo',sans-serif;font-size:9px;font-weight:700;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-}
 /* Strekker seg avtalen videre til neste dag, drar baandet seg over
    rutelinja saa det henger sammen i stedet for aa brytes opp. */
 .cal-band:not(.e){padding-right:0}
@@ -2176,13 +2183,6 @@ function dekkerDag(e, d){
 let mndKart = null;
 
 /* Hvor mange avtaler får plass i én rute — ut fra faktisk rutehøyde */
-function evsPerCell(){
-  const cell = document.querySelector('.cal-cell');
-  if(!cell) return 3;
-  const h = cell.clientHeight - 24;
-  return Math.max(1, Math.min(5, Math.floor(h / 21)));
-}
-
 function fyllAvtaler(){
   if(!mndKart) return;
   const MAX_BANER = 4;
@@ -2208,7 +2208,6 @@ function fyllAvtaler(){
       const rad = Math.floor((mndKart.lead + d.getDate() - 1) / 7);
       band.dataset.strekk = e.id + '|' + rad;
       band.dataset.tittel = e.title;
-      band.dataset.ini    = initialFor(e.calId, e.calName);
       if(e.vedlegg) band.dataset.klips = '1';
       band.title = e.title;
       band.style.cursor = 'pointer';
@@ -2248,9 +2247,7 @@ function fyllAvtaler(){
 
     /* --- Tidsbestemte (én-dags) avtaler --- */
     if(timed.length){
-      const rest = Math.max(1, evsPerCell() - linjer);
-      const vis = timed.slice(0, rest);
-      vis.forEach(function(e){
+      timed.forEach(function(e){
         const row = document.createElement('div');
         row.className = 'cal-ev';
         const dot = document.createElement('span');
@@ -2275,12 +2272,6 @@ function fyllAvtaler(){
         row.appendChild(txt);
         box.appendChild(row);
       });
-      if(timed.length > vis.length){
-        const more = document.createElement('div');
-        more.className = 'cal-more';
-        more.textContent = '+' + (timed.length - vis.length) + ' til';
-        box.appendChild(more);
-      }
     }
   });
 
@@ -2327,12 +2318,6 @@ function tegnBaandtitler(){
     const el = document.createElement('div');
     el.className = 'cal-tittel';
 
-    /* Hvert strekk er en egen stripe i rutenettet og faar sin egen
-       initial - ogsaa naar avtalen fortsetter fra uka foer. */
-    const ini = document.createElement('span');
-    ini.className = 'cal-band-ini';
-    ini.textContent = foerste.dataset.ini || '';
-    el.appendChild(ini);
     const tekst = document.createElement('span');
     tekst.className = 'cal-tittel-tekst';
     tekst.textContent = (foerste.dataset.tittel || '')
