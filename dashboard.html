@@ -623,11 +623,35 @@ input,select,textarea{font-size:16px}
 }
 .av-merke[hidden]{display:none}
 .av-skjema{display:grid;grid-template-columns:1fr 1fr;gap:9px 18px;align-items:stretch}
-/* Avtaleskjemaet staar i tre kolonner. Hoeyden er det som teller: jo
-   faerre felt over hverandre, jo lenger unna tastaturet blir bunnen. */
-.av-skjema.av-tre{grid-template-columns:repeat(3,1fr)}
+/* Avtaleskjemaet: navn og sted deler venstre halvdel, dato og kalender
+   staar under dem, klokkeslettene under der igjen. Notatet faar hele
+   hoeyre halvdel og strekker seg over alle tre radene. Hoeyden er det
+   som teller - jo faerre felt over hverandre, jo lenger fra tastaturet
+   havner knappene. */
+.av-skjema.av-tre{
+  grid-template-columns:1fr 1fr 2fr;
+  grid-template-areas:
+    "navn  sted  notat"
+    "dato  kal   notat"
+    "fra   til   notat"
+    "hint  hint  vedlegg"
+    "serie serie serie"
+    "feil  feil  feil"
+    "bunn  bunn  bunn";
+}
+.a-navn{grid-area:navn}
+.a-sted{grid-area:sted}
+.a-dato{grid-area:dato}
+.a-kal{grid-area:kal}
+.a-fra{grid-area:fra}
+.a-til{grid-area:til}
+.a-hint{grid-area:hint;align-self:start}
+.a-notat{grid-area:notat}
+.a-vedlegg{grid-area:vedlegg}
+.av-skjema.av-tre .av-serie{grid-area:serie}
+.av-skjema.av-tre .av-feil{grid-area:feil}
+.av-skjema.av-tre .av-bunn{grid-area:bunn}
 .av-kol{display:flex;flex-direction:column;gap:9px;min-width:0}
-.av-kol-tid{display:flex;flex-direction:column;gap:9px}
 .av-rad{display:flex;gap:9px}
 .av-rad label,.av-felt{
   flex:1;min-width:0;font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
@@ -761,15 +785,11 @@ input,select,textarea{font-size:16px}
 }
 .av-bunn{margin-top:2px}
 @media(max-width:640px){
-  .av-skjema,.av-skjema.av-tre{grid-template-columns:1fr}
+  .av-skjema{grid-template-columns:1fr}
+  .av-skjema.av-tre{grid-template-columns:1fr;grid-template-areas:none}
+  .av-skjema.av-tre > *{grid-area:auto}
   .avtale-boks{max-height:56vh}
 }
-.av-hele{
-  display:flex;align-items:center;gap:9px;cursor:pointer;
-  font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--ink-soft);
-}
-.av-hele input{width:19px;height:19px;accent-color:var(--gronn);margin:0}
 .av-serie{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
 .av-feil{color:#B4443A;font-size:var(--t-meta);font-weight:600}
 .av-feil[hidden],.av-serie[hidden]{display:none}
@@ -845,38 +865,35 @@ input,select,textarea{font-size:16px}
       <span id="avOverskrift">Ny avtale</span>
     </div>
     <div class="av-skjema av-tre">
-      <div class="av-kol">
+      <label class="av-felt a-navn">Navn
         <input class="hu-felt" id="avTittel" maxlength="120" placeholder="Hva skjer?">
-        <label class="av-felt">Kalender
-          <select class="hu-felt" id="avKal"></select>
-        </label>
-        <div class="av-hint" id="avKalHint" hidden></div>
-        <label class="av-felt">Dato
-          <input class="hu-felt" type="date" id="avDato">
-        </label>
+      </label>
+      <label class="av-felt a-sted">Sted
+        <input class="hu-felt" id="avSted" maxlength="150" placeholder="Valgfritt">
+      </label>
+      <label class="av-felt a-dato">Dato
+        <input class="hu-felt" type="date" id="avDato">
+      </label>
+      <label class="av-felt a-kal">Kalender
+        <select class="hu-felt" id="avKal"></select>
+      </label>
+      <label class="av-felt a-fra">Fra
+        <input class="hu-felt" type="time" id="avFra" step="300">
+      </label>
+      <label class="av-felt a-til">Til
+        <input class="hu-felt" type="time" id="avTil" step="300">
+      </label>
+      <div class="av-hint a-hint">Uten klokkeslett varer avtalen hele dagen.</div>
+      <label class="av-felt av-vokser a-notat">Notat
+        <textarea class="hu-felt hu-omr" id="avNotat" placeholder="Valgfritt"></textarea>
+      </label>
+      <div class="av-vedlegg a-vedlegg">
+        <div class="av-etikett">Vedlegg</div>
+        <div class="ved-liste" id="avVedleggListe"></div>
+        <input type="file" id="avFil" multiple class="ved-skjult" onchange="valgteFiler(event)">
+        <button class="knapp-vedlegg" onclick="velgVedlegg()">Legg ved fil</button>
       </div>
-      <div class="av-kol">
-        <label class="av-hele">
-          <input type="checkbox" id="avHele" onchange="avtaleHeleDagen()">Hele dagen
-        </label>
-        <div class="av-kol-tid" id="avTider">
-          <label class="av-felt">Fra<input class="hu-felt" type="time" id="avFra" step="300"></label>
-          <label class="av-felt">Til<input class="hu-felt" type="time" id="avTil" step="300"></label>
-        </div>
-      </div>
-      <div class="av-kol">
-        <input class="hu-felt" id="avSted" maxlength="150" placeholder="Sted (valgfritt)">
-        <label class="av-felt av-vokser">Notat
-          <textarea class="hu-felt hu-omr" id="avNotat" placeholder="Valgfritt"></textarea>
-        </label>
-        <div class="av-vedlegg">
-          <div class="av-etikett">Vedlegg</div>
-          <div class="ved-liste" id="avVedleggListe"></div>
-          <input type="file" id="avFil" multiple class="ved-skjult" onchange="valgteFiler(event)">
-          <button class="knapp-vedlegg" onclick="velgVedlegg()">Legg ved fil</button>
-        </div>
-      </div>
-      <div class="av-serie" id="avSerie" hidden>Del av en serie – endringen gjelder bare denne datoen.</div>
+      <div class="av-serie" id="avSerie" hidden></div>
       <div class="av-feil" id="avFeil" hidden></div>
       <div class="hu-knapper av-bunn">
         <button class="knapp-slett" id="avSlett" onclick="slettAvtale()" hidden>Slett</button>
@@ -1899,18 +1916,19 @@ function apneAvtale(e){
      ikke paa en enkeltdag i en serie. */
   const serie = !!(e && e.type && e.type !== 'singleInstance');
   $('avKal').disabled = serie;
-  $('avKalHint').hidden = !serie;
-  $('avKalHint').textContent =
-    'Avtalen hører til en serie og kan ikke flyttes til en annen kalender.';
 
   const start = e ? e.start : dagenViser();
   $('avDato').value = datoNokkel(start);
-  $('avHele').checked = !!(e && e.heleDagen);
 
-  if(e && !e.heleDagen){
+  /* Hele dagen er ikke en avkrysning lenger - den er det som skjer naar
+     begge klokkeslettene staar tomme. */
+  if(e && e.heleDagen){
+    $('avFra').value = '';
+    $('avTil').value = '';
+  }else if(e){
     $('avFra').value = kl(e.start);
     $('avTil').value = kl(e.slutt);
-  }else if(!e){
+  }else{
     const fra = viserIdag() ? nesteTime() : new Date(2000, 0, 1, 12, 0);
     $('avFra').value = kl(fra);
     $('avTil').value = kl(new Date(fra.getTime() + 3600000));
@@ -1921,6 +1939,8 @@ function apneAvtale(e){
   $('avNotat').value  = e ? (e.notat || '') : '';
 
   $('avSerie').hidden = !serie;
+  $('avSerie').textContent = 'Del av en serie – endringen gjelder bare denne datoen, '
+    + 'og avtalen kan ikke flyttes til en annen kalender.';
   $('avFeil').hidden = true;
 
   /* Vedlegg: de som ligger der fra foer hentes i bakgrunnen, nye filer
@@ -1950,7 +1970,6 @@ function apneAvtale(e){
   lagre.className = e ? 'knapp-endre' : 'knapp-gronn';
   lagre.style.marginLeft = '0';
 
-  avtaleHeleDagen();
   $('avtaleBak').hidden = false;
   $('avtaleBoks').hidden = false;
   $('avTittel').focus();
@@ -2028,15 +2047,6 @@ function vekslFjernVedlegg(i){
   tegnSkjemaVedlegg();
 }
 
-/* Hele dagen: klokkeslettene har ingen mening da, saa de gaar i hvilemodus
-   i stedet for aa staa igjen med tall ingen bruker. */
-function avtaleHeleDagen(){
-  const hele = $('avHele').checked;
-  $('avTider').style.opacity = hele ? '.4' : '';
-  $('avFra').disabled = hele;
-  $('avTil').disabled = hele;
-}
-
 function avtaleFeil(tekst){
   const f = $('avFeil');
   f.textContent = tekst;
@@ -2085,10 +2095,13 @@ async function lagreAvtale(){
   const dato = $('avDato').value;
   if(!dato){ avtaleFeil('Velg en dato.'); $('avDato').focus(); return; }
 
-  const hele = $('avHele').checked;
   const fra = $('avFra').value, til = $('avTil').value;
+  const hele = !fra && !til;          /* begge tomme = hele dagen */
   if(!hele){
-    if(!fra || !til){ avtaleFeil('Fyll inn både fra og til.'); return; }
+    if(!fra || !til){
+      avtaleFeil('Fyll inn både fra og til – eller la begge stå tomme for hele dagen.');
+      return;
+    }
     if(til <= fra){ avtaleFeil('Sluttidspunktet må være etter starten.'); return; }
   }
 
