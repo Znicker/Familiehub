@@ -272,7 +272,6 @@ body{
 .plan-meta{font-size:var(--t-meta);color:var(--ink-soft);margin-top:2px}
 .plan-rad.forbi{opacity:.42}
 .plan-rad.naa .plan-tittel{font-weight:700}
-.plan-rad.naa .plan-tid{color:var(--blaa)}
 .plan-rad{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .plan-rad:active{filter:brightness(.96)}
 .plan-notatprikk{
@@ -455,7 +454,24 @@ input,select,textarea{font-size:16px}
   border:1px solid transparent;border-radius:11px;
 }
 .hu-rad:active{filter:brightness(.96)}
-.hu-rad.forbi{opacity:.45}                 /* frist passert - blir staaende */
+/* Dagens merknader staar hele dagen uten aa falme. Ukemerknader falmer
+   naar de hukes av - da er de gjort, ikke utgaatt. */
+.hu-rad.ferdig{opacity:.45}
+.hu-rad.ferdig .hu-tittel{text-decoration:line-through}
+.hu-innen{
+  font-size:var(--t-etikett);font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-soft);flex-shrink:0;
+}
+/* Avhukingsboksen: tom rute, groenn rute med hake naar den er gjort. */
+.hu-hake{
+  width:23px;height:23px;padding:0;flex-shrink:0;
+  border:2px solid var(--ink-soft);border-radius:7px;background:transparent;
+  opacity:.55;color:transparent;font-size:var(--t-meta);font-weight:700;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+.hu-rad.ferdig .hu-hake{
+  opacity:1;border-color:var(--gronn);background:var(--gronn);color:#FFFFFF;
+}
 .hu-verkt{display:flex;gap:2px;flex-shrink:0}
 .hu-knapp{
   border:none;background:transparent;color:var(--ink-soft);opacity:.5;
@@ -530,17 +546,12 @@ input,select,textarea{font-size:16px}
 .hub-prikk{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
 
-.hu-skjema{display:flex;flex-direction:column;gap:7px;padding-bottom:10px;
-  margin-bottom:8px;border-bottom:1px solid var(--line)}
 .hu-felt{
   font-family:'Archivo',sans-serif;font-size:16px;color:var(--ink);
   border:1px solid var(--line);border-radius:9px;padding:7px 9px;
   background:var(--paper);width:100%;box-sizing:border-box;
 }
-.hu-omr{resize:vertical;min-height:130px;line-height:1.45}
-.hu-rad2{display:flex;gap:7px}
-.hu-rad2 label,.hu-frist{flex:1;font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px}
+.hu-omr{resize:vertical;line-height:1.45}
 .hu-knapper{display:flex;gap:7px;justify-content:flex-end}
 .hu-avbryt,.hu-lagre{
   font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;letter-spacing:.06em;
@@ -553,9 +564,12 @@ input,select,textarea{font-size:16px}
 /* Ett skjema for baade ny og endret avtale. Det legger seg midt paa
    skjermen, over alt annet, saa det virker likt i alle tre bredder. */
 .avtale-bak{background:rgba(44,62,80,.30)}
+/* Skjemaene ligger i oeverste halvdel: tastaturet tar den nederste, og
+   et felt som havner bak tastaturet er et felt man ikke ser hva man
+   skriver i. To kolonner holder hoeyden nede. */
 .avtale-boks{
-  position:fixed;z-index:61;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:min(92vw,520px);max-height:86vh;overflow-y:auto;overscroll-behavior:contain;
+  position:fixed;z-index:61;left:50%;top:14px;transform:translateX(-50%);
+  width:min(94vw,780px);max-height:58vh;overflow-y:auto;overscroll-behavior:contain;
   background:var(--paper);border:1px solid var(--line);border-radius:18px;
   padding:18px 20px 16px;box-shadow:0 18px 44px rgba(44,62,80,.28);
 }
@@ -570,11 +584,20 @@ input,select,textarea{font-size:16px}
   display:flex;align-items:center;justify-content:center;line-height:1;
 }
 .av-merke[hidden]{display:none}
-.av-skjema{display:flex;flex-direction:column;gap:9px}
+.av-skjema{display:grid;grid-template-columns:1fr 1fr;gap:9px 18px;align-items:stretch}
+.av-kol{display:flex;flex-direction:column;gap:9px;min-width:0}
 .av-rad{display:flex;gap:9px}
-.av-rad label{
+.av-rad label,.av-felt{
   flex:1;min-width:0;font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px;
+}
+.av-vokser{flex:1 1 auto}
+.av-vokser textarea{flex:1 1 auto;min-height:132px}
+.av-bunn,.av-serie,.av-feil{grid-column:1/-1}
+.av-bunn{margin-top:2px}
+@media(max-width:640px){
+  .av-skjema{grid-template-columns:1fr}
+  .avtale-boks{max-height:64vh}
 }
 .av-hele{
   display:flex;align-items:center;gap:9px;cursor:pointer;
@@ -582,7 +605,6 @@ input,select,textarea{font-size:16px}
   text-transform:uppercase;color:var(--ink-soft);
 }
 .av-hele input{width:19px;height:19px;accent-color:var(--gronn);margin:0}
-#avNotat{min-height:96px}
 .av-serie{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
 .av-feil{color:#B4443A;font-size:var(--t-meta);font-weight:600}
 .av-feil[hidden],.av-serie[hidden]{display:none}
@@ -641,25 +663,63 @@ input,select,textarea{font-size:16px}
       <span id="avOverskrift">Ny avtale</span>
     </div>
     <div class="av-skjema">
-      <input class="hu-felt" id="avTittel" maxlength="120" placeholder="Hva skjer?">
-      <div class="av-rad">
-        <label>Kalender<select class="hu-felt" id="avKal"></select></label>
-        <label>Dato<input class="hu-felt" type="date" id="avDato"></label>
+      <div class="av-kol">
+        <input class="hu-felt" id="avTittel" maxlength="120" placeholder="Hva skjer?">
+        <div class="av-rad">
+          <label>Kalender<select class="hu-felt" id="avKal"></select></label>
+          <label>Dato<input class="hu-felt" type="date" id="avDato"></label>
+        </div>
+        <div class="av-rad" id="avTider">
+          <label>Fra<input class="hu-felt" type="time" id="avFra" step="300"></label>
+          <label>Til<input class="hu-felt" type="time" id="avTil" step="300"></label>
+        </div>
+        <label class="av-hele">
+          <input type="checkbox" id="avHele" onchange="avtaleHeleDagen()">Hele dagen
+        </label>
+        <input class="hu-felt" id="avSted" maxlength="150" placeholder="Sted (valgfritt)">
       </div>
-      <div class="av-rad" id="avTider">
-        <label>Fra<input class="hu-felt" type="time" id="avFra" step="300"></label>
-        <label>Til<input class="hu-felt" type="time" id="avTil" step="300"></label>
+      <div class="av-kol">
+        <label class="av-felt av-vokser">Notat
+          <textarea class="hu-felt hu-omr" id="avNotat" placeholder="Valgfritt"></textarea>
+        </label>
       </div>
-      <label class="av-hele">
-        <input type="checkbox" id="avHele" onchange="avtaleHeleDagen()">Hele dagen
-      </label>
-      <input class="hu-felt" id="avSted" maxlength="150" placeholder="Sted (valgfritt)">
-      <textarea class="hu-felt hu-omr" id="avNotat" rows="4" placeholder="Notat (valgfritt)"></textarea>
       <div class="av-serie" id="avSerie" hidden>Del av en serie – endringen gjelder bare denne datoen.</div>
       <div class="av-feil" id="avFeil" hidden></div>
-      <div class="hu-knapper">
+      <div class="hu-knapper av-bunn">
         <button class="hu-avbryt" onclick="lukkAvtale()">Avbryt</button>
         <button class="knapp-gronn" id="avLagre" onclick="lagreAvtale()">Legg til</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Merknader og ukemerknader deler skjema. Samme form som avtalen:
+       oeverst paa skjermen, to kolonner, fri for tastaturet. -->
+  <div class="hu-boble-bak avtale-bak" id="huskeBak" hidden></div>
+  <div class="avtale-boks" id="huskeBoks" hidden role="dialog" aria-modal="true">
+    <button class="hub-lukk" onclick="lukkHuskeSkjema()" aria-label="Lukk">×</button>
+    <div class="av-tittel"><span id="huTittelTekst">Ny merknad</span></div>
+    <div class="av-skjema">
+      <div class="av-kol">
+        <input class="hu-felt" id="huOverskrift" maxlength="80" placeholder="Overskrift">
+        <div class="av-rad">
+          <label>Gjelder<select class="hu-felt" id="huGjelder"></select></label>
+          <label>Skrevet av<select class="hu-felt" id="huAv"></select></label>
+        </div>
+        <label class="av-felt" id="huDatoFelt">Dato
+          <input class="hu-felt" type="date" id="huFrist">
+        </label>
+        <label class="av-felt" id="huInnenFelt" hidden>Innen
+          <select class="hu-felt" id="huInnen"></select>
+        </label>
+      </div>
+      <div class="av-kol">
+        <label class="av-felt av-vokser">Utfyllende tekst
+          <textarea class="hu-felt hu-omr" id="huTekst" placeholder="Valgfritt"></textarea>
+        </label>
+      </div>
+      <div class="hu-knapper av-bunn">
+        <button class="hu-avbryt" onclick="lukkHuskeSkjema()">Avbryt</button>
+        <button class="knapp-gronn" id="huLagre" onclick="lagreHuske()">Legg til</button>
       </div>
     </div>
   </div>
@@ -1032,12 +1092,23 @@ async function hentFarger(){
 /* ============================================================
    Klokke
    ============================================================ */
+let sisteBasis = '';
+
 function tegnKlokke(){
   const n = new Date();
   $('klokkeTid').textContent =
     String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
   $('klokkeDato').textContent =
     DAGER[n.getDay()] + ' ' + n.getDate() + '. ' + MND[n.getMonth()];
+
+  /* Skjermen staar paa hele doegnet. Skiftet klokka 20 - og midnatt -
+     maa den derfor oppdage selv, ellers blir gaarsdagen staaende. */
+  const b = datoNokkel(basis0());
+  const skiftet = sisteBasis && b !== sisteBasis;
+  sisteBasis = b;
+  if(skiftet && dagOffset === 0 && !skjemaAapent() && $('detalj').hidden){
+    tegnPlanPaaNytt();
+  }
 }
 
 /* ============================================================
@@ -1078,19 +1149,39 @@ function htmlTilTekst(innhold, type){
   }
 }
 
-/* Hvilken dag planen viser. 0 = i dag, -1 = i gaar, 1 = i morgen. */
+/* Hvilken dag planen viser, talt fra dagen skjermen staar paa. */
 let dagOffset = 0;
 
-function dagenViser(){
+/* Kvelden hoerer til morgendagen: etter klokka 20 er det i morgen man
+   trenger aa se, ikke resten av i dag. Skjermen skifter derfor dag av
+   seg selv da, og igjen ved midnatt. */
+const DAGSKIFTE = 20;
+
+function basis0(){
   const n = new Date();
-  return new Date(n.getFullYear(), n.getMonth(), n.getDate() + dagOffset);
+  const d = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  if(n.getHours() >= DAGSKIFTE) d.setDate(d.getDate() + 1);
+  return d;
+}
+
+function dagenViser(){
+  const b = basis0();
+  return new Date(b.getFullYear(), b.getMonth(), b.getDate() + dagOffset);
+}
+
+/* Er dagen vi ser paa den virkelige i dag? Etter klokka 20 er svaret nei
+   selv med dagOffset 0 - og da har hverken "naa", "forbi" eller
+   naa-vaeret noe der aa gjoere. */
+function viserIdag(){
+  return datoNokkel(dagenViser()) === datoNokkel(idag0());
 }
 
 function dagNavn(){
-  if(dagOffset === 0) return 'I dag';
-  if(dagOffset === 1) return 'I morgen';
-  if(dagOffset === -1) return 'I går';
   const d = dagenViser();
+  const avstand = Math.round((d - idag0()) / 86400000);
+  if(avstand === 0) return 'I dag';
+  if(avstand === 1) return 'I morgen';
+  if(avstand === -1) return 'I går';
   const tekst = d.toLocaleDateString('no-NO', {weekday:'long', day:'numeric', month:'long'});
   return tekst.charAt(0).toUpperCase() + tekst.slice(1);
 }
@@ -1165,16 +1256,17 @@ function tegnPlan(res){
 
   if(!avtaler.length){
     boks.innerHTML = '<div class="tom">'
-      + (dagOffset === 0 ? 'Ingen avtaler i dag.' : 'Ingen avtaler denne dagen.')
+      + (viserIdag() ? 'Ingen avtaler i dag.' : 'Ingen avtaler denne dagen.')
       + '</div>';
     return;
   }
 
   /* "Naa" og "forbi" gir bare mening for dagen i dag. */
-  const naa = dagOffset === 0 ? new Date() : new Date(8640000000000000);
+  const idag = viserIdag();
+  const naa = idag ? new Date() : new Date(8640000000000000);
   boks.innerHTML = avtaler.map(function(e, i){
-    const forbi = dagOffset === 0 && !e.heleDagen && e.slutt < naa;
-    const paagaar = dagOffset === 0 && !e.heleDagen && e.start <= naa && e.slutt > naa;
+    const forbi = idag && !e.heleDagen && e.slutt < naa;
+    const paagaar = idag && !e.heleDagen && e.start <= naa && e.slutt > naa;
     /* Kalendernavnet er ute - initialen sier hvem det gjelder. Stedet blir. */
     const meta = e.sted || '';
     return '<div class="plan-rad' + (forbi ? ' forbi' : '') + (paagaar ? ' naa' : '') + '"'
@@ -1274,6 +1366,10 @@ let kalendere = [];            /* fylles av hentPlan() */
 let avtaleEndrer = null;       /* avtalen som endres, ellers null = ny */
 let avtaleAapen = false;
 
+/* Staar et skjema aapent, skal verken hvilen, sveipen eller den
+   automatiske oppdateringen rive det bort under hendene paa noen. */
+function skjemaAapent(){ return avtaleAapen || huskeSkjema !== null; }
+
 function nyAvtale(){ apneAvtale(null); }
 
 function redigerAvtale(){
@@ -1300,6 +1396,7 @@ function apneAvtale(e){
   }
   avtaleEndrer = e || null;
   avtaleAapen = true;
+  lukkHuskeSkjema();
   lukkHuskeBoble();
   lukkVaerBoble();
 
@@ -1330,7 +1427,7 @@ function apneAvtale(e){
     $('avFra').value = kl(e.start);
     $('avTil').value = kl(e.slutt);
   }else if(!e){
-    const fra = (dagOffset === 0) ? nesteTime() : new Date(2000, 0, 1, 12, 0);
+    const fra = viserIdag() ? nesteTime() : new Date(2000, 0, 1, 12, 0);
     $('avFra').value = kl(fra);
     $('avTil').value = kl(new Date(fra.getTime() + 3600000));
   }
@@ -1429,7 +1526,7 @@ async function lagreAvtale(){
     /* Vis dagen avtalen havnet paa, slik at man ser resultatet. */
     const b = dato.split('-');
     const mal = new Date(+b[0], +b[1] - 1, +b[2]);
-    dagOffset = Math.round((mal - idag0()) / 86400000);
+    dagOffset = Math.round((mal - basis0()) / 86400000);
     await tegnPlanPaaNytt();
   }catch(err){
     lagre.disabled = false;
@@ -1538,7 +1635,7 @@ function tegnVaer(d){
 function vaerStart(){
   if(!vaerSiste) return -1;
   const t = vaerSiste.hourly.time;
-  if(dagOffset === 0){
+  if(viserIdag()){
     const naa = new Date();
     const i = t.findIndex(function(x){ return new Date(x) > naa; });
     return i < 0 ? 0 : i;
@@ -1596,7 +1693,7 @@ function tegnVaerStripe(){
   /* I dag: naa-tallene. Andre dager: doegnets spenn. */
   const dagIdx = d.daily.time.indexOf(datoNokkel(dagenViser()));
   let ikon, tekst, stort, under;
-  if(dagOffset === 0){
+  if(viserIdag()){
     const n = d.current;
     const iv = vkode(n.weather_code);
     ikon = iv[0]; tekst = iv[1];
@@ -1885,24 +1982,61 @@ function idag0(){
   return new Date(n.getFullYear(), n.getMonth(), n.getDate());
 }
 
+/* Ukedager, mandag foerst - slik uken faktisk leses. */
+const UKEDAGER = ['mandag','tirsdag','onsdag','torsdag','fredag','lørdag','søndag'];
+const UKEDAG_KORT = ['man','tir','ons','tor','fre','lør','søn'];
+
+function datoFraTekst(t){
+  const b = String(t || '').split('-');
+  if(b.length < 3) return dagenViser();
+  return new Date(+b[0], +b[1] - 1, +b[2]);
+}
+function ukedagNr(d){ return (d.getDay() + 6) % 7; }
+/* Ukemerknader lagres fortsatt med en dato, saa uke- og sorteringslogikken
+   staar uroert - men det er ukedagen man velger og ser. */
+function datoIUken(basisdato, nr){
+  const d = new Date(basisdato.getTime());
+  d.setDate(d.getDate() + (nr - ukedagNr(d)));
+  return datoNokkel(d);
+}
+
 function huskeRad(m){
-  const forbi = m.frist && m.frist < datoNokkel(idag0());
+  const uke = m.omfang === 'uke';
+  const ferdig = uke && !!m.ferdig;
   const harTekst = !!(m.tekst || '').trim();
   /* Bare overskriften staar i lista - plassen er knapp. Resten kommer i
-     boblen ved trykk. */
-  return '<div class="hu-rad' + (forbi ? ' forbi' : '') + '" data-id="' + esc(m.id) + '"'
+     boblen ved trykk. Dagens merknader staar hele dagen uansett; det er
+     ukemerknadene som hukes av naar de er gjort. */
+  return '<div class="hu-rad' + (ferdig ? ' ferdig' : '') + '" data-id="' + esc(m.id) + '"'
     +     ' style="' + fyll(huskeFarge(m.gjelder)) + '"'
     +     ' onclick="vekslHuskeBoble(\'' + esc(m.id) + '\', event)">'
     +   initial(m.gjelder, huskeFarge(m.gjelder))
     +   '<span class="hu-tittel">' + esc(m.overskrift || '') + '</span>'
     +   (harTekst ? '<span class="hu-pil">›</span>' : '')
+    +   (uke ? '<span class="hu-innen">' + esc(UKEDAG_KORT[ukedagNr(datoFraTekst(m.frist))]) + '</span>' : '')
     +   '<div class="hu-verkt">'
+    +     (uke
+        ? '<button class="hu-knapp hu-hake" onclick="event.stopPropagation(); vekslFerdig(\'' + esc(m.id) + '\')" '
+          + 'aria-label="' + (ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
+        : '')
     +     '<button class="hu-knapp" onclick="event.stopPropagation(); rediger(\'' + esc(m.id) + '\')" '
     +       'aria-label="Endre">✎</button>'
     +     '<button class="hu-knapp" onclick="event.stopPropagation(); slettHuske(\'' + esc(m.id) + '\')" '
     +       'aria-label="Slett">×</button>'
     +   '</div>'
     + '</div>';
+}
+
+async function vekslFerdig(id){
+  try{
+    await endreHuske(function(liste){
+      return liste.map(function(m){
+        return m.id === id ? Object.assign({}, m, {ferdig: !m.ferdig}) : m;
+      });
+    });
+  }catch(e){
+    alert('Fikk ikke huket av merknaden: ' + e.message);
+  }
 }
 
 /* ---------------- Boble for én merknad ----------------
@@ -1916,10 +2050,12 @@ function vekslHuskeBoble(id, ev){
   if(!m) return;
 
   const farge = huskeFarge(m.gjelder);
-  const frist = m.frist
-    ? new Date(m.frist + 'T12:00:00').toLocaleDateString('no-NO',
-        {weekday:'long', day:'numeric', month:'long'})
-    : '';
+  /* Ukemerknader har en ukedag, dagens merknader en dato. */
+  const frist = !m.frist ? ''
+    : (m.omfang === 'uke'
+        ? 'innen ' + UKEDAGER[ukedagNr(datoFraTekst(m.frist))]
+        : 'frist ' + new Date(m.frist + 'T12:00:00').toLocaleDateString('no-NO',
+            {weekday:'long', day:'numeric', month:'long'}));
   $('huBobleInn').innerHTML =
       '<div class="hub-tittel">' + esc(m.overskrift || '') + '</div>'
     + ((m.tekst || '').trim()
@@ -1928,7 +2064,8 @@ function vekslHuskeBoble(id, ev){
     + '<div class="hub-meta">'
     +   '<span class="hub-prikk" style="background:' + esc(farge) + '"></span>'
     +   esc(m.gjelder || 'Familie')
-    +   (frist ? ' · frist ' + esc(frist) : '')
+    +   (frist ? ' · ' + esc(frist) : '')
+    +   (m.ferdig ? ' · ferdig' : '')
     +   (m.av ? ' · skrevet av ' + esc(m.av) : '')
     + '</div>';
 
@@ -1959,78 +2096,94 @@ function lukkHuskeBoble(){
   if($('huBobleBak')) $('huBobleBak').hidden = true;
 }
 
-function huskeSkjemaHtml(omfang){
+/* Skjemaet er en dialog oeverst paa skjermen, ikke en boks inne i kortet:
+   inne i kortet havnet feltene bak tastaturet paa iPad. */
+function personValg(velg, valgt){
+  velg.innerHTML = PERSONER.map(function(n){
+    return '<option value="' + esc(n) + '"' + (n === valgt ? ' selected' : '') + '>'
+      + esc(n) + '</option>';
+  }).join('');
+}
+
+function visHuskeSkjema(omfang, m){
+  huskeSkjema = {omfang: omfang, id: m ? m.id : null};
+  lukkHuskeBoble();
   const meg = (localStorage.getItem('fh_navn') || '').split(' ')[0] || '';
-  /* Redigering: samme skjema, fylt ut med det som staar der fra foer. */
-  const m = huskeSkjema && huskeSkjema.id
-    ? (huskeliste || []).find(function(x){ return x.id === huskeSkjema.id; })
-    : null;
-  const valgt = function(felt, standard){
-    return m ? (m[felt] || standard) : standard;
-  };
-  const liste = function(felt, standard){
-    return PERSONER.map(function(n){
-      return '<option value="' + esc(n) + '"'
-        + (n === valgt(felt, standard) ? ' selected' : '') + '>' + esc(n) + '</option>';
-    }).join('');
-  };
-  return '<div class="hu-skjema">'
-    + '<input class="hu-felt" id="huOverskrift-' + omfang + '" placeholder="Overskrift" '
-    +   'maxlength="80" value="' + esc(m ? (m.overskrift || '') : '') + '">'
-    + '<textarea class="hu-felt hu-omr" id="huTekst-' + omfang + '" rows="6" '
-    +   'placeholder="Utfyllende tekst (valgfritt)">' + esc(m ? (m.tekst || '') : '') + '</textarea>'
-    + '<div class="hu-rad2">'
-    +   '<label>Gjelder<select class="hu-felt" id="huGjelder-' + omfang + '">'
-    +     liste('gjelder', 'Familie') + '</select></label>'
-    +   '<label>Skrevet av<select class="hu-felt" id="huAv-' + omfang + '">'
-    +     liste('av', meg) + '</select></label>'
-    + '</div>'
-    + '<label class="hu-frist">Frist<input class="hu-felt" type="date" id="huFrist-' + omfang + '" '
-    +   'value="' + esc(m ? (m.frist || '') : datoNokkel(dagenViser())) + '"></label>'
-    + '<div class="hu-knapper">'
-    +   '<button class="hu-avbryt" onclick="lukkHuskeSkjema()">Avbryt</button>'
-    +   '<button class="hu-lagre" onclick="lagreHuske(\'' + omfang + '\')">'
-    +     (m ? 'Lagre' : 'Legg til') + '</button>'
-    + '</div>'
-    + '</div>';
+
+  $('huTittelTekst').textContent = (m ? 'Endre ' : 'Ny ')
+    + (omfang === 'uke' ? 'ukemerknad' : 'merknad');
+  $('huOverskrift').value = m ? (m.overskrift || '') : '';
+  $('huTekst').value = m ? (m.tekst || '') : '';
+  personValg($('huGjelder'), m ? (m.gjelder || 'Familie') : 'Familie');
+  personValg($('huAv'), m ? (m.av || meg) : meg);
+
+  /* Uken har ingen dato, bare en ukedag. Dagen har datoen sin. */
+  $('huDatoFelt').hidden  = (omfang === 'uke');
+  $('huInnenFelt').hidden = (omfang !== 'uke');
+  $('huFrist').value = (m && m.frist) ? m.frist : datoNokkel(dagenViser());
+  const nr = ukedagNr((m && m.frist) ? datoFraTekst(m.frist) : dagenViser());
+  $('huInnen').innerHTML = UKEDAGER.map(function(n, i){
+    return '<option value="' + i + '"' + (i === nr ? ' selected' : '') + '>' + esc(n) + '</option>';
+  }).join('');
+
+  const lagre = $('huLagre');
+  lagre.textContent = m ? 'Lagre' : 'Legg til';
+  lagre.className = m ? 'knapp-endre' : 'knapp-gronn';
+  lagre.style.marginLeft = '0';
+
+  $('huskeBak').hidden = false;
+  $('huskeBoks').hidden = false;
+  $('huOverskrift').focus();
 }
 
 function apneHuskeSkjema(omfang){
-  const apen = huskeSkjema && huskeSkjema.omfang === omfang && !huskeSkjema.id;
-  huskeSkjema = apen ? null : {omfang: omfang, id: null};
-  tegnHuske();
-  if(huskeSkjema){
-    const f = $('huOverskrift-' + omfang);
-    if(f) f.focus();
+  if(huskeSkjema && huskeSkjema.omfang === omfang && !huskeSkjema.id){
+    lukkHuskeSkjema();
+    return;
   }
+  visHuskeSkjema(omfang, null);
 }
 
-/* Endre et punkt: skjemaet aapnes i samme boks, fylt ut. */
+/* Endre et punkt: samme skjema, fylt ut. */
 function rediger(id){
   const m = (huskeliste || []).find(function(x){ return x.id === id; });
   if(!m) return;
-  const omfang = (m.omfang === 'uke') ? 'uke' : 'dag';
-  huskeSkjema = {omfang: omfang, id: id};
-  tegnHuske();
-  const f = $('huOverskrift-' + omfang);
-  if(f) f.focus();
+  visHuskeSkjema(m.omfang === 'uke' ? 'uke' : 'dag', m);
 }
 
-function lukkHuskeSkjema(){ huskeSkjema = null; tegnHuske(); }
+function lukkHuskeSkjema(){
+  huskeSkjema = null;
+  if($('huskeBak'))  $('huskeBak').hidden = true;
+  if($('huskeBoks')) $('huskeBoks').hidden = true;
+}
 
-async function lagreHuske(omfang){
-  const o = ($('huOverskrift-' + omfang).value || '').trim();
-  if(!o){ $('huOverskrift-' + omfang).focus(); return; }
+async function lagreHuske(){
+  if(!huskeSkjema) return;
+  const omfang = huskeSkjema.omfang;
+  const endrerId = huskeSkjema.id;
+  const o = ($('huOverskrift').value || '').trim();
+  if(!o){ $('huOverskrift').focus(); return; }
+
+  let frist;
+  if(omfang === 'uke'){
+    const gml = endrerId
+      ? (huskeliste || []).find(function(x){ return x.id === endrerId; })
+      : null;
+    const basis = (gml && gml.frist) ? datoFraTekst(gml.frist) : dagenViser();
+    frist = datoIUken(basis, parseInt($('huInnen').value, 10) || 0);
+  }else{
+    frist = $('huFrist').value || datoNokkel(dagenViser());
+  }
+
   const felter = {
     overskrift: o,
-    tekst: ($('huTekst-' + omfang).value || '').trim(),
-    frist: $('huFrist-' + omfang).value || datoNokkel(dagenViser()),
+    tekst: ($('huTekst').value || '').trim(),
+    frist: frist,
     omfang: omfang,
-    gjelder: $('huGjelder-' + omfang).value,
-    av: $('huAv-' + omfang).value
+    gjelder: $('huGjelder').value,
+    av: $('huAv').value
   };
-  const endrerId = huskeSkjema && huskeSkjema.id;
-  huskeSkjema = null;
+  lukkHuskeSkjema();
   try{
     await endreHuske(function(liste){
       if(endrerId){
@@ -2077,15 +2230,17 @@ function tegnHuskeInner(){
   ];
 
   grupper.forEach(function(g){
-    g.treff.sort(function(a, b){ return (a.frist || '').localeCompare(b.frist || ''); });
+    /* Avhukede punkter synker til bunnen - de er gjort, men blir staaende
+       ut uken saa man ser at de er unnagjort. */
+    g.treff.sort(function(a, b){
+      if(!!a.ferdig !== !!b.ferdig) return a.ferdig ? 1 : -1;
+      return (a.frist || '').localeCompare(b.frist || '');
+    });
     const boks = $(g.boks);
     if(!boks) return;
-    boks.innerHTML =
-        (huskeSkjema && huskeSkjema.omfang === g.omfang ? huskeSkjemaHtml(g.omfang) : '')
-      + (g.treff.length
-          ? g.treff.map(huskeRad).join('')
-          : (huskeSkjema && huskeSkjema.omfang === g.omfang
-              ? '' : '<div class="tom">Ingenting notert ennå.</div>'));
+    boks.innerHTML = g.treff.length
+      ? g.treff.map(huskeRad).join('')
+      : '<div class="tom">Ingenting notert ennå.</div>';
   });
 }
 
@@ -2178,7 +2333,7 @@ async function tegnMiddag(retter){
       + (notat
           ? '<div class="mid-notat" onclick="apneMiddagNotat()">' + esc(notat) + '</div>'
           : '<div class="tom mid-tom" onclick="apneMiddagNotat()">'
-            + (dagOffset === 0 ? 'Ingenting planlagt i dag.' : 'Ingenting planlagt denne dagen.')
+            + (viserIdag() ? 'Ingenting planlagt i dag.' : 'Ingenting planlagt denne dagen.')
             + '<span class="mid-legg">Skriv inn</span></div>');
     return;
   }
@@ -2283,7 +2438,7 @@ function tilbakeTilStandard(){
   lukkDetalj();
   lukkHuskeBoble();
   lukkVaerBoble();
-  huskeSkjema = null;
+  lukkHuskeSkjema();
   const flyttet = (dagOffset !== 0);
   dagOffset = 0;
   tegnVaerStripe();
@@ -2293,7 +2448,7 @@ function tilbakeTilStandard(){
 function nullstillHvile(){
   clearTimeout(hvileTimer);
   hvileTimer = setTimeout(function(){
-    if(avtaleAapen) return;        /* et halvskrevet skjema skal ikke ryke */
+    if(skjemaAapent()) return;     /* et halvskrevet skjema skal ikke ryke */
     tilbakeTilStandard();
   }, HVILE_MS);
 }
@@ -2304,9 +2459,9 @@ function kobleLukking(){
     const t = ev.target;
     if(huBobleId && !t.closest('.hu-boble') && !t.closest('.hu-rad')) lukkHuskeBoble();
     if(vaerBobleAapen && !t.closest('.vaer-boble') && !t.closest('.vt-naa')) lukkVaerBoble();
-    if($('detalj') && !$('detalj').hidden && !avtaleAapen
+    if($('detalj') && !$('detalj').hidden && !skjemaAapent()
        && !t.closest('#detalj') && !t.closest('.plan-rad')
-       && !t.closest('#avtaleBoks')) lukkDetalj();
+       && !t.closest('#avtaleBoks') && !t.closest('#huskeBoks')) lukkDetalj();
   });
 }
 
@@ -2393,7 +2548,7 @@ async function oppdaterAlt(manuelt){
   if(S.laster) return;
   /* Ikke tegn planen om igjen under beina paa noen som leser detaljer —
      radene ville byttet plass og indeksene pekt feil. */
-  if(!manuelt && (avtaleAapen || !$('detalj').hidden)) return;
+  if(!manuelt && (skjemaAapent() || !$('detalj').hidden)) return;
   S.laster = true;
   if(manuelt){
     $('status').textContent = 'Oppdaterer …';
@@ -2531,6 +2686,7 @@ async function oppdaterAlt(manuelt){
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
   if(avtaleAapen){ lukkAvtale(); return; }
+  if(huskeSkjema){ lukkHuskeSkjema(); return; }
   if(huBobleId) lukkHuskeBoble();
   if(vaerBobleAapen) lukkVaerBoble();
   if($('detalj') && !$('detalj').hidden) lukkDetalj();
