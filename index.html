@@ -74,8 +74,13 @@ body{
 .brand{grid-column:2;display:flex;align-items:center;justify-content:center;min-width:0}
 /* Samme frie ramme som flisene under: merket har eget omriss og egen bunn,
    saa ingen sirkel, luft eller skygge rundt. Navnet staar i selve bildet,
-   derfor er teksten ved siden av fjernet - innlogget bruker vises i bunnen. */
-.brand-icon{width:88px;height:auto;flex-shrink:0}
+   derfor er teksten ved siden av fjernet - innlogget bruker vises i bunnen.
+   Bredden foelger fliseikonene: et fliseikon er 194px paa full skjerm og
+   125px paa telefon, og clamp treffer begge endene. Den kan ikke matche
+   overalt - mellom 700 og 1000px blir flisene 220-274px fordi rutenettet
+   da har faerre kolonner paa samme bredde, og et merke paa 274px i
+   topplinja ville tatt over hele skjermen. Der bremser 17vw. */
+.brand-icon{width:clamp(120px, 17vw, 195px);height:auto;flex-shrink:0}
 .brand-icon img{width:100%;height:auto;display:block}
 .clock{grid-column:3;justify-self:end;text-align:right;line-height:1}
 .clock-time{
@@ -98,7 +103,6 @@ body{
    sammen bredere enn en telefonskjerm - derfor startet siden forskjovet. */
 @media(max-width:560px){
   .top{gap:10px;padding-bottom:14px;margin-bottom:18px}
-  .brand-icon{width:68px}
   .clock{min-width:0}
   .clock-date{margin-top:3px;letter-spacing:.05em}
   /* Vaerknappen legger seg paa egen linje under merket og klokka. */
