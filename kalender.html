@@ -544,7 +544,11 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .boble-vedlegg[hidden]{display:none}
 .boble-vedlegg .vedlegg-rad{background:#fff}
 /* Bildevedlegg vises rett i avtalen */
-.vedlegg-bilde{margin:2px 0 4px}
+.vedlegg-bilde{margin:0}
+.vedlegg-bilde figcaption{
+  font-size:var(--t-rute);color:var(--ink-soft);margin-top:4px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
 .vedlegg-bilde img{
   display:block;width:100%;max-height:340px;object-fit:contain;
   border-radius:10px;background:#fff;border:1px solid var(--line);cursor:zoom-in;
@@ -1317,7 +1321,17 @@ const AUTH_BASE = 'https://login.microsoftonline.com/' + CFG.authority + '/oauth
 const GRAPH     = 'https://graph.microsoft.com/v1.0';
 
 const PALETTE = ['#2C3E50','#B4443A','#3E7C5A','#8A6BB1','#C08A2E','#4A7FA8','#A05A7A','#5A6C7D'];
-const FARGER  = ['#2C3E50','#4A7FA8','#2E8B8B','#3E7C5A','#5AA469','#C08A2E','#D98032','#B4443A','#C65B7C','#8A6BB1','#7A8B2E','#5A6C7D'];
+/* Farger til kalenderne. Foerste rad er de dempede vi har hatt hele
+   veien, andre rad er kraftigere toner for dem som skal skille seg ut.
+   Alle er moerke nok til at hvit initial er lesbar oppaa. */
+const FARGER  = [
+  /* dempet */
+  '#2C3E50','#4A7FA8','#2E8B8B','#3E7C5A','#5AA469','#C08A2E',
+  '#D98032','#B4443A','#C65B7C','#8A6BB1','#7A8B2E','#5A6C7D',
+  /* kraftig */
+  '#1B5FC1','#0E9BD8','#00A3A3','#12A150','#5C9410','#CF7A00',
+  '#D96500','#E03131','#D6336C','#9C36B5','#6741D9','#3B4CCA'
+];
 
 /* Standardfarger — brukes til en admin eventuelt overstyrer dem.
    Nøkkelen er kalendernavnet, ikke id-en: hver bruker ser de delte
@@ -3010,35 +3024,54 @@ function klipsHtml(e){
 }
 
 function erBilde(a){
+  /* Bare vanlige filvedlegg kan vises. En avtale eller e-post lagt ved
+     har en helt annen form. */
+  const type = a['@odata.type'] || '';
+  if(type && type.indexOf('fileAttachment') === -1) return false;
+
   if(a.contentType && /^image\//i.test(a.contentType)) return true;
-  return /\.(png|jpe?g|gif|webp|heic|bmp)$/i.test(a.name || '');
+  /* Outlook sender av og til bilder som generisk filtype, saa navnet
+     faar avgjoere naar typen ikke sier noe. */
+  return /\.(png|jpe?g|gif|webp|heic|heif|bmp|tiff?)$/i.test(a.name || '');
 }
 
-/* Henter bildet og viser det under filnavnet. Trykk aapner det i full
-   stoerrelse. Feiler hentingen, blir lenken staaende som foer. */
-async function visBilde(eventId, a, boks){
-  const ramme = document.createElement('div');
+/* Tegner et bilde vi allerede har innholdet til */
+function tegnBilde(a, boks){
+  const ramme = document.createElement('figure');
   ramme.className = 'vedlegg-bilde';
-  boks.appendChild(ramme);
-  try{
-    const d = await graph('/me/events/' + eventId + '/attachments/' + a.id);
-    if(!d.contentBytes){ ramme.remove(); return; }
-    const img = document.createElement('img');
-    img.src = 'data:' + (d.contentType || 'image/png') + ';base64,' + d.contentBytes;
-    img.alt = a.name;
-    img.loading = 'lazy';
-    img.onclick = function(ev){
-      ev.stopPropagation();
-      const v = window.open('', '_blank');
-      if(v) v.document.write('<title>' + esc(a.name) + '</title>'
+
+  const img = document.createElement('img');
+  img.src = 'data:' + (a.contentType || 'image/png') + ';base64,' + a.contentBytes;
+  img.alt = a.name || '';
+  img.loading = 'lazy';
+  img.onclick = function(ev){
+    ev.stopPropagation();
+    const v = window.open('', '_blank');
+    if(v){
+      v.document.write('<title>' + esc(a.name || 'Bilde') + '</title>'
         + '<body style="margin:0;background:#111;display:flex;align-items:center;'
         + 'justify-content:center;min-height:100vh"><img src="' + img.src
         + '" style="max-width:100%;max-height:100vh"></body>');
-    };
-    ramme.appendChild(img);
-  }catch(err){
-    ramme.remove();
-  }
+      v.document.close();
+    }
+  };
+
+  const tekst = document.createElement('figcaption');
+  tekst.textContent = a.name || '';
+
+  ramme.appendChild(img);
+  ramme.appendChild(tekst);
+  boks.appendChild(ramme);
+  return ramme;
+}
+
+/* Henter bildet foerst hvis innholdet ikke fulgte med i lista */
+async function visBilde(eventId, a, boks){
+  try{
+    const d = await graph('/me/events/' + eventId + '/attachments/' + a.id);
+    if(!d.contentBytes) return;
+    tegnBilde(d, boks);
+  }catch(err){ /* uten innhold vises det ingenting - bedre enn en feil */ }
 }
 
 /* Viser vedleggene i avtalevisningen, med lenke for aa aapne dem.
@@ -3058,13 +3091,21 @@ async function vedleggIVisning(e){
   boks.hidden = false;
   boks.textContent = 'Henter vedlegg …';
   try{
-    const d = await graph('/me/events/' + e.id + '/attachments?$select=id,name,size,contentType');
+    const d = await graph('/me/events/' + e.id + '/attachments');
     if(min !== vedleggOekt) return;      /* en annen avtale er aapnet */
     const liste = d.value || [];
     boks.innerHTML = '';
     if(!liste.length){ boks.hidden = true; return; }
 
     liste.forEach(function(a){
+      /* Bilder vises som bilde. Har vi allerede innholdet, slipper vi
+         et ekstra kall. */
+      if(erBilde(a)){
+        if(a.contentBytes) tegnBilde(a, boks);
+        else visBilde(e.id, a, boks);
+        return;
+      }
+
       const rad = document.createElement('div');
       rad.className = 'vedlegg-rad';
 
@@ -3084,10 +3125,6 @@ async function vedleggIVisning(e){
 
       rad.appendChild(n); rad.appendChild(t);
       boks.appendChild(rad);
-
-      /* Bilder vises som bilde. Et filnavn sier lite om hva som er
-         paa arket - en ukeplan eller et skjema vil man se med én gang. */
-      if(erBilde(a)) visBilde(e.id, a, boks);
     });
   }catch(err){
     boks.textContent = 'Klarte ikke hente vedlegg.';
