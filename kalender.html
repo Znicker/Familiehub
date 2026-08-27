@@ -3494,7 +3494,11 @@ async function vedleggIVisning(e){
    opp de samme filene en gang til. Tre trykk ga tre like vedlegg.
    Feiler en opplasting, blir fila liggende i lista og forsoekes paa
    nytt - det er riktig, for da kom den aldri fram. */
-async function lagreVedlegg(eventId){
+/* MAA kjoere FOER avtalen oppdateres. Graph gjoer vedlegg-id-ene ugyldige
+   naar selve avtalen endres, og da svarer slettingen "The specified object
+   was not found in the store" paa id-er vi hentet da dialogen ble aapnet.
+   Det er grunnen til at sletting av vedlegg aldri har virket. */
+async function slettVedlegg(eventId){
   while(vedleggSlett.length){
     const id = vedleggSlett[0];
     try{
@@ -3510,6 +3514,9 @@ async function lagreVedlegg(eventId){
     }
     vedleggSlett.shift();
   }
+}
+
+async function lastOppVedlegg(eventId){
   while(vedleggNye.length){
     const f = vedleggNye[0];
     const data = await filTilBase64(f);
@@ -3534,15 +3541,21 @@ async function lagreAvtale(){
   try{
     let id;
     if(redigerer){
+      /* Slettingen foerst, mens id-ene fortsatt gjelder - se slettVedlegg. */
+      if(vedleggSlett.length){
+        $('btnLagre').textContent = 'Fjerner vedlegg …';
+        await slettVedlegg(redigerer.id);
+      }
+      $('btnLagre').textContent = 'Lagrer …';
       await graph('/me/events/' + enc(redigerer.id), 'PATCH', p);
       id = redigerer.id;
     } else {
       const laget = await graph('/me/calendars/' + enc($('fCal').value) + '/events', 'POST', p);
       id = laget && laget.id;
     }
-    if(id && (vedleggNye.length || vedleggSlett.length)){
+    if(id && vedleggNye.length){
       $('btnLagre').textContent = 'Laster opp …';
-      await lagreVedlegg(id);
+      await lastOppVedlegg(id);
     }
     lukk();
     await refresh();

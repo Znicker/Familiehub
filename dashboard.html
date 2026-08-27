@@ -2005,13 +2005,17 @@ async function lagreAvtale(){
     }else if(flytter){
       malId = await flyttAvtale(e, $('avKal').value, kropp);
     }else{
-      await graph('/me/events/' + enc(e.id), {method:'PATCH', body:kropp});
-      malId = e.id;
-      /* Vedlegg som er merket bort fjernes foerst naar det lagres. */
+      /* Vedlegg som er merket bort fjernes FOER avtalen oppdateres.
+         Graph gjoer vedlegg-id-ene ugyldige naar selve avtalen endres, og
+         da svarer slettingen "The specified object was not found in the
+         store" paa id-er vi hentet da skjemaet ble aapnet. Sto etter
+         PATCH-en foer, og derfor har sletting av vedlegg aldri virket. */
       for(const v of skjemaVedlegg){
         if(v.fjern) await graph('/me/events/' + enc(e.id) + '/attachments/' + enc(v.id),
                                 {method:'DELETE'});
       }
+      await graph('/me/events/' + enc(e.id), {method:'PATCH', body:kropp});
+      malId = e.id;
     }
     if(malId && nyeFiler.length){
       try{
