@@ -451,29 +451,33 @@ input,select,textarea{font-size:16px}
   -webkit-tap-highlight-color:transparent;
 }
 .hu-ny:active{filter:brightness(.9)}
+/* Haken staar utenfor den fargede boksen, til hoeyre: den hoerer til
+   gjoeremaalet, ikke til innholdet i det. */
+.hu-linje{display:flex;align-items:center;gap:9px;margin-bottom:6px}
 /* Raden viser bare overskriften. Alt annet ligger i boblen. */
 .hu-rad{
-  display:flex;align-items:center;gap:8px;
-  padding:9px 10px;margin-bottom:6px;cursor:pointer;
+  display:flex;align-items:center;gap:8px;flex:1;min-width:0;
+  padding:9px 10px;cursor:pointer;
   border:1px solid transparent;border-radius:11px;
 }
 .hu-rad:active{filter:brightness(.96)}
-/* Dagens merknader staar hele dagen uten aa falme. Ukemerknader falmer
-   naar de hukes av - da er de gjort, ikke utgaatt. */
-.hu-rad.ferdig{opacity:.45}
-.hu-rad.ferdig .hu-tittel{text-decoration:line-through}
+/* Ingenting falmer av seg selv - en foering falmer naar den er huket av. */
+.hu-linje.ferdig .hu-rad{opacity:.45}
+.hu-linje.ferdig .hu-tittel{text-decoration:line-through}
 .hu-innen{
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.06em;
   text-transform:uppercase;color:var(--ink-soft);flex-shrink:0;
 }
 /* Avhukingsboksen: tom rute, groenn rute med hake naar den er gjort. */
 .hu-hake{
-  width:23px;height:23px;padding:0;flex-shrink:0;
-  border:2px solid var(--ink-soft);border-radius:7px;background:transparent;
-  opacity:.55;color:transparent;font-size:var(--t-meta);font-weight:700;line-height:1;
+  width:25px;height:25px;padding:0;flex-shrink:0;cursor:pointer;
+  border:2px solid var(--ink-soft);border-radius:8px;background:transparent;
+  opacity:.5;color:transparent;font-size:var(--t-meta);font-weight:700;line-height:1;
   display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;
 }
-.hu-rad.ferdig .hu-hake{
+.hu-hake:active{filter:brightness(.9)}
+.hu-linje.ferdig .hu-hake{
   opacity:1;border-color:var(--gronn);background:var(--gronn);color:#FFFFFF;
 }
 .hu-verkt{display:flex;gap:2px;flex-shrink:0}
@@ -2332,26 +2336,25 @@ function datoIUken(basisdato, nr){
 
 function huskeRad(m){
   const uke = m.omfang === 'uke';
-  const ferdig = uke && !!m.ferdig;
+  const ferdig = !!m.ferdig;
   const harTekst = !!(m.tekst || '').trim();
   /* Bare overskriften staar i lista - plassen er knapp. Resten kommer i
-     boblen ved trykk. Dagens merknader staar hele dagen uansett; det er
-     ukemerknadene som hukes av naar de er gjort. */
-  return '<div class="hu-rad' + (ferdig ? ' ferdig' : '') + '" data-id="' + esc(m.id) + '"'
+     boblen ved trykk. Haken ligger utenfor boksen, til hoeyre. */
+  return '<div class="hu-linje' + (ferdig ? ' ferdig' : '') + '">'
+    +   '<div class="hu-rad" data-id="' + esc(m.id) + '"'
     +     ' style="' + fyll(huskeFarge(m.gjelder)) + '"'
     +     ' onclick="vekslHuskeBoble(\'' + esc(m.id) + '\', event)">'
-    +   initial(m.gjelder, huskeFarge(m.gjelder))
-    +   '<span class="hu-tittel">' + esc(m.overskrift || '') + '</span>'
-    +   (harTekst ? '<span class="hu-pil">›</span>' : '')
-    +   (uke ? '<span class="hu-innen">' + esc(UKEDAG_KORT[ukedagNr(datoFraTekst(m.frist))]) + '</span>' : '')
-    +   '<div class="hu-verkt">'
-    +     (uke
-        ? '<button class="hu-knapp hu-hake" onclick="event.stopPropagation(); vekslFerdig(\'' + esc(m.id) + '\')" '
-          + 'aria-label="' + (ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
-        : '')
-    +     '<button class="hu-knapp hu-endre" onclick="event.stopPropagation(); rediger(\'' + esc(m.id) + '\')" '
-    +       'aria-label="Endre">✎</button>'
+    +     initial(m.gjelder, huskeFarge(m.gjelder))
+    +     '<span class="hu-tittel">' + esc(m.overskrift || '') + '</span>'
+    +     (harTekst ? '<span class="hu-pil">›</span>' : '')
+    +     (uke ? '<span class="hu-innen">' + esc(UKEDAG_KORT[ukedagNr(datoFraTekst(m.frist))]) + '</span>' : '')
+    +     '<div class="hu-verkt">'
+    +       '<button class="hu-knapp hu-endre" onclick="event.stopPropagation(); rediger(\'' + esc(m.id) + '\')" '
+    +         'aria-label="Endre">✎</button>'
+    +     '</div>'
     +   '</div>'
+    +   '<button class="hu-hake" onclick="vekslFerdig(\'' + esc(m.id) + '\')" '
+    +     'aria-label="' + (ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
     + '</div>';
 }
 
