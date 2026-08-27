@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="/bilder/neam-robot.png">
 <title>Familie Hub · Kalender</title>
 <link rel="stylesheet" href="/felles-rot.css?v=1">
-<link rel="stylesheet" href="/felles-filviser.css?v=1">
+<link rel="stylesheet" href="/felles-filviser.css?v=2">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -1433,7 +1433,7 @@ input,select,textarea{font-size:16px}
 </div>
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
-<script src="/felles-filviser.js?v=1"></script>
+<script src="/felles-filviser.js?v=2"></script>
 <script>
 /* ============================================================
    Konfigurasjon — Azure app-registrering
@@ -3156,6 +3156,11 @@ function dlgFeil(t){
   el.hidden = !t;
   el.style.color = '#B4443A';
   el.textContent = t || '';
+  /* Meldingen staar rett over knapperaden, og paa telefon ruller
+     dialogen - da havnet den utenfor skjermen. En feilmelding ingen ser
+     er det samme som ingen feilmelding, og her fikk den brukeren til aa
+     trykke Lagre om igjen og laste opp vedlegget paa nytt. */
+  if(t && el.scrollIntoView) el.scrollIntoView({ block:'nearest' });
 }
 
 function lukk(){
@@ -3478,12 +3483,21 @@ async function vedleggIVisning(e){
   }
 }
 
+/* Hver post fjernes fra lista i det den er gjort. Uten det gikk hele
+   lista om igjen ved neste trykk paa Lagre - og siden en feil senere i
+   lagringen lar dialogen staa aapen, endte et nytt trykk med aa laste
+   opp de samme filene en gang til. Tre trykk ga tre like vedlegg.
+   Feiler en opplasting, blir fila liggende i lista og forsoekes paa
+   nytt - det er riktig, for da kom den aldri fram. */
 async function lagreVedlegg(eventId){
-  for(const id of vedleggSlett){
+  while(vedleggSlett.length){
+    const id = vedleggSlett[0];
     try{ await graph('/me/events/' + eventId + '/attachments/' + id, 'DELETE'); }
     catch(err){ /* alt fjernet fra foer - ikke noe aa gjoere */ }
+    vedleggSlett.shift();
   }
-  for(const f of vedleggNye){
+  while(vedleggNye.length){
+    const f = vedleggNye[0];
     const data = await filTilBase64(f);
     await graph('/me/events/' + eventId + '/attachments', 'POST', {
       '@odata.type': '#microsoft.graph.fileAttachment',
@@ -3491,6 +3505,7 @@ async function lagreVedlegg(eventId){
       contentType: f.type || 'application/octet-stream',
       contentBytes: data
     });
+    vedleggNye.shift();
   }
 }
 

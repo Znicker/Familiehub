@@ -126,11 +126,25 @@ function tegnForhaand(a, boks){
               + ';base64,' + a.contentBytes;
 
   if(erPdf(a)){
-    const vis = document.createElement('iframe');
-    vis.className = 'vedlegg-pdf';
-    vis.src = kilde + '#toolbar=0&navpanes=0&view=FitH';
-    vis.title = a.name || 'PDF';
-    ramme.appendChild(vis);
+    /* PDF faar et kort, ikke en innebygd visning. En <iframe> med PDF
+       er sin egen rullebeholder, og den laa inne i et panel som ogsaa
+       ruller - to ruller oppaa hverandre er vondt paa beroeringsskjerm,
+       og iOS bestemmer selv hvor stor PDF-en skal vaere uansett hva
+       hoeyden sier. Full visning ligger ett trykk unna i filviseren,
+       som fyller skjermen. */
+    const kort = document.createElement('button');
+    kort.type = 'button';
+    kort.className = 'vedlegg-pdf-kort';
+    kort.onclick = function(ev){ ev.stopPropagation(); aapneViser(a); };
+    const merke = document.createElement('span');
+    merke.className = 'vedlegg-pdf-merke';
+    merke.textContent = 'PDF';
+    const navn = document.createElement('span');
+    navn.className = 'vedlegg-pdf-navn';
+    navn.textContent = a.name || 'Dokument';
+    kort.appendChild(merke);
+    kort.appendChild(navn);
+    ramme.appendChild(kort);
   }else{
     const vis = document.createElement('img');
     vis.src = kilde;
