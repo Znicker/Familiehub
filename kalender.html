@@ -2070,22 +2070,20 @@ function periode(){
 /* Bredere vindu enn selve visningen — så nabo-måneder/uker allerede
    ligger i cachen når man blar, og bladding blir umiddelbar. */
 function ønsketVindu(){
-  /* Rikelig margin i hver ende. Det koster lite ekstra i ett kall, og
-     sparer en henting hver gang man ruller eller blar et hakk. */
-  if(S.vis === 'liste'){
-    const omr = periode();
-    return [plussDager(omr[0], -45), plussDager(omr[1], 120)];
-  }
-  if(S.modus === 'week'){
-    const m = mandag(S.sel);
-    return [plussDager(m,-28), plussDager(m,56)];       /* 12 uker */
-  }
-  if(S.modus === 'day'){
-    const d = new Date(S.sel.getFullYear(), S.sel.getMonth(), S.sel.getDate());
-    return [plussDager(d,-21), plussDager(d,42)];       /* 9 uker rundt dagen */
-  }
-  const y = S.view.getFullYear(), m = S.view.getMonth();
-  return [new Date(y, m-2, 1), new Date(y, m+4, 1)];    /* 6 måneder */
+  /* Ett felles vindu for alle visningene, med rikelig margin. Hadde hver
+     visning sitt eget, falt et bytte fra maaned til liste utenfor - og
+     da ble alt hentet paa nytt bare fordi man byttet fane. */
+  const omr = periode();
+  const idag = new Date();
+  const naa = new Date(idag.getFullYear(), idag.getMonth(), idag.getDate());
+
+  let fra = plussDager(omr[0], -45);
+  let til = plussDager(omr[1], 120);
+
+  /* Alltid med litt rundt i dag - dit hopper man ofte */
+  if(plussDager(naa, -45) < fra) fra = plussDager(naa, -45);
+  if(plussDager(naa, 180) > til) til = plussDager(naa, 180);
+  return [fra, til];
 }
 
 /* Henter alle påslåtte kalendere for [a,b).
@@ -2180,6 +2178,50 @@ function cacheDekker(){
   return S.calendars.every(function(c){ return !c.on || S.loadedIds.has(c.id); });
 }
 
+/* ============================================================
+   Lokal kopi av avtalene
+
+   Uten denne staar appen tom i et par sekunder hver gang den aapnes,
+   mens Microsoft svarer. Vi viser det vi hadde sist med én gang, og
+   henter friske data i bakgrunnen.
+   ============================================================ */
+const CACHE_KEY = 'fh_kal_cache';
+const CACHE_MAKS = 4000;          /* avtaler - holder localStorage i sjakk */
+
+function lagreLokalt(){
+  if(!S.loaded || !S.all) return;
+  try{
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      v: 1,
+      fra: S.loaded[0].toISOString(),
+      til: S.loaded[1].toISOString(),
+      ider: Array.from(S.loadedIds || []),
+      naar: Date.now(),
+      avtaler: S.all.slice(0, CACHE_MAKS).map(function(e){
+        return [e.id, e.title, e.allDay ? 1 : 0, e.start.toISOString(), e.end.toISOString(),
+                e.where || '', e.note || '', e.calId, e.color, e.calName,
+                e.kanEndre ? 1 : 0, e.vedlegg ? 1 : 0, e.serie ? 1 : 0];
+      })
+    }));
+  }catch(err){ /* fullt lager - da klarer vi oss uten */ }
+}
+
+function lesLokalt(){
+  try{
+    const d = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if(!d || d.v !== 1 || !Array.isArray(d.avtaler)) return false;
+    /* Eldre enn et doegn: la den ligge, men hent friskt foer visning */
+    S.all = d.avtaler.map(function(a){
+      return { id:a[0], title:a[1], allDay:!!a[2], start:new Date(a[3]), end:new Date(a[4]),
+               where:a[5], note:a[6], calId:a[7], color:a[8], calName:a[9],
+               kanEndre:!!a[10], vedlegg:!!a[11], serie:!!a[12] };
+    });
+    S.loaded = [new Date(d.fra), new Date(d.til)];
+    S.loadedIds = new Set(d.ider || []);
+    return S.all.length > 0;
+  }catch(err){ return false; }
+}
+
 /* Sørger for at cachen dekker gjeldende visning. Henter kun ved behov.
    Returnerer true hvis det faktisk ble gjort et nettkall. */
 async function sikreCache(force){
@@ -2201,6 +2243,7 @@ async function sikreCache(force){
         S.loadedIds.add(r.calId);
         r.events.forEach(function(e){ S.all.push(e); });
       });
+      lagreLokalt();
       return true;
     }
   }
@@ -2229,6 +2272,7 @@ async function sikreCache(force){
   S.loaded = v;
   S.loadedIds = new Set(resultater.filter(function(r){ return r.ok; })
                                   .map(function(r){ return r.calId; }));
+  lagreLokalt();
   return true;
 }
 
@@ -2923,6 +2967,9 @@ let lasterTimer = null;
 /* Settes av den som vet at ventetiden begynner med det samme, saa
    merket ikke kommer for sent. */
 let lasterStraks = false;
+/* Naar vi allerede viser en lokal kopi, skal oppfriskningen skje i
+   bakgrunnen uten at noe legger seg over skjermen. */
+let lasterStille = false;
 
 function visLaster(paa, straks){
   const el = $('laster');
@@ -2943,7 +2990,7 @@ async function last(force){
      alt i cachen fra foer, gaar det saa fort at et merke bare blinker. */
   const maaHente = force || !cacheDekker();
   S.loading = true;
-  if(maaHente) visLaster(true, lasterStraks);
+  if(maaHente && !lasterStille) visLaster(true, lasterStraks);
   lasterStraks = false;
   msg($('calMsg'), '');
   try{
@@ -4833,6 +4880,15 @@ window.addEventListener('orientationchange', function(){
 
   render();
   if(S.token || S.refresh){
+    /* Vis det vi hadde sist med én gang. Da staar ikke appen tom mens
+       Microsoft svarer - og oppfriskningen skjer stille i bakgrunnen. */
+    const harLokalt = lesLokalt();
+    if(harLokalt){
+      fyllFraCache();
+      render();
+      lasterStille = true;
+    }
+
     /* Identitet og felles farger hentes samtidig med brukerinfo —
        de er små kall og skal ikke forsinke kalenderlastingen. */
     await Promise.all([
@@ -4852,7 +4908,8 @@ window.addEventListener('orientationchange', function(){
       }
     }
     render();
-    await refresh();
+    try{ await refresh(); }
+    finally{ lasterStille = false; }
   }
 })();
 
