@@ -625,7 +625,24 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .boble-tittel{font-size:var(--t-stor);font-weight:700;line-height:1.25;padding-right:26px}
 .boble-tid{font-size:var(--t-brod);font-weight:600;color:#4A7FA8;margin-top:4px;font-variant-numeric:tabular-nums}
-.boble-sted{font-size:var(--t-meta);color:var(--ink-soft);margin-top:5px}
+/* Sted som knapp til Google Maps, oeverst i avtalen */
+.boble-kart{
+  display:flex;align-items:center;gap:9px;margin:0 0 12px;
+  background:var(--paper);border:1px solid var(--line);border-radius:999px;
+  padding:8px 14px 8px 9px;text-decoration:none;color:var(--ink);
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:600;
+  min-width:0;
+}
+.boble-kart:active{background:var(--bg-2)}
+.boble-kart-ikon{
+  width:24px;height:24px;flex-shrink:0;border-radius:50%;background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 1px 3px rgba(44,62,80,.18);
+}
+.boble-kart-ikon svg{width:16px;height:16px;display:block}
+.boble-kart-tekst{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
 .boble-notat{
   margin-top:13px;padding-top:12px;border-top:1px solid var(--line);
   font-size:var(--t-brod);line-height:1.5;white-space:pre-wrap;word-wrap:break-word;
@@ -2523,13 +2540,13 @@ function tegnValgtAvtale(){
     html += '<button class="boble-knapp" onclick="endreAvtale(\''
       + e.id.replace(/'/g, "\\'") + '\')">Endre avtale</button>';
   }
-  html += '<div class="boble-topp">'
+  html += kartHtml(e)
+    + '<div class="boble-topp">'
     + '<span class="boble-ini" style="background:' + e.color + '" title="'
     + esc(e.calName || '') + '">' + esc(initialFor(e.calId, e.calName)) + '</span>'
     + '</div>'
     + '<div class="boble-tittel">' + esc(e.title) + klipsHtml(e) + '</div>'
     + '<div class="boble-tid">' + esc(dato) + ' · ' + esc(tid) + '</div>'
-    + (e.where ? '<div class="boble-sted">' + esc(e.where) + '</div>' : '')
     + (e.note
         ? '<div class="boble-notat">' + esc(e.note) + '</div>'
         : '<div class="boble-notat ingen">Ingen notater.</div>');
@@ -3002,13 +3019,13 @@ function visBoble(id, klikk){
       + e.id.replace(/'/g, "\\'") + '\')">Endre avtale</button>';
   }
   html += '<button class="boble-tilbake" onclick="lukkBoble()">&larr; Lukk</button>';
-  html += '<div class="boble-topp">'
+  html += kartHtml(e)
+    + '<div class="boble-topp">'
     + '<span class="boble-ini" style="background:' + e.color + '" title="'
     + esc(e.calName || '') + '">' + esc(initialFor(e.calId, e.calName)) + '</span>'
     + '</div>'
     + '<div class="boble-tittel">' + esc(e.title) + klipsHtml(e) + '</div>'
     + '<div class="boble-tid">' + esc(tid) + '</div>'
-    + (e.where ? '<div class="boble-sted">' + esc(e.where) + '</div>' : '')
     + (e.note
         ? '<div class="boble-notat">' + esc(e.note) + '</div>'
         : '<div class="boble-notat ingen">Ingen notater.</div>')
@@ -3310,6 +3327,28 @@ function klipsPaa(el, e){
 }
 
 /* Binders naar avtalen har vedlegg. Brukes overalt der tittelen vises. */
+/* Knapp til Google Maps. Stedet kan vaere alt fra en adresse til
+   "Gymsalen", saa vi lar Maps soeke i stedet for aa anta koordinater. */
+function kartHtml(e){
+  const sted = (e.where || '').trim();
+  if(!sted) return '';
+  const url = 'https://www.google.com/maps/search/?api=1&query='
+            + encodeURIComponent(sted);
+  return '<a class="boble-kart" href="' + esc(url) + '" target="_blank" rel="noopener"'
+    + ' onclick="event.stopPropagation()" title="Vis i Google Maps">'
+    + '<span class="boble-kart-ikon" aria-hidden="true">'
+    +   '<svg viewBox="0 0 24 24">'
+    +     '<path fill="#34A853" d="M12 23s1.7-2.3 3.6-5.2L9.2 12l-2 2.6C8.8 18.5 12 23 12 23z"/>'
+    +     '<path fill="#FBBC04" d="M4.6 14.3 9.2 12 5.9 8.1 2.9 9.8a9 9 0 0 0 1.7 4.5z"/>'
+    +     '<path fill="#4285F4" d="M19.4 14.3A9 9 0 0 0 21 9a9 9 0 0 0-1.6-5.1L9.2 12z"/>'
+    +     '<path fill="#1A73E8" d="M12 1a9 9 0 0 0-7.7 4.4L9.2 12l10.2-8.1A9 9 0 0 0 12 1z"/>'
+    +     '<circle cx="12" cy="9" r="3.1" fill="#fff"/>'
+    +   '</svg>'
+    + '</span>'
+    + '<span class="boble-kart-tekst">' + esc(sted) + '</span>'
+    + '</a>';
+}
+
 function klipsHtml(e){
   return e.vedlegg ? ' <span class="vedlegg-merke" title="Har vedlegg">📎</span>' : '';
 }
