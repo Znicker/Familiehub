@@ -76,7 +76,7 @@ body{
 }
 .shell{
   height:100%;height:100dvh;
-  max-width:1600px;margin:0 auto;
+  max-width:1960px;margin:0 auto;
   padding:16px 20px calc(12px + env(safe-area-inset-bottom));
   display:flex;flex-direction:column;gap:14px;
 }
@@ -346,7 +346,6 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .tg-col{position:relative;border-left:1px solid var(--grid)}
 .tg-col:first-of-type{border-left:none}
-.tg-col.helg{background:rgba(44,62,80,.022)}
 .tg-ev{
   position:absolute;border-radius:7px;padding:4px 7px;overflow:hidden;
   cursor:pointer;color:#fff;box-shadow:0 1px 3px rgba(44,62,80,.22);
@@ -467,6 +466,31 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .boble[data-side="ned"]::after{top:-6px;left:var(--peker,24px)}
 .boble[data-side="opp"]::after{bottom:-6px;left:var(--peker,24px)}
 .boble-topp{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+/* Vedlegg i skjemaet */
+.vedlegg-liste{display:flex;flex-direction:column;gap:6px}
+.vedlegg-liste:empty{display:none}
+.vedlegg-rad{
+  display:flex;align-items:center;gap:8px;
+  background:var(--bg-2);border:1px solid var(--line);border-radius:9px;
+  padding:7px 10px;font-size:var(--t-meta);color:var(--ink);min-width:0;
+}
+.vedlegg-navn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vedlegg-str{font-family:'IBM Plex Mono',monospace;font-size:var(--t-rute);color:var(--ink-soft);flex-shrink:0}
+.vedlegg-fjern{
+  border:none;background:none;color:var(--danger);cursor:pointer;
+  font-size:var(--t-brod);line-height:1;padding:2px 4px;flex-shrink:0;
+}
+.vedlegg-rad.ny .vedlegg-navn{font-weight:600}
+.vedlegg-legg{
+  margin-top:8px;border:1px dashed var(--line);background:none;color:var(--ink-soft);
+  border-radius:9px;padding:9px;width:100%;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+}
+.vedlegg-legg:active{background:var(--bg-2)}
+
+/* Binders paa avtaler som har vedlegg */
+.vedlegg-merke{font-size:.85em;line-height:1;flex-shrink:0;opacity:.75}
+
 /* Vei ut av panelet. Vises bare naar panelet dekker hele skjermen -
    ellers rekker man bakteppet utenfor. */
 .boble-tilbake{display:none}
@@ -633,7 +657,6 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   display:flex;flex-direction:column;gap:4px;
 }
 .uke-cell:first-of-type{border-left:none}
-.uke-cell.helg{background:rgba(44,62,80,.03)}
 .uke-chip{
   color:#fff;border-radius:7px;padding:4px 7px;cursor:pointer;
   font-size:var(--t-etikett);font-weight:700;line-height:1.28;overflow:hidden;
@@ -802,8 +825,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .blapil svg{width:26px;height:26px;display:block}
 .blapil:hover{background:#fff;color:var(--ink)}
 .blapil:active{transform:translateY(-50%) scale(.95)}
-.blapil.venstre{left:10px}
-.blapil.hoyre{right:10px}
+/* Regnet ut fra innholdsbredden, saa de staar rett utenfor kalenderen
+   i stedet for ute ved skjermkanten. Klemmes inn hvis vinduet er smalt. */
+.blapil.venstre{left:max(6px, calc(50vw - 1010px))}
+.blapil.hoyre{right:max(6px, calc(50vw - 1010px))}
 /* Trengs plass til baade pil og innhold */
 @media (min-width:1280px){
   .blapil:not([hidden]){display:flex}
@@ -1024,7 +1049,6 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
     padding:6px 5px 12px;cursor:pointer;
     min-width:0;display:flex;flex-direction:column;gap:5px;
   }
-  .pu-kol.helg{background:var(--bg-2)}
   .pu-kol.helligdag{background:rgba(180,68,58,.08)}
   /* Ingen farge bak avtalene - ringen rundt datoen er markeringen */
   .pu-kol.rolig{opacity:.55}          /* rolige dager skal faktisk se rolige ut */
@@ -1215,6 +1239,15 @@ input,select,textarea{font-size:16px}
       <div class="fld">
         <label for="fWhere">Sted</label>
         <input type="text" id="fWhere" placeholder="Valgfritt" autocomplete="off">
+      </div>
+
+      <div class="fld">
+        <label>Vedlegg</label>
+        <div class="vedlegg-liste" id="vedleggListe"></div>
+        <button type="button" class="vedlegg-legg" onclick="document.getElementById('fFil').click()">
+          + Legg til fil
+        </button>
+        <input type="file" id="fFil" multiple hidden onchange="valgteFiler(this.files)">
       </div>
 
       <div class="fld fld-notat">
@@ -1784,7 +1817,7 @@ function htmlTilTekst(innhold, type){
 async function hentVindu(a, b){
   const q = '?startDateTime=' + a.toISOString() + '&endDateTime=' + b.toISOString()
           + '&$orderby=start/dateTime&$top=400'
-          + '&$select=subject,isAllDay,start,end,location,body,seriesMasterId,type';
+          + '&$select=subject,isAllDay,start,end,location,body,seriesMasterId,type,hasAttachments';
   const aktive = S.calendars.filter(function(c){ return c.on; });
 
   async function hentEn(c){
@@ -1800,7 +1833,8 @@ async function hentVindu(a, b){
           where:(e.location && e.location.displayName) || '',
           note: htmlTilTekst(e.body && e.body.content, e.body && e.body.contentType),
           serie:!!e.seriesMasterId || e.type==='occurrence' || e.type==='exception',
-          calId:c.id, color:c.color, calName:c.name, kanEndre:c.kanEndre
+          calId:c.id, color:c.color, calName:c.name, kanEndre:c.kanEndre,
+          vedlegg:!!e.hasAttachments
         };
       });
       return { calId:c.id, ok:true, events:events };
@@ -2007,6 +2041,12 @@ function fyllAvtaler(){
         t.textContent = pad(e.start.getHours())+'.'+pad(e.start.getMinutes());
         txt.appendChild(t);
         txt.appendChild(document.createTextNode(e.title));
+        if(e.vedlegg){
+          const kl = document.createElement('span');
+          kl.className = 'vedlegg-merke';
+          kl.textContent = ' 📎';
+          txt.appendChild(kl);
+        }
         row.appendChild(dot);
         row.appendChild(txt);
         box.appendChild(row);
@@ -2533,6 +2573,7 @@ function nyAvtale(time, minutt, calId){
   $('fTo').value    = tid2str(slutt);
   $('fWhere').value = '';
   $('fNote').value  = '';
+  vedleggNullstill();
   $('btnSlett').hidden = true;
 
   const antall = fyllKalendervalg(calId || null);
@@ -2660,6 +2701,8 @@ function endreAvtale(id){
   $('fAllDay').checked = e.allDay;
   $('fWhere').value = e.where;
   $('fNote').value  = e.note;
+  vedleggNullstill();
+  if(e.vedlegg) lastVedlegg(e.id);   /* hentes i bakgrunnen */
 
   if(e.allDay){
     const sisteDag = new Date(e.end.getTime() - 86400000);  // Graph slutter dagen etter
@@ -2742,6 +2785,127 @@ function bygg(){
   return p;
 }
 
+/* ============================================================
+   Vedlegg
+
+   Filer lastes opp til avtalen i Graph. Smaa filer gaar i ett kall;
+   Graph tar imot inntil 3 MB den veien. Stoerre filer maa gjennom en
+   opplastingsoekt, som vi ikke stoetter her - da sier vi fra i stedet
+   for aa la det feile stille.
+   ============================================================ */
+const VEDLEGG_MAKS = 3 * 1024 * 1024;
+
+let vedleggFinnes = [];   // {id, name, size} som allerede ligger paa avtalen
+let vedleggNye = [];      // File-objekter valgt i skjemaet
+let vedleggSlett = [];    // id-er som skal fjernes ved lagring
+
+function vedleggNullstill(){
+  vedleggFinnes = []; vedleggNye = []; vedleggSlett = [];
+  tegnVedlegg();
+}
+
+function filStr(n){
+  if(n < 1024) return n + ' B';
+  if(n < 1024*1024) return Math.round(n/1024) + ' kB';
+  return (n/1024/1024).toFixed(1).replace('.', ',') + ' MB';
+}
+
+function valgteFiler(liste){
+  Array.prototype.slice.call(liste).forEach(function(f){
+    if(f.size > VEDLEGG_MAKS){
+      dlgFeil('«' + f.name + '» er for stor. Grensen er 3 MB.');
+      return;
+    }
+    vedleggNye.push(f);
+  });
+  document.getElementById('fFil').value = '';
+  tegnVedlegg();
+}
+
+function tegnVedlegg(){
+  const c = $('vedleggListe');
+  if(!c) return;
+  c.innerHTML = '';
+
+  vedleggFinnes.forEach(function(v){
+    if(vedleggSlett.indexOf(v.id) !== -1) return;
+    c.appendChild(vedleggRad(v.name, v.size, function(){
+      vedleggSlett.push(v.id);
+      tegnVedlegg();
+    }));
+  });
+
+  vedleggNye.forEach(function(f, i){
+    const rad = vedleggRad(f.name, f.size, function(){
+      vedleggNye.splice(i, 1);
+      tegnVedlegg();
+    });
+    rad.classList.add('ny');
+    c.appendChild(rad);
+  });
+}
+
+function vedleggRad(navn, str, fjern){
+  const rad = document.createElement('div');
+  rad.className = 'vedlegg-rad';
+
+  const n = document.createElement('span');
+  n.className = 'vedlegg-navn';
+  n.textContent = navn;
+  n.title = navn;
+
+  const t = document.createElement('span');
+  t.className = 'vedlegg-str';
+  t.textContent = filStr(str || 0);
+
+  const x = document.createElement('button');
+  x.type = 'button';
+  x.className = 'vedlegg-fjern';
+  x.title = 'Fjern';
+  x.innerHTML = '&times;';
+  x.onclick = fjern;
+
+  rad.appendChild(n); rad.appendChild(t); rad.appendChild(x);
+  return rad;
+}
+
+// Henter lista over vedlegg som allerede ligger paa avtalen
+async function lastVedlegg(eventId){
+  vedleggFinnes = [];
+  try{
+    const d = await graph('/me/events/' + eventId + '/attachments?$select=id,name,size');
+    vedleggFinnes = (d.value || []).map(function(a){
+      return { id:a.id, name:a.name, size:a.size };
+    });
+  }catch(err){ /* uten vedlegg, eller ingen tilgang - vis tomt */ }
+  tegnVedlegg();
+}
+
+function filTilBase64(f){
+  return new Promise(function(ok, feil){
+    const r = new FileReader();
+    r.onload = function(){ ok(String(r.result).split(',')[1]); };
+    r.onerror = function(){ feil(new Error('Klarte ikke lese ' + f.name)); };
+    r.readAsDataURL(f);
+  });
+}
+
+async function lagreVedlegg(eventId){
+  for(const id of vedleggSlett){
+    try{ await graph('/me/events/' + eventId + '/attachments/' + id, 'DELETE'); }
+    catch(err){ /* alt fjernet fra foer - ikke noe aa gjoere */ }
+  }
+  for(const f of vedleggNye){
+    const data = await filTilBase64(f);
+    await graph('/me/events/' + eventId + '/attachments', 'POST', {
+      '@odata.type': '#microsoft.graph.fileAttachment',
+      name: f.name,
+      contentType: f.type || 'application/octet-stream',
+      contentBytes: data
+    });
+  }
+}
+
 async function lagreAvtale(){
   let p;
   try{ p = bygg(); }
@@ -2751,10 +2915,17 @@ async function lagreAvtale(){
   $('btnLagre').textContent = 'Lagrer …';
   dlgFeil('');
   try{
+    let id;
     if(redigerer){
       await graph('/me/events/' + redigerer.id, 'PATCH', p);
+      id = redigerer.id;
     } else {
-      await graph('/me/calendars/' + $('fCal').value + '/events', 'POST', p);
+      const laget = await graph('/me/calendars/' + $('fCal').value + '/events', 'POST', p);
+      id = laget && laget.id;
+    }
+    if(id && (vedleggNye.length || vedleggSlett.length)){
+      $('btnLagre').textContent = 'Laster opp …';
+      await lagreVedlegg(id);
     }
     lukk();
     await refresh();
@@ -2860,6 +3031,14 @@ function planFarget(e){
   ini.textContent = bokstav;
   ini.title = e.calName || '';
   topp.appendChild(ini);
+
+  if(e.vedlegg){
+    const kl = document.createElement('span');
+    kl.className = 'vedlegg-merke';
+    kl.title = 'Har vedlegg';
+    kl.textContent = '📎';
+    topp.appendChild(kl);
+  }
 
   const tid = document.createElement('span');
   tid.className = 'pu-tid';
