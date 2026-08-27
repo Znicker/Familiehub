@@ -682,6 +682,12 @@
     align-items:center; justify-content:center; padding:20px;
   }
   .modal-backdrop.active{ display:flex; }
+  /* Bekreftelsen kan aapnes OPPAA en annen modal - avbryt-regelen gjoer det
+     hver gang man forlater et utfylt skjema. Alle modaler deler z-index 100,
+     og #confirm-modal staar midt i markupen, saa de seks som kommer etter den
+     i dokumentet malte over den: dialogen kom, men laa bak, og Avbryt saa ut
+     til aa gjoere ingenting. Den maa ligge over alt annet. */
+  #confirm-modal{ z-index:120; }
   .btn{
     display:inline-flex; align-items:center; justify-content:center; gap:8px;
     padding:13px 18px; border-radius:999px; border:none;
