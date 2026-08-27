@@ -1839,7 +1839,11 @@ async function graph(path, method, payload){
   if(!txt) return null;
   let data;
   try{ data = JSON.parse(txt); }catch(e){ throw new Error('Uventet svar fra Microsoft Graph'); }
-  if(!r.ok) throw new Error((data.error && data.error.message) || 'Graph-feil');
+  if(!r.ok){
+    const f = new Error((data.error && data.error.message) || 'Graph-feil');
+    f.status = r.status;      /* saa feilmeldinger kan si HVA som gikk galt */
+    throw f;
+  }
   return data;
 }
 async function loadMe(){
@@ -3499,21 +3503,41 @@ async function vedleggIVisning(e){
    was not found in the store" paa id-er vi hentet da dialogen ble aapnet.
    Det er grunnen til at sletting av vedlegg aldri har virket. */
 async function slettVedlegg(eventId){
-  while(vedleggSlett.length){
-    const id = vedleggSlett[0];
+  if(!vedleggSlett.length) return;
+
+  /* Id-ene vi fikk da dialogen ble aapnet svarte "The specified object was
+     not found in the store". Vi vet ikke sikkert hvorfor de blir ugyldige -
+     derfor henter vi lista paa nytt her og bruker id-ene som gjelder NAA.
+     Er navn og stoerrelse like (tre kopier av samme fil), matches de i
+     rekkefoelge, saa riktig antall forsvinner. */
+  let fersk = [];
+  try{
+    const d = await graph('/me/events/' + enc(eventId) + '/attachments?$select=id,name,size');
+    fersk = (d && d.value) || [];
+  }catch(err){
+    throw new Error('Fikk ikke lest vedleggene foer sletting: ' + (err.message || 'ukjent feil'));
+  }
+
+  const merket = vedleggFinnes.filter(function(v){ return vedleggSlett.indexOf(v.id) !== -1; });
+  const brukt = {};
+  const skalBort = [];
+  merket.forEach(function(v){
+    const like = fersk.filter(function(a){ return a.name === v.name && a.size === v.size; });
+    const nr = brukt[v.name + '|' + v.size] || 0;
+    brukt[v.name + '|' + v.size] = nr + 1;
+    if(like[nr]) skalBort.push(like[nr].id);
+  });
+
+  for(const id of skalBort){
     try{
       await graph('/me/events/' + enc(eventId) + '/attachments/' + enc(id), 'DELETE');
     }catch(err){
-      /* 404 betyr at vedlegget alt er borte - da er jobben gjort. Alt
-         annet er en ekte feil og skal fram. Foer svelget denne blokka
-         alle feil, saa en mislykket sletting saa ut som en vellykket:
-         vinduet lukket seg, og fila laa der fortsatt. */
-      if(!/404|not ?found|finnes ikke/i.test(err.message || '')){
-        throw new Error('Kunne ikke fjerne et vedlegg: ' + (err.message || 'ukjent feil'));
-      }
+      if(err.status === 404) continue;      /* alt borte - jobben er gjort */
+      throw new Error('Kunne ikke fjerne vedlegget ('
+        + (err.status || '?') + '): ' + (err.message || 'ukjent feil'));
     }
-    vedleggSlett.shift();
   }
+  vedleggSlett = [];
 }
 
 async function lastOppVedlegg(eventId){
