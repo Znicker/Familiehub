@@ -428,7 +428,7 @@
   /* Menyen aapner oppover og forankres i hoeyre kant, som knappen. */
   .sorter-flyt .sort-fab-menu{ left:auto; right:0; transform:none; }
 
-  .new-fab, .sort-fab, .back-fab{
+  .new-fab, .sort-fab{
     width:44px; height:44px; border-radius:50%;
     background:transparent; color:var(--ink-soft); border:none; padding:0;
     display:flex; align-items:center; justify-content:center;
@@ -441,14 +441,7 @@
   .fab-pill .new-fab:active{ background:var(--lime-dark); }
   .sort-fab{ font-size:var(--t-pil); }
   .new-fab{ font-size:var(--t-ikon); }
-  .back-fab{
-    position:fixed; left:20px; top:calc(22px + env(safe-area-inset-top)); z-index:25;
-    background:var(--paper); color:var(--ink);
-    border:1px solid var(--line); box-shadow:0 6px 22px rgba(44,62,80,.14);
-    font-size:var(--t-ikon); font-weight:700; padding-bottom:3px;
-    -webkit-text-stroke:1px currentColor;   /* pilen er tynn i Archivo */
-  }
-  .new-fab:active, .sort-fab:active, .back-fab:active{ transform:scale(0.95); }
+  .new-fab:active, .sort-fab:active{ transform:scale(0.95); }
   .sort-fab-menu{
     position:absolute; bottom:calc(100% + 10px); left:50%; transform:translateX(-50%);
     z-index:27;
@@ -1918,9 +1911,6 @@ input,select,textarea{font-size:16px}
 
   <!-- DETAIL -->
   <section class="view" id="view-detail">
-    <!-- Back button inside view-detail -->
-    <button class="back-fab" onclick="goHome()">←</button>
-    
     <div id="detalj-topp">
     <div class="card-panel punched" id="detail-photo-card" style="display:none; padding-bottom:0;">
       <img id="d-photo" class="detail-photo" alt="">
@@ -2028,8 +2018,7 @@ input,select,textarea{font-size:16px}
 
   <!-- UKEPLAN -->
   <section class="view" id="view-plan">
-    <button class="back-fab" onclick="goHome()">←</button>
-    <div class="card-panel punched" style="margin-top:70px;">
+    <div class="card-panel punched">
       <h2 style="margin:0 0 14px;">Ukemeny</h2>
 
       <div class="plan-nav">
@@ -2681,15 +2670,16 @@ function makeThumbnail(dataUrl, maxDim){
    samme. Ingenting av dette vises paa skjermen. */
 const HJEM = 'view-home';
 let fraHistorikk = false;      /* sann bare mens en popstate behandles */
-let historikkStartet = false;
+/* Hjemvisningen staar som class="view active" i markupen og gaar aldri
+   gjennom showView(). Uten denne linja ble den foerste oppfoeringen laget av
+   en UNDERvisning, med replaceState - den erstattet forsiden i stedet for aa
+   legge seg over den, og et tilbakesteg bar da rett ut av appen. */
+history.replaceState({ fh:true, visning:HJEM }, '');
 
 function huskVisning(visning){
-  const s = { fh:true, visning };
-  /* Foerste visning ERSTATTER oppfoeringen sida ble aapnet med. Legges den
-     til i stedet, maa man tilbake to ganger for aa komme seg ut av appen. */
-  if(historikkStartet) history.pushState(s, '');
-  else history.replaceState(s, '');
-  historikkStartet = true;
+  const naa = history.state;
+  if(naa && naa.fh && naa.visning === visning) return;   /* staar der alt */
+  history.pushState({ fh:true, visning }, '');
 }
 
 window.addEventListener('popstate', e => {

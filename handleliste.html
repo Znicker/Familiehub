@@ -5886,15 +5886,16 @@ function tegnSeksjon(c, varer, erHandlet, utenType, handlemodus){
    samme. Ingenting av dette vises paa skjermen. */
 const HJEM = 'home';
 let fraHistorikk = false;      /* sann bare mens en popstate behandles */
-let historikkStartet = false;
+/* Hjemvisningen staar som class="view active" i markupen og gaar aldri
+   gjennom showView(). Uten denne linja ble den foerste oppfoeringen laget av
+   en UNDERvisning, med replaceState - den erstattet forsiden i stedet for aa
+   legge seg over den, og et tilbakesteg bar da rett ut av appen. */
+history.replaceState({ fh:true, visning:HJEM }, '');
 
 function huskVisning(visning){
-  const s = { fh:true, visning };
-  /* Foerste visning ERSTATTER oppfoeringen sida ble aapnet med. Legges den
-     til i stedet, maa man tilbake to ganger for aa komme seg ut av appen. */
-  if(historikkStartet) history.pushState(s, '');
-  else history.replaceState(s, '');
-  historikkStartet = true;
+  const naa = history.state;
+  if(naa && naa.fh && naa.visning === visning) return;   /* staar der alt */
+  history.pushState({ fh:true, visning }, '');
 }
 
 window.addEventListener('popstate', e => {
