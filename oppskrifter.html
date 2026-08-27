@@ -29,6 +29,10 @@
 
     --bg-1: #F5F5F5;
     --bg-2: #FAFAFA;
+    /* Sidebakgrunnen. Egen variabel, ikke --bg-1/--bg-2: de to er
+       flatetoner som brukes paa topplinje, felt og celler, og de skal
+       ikke folge bakgrunnen naar den endres. */
+    --side-bakgrunn: linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
     --bg-solid: #FFFFFF;
     --paper: #FFFFFF;
     --paper-soft: #F0F0F0;
@@ -101,7 +105,7 @@
     padding-bottom:calc(172px + max(0px, env(safe-area-inset-bottom)));
     /* Fire lag med radialgradienter ga en moerk vignett som ikke fantes
        noen andre steder. Dashboardets ene lineaere gradient i stedet. */
-    background:linear-gradient(160deg,var(--bg-1),var(--bg-2));
+    background:var(--side-bakgrunn);
     background-attachment: fixed;
     -webkit-font-smoothing:antialiased;
   }
@@ -517,7 +521,7 @@
        fjernet, og merket fyller hoeyden de tok. Hero-en er like hoey som foer. */
     width:125px; height:125px; border-radius:50%; background:var(--paper);
     display:flex; align-items:flex-start; justify-content:center; padding:0;
-    box-shadow:0 3px 10px rgba(0,0,0,0.28); margin-bottom:11px;
+    box-shadow:0 3px 10px rgba(44,62,80,.18); margin-bottom:11px;
   }
   .home-hero-icon img{ width:100%; height:auto; display:block; flex:none; }
   .home-hero-sub{

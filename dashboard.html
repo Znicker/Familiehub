@@ -31,7 +31,7 @@
   --t-ikon:28px;
 
   --ink:#2C3E50;
-  --ink-soft:#7A8899;
+  --ink-soft:#5A6C7D;
   /* Handlingsfarger, samme verdier som kalender, handleliste og
      oppskrifter: groenn skaper, oransje endrer, roedt sletter. */
   --gronn:#4F8F5F;
@@ -40,6 +40,10 @@
   --oransje-mork:#9E7230;
   --rod:#A64D3C;
   --bg-2:#EDF3F8;
+  /* Sidebakgrunnen sto hardkodet to steder. Egen variabel her ogsaa, saa
+     alle fem filene sier det samme. --bg-2 er en flatetone, ikke denne. */
+  --side-bakgrunn:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
+  --shadow:0 2px 14px rgba(0,0,0,.06);
   --paper:#FFFFFF;
   --line:#E4E8EC;
   --lime:#C8E64B;
@@ -69,7 +73,7 @@ body{
   margin:0;
   font-family:'Archivo',system-ui,-apple-system,sans-serif;
   color:var(--ink);
-  background:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
+  background:var(--side-bakgrunn);
   -webkit-font-smoothing:antialiased;
   overflow:hidden;
 }
@@ -425,7 +429,7 @@ a.middag:active{opacity:.72}
 /* ---------- Innlogging ---------- */
 .port{
   position:fixed;inset:0;z-index:50;
-  background:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
+  background:var(--side-bakgrunn);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
 }
 .port-ikon{

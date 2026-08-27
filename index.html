@@ -31,9 +31,12 @@
   --t-ikon:28px;
 
   --bg-1:#F5F5F5; --bg-2:#FAFAFA; --paper:#FFFFFF;
+  /* Sidebakgrunnen. Egen variabel, ikke --bg-1/--bg-2: de to er flatetoner
+     som brukes paa knapper og kort, og skal ikke foelge bakgrunnen. */
+  --side-bakgrunn:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
   --ink:#2C3E50; --ink-soft:#5A6C7D;
-  --line:rgba(44,62,80,.10);
-  --shadow:0 2px 10px rgba(0,0,0,.08);
+  --line:#E4E8EC;
+  --shadow:0 2px 14px rgba(0,0,0,.06);
   --shadow-lift:0 14px 30px rgba(44,62,80,.16);
 }
 
@@ -56,7 +59,7 @@
 html,body{width:100%;min-height:100%}
 body{
   font-family:'Archivo',sans-serif;color:var(--ink);
-  background:linear-gradient(160deg,var(--bg-1),var(--bg-2));
+  background:var(--side-bakgrunn);
   background-attachment:fixed;
   padding:28px 28px calc(28px + env(safe-area-inset-bottom));
   -webkit-user-select:none;user-select:none;

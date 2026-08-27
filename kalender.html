@@ -34,10 +34,13 @@
   --t-ikon:28px;
 
   --bg-1:#F5F5F5; --bg-2:#FAFAFA; --paper:#FFFFFF;
+  /* Sidebakgrunnen. Egen variabel, ikke --bg-1/--bg-2: --bg-2 brukes som
+     flatetone paa rutenett, ukehode og celler, og skal ikke foelge den. */
+  --side-bakgrunn:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
   --ink:#2C3E50; --ink-soft:#5A6C7D;
   --line:#E4E8EC;
   --grid:rgba(44,62,80,.20);
-  --shadow:0 2px 10px rgba(0,0,0,.08);
+  --shadow:0 2px 14px rgba(0,0,0,.06);
   --radius:18px;
   /* Handlingsfarger, samme som i handleliste og oppskrifter:
      groenn skaper noe, blaa gjoer noe med det som finnes. */
@@ -69,7 +72,7 @@
 html,body{width:100%;height:100%}
 body{
   font-family:'Archivo',sans-serif;color:var(--ink);
-  background:linear-gradient(160deg,var(--bg-1),var(--bg-2));
+  background:var(--side-bakgrunn);
   background-attachment:fixed;
   -webkit-user-select:none;user-select:none;
   overflow:hidden;

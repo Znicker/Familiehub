@@ -26,6 +26,10 @@
 
     --bg-1: #F5F5F5;
     --bg-2: #FAFAFA;
+    /* Sidebakgrunnen. Egen variabel, ikke --bg-1/--bg-2: de to er
+       flatetoner som brukes paa topplinje, felt og celler, og de skal
+       ikke folge bakgrunnen naar den endres. */
+    --side-bakgrunn: linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
     --bg-solid: #FFFFFF;
     --paper: #FFFFFF;
     --paper-soft: #F0F0F0;
@@ -92,7 +96,7 @@
     padding-bottom:calc(172px + max(0px, env(safe-area-inset-bottom)));
     /* Fem lag med prikkflate og moerke ellipser ga en vignett som ikke
        fantes noen andre steder. Samme ene gradient som de fire andre. */
-    background:linear-gradient(160deg,var(--bg-1),var(--bg-2));
+    background:var(--side-bakgrunn);
     background-attachment: fixed;
     -webkit-font-smoothing:antialiased;
   }
