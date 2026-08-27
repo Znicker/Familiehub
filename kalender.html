@@ -479,6 +479,38 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .boble[data-side="ned"]::after{top:-6px;left:var(--peker,24px)}
 .boble[data-side="opp"]::after{bottom:-6px;left:var(--peker,24px)}
 .boble-topp{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+/* ---------- Filviser ---------- */
+.filviser{
+  position:fixed;inset:0;z-index:95;background:rgba(44,62,80,.62);
+  display:flex;align-items:center;justify-content:center;padding:18px;
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+}
+.filviser[hidden]{display:none}
+.filviser-kort{
+  background:var(--paper);border-radius:var(--radius);
+  width:100%;max-width:1000px;height:92dvh;
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 20px 50px rgba(44,62,80,.34);
+}
+.filviser-topp{
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+  padding:12px 14px;border-bottom:1px solid var(--line);
+}
+.filviser-navn{
+  flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:'Archivo',sans-serif;font-weight:700;font-size:var(--t-meta);
+}
+.filviser-inn{
+  flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+  background:#2B2B2B;
+}
+.filviser-inn img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.filviser-inn iframe{width:100%;height:100%;border:none;background:#fff}
+@media(max-width:700px){
+  .filviser{padding:0}
+  .filviser-kort{height:100dvh;border-radius:0;max-width:none}
+}
+
 /* Vedlegg i skjemaet */
 .vedlegg-liste{display:flex;flex-direction:column;gap:6px}
 .vedlegg-liste:empty{display:none}
@@ -839,10 +871,13 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
    paa en for aa se bare den, trykk paa flere for aa legge dem til. */
 .hurtigkal{
   flex:1;min-width:0;
-  display:flex;flex-wrap:wrap;justify-content:flex-end;align-content:center;
+  display:grid;justify-content:end;align-content:center;
   gap:6px;
-  /* To rekker med rundinger */
-  max-height:70px;overflow:hidden;
+  /* Faste kolonner gir like mange rundinger paa hver rad */
+  grid-auto-flow:row dense;
+}
+@media(max-width:900px){
+  .hurtigkal{justify-content:center}
 }
 .hk-ini{
   width:31px;height:31px;border-radius:50%;border:2px solid transparent;
@@ -1051,7 +1086,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .brand-icon{width:46px;height:46px;padding:6px}
   .who{display:none}
   .cal-cell{padding:5px}
-  .tg{min-height:72dvh}
+  .tg{height:72dvh;min-height:0}
   .uke-lab{position:sticky;left:0;z-index:2}
 }
 
@@ -1230,6 +1265,17 @@ input,select,textarea{font-size:16px}
 <button class="blapil hoyre" id="blaNeste" onclick="bla(1)" title="Neste" aria-label="Neste" hidden>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4l8 8-8 8"/></svg>
 </button>
+
+<div class="filviser" id="filviser" hidden onclick="if(event.target===this) lukkViser()">
+  <div class="filviser-kort">
+    <div class="filviser-topp">
+      <span class="filviser-navn" id="filviserNavn"></span>
+      <button class="btn" onclick="lastNedFraViser()">Last ned</button>
+      <button class="btn solid" onclick="lukkViser()">Lukk</button>
+    </div>
+    <div class="filviser-inn" id="filviserInn"></div>
+  </div>
+</div>
 
 <div class="bottom-bar" id="bottomBar" hidden>
   <div class="caldrop" id="caldrop" hidden>
@@ -2589,6 +2635,12 @@ function renderHurtigKal(){
     el.appendChild(b);
   });
 
+  /* Fordel likt paa to rader, saa den nederste ikke blir nesten tom.
+     Med 11 knapper blir det 6 og 5, ikke 10 og 1. */
+  const antall = el.children.length + 1;          /* + ALLE-knappen */
+  const rader = antall > 6 ? 2 : 1;
+  el.style.gridTemplateColumns = 'repeat(' + Math.ceil(antall / rader) + ', auto)';
+
   const ingenPaa = hurtigUtvalg && !Object.keys(hurtigUtvalg).length;
   const alle = document.createElement('button');
   alle.className = 'hk-alle' + (hurtigUtvalg ? '' : ' pa');
@@ -3075,21 +3127,9 @@ async function aapneVedleggFra(eventId, v, knapp){
   try{
     const a = await graph('/me/events/' + eventId + '/attachments/' + v.id);
     if(!a.contentBytes) throw new Error('Vedlegget kunne ikke hentes.');
-
-    const bin = atob(a.contentBytes);
-    const buf = new Uint8Array(bin.length);
-    for(let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-    const blob = new Blob([buf], { type: a.contentType || 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-
-    /* Last ned med riktig filnavn. Nettleseren aapner det den kan vise. */
-    const lenke = document.createElement('a');
-    lenke.href = url;
-    lenke.download = a.name || v.name;
-    document.body.appendChild(lenke);
-    lenke.click();
-    lenke.remove();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+    if(!a.name) a.name = v.name;
+    /* Bilder og PDF vises i appen, resten lastes ned */
+    aapneViser(a);
   }catch(err){
     if(knapp) knapp.title = 'Klarte ikke åpne: ' + err.message;
     dlgFeil('Klarte ikke åpne vedlegget: ' + err.message);
@@ -3117,6 +3157,77 @@ function klipsHtml(e){
   return e.vedlegg ? ' <span class="vedlegg-merke" title="Har vedlegg">📎</span>' : '';
 }
 
+/* ============================================================
+   Filviser
+
+   Bilder og PDF vises i appen, med valg om aa laste ned. Andre
+   filtyper lastes ned direkte - dem kan vi ikke vise noe fornuftig av.
+   ============================================================ */
+let viserUrl = null;
+
+function erPdf(a){
+  if(a.contentType && /pdf/i.test(a.contentType)) return true;
+  return /\.pdf$/i.test(a.name || '');
+}
+
+function lukkViser(){
+  const v = $('filviser');
+  if(v) v.hidden = true;
+  const inn = $('filviserInn');
+  if(inn) inn.innerHTML = '';
+  if(viserUrl){ URL.revokeObjectURL(viserUrl); viserUrl = null; }
+}
+
+function lastNedFraViser(){
+  const v = $('filviser');
+  if(!v || !viserUrl) return;
+  const a = document.createElement('a');
+  a.href = viserUrl;
+  a.download = v.dataset.navn || 'vedlegg';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+/* Lager en blob av base64-innholdet fra Graph */
+function blobAv(bytes, type){
+  const bin = atob(bytes);
+  const buf = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return new Blob([buf], { type: type || 'application/octet-stream' });
+}
+
+function aapneViser(a){
+  const blob = blobAv(a.contentBytes, a.contentType);
+  if(viserUrl) URL.revokeObjectURL(viserUrl);
+  viserUrl = URL.createObjectURL(blob);
+
+  const v = $('filviser');
+  v.dataset.navn = a.name || 'vedlegg';
+  $('filviserNavn').textContent = a.name || '';
+
+  const inn = $('filviserInn');
+  inn.innerHTML = '';
+
+  if(erBilde(a)){
+    const img = document.createElement('img');
+    img.src = viserUrl;
+    img.alt = a.name || '';
+    inn.appendChild(img);
+  } else if(erPdf(a)){
+    const ramme = document.createElement('iframe');
+    ramme.src = viserUrl;
+    ramme.title = a.name || 'PDF';
+    inn.appendChild(ramme);
+  } else {
+    /* Kan ikke vises - da er nedlasting det eneste fornuftige */
+    lastNedFraViser();
+    lukkViser();
+    return;
+  }
+  v.hidden = false;
+}
+
 function erBilde(a){
   /* Bare vanlige filvedlegg kan vises. En avtale eller e-post lagt ved
      har en helt annen form. */
@@ -3140,14 +3251,7 @@ function tegnBilde(a, boks){
   img.loading = 'lazy';
   img.onclick = function(ev){
     ev.stopPropagation();
-    const v = window.open('', '_blank');
-    if(v){
-      v.document.write('<title>' + esc(a.name || 'Bilde') + '</title>'
-        + '<body style="margin:0;background:#111;display:flex;align-items:center;'
-        + 'justify-content:center;min-height:100vh"><img src="' + img.src
-        + '" style="max-width:100%;max-height:100vh"></body>');
-      v.document.close();
-    }
+    aapneViser(a);
   };
 
   const tekst = document.createElement('figcaption');
@@ -3298,7 +3402,9 @@ async function slettAvtale(){
 }
 
 document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape' && !$('veil').hidden) lukk();
+  if(e.key !== 'Escape') return;
+  if(!$('filviser').hidden){ lukkViser(); return; }
+  if(!$('veil').hidden) lukk();
 });
 
 /* ============================================================
