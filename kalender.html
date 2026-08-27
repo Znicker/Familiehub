@@ -48,6 +48,7 @@
   --blaa:#4A7FA8;
   --danger:#A64D3C;
   --boks-mild:#EDF3F8;
+  --idag:#F5453C;          /* ringen rundt dagens dato */
 }
 /* iPad: leses paa avstand, alt et hakk opp */
 @media(min-width:700px){
@@ -224,11 +225,11 @@ body{
 .cal-cell.today .cal-num{
   position:relative;color:var(--ink);
   display:inline-flex;align-items:center;justify-content:center;
-  min-width:26px;height:26px;
+  min-width:22px;height:22px;
 }
 .cal-cell.today .cal-num::before{
-  content:'';position:absolute;left:-4px;right:-4px;top:-3px;bottom:-3px;
-  border:2px solid var(--blaa);
+  content:'';position:absolute;left:-2px;right:-2px;top:-2px;bottom:-2px;
+  border:1.5px solid var(--idag);
   /* Ujevne radier gir den haandtegnede, litt ovale streken */
   border-radius:47% 53% 51% 49% / 55% 47% 53% 45%;
   transform:rotate(-6deg);
@@ -595,11 +596,11 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 @media(hover:hover){.uke-dcol:hover{background:#EDF1F4}}
 .uke-dcol.idag .uke-dnum{
   position:relative;display:inline-flex;align-items:center;justify-content:center;
-  min-width:30px;height:30px;color:var(--ink);
+  min-width:26px;height:26px;color:var(--ink);
 }
 .uke-dcol.idag .uke-dnum::before{
-  content:'';position:absolute;left:-4px;right:-4px;top:-2px;bottom:-2px;
-  border:2px solid var(--blaa);
+  content:'';position:absolute;left:-2px;right:-2px;top:-2px;bottom:-2px;
+  border:1.5px solid var(--idag);
   border-radius:47% 53% 51% 49% / 55% 47% 53% 45%;
   transform:rotate(-6deg);
   pointer-events:none;
@@ -673,7 +674,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   letter-spacing:.05em;font-size:var(--t-meta);color:var(--ink);
   padding:12px 4px 8px;position:sticky;top:0;background:var(--paper);z-index:1;
 }
-.plan-sec.idag .plan-dhead{color:var(--blaa)}
+.plan-sec.idag .plan-dhead{color:var(--idag)}
 .plan-sec.idag .plan-dhead::after{content:' · i dag';color:var(--ink-soft);font-weight:600}
 .plan-item{
   display:flex;gap:12px;align-items:flex-start;
@@ -924,7 +925,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 
 /* ---------- Smale skjermer ---------- */
 @media(max-width:900px){
-  body{overflow:auto}
+  body{overflow:auto;overscroll-behavior-y:none}
   .shell{height:auto;min-height:100dvh;padding:16px 14px calc(16px + env(safe-area-inset-bottom))}
   .grid{display:flex;flex-direction:column}
   .cal{height:auto;grid-template-rows:auto repeat(6,minmax(76px,auto))}
@@ -971,14 +972,14 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .pu-kol.helligdag{background:rgba(180,68,58,.08)}
   /* Ingen farge bak avtalene - ringen rundt datoen er markeringen */
   .pu-kol.rolig{opacity:.55}          /* rolige dager skal faktisk se rolige ut */
-  .pu-ev.skjult{display:none}
   .pu-mer-lapp{
-    border:1px dashed var(--line);background:none;color:var(--ink-soft);
-    border-radius:9px;padding:5px 7px;cursor:pointer;width:100%;
+    position:sticky;bottom:0;z-index:3;
+    background:var(--paper);color:var(--ink-soft);
+    border-top:1px solid var(--line);
+    padding:4px 6px;pointer-events:none;
     font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
     text-align:center;letter-spacing:.03em;
   }
-  .pu-mer-lapp:active{background:var(--bg-2)}
 
   /* Fyll og rammefarge settes i JS fra kalenderfargen. */
   .pu-ev{
@@ -1019,7 +1020,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
    det som faktisk virker er touch-action mot dobbelttrykk, og 16px i
    skjemafelt saa iOS ikke zoomer inn naar man trykker i dem. */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+html,body{max-width:100%;overflow-x:hidden;overscroll-behavior:none}
 body{touch-action:manipulation}
 input,select,textarea{font-size:16px}
 </style>
@@ -1624,8 +1625,8 @@ async function loadCalendars(){
 /* Hvilken periode som skal hentes, ut fra valgt visning */
 function periode(){
   if(S.vis === 'liste'){
-    const d = new Date(S.sel.getFullYear(), S.sel.getMonth(), S.sel.getDate());
-    return [d, plussDager(d, listeVindu)];
+    const d = listeStart();
+    return [d, plussDager(d, listeBak + listeVindu)];
   }
   if(S.modus === 'week'){
     const m = mandag(S.sel);
@@ -3090,57 +3091,42 @@ function renderUkePlan(dager){
   requestAnimationFrame(function(){ klippKolonner(scroll); });
 }
 
+/* Ingenting skjules. Kolonnene beholder full hoeyde, saa alt kommer til
+   syne naar man ruller. Naar en kolonne rekker under synsranden, henger
+   en teller nederst i den og sier hvor mange som er igjen. Telleren
+   oppdaterer seg mens man ruller, og forsvinner naar man er i bunnen. */
 function klippKolonner(scroll){
   if(!scroll || !scroll.isConnected) return;
-  const plass = scroll.clientHeight;
-  if(!plass) return;
 
-  scroll.querySelectorAll('.pu-kol').forEach(function(kol){
-    // Rydd bort en eventuell tidligere merkelapp
-    const gammel = kol.querySelector('.pu-mer-lapp');
-    if(gammel) gammel.remove();
-    kol.querySelectorAll('.skjult').forEach(function(el){ el.classList.remove('skjult'); });
+  const tell = function(){
+    const synligBunn = scroll.scrollTop + scroll.clientHeight;
 
-    const barn = Array.prototype.slice.call(kol.children);
-    if(barn.length < 2) return;
+    scroll.querySelectorAll('.pu-kol').forEach(function(kol){
+      let lapp = kol.querySelector('.pu-mer-lapp');
 
-    const stil = getComputedStyle(kol);
-    const luft = parseFloat(stil.rowGap || stil.gap || 0) || 0;
-    const tak = plass - parseFloat(stil.paddingTop) - parseFloat(stil.paddingBottom) - 22;
+      let under = 0;
+      kol.querySelectorAll('.pu-ev').forEach(function(el){
+        if(el.offsetTop + el.offsetHeight > synligBunn + 2) under++;
+      });
 
-    let brukt = 0, synlige = 0;
-    for(let i = 0; i < barn.length; i++){
-      const h = barn[i].offsetHeight + (i ? luft : 0);
-      if(brukt + h > tak && synlige > 0) break;
-      brukt += h; synlige++;
-    }
-    if(synlige >= barn.length) return;
+      if(!under){
+        if(lapp) lapp.remove();
+        return;
+      }
+      if(!lapp){
+        lapp = document.createElement('div');
+        lapp.className = 'pu-mer-lapp';
+        kol.appendChild(lapp);
+      }
+      lapp.textContent = '+' + under + (under === 1 ? ' avtale' : ' avtaler');
+    });
+  };
 
-    for(let i = synlige; i < barn.length; i++) barn[i].classList.add('skjult');
-
-    const antall = barn.length - synlige;
-    const lapp = document.createElement('button');
-    lapp.className = 'pu-mer-lapp';
-    lapp.textContent = '+' + antall + (antall === 1 ? ' avtale' : ' avtaler');
-    lapp.onclick = function(ev){ ev.stopPropagation(); visAlleIKolonne(kol); };
-    kol.appendChild(lapp);
-  });
-
-  /* Ruller man nedover, er det plass til resten - da vises alt */
+  tell();
   if(!scroll.dataset.lytter){
     scroll.dataset.lytter = '1';
-    scroll.addEventListener('scroll', function(){
-      if(scroll.scrollTop > 4){
-        scroll.querySelectorAll('.pu-kol').forEach(visAlleIKolonne);
-      }
-    }, {passive:true});
+    scroll.addEventListener('scroll', tell, {passive:true});
   }
-}
-
-function visAlleIKolonne(kol){
-  const lapp = kol.querySelector('.pu-mer-lapp');
-  if(lapp) lapp.remove();
-  kol.querySelectorAll('.skjult').forEach(function(el){ el.classList.remove('skjult'); });
 }
 
 /* Fire visninger: Maaned (rutenett), Uke (kolonner), Dag (kolonner) og
@@ -3281,28 +3267,47 @@ function planItem(e){
    valgt i maaned eller uke - og gaar framover derfra. */
 /* Lista rekker to aar fram, men henter tre maaneder om gangen og
    utvider seg naar man ruller mot bunnen. */
-const LISTE_MAKS = 730;
-const LISTE_BOLK = 92;
+const LISTE_MAKS = 730;      /* to aar framover */
+const LISTE_BAK_MAKS = 365;  /* ett aar bakover */
+const LISTE_BOLK = 92;       /* tre maaneder om gangen framover */
+const LISTE_BAK_BOLK = 31;   /* en maaned om gangen bakover */
 let listeVindu = LISTE_BOLK;
+let listeBak = 0;
 
-function nullstillListe(){ listeVindu = LISTE_BOLK; }
+function nullstillListe(){ listeVindu = LISTE_BOLK; listeBak = 0; }
 
-/* Naar man naermer seg bunnen hentes neste bolk */
+/* Ruller man mot bunnen hentes flere dager framover, mot toppen flere
+   bakover. Ved bakoverutvidelse maa rullingen flyttes like mye, ellers
+   ville lista hoppet under fingeren. */
 function listeRulling(){
   const el = $('plan');
   if(!el || S.vis !== 'liste') return;
-  if(listeVindu >= LISTE_MAKS) return;
-  if(el.scrollTop + el.clientHeight < el.scrollHeight - 400) return;
 
-  listeVindu = Math.min(LISTE_MAKS, listeVindu + LISTE_BOLK);
-  renderListe();      /* vis dagene med det samme */
-  last(false);        /* og hent avtalene for dem */
+  if(el.scrollTop + el.clientHeight > el.scrollHeight - 400 && listeVindu < LISTE_MAKS){
+    listeVindu = Math.min(LISTE_MAKS, listeVindu + LISTE_BOLK);
+    renderListe();
+    last(false);
+    return;
+  }
+
+  if(el.scrollTop < 300 && listeBak < LISTE_BAK_MAKS){
+    const foer = el.scrollHeight;
+    listeBak = Math.min(LISTE_BAK_MAKS, listeBak + LISTE_BAK_BOLK);
+    renderListe();
+    el.scrollTop += (el.scrollHeight - foer);   /* hold blikket i ro */
+    last(false);
+  }
+}
+
+function listeStart(){
+  const d = new Date(S.sel.getFullYear(), S.sel.getMonth(), S.sel.getDate());
+  return plussDager(d, -listeBak);
 }
 
 function listePeriode(){
-  const start = new Date(S.sel.getFullYear(), S.sel.getMonth(), S.sel.getDate());
+  const start = listeStart();
   const a = [];
-  for(let i = 0; i < listeVindu; i++) a.push(plussDager(start, i));
+  for(let i = 0; i < listeBak + listeVindu; i++) a.push(plussDager(start, i));
   return a;
 }
 
