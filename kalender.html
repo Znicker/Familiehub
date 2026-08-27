@@ -4712,10 +4712,23 @@ function lukkDagMeny(){
 })();
 
 /* Juster antall linjer per rute når vinduet endrer størrelse */
+/* Naar vinduet endrer stoerrelse - typisk fordi telefonen snus - maa
+   det som er regnet ut i piksler regnes om. Hurtigvelgeren har et
+   fast antall kolonner satt i JS; uten dette ble kolonnene fra
+   liggende visning staaende og dyttet toppen ut av stilling. */
 let rzTimer;
+function etterEndring(){
+  if(!(S.token || S.refresh)) return;
+  renderHurtigKal();
+  fyllAvtaler();
+}
 window.addEventListener('resize', function(){
   clearTimeout(rzTimer);
-  rzTimer = setTimeout(function(){ if(S.token||S.refresh) fyllAvtaler(); }, 180);
+  rzTimer = setTimeout(etterEndring, 180);
+});
+window.addEventListener('orientationchange', function(){
+  clearTimeout(rzTimer);
+  rzTimer = setTimeout(etterEndring, 220);
 });
 
 /* ============================================================
