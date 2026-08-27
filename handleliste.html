@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Familie Hub – Handleliste</title>
+<!-- Felles app-skall: sidemoensteret oppskrifter og handleliste deler.
+     Maa lastes FOER <style> under, saa sida kan overstyre. -->
+<link rel="stylesheet" href="/felles-skall.css?v=1">
+<!-- ?v=1: bump tallet naar felles-skall.css endres, ellers kan iPaden
+     sitte igjen med den gamle fila fra cachen. -->
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -88,7 +93,8 @@
   }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-  button, .item-row, .store-header{ touch-action: manipulation; }
+  /* button staar i felles-skall.css; disse to er handleliste-egne. */
+  .item-row, .store-header{ touch-action: manipulation; }
   html,body{ margin:0; padding:0; color:var(--ink); width:100%; overflow-x:clip; }
   body{
     font-family:'Archivo', sans-serif;
@@ -100,26 +106,9 @@
     background-attachment: fixed;
     -webkit-font-smoothing:antialiased;
   }
-  h1,h2,h3{ font-family:'Archivo', sans-serif; margin:0; font-weight:700; letter-spacing:-0.01em; }
-  .mono{ font-family:'IBM Plex Mono', monospace; }
-  button{ font-family:inherit; cursor:pointer; }
-  input, textarea, select{ font-family:inherit; }
-  ::selection{ background:var(--mustard-light); }
 
-  /* ---------- Top bar ---------- */
-  .topbar{
-    position:sticky; top:0; z-index:20; background:transparent;
-    padding:20px 20px 8px; display:flex; align-items:center; gap:10px;
-    transition:background .15s;
-  }
-  .topbar.scrolled{ background:linear-gradient(180deg, var(--bg-1) 88%, transparent); box-shadow:0 1px 3px rgba(0,0,0,0.05); }
-  /* Inne i en undervisning staar toppbaren solid, ikke gjennomsiktig.
-     Samme regel som i oppskrifter.html - hold dem like. */
-  .topbar.subview{ background:var(--bg-1); box-shadow:0 2px 10px rgba(0,0,0,0.18); }
-  .topbar-brand{
-    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    display:flex; align-items:center; gap:10px; min-width:0; max-width:62%; pointer-events:none;
-  }
+  input, textarea, select{ font-family:inherit; }
+
   .topbar-home-actions{ display:flex; gap:4px; flex-shrink:0; margin-left:auto; }
   button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
     outline:2px solid var(--lime); outline-offset:2px;
@@ -176,45 +165,9 @@
     font-family:'Archivo',sans-serif; font-size:16px; background:#fff; color:var(--ink);
   }
 
-  .topbar h1{
-    font-size:var(--t-brod); color:var(--ink); text-transform:uppercase; text-align:center;
-    letter-spacing:0.04em; line-height:1.15;
-  }
-
-  main{ max-width:520px; margin:0 auto; padding:0 20px; }
-
-  /* ---------- Home hero ---------- */
-  .home-hero{
-    display:flex; flex-direction:column; align-items:center; text-align:center;
-    padding:8px 0 2px; position:relative; z-index:1;
-  }
-  /* Merkelappen er beskaaret tett: bildets bredde ER sirkelens diameter,
-     og sirkelen starter oeverst i bildet. Derfor ingen luft (padding:0) og
-     toppstilt bilde - da dekker merket den hvite sirkelen helt. Baandet
-     nederst stikker ut under sirkelen, slik det ogsaa gjoer paa flisa i
-     index; marg nedenfor er oekt tilsvarende saa tittelen ikke krypes paa. */
-  .home-hero-icon{
-    /* 125px, ikke 80: tittelen og undertittelen som sto under merket er
-       fjernet, og merket fyller hoeyden de tok. Hero-en er like hoey som foer. */
-    width:125px; height:125px; border-radius:50%; background:var(--paper);
-    display:flex; align-items:flex-start; justify-content:center; padding:0;
-    box-shadow:0 3px 10px rgba(44,62,80,.18); margin-bottom:11px;
-  }
-  .home-hero-icon img{ width:100%; height:auto; display:block; flex:none; }
-  .home-hero-sub{
-    font-size:var(--t-meta); color:var(--ink-soft); text-transform:uppercase;
-    letter-spacing:0.1em; margin:3px 0 0; font-weight:600;
-  }
-
-  .view{ display:none; }
-  .view.active{ display:block; }
-
-  .punched{ position:relative; }
-
-  .card-panel{
-    background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow);
-    padding:20px 20px 22px 34px; margin:14px 0 20px;
-  }
+  /* Resten av .topbar h1 ligger i felles-skall.css. Fargen er
+     sidespesifikk og blir staaende her. */
+  .topbar h1{ color:var(--ink); }
 
   /* ---------- Week nav ---------- */
   .week-nav{
@@ -350,10 +303,6 @@
   }
   .item-btn:active{ opacity:0.8; transform:scale(0.94); }
 
-  .empty-state{ margin-top:60px; text-align:center; color:var(--ink-soft); }
-  .empty-state .big{ font-size:var(--t-ikon); display:block; margin-bottom:10px; }
-  .empty-state p{ margin:6px 0 0; font-size:var(--t-brod); line-height:1.5; color:var(--ink-soft); }
-
   /* ---------- Bottom bar ---------- */
   /* Bottom-bar: same moenster som oppskrifter - pille sentrert over verktoeylinja.
      env(safe-area-inset-bottom) er alltid 0 i iframe/artifact, saa 88px
@@ -410,7 +359,7 @@
   .btn-tvers:active:not(:disabled){ background:var(--handling-tvers-moerk); }
   .btn-blaa{ background:var(--blue); color:#fff; }
   .btn-blaa:active:not(:disabled){ background:var(--lime-dark); }
-  .btn-ghost{ background:none; color:var(--ink); border:1.5px solid var(--line); width:100%; }
+
   .btn-ny:disabled,.btn-blaa:disabled,.btn-slett:disabled,.btn-endre:disabled{ background:#C3CBD4; }
 
   /* ---------- Ny vare ----------
@@ -425,19 +374,11 @@
   .add-knapper{ display:flex; gap:10px; margin-top:6px; }
   .add-knapper .btn{ flex:1; margin-top:0; }
 
-  .field{ margin-bottom:12px; }
-  .field label{
-    display:block; font-size:var(--t-meta); color:var(--ink-soft); margin-bottom:4px;
-  }
   /* Skjemafelt staar BEVISST utenfor typeskalaen: iOS Safari zoomer inn
      naar man trykker i et felt under 16px, og --t-brod er 15 paa mobil.
      Regelen "input,select,textarea{font-size:16px}" nederst i arket taper
      mot en klasseselektor, saa 16 maa staa her ogsaa. */
-  .field input, .field textarea, .field select{
-    width:100%; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line);
-    background:#fff; font-size:16px; color:var(--ink);
-  }
-  .field textarea{ resize:vertical; min-height:56px; }
+
   .field-hint{ font-size:var(--t-etikett); color:var(--lime-dark); margin:4px 0 0; font-weight:600; }
   .field-note{ font-size:var(--t-etikett); color:var(--ink-soft); margin:4px 0 0; }
 
@@ -555,30 +496,8 @@
     border-radius:10px; padding:11px 8px; background:#fff; color:var(--ink);
     font-family:'Archivo',sans-serif; font-size:16px; }
 
-  /* ---------- Tabs ---------- */
-  .tabs{
-    display:flex; background:var(--paper-soft); border-radius:999px;
-    padding:4px; margin:16px 0 18px;
-  }
-  .tab-btn{
-    flex:1; border:none; background:none; padding:10px; border-radius:999px;
-    font-size:var(--t-meta); font-weight:700; color:var(--ink-soft);
-    text-transform:uppercase; letter-spacing:0.02em; font-family:'Archivo', sans-serif;
-  }
-  .tab-btn.active{ background:var(--lime); color:#FFFFFF; }
-  .tabpane{ display:none; }
-  .tabpane.active{ display:block; }
   .donepane{ display:none; }
   .donepane.active{ display:block; }
-
-
-  /* ---------- Modal ---------- */
-  .modal-backdrop{
-    display:none; position:fixed; inset:0; background:rgba(44,62,80,.45); z-index:100;
-    align-items:center; justify-content:center; padding:20px;
-    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
-  }
-  .modal-backdrop.active{ display:flex; }
 
   /* Usynlig lokk som hindrer dobbelttrykk mens noe lagres */
   .lock{ position:fixed; inset:0; z-index:300; display:none; background:transparent; }
@@ -801,8 +720,6 @@ input,select,textarea{font-size:16px}
       <button class="btn btn-ghost" style="margin-top:8px;" onclick="goHome()">Tilbake</button>
     </div>
   </section>
-
-
 
 </main>
 
@@ -1182,7 +1099,6 @@ async function lagreKatalog(){
    Tilstand
    ============================================================ */
 // Samme inndeling som Oppskriftsboka bruker, så de to appene matcher
-
 
 const STANDARD_BUTIKK = 'Kiwi';
 

@@ -1,0 +1,150 @@
+/* ============================================================
+   Familie Hub - felles app-skall
+   ------------------------------------------------------------
+   Sidemoensteret som oppskrifter og handleliste deler: topplinje,
+   faner, visninger, modalbakgrunn, kort, skjemafelt og hero.
+   Trukket ut 27. august 2026 (7.3, foerste flytting). Reglene sto
+   allerede tegn for tegn like i de to filene, med fire unntak som
+   er avgjort her og kommentert der de staar.
+
+   Lastes FOER sidens egen <style>, saa en side kan overstyre en
+   regel her ved aa skrive den om lokalt.
+
+   Fila bruker variablene fra sidens :root (--paper, --ink,
+   --t-brod ...). Den setter ingen selv - typeskala og palett
+   hoerer til 7.4.
+   ============================================================ */
+/* ---------- Topplinje ---------- */
+.topbar{
+  position:sticky; top:0; z-index:20; background:transparent;
+  padding:20px 20px 8px; display:flex; align-items:center; gap:10px;
+  transition:background .15s;
+}
+.topbar.scrolled{
+  background:linear-gradient(180deg, var(--bg-1) 88%, transparent);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.topbar.subview{
+  background:var(--bg-1); box-shadow:0 2px 10px rgba(0,0,0,0.18);
+}
+.topbar-brand{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  display:flex; align-items:center; gap:10px; min-width:0; max-width:62%;
+  pointer-events:none;
+}
+/* Fargen paa tittelen er sidespesifikk og blir staaende i sidene:
+   hvit i oppskrifter, moerk i handleliste. */
+.topbar h1{
+  font-size:var(--t-brod); text-transform:uppercase; text-align:center;
+  letter-spacing:0.04em; line-height:1.15;
+}
+
+/* ---------- Faner ---------- */
+.tabs{
+  display:flex; background:var(--paper-soft); border-radius:999px;
+  padding:4px; margin:16px 0 18px;
+}
+/* Faneteksten er metatekst, ikke broedtekst. Den er alt versal, fet
+   og spatiert - paa broedtekststoerrelse konkurrerer den med
+   innholdet den skal navigere i. Oppskrifter laa paa --t-brod. */
+.tab-btn{
+  flex:1; border:none; background:none; padding:10px; border-radius:999px;
+  font-weight:700; color:var(--ink-soft); text-transform:uppercase;
+  letter-spacing:0.02em; font-family:'Archivo', sans-serif;
+  font-size:var(--t-meta);
+}
+.tab-btn.active{ background:var(--lime); color:#FFFFFF; }
+.tabpane{ display:none; }
+.tabpane.active{ display:block; }
+
+/* ---------- Visninger ---------- */
+.view{ display:none; }
+.view.active{ display:block; }
+main{ max-width:520px; margin:0 auto; padding:0 20px; }
+
+/* ---------- Modalbakgrunn ---------- */
+.modal-backdrop{
+  display:none; position:fixed; inset:0; background:rgba(44,62,80,.45);
+  z-index:100; -webkit-backdrop-filter:blur(3px);
+  backdrop-filter:blur(3px); align-items:center; justify-content:center;
+  padding:20px;
+}
+.modal-backdrop.active{ display:flex; }
+
+/* ---------- Kort ---------- */
+.card-panel{
+  background:var(--paper); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:20px 20px 22px 34px;
+  margin:14px 0 20px;
+}
+.punched{ position:relative; }
+
+/* ---------- Skjemafelt ---------- */
+.field{ margin-bottom:12px; }
+.field label{
+  display:block; font-size:var(--t-meta); color:var(--ink-soft);
+  margin-bottom:4px;
+}
+/* 16px er et gulv, ikke en smakssak: under det zoomer iOS inn paa
+   feltet naar det faar fokus, og siden hopper. Oppskrifter laa paa
+   17px, handleliste paa 16. */
+.field input, .field textarea, .field select{
+  width:100%; padding:11px 12px; border-radius:10px;
+  border:1.5px solid var(--line); background:#fff; color:var(--ink);
+  font-size:16px;
+}
+
+/* ---------- Hero paa forsiden ---------- */
+.home-hero{
+  display:flex; flex-direction:column; align-items:center;
+  text-align:center; padding:8px 0 2px; position:relative; z-index:1;
+}
+/* Merkelappen er beskaaret tett: bildets bredde ER sirkelens
+   diameter, og sirkelen starter oeverst i bildet. Derfor ingen luft
+   (padding:0) og toppstilt bilde - da dekker merket den hvite
+   sirkelen helt. Baandet nederst stikker ut under sirkelen; margen
+   nedenfor er oekt tilsvarende. 125px, ikke 80: tittelen som sto
+   under merket er fjernet, og merket fyller hoeyden den tok. */
+.home-hero-icon{
+  width:125px; height:125px; border-radius:50%; background:var(--paper);
+  display:flex; align-items:flex-start; justify-content:center; padding:0;
+  box-shadow:0 3px 10px rgba(44,62,80,.18); margin-bottom:11px;
+}
+.home-hero-icon img{ width:100%; height:auto; display:block; flex:none; }
+/* Samme vurdering som .tab-btn: undertittelen er metatekst. */
+.home-hero-sub{
+  color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.1em;
+  margin:3px 0 0; font-weight:600; font-size:var(--t-meta);
+}
+
+/* ---------- Tom tilstand ---------- */
+.empty-state{ margin-top:60px; text-align:center; color:var(--ink-soft); }
+.empty-state .big{
+  font-size:var(--t-ikon); display:block; margin-bottom:10px;
+}
+.empty-state p{
+  margin:6px 0 0; font-size:var(--t-brod); line-height:1.5;
+  color:var(--ink-soft);
+}
+
+/* ---------- Smaating ---------- */
+.btn-ghost{
+  background:none; color:var(--ink); border:1.5px solid var(--line);
+  width:100%;
+}
+.mono{ font-family:'IBM Plex Mono', monospace; }
+/* Unionen av de to: oppskrifter satte de to foerste, handleliste den siste. */
+button{ font-family:inherit; cursor:pointer; touch-action:manipulation; }
+h1,h2,h3{
+  font-family:'Archivo', sans-serif; margin:0; font-weight:700;
+  letter-spacing:-0.01em;
+}
+::selection{ background:var(--mustard-light); }
+
+/* ------------------------------------------------------------
+   Blir liggende i sidene, med vilje:
+   - .topbar h1 { color }  - hvit i oppskrifter, moerk i handleliste
+   - .field-hint, .field-note, .topbar-home-actions - bare handleliste
+   - #confirm-modal { z-index } - bare oppskrifter
+   - alle @media-overstyringer - de kommer etter denne fila og vinner
+   ------------------------------------------------------------ */
