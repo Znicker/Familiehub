@@ -169,6 +169,7 @@ body{
 
 /* ---------- Kalenderrutenett ---------- */
 .cal{
+  position:relative;              /* titlene legges oppaa rutenettet */
   flex:1;min-height:0;
   display:grid;
   grid-template-columns:26px repeat(7,1fr);
@@ -708,7 +709,24 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   font-size:var(--t-etikett);font-weight:700;line-height:1;padding:0 5px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.cal-band.alene{justify-content:center}
+/* Laget som baerer titlene. Ligger oppaa rutenettet og klippes ikke av
+   cellene, saa et navn kan gaa fritt over flere dager. */
+.cal-titler{
+  position:absolute;inset:0;pointer-events:none;z-index:2;
+  grid-area:1 / 1 / -1 / -1;      /* ikke ta en egen celle i rutenettet */
+}
+.cal-tittel{
+  position:absolute;display:flex;align-items:center;gap:4px;
+  color:#fff;font-family:'Archivo',sans-serif;
+  font-size:var(--t-etikett);font-weight:700;line-height:1;
+  padding:0 5px;white-space:nowrap;overflow:hidden;
+}
+/* Selve teksten baerer avkortingen - en flex-boks kan ikke gjoere det */
+.cal-tittel-tekst{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+/* Midtstilles bare naar hele navnet faktisk faar plass */
+.cal-tittel.midt{justify-content:center}
 .cal-band-ini{
   flex-shrink:0;min-width:13px;height:13px;border-radius:999px;padding:0 3px;
   background:rgba(255,255,255,.35);color:#fff;
@@ -2032,19 +2050,13 @@ function fyllAvtaler(){
       if(erStart) band.classList.add('s');
       if(erSlutt) band.classList.add('e');
 
-      /* Initialen foerst, saa navnet - som paa avtalene ellers */
-      if(erStart){
-        const ini = document.createElement('span');
-        ini.className = 'cal-band-ini';
-        ini.style.background = dus(e.color, .5);
-        ini.textContent = initialFor(e.calId, e.calName);
-        band.appendChild(ini);
-        band.appendChild(document.createTextNode(e.title));
-        klipsPaa(band, e);
-      }
-      /* Dekker baandet bare denne ene dagen, staar teksten penest midtstilt.
-         Gaar det videre, skal den begynne til venstre saa den kan leses. */
-      if(erStart && erSlutt) band.classList.add('alene');
+      /* Alle segmentene i samme strekk merkes likt, saa titlene kan
+         legges paa tvers av dem etterpaa. Uka skiller strekkene, siden
+         et baand aldri gaar over en linjeskift i rutenettet. */
+      const rad = Math.floor((mndKart.lead + d.getDate() - 1) / 7);
+      band.dataset.strekk = e.id + '|' + rad;
+      band.dataset.tittel = e.title;
+      if(erStart) band.dataset.start = '1';
       band.title = e.title;
       band.style.cursor = 'pointer';
       band.onclick = function(ev){ ev.stopPropagation(); if(skjulTrykk) return; visBoble(e.id, ev); };
@@ -2118,7 +2130,89 @@ function fyllAvtaler(){
       }
     }
   });
+
+  /* Titlene tegnes etter at cellene har faatt plass, saa vi kan maale
+     hvor bredt hvert strekk faktisk er. */
+  requestAnimationFrame(tegnBaandtitler);
 }
+
+/* ============================================================
+   Titler paa fleredagsbaand
+
+   Cellene klipper innholdet sitt, saa en tittel som skulle gaa over
+   flere dager ble kuttet ved foerste dagsgrense. Titlene legges derfor
+   i et eget lag oppaa rutenettet, der de kan strekke seg fritt.
+   ============================================================ */
+function tegnBaandtitler(){
+  const grid = $('cal');
+  if(!grid || grid.hidden) return;
+
+  let lag = grid.querySelector('.cal-titler');
+  if(!lag){
+    lag = document.createElement('div');
+    lag.className = 'cal-titler';
+    grid.appendChild(lag);
+  }
+  lag.innerHTML = '';
+
+  const gr = grid.getBoundingClientRect();
+  const strekk = {};
+
+  grid.querySelectorAll('.cal-band[data-strekk]').forEach(function(b){
+    const n = b.dataset.strekk;
+    if(!strekk[n]) strekk[n] = [];
+    strekk[n].push(b);
+  });
+
+  Object.keys(strekk).forEach(function(n){
+    const deler = strekk[n];
+    const foerste = deler[0], siste = deler[deler.length - 1];
+    const a = foerste.getBoundingClientRect();
+    const z = siste.getBoundingClientRect();
+    if(!a.width) return;
+
+    const el = document.createElement('div');
+    el.className = 'cal-tittel';
+    /* Starter strekket her, staar initialen foerst - ellers fortsetter
+       det fra forrige uke, og da skal bare navnet staa. */
+    if(foerste.dataset.start){
+      const ini = document.createElement('span');
+      ini.className = 'cal-band-ini';
+      ini.style.background = 'rgba(255,255,255,.35)';
+      ini.textContent = foerste.dataset.ini || '';
+      el.appendChild(ini);
+    }
+    const tekst = document.createElement('span');
+    tekst.className = 'cal-tittel-tekst';
+    tekst.textContent = (foerste.dataset.tittel || '')
+      + (foerste.dataset.klips ? ' 📎' : '');
+    el.appendChild(tekst);
+
+    el.style.left   = (a.left - gr.left) + 'px';
+    el.style.top    = (a.top  - gr.top)  + 'px';
+    el.style.width  = (z.right - a.left) + 'px';
+    el.style.height = a.height + 'px';
+
+    /* Ett segment = én dag. Da leses navnet best fra venstre. Gaar det
+       over flere dager, midtstilles det - men bare hvis det faktisk er
+       plass, ellers begynner det fra venstre saa starten er lesbar. */
+    lag.appendChild(el);
+    /* Ett segment = én dag: navnet leses best fra venstre. Gaar det over
+       flere dager, midtstilles det - men bare hvis hele navnet faktisk
+       faar plass, ellers begynner det fra venstre saa starten er lesbar. */
+    const flere = deler.length > 1;
+    const passer = tekst.scrollWidth <= tekst.clientWidth + 1;
+    el.classList.toggle('midt', flere && passer);
+  });
+}
+
+/* Titlene er posisjonert i piksler, saa de maa regnes om naar vinduet
+   endrer stoerrelse. */
+let titlerTimer = null;
+window.addEventListener('resize', function(){
+  clearTimeout(titlerTimer);
+  titlerTimer = setTimeout(tegnBaandtitler, 120);
+});
 
 function renderCal(){
   const y = S.view.getFullYear(), m = S.view.getMonth();
