@@ -66,6 +66,9 @@
     --mustard-light: #F0D9A6;
     --line: #E4E8EC;
     --danger: #A64D3C;
+    /* Trykktilstand for roedt, etter samme moenster som de andre
+       -moerk-verdiene. Verdien er den som alt sto i .rediger-topp-knapp. */
+    --danger-moerk: #8E4033;
     --shadow: 0 2px 14px rgba(0,0,0,.06);
     --radius: 18px;
   }
@@ -684,22 +687,29 @@
     font-size:var(--t-brod); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
     font-family:'Archivo', sans-serif;
   }
-  .btn-primary{ background:var(--blue); color:#fff; width:100%; margin-top:14px; }
-  /* Skaper noe - fylt flate i opprettfargen. Samme regel som "Ny oppskrift"
-     i venstrespalten paa forsiden. */
+  /* Knappene heter det de betyr, ikke det de er store som:
+     groent lagrer eller legger til, roedt sletter, oker endrer, noeytral
+     avbryter, lilla gaar paa tvers av apper, blaatt er alt annet.
+     Formen ligger for seg, saa en knapp kan skifte betydning uten aa
+     skifte stoerrelse - det var sammenblandingen som gjorde at
+     .btn-primary betydde groenn i handleliste og blaa her. */
+  .btn-blokk{ width:100%; margin-top:14px; }
   /* Samme form som "Ny oppskrift" i venstrespalten: fylt flate, avrundet
      hjoerne, ikke pille. De var kunstig brede fordi .btn er en pille i full
      bredde - her holder det med innholdets bredde. */
-  .btn-ny{
-    background:var(--handling-ny); color:#fff; margin:0 0 4px;
-    border-radius:12px; padding:12px 22px; width:auto;
+  .btn-pille{
+    margin:0 0 4px; border-radius:12px; padding:12px 22px; width:auto;
     text-transform:none; letter-spacing:.01em;
   }
-  .btn-ny:active{ background:var(--handling-ny-moerk); }
-  .btn-primary:disabled{ background:#B7C2D4; }
-  .btn-primary:active:not(:disabled){ background:#20447F; }
+
+  .btn-ny{ background:var(--handling-ny); color:#fff; }
+  .btn-ny:active:not(:disabled){ background:var(--handling-ny-moerk); }
+  .btn-slett{ background:var(--danger); color:#fff; }
+  .btn-slett:active:not(:disabled){ background:var(--danger-moerk); }
+  .btn-blaa{ background:var(--blue); color:#fff; }
+  .btn-blaa:active:not(:disabled){ background:var(--lime-dark); }
   .btn-ghost{ background:none; color:var(--ink); border:1.5px solid var(--line); width:100%; }
-  .btn-danger{ background:none; color:var(--danger); }
+  .btn-ny:disabled,.btn-blaa:disabled,.btn-slett:disabled{ background:#B7C2D4; }
 
   .field{ margin-bottom:12px; }
   .field label{ display:block; font-size:var(--t-meta); color:var(--ink-soft); margin-bottom:4px; }
@@ -1993,7 +2003,7 @@ input,select,textarea{font-size:16px}
 
     <div class="tabpane" id="tab-tips">
       <div class="card-panel punched" style="padding-top:20px;">
-        <button class="btn btn-ny" onclick="openNewTipModal()">Nytt tips</button>
+        <button class="btn btn-pille btn-ny" onclick="openNewTipModal()">Nytt tips</button>
         <div class="section-label">Tips fra oppskriften</div>
         <div id="d-tips-list"></div>
       </div>
@@ -2001,7 +2011,7 @@ input,select,textarea{font-size:16px}
 
     <div class="tabpane" id="tab-comments">
       <div class="card-panel punched" style="padding-top:20px;">
-        <button class="btn btn-ny" onclick="openNewCommentModal()">Ny kommentar</button>
+        <button class="btn btn-pille btn-ny" onclick="openNewCommentModal()">Ny kommentar</button>
         <div id="d-comments-list" style="margin-top:18px;"></div>
       </div>
     </div>
@@ -2014,7 +2024,7 @@ input,select,textarea{font-size:16px}
 
     <div class="tabpane" id="tab-rating">
       <div class="card-panel punched" style="padding-top:20px;">
-        <button class="btn btn-ny" onclick="openNewTastingModal()">Ny vurdering</button>
+        <button class="btn btn-pille btn-ny" onclick="openNewTastingModal()">Ny vurdering</button>
         <div id="d-tastings-list" style="margin-top:18px;"></div>
       </div>
     </div>
@@ -2062,7 +2072,7 @@ input,select,textarea{font-size:16px}
     <p style="margin:0 0 16px;">Oppskriften, bildene og alle kommentarer og vurderinger blir borte. Dette kan ikke angres.</p>
     <div class="row">
       <button class="btn btn-ghost" style="flex:1; margin-top:0;" onclick="cancelDelete()">Avbryt</button>
-      <button class="btn" style="flex:1; background:var(--danger); color:#fff;" onclick="deleteCurrentRecipe()">Slett for godt</button>
+      <button class="btn btn-slett" style="flex:1;" onclick="deleteCurrentRecipe()">Slett for godt</button>
     </div>
   </div>
 </div>
@@ -2079,7 +2089,7 @@ input,select,textarea{font-size:16px}
     <div id="nytt-tips-status"></div>
     <div class="row" style="display:flex; gap:8px; margin-top:12px;">
       <button class="btn btn-ghost" style="flex:1; margin-top:0;" onclick="closeModal('nytt-tips')">Avbryt</button>
-      <button class="btn btn-ny" style="flex:1;" onclick="saveNewTip()">Lagre tips</button>
+      <button class="btn btn-pille btn-ny" style="flex:1;" onclick="saveNewTip()">Lagre tips</button>
     </div>
   </div>
 </div>
@@ -2094,7 +2104,7 @@ input,select,textarea{font-size:16px}
     <p style="font-size:var(--t-meta); color:var(--ink-soft); margin:4px 0 14px;">.json legges til automatisk.</p>
     <div class="row" style="display:flex; gap:8px;">
       <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('export-name')">Avbryt</button>
-      <button class="btn btn-primary" style="flex:1;" onclick="closeModal('export-name'); exportBackup();">Last ned</button>
+      <button class="btn btn-blokk btn-blaa" style="flex:1;" onclick="closeModal('export-name'); exportBackup();">Last ned</button>
     </div>
   </div>
 </div>
@@ -2109,7 +2119,7 @@ input,select,textarea{font-size:16px}
     <div id="avvist-liste" style="max-height:50vh; overflow-y:auto;"></div>
     <div class="row" style="display:flex; gap:8px; margin-top:14px;">
       <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('avvist')">Lukk</button>
-      <button class="btn btn-primary" style="flex:1;" onclick="glemValgteAvvisninger()">Ta opp igjen</button>
+      <button class="btn btn-blokk btn-blaa" style="flex:1;" onclick="glemValgteAvvisninger()">Ta opp igjen</button>
     </div>
   </div>
 </div>
@@ -2123,7 +2133,7 @@ input,select,textarea{font-size:16px}
     <div id="kategori-liste" style="max-height:52vh; overflow-y:auto;"></div>
     <div class="row" style="display:flex; gap:8px; margin-top:14px;">
       <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('kategori')">Avbryt</button>
-      <button class="btn btn-primary" style="flex:1;" onclick="lagreKategorier()">Lagre</button>
+      <button class="btn btn-blokk btn-ny" style="flex:1;" onclick="lagreKategorier()">Lagre</button>
     </div>
   </div>
 </div>
@@ -2146,7 +2156,7 @@ input,select,textarea{font-size:16px}
     </p>
     <div class="row" style="display:flex; gap:8px; margin-top:12px;">
       <button class="btn btn-ghost" style="flex:1;" id="ing-review-avvis" onclick="avvisKandidat()">Ikke samme</button>
-      <button class="btn btn-primary" style="flex:1;" id="ing-review-godta" onclick="godtaKandidat()">Samme vare</button>
+      <button class="btn btn-blokk btn-blaa" style="flex:1;" id="ing-review-godta" onclick="godtaKandidat()">Samme vare</button>
     </div>
     <button class="btn btn-ghost" style="width:100%; border:none; color:var(--ink-soft); margin-top:8px;" onclick="avbrytGjennomgang()">Avslutt</button>
   </div>
@@ -2172,7 +2182,7 @@ input,select,textarea{font-size:16px}
     <p style="font-size:var(--t-meta); color:var(--ink-soft); margin:6px 0 14px;">Navnet lagres i varekatalogen og gjelder alle uker. Mengden gjelder bare denne uka; la den stå tom for å beholde de opprinnelige.</p>
     <div class="row" style="display:flex; gap:10px;">
       <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('ing-merge')">Avbryt</button>
-      <button class="btn btn-primary" style="flex:1;" onclick="confirmIngMerge()">Slå sammen</button>
+      <button class="btn btn-blokk btn-blaa" style="flex:1;" onclick="confirmIngMerge()">Slå sammen</button>
     </div>
   </div>
 </div>
@@ -2196,7 +2206,7 @@ input,select,textarea{font-size:16px}
     <p id="confirm-modal-text"></p>
     <div class="row">
       <button class="btn btn-ghost" onclick="closeConfirmModal()">Avbryt</button>
-      <button class="btn" id="confirm-modal-yes" style="background:var(--danger); color:#fff;">Slett</button>
+      <button class="btn btn-slett" id="confirm-modal-yes">Slett</button>
     </div>
   </div>
 </div>
@@ -2221,7 +2231,7 @@ input,select,textarea{font-size:16px}
       <div id="import-web-paste-status"></div>
       <div class="row" style="margin-top:14px;">
         <button class="btn btn-ghost" onclick="closeImportWebModal()">Avbryt</button>
-        <button class="btn btn-primary" id="import-web-paste-btn" style="margin-top:0;" onclick="submitWebImportPaste()">Tolk med AI</button>
+        <button class="btn btn-blokk btn-blaa" id="import-web-paste-btn" style="margin-top:0;" onclick="submitWebImportPaste()">Tolk med AI</button>
       </div>
     </div>
 
@@ -2239,7 +2249,7 @@ input,select,textarea{font-size:16px}
     <div id="physical-import-status"></div>
     <div class="row" style="margin-top:14px;">
       <button class="btn btn-ghost" onclick="closePhysicalImportModal()">Avbryt</button>
-      <button class="btn btn-primary" id="physical-import-btn" style="margin-top:0;" onclick="submitPhysicalImport()" disabled>Tolk med AI</button>
+      <button class="btn btn-blokk btn-blaa" id="physical-import-btn" style="margin-top:0;" onclick="submitPhysicalImport()" disabled>Tolk med AI</button>
     </div>
   </div>
 </div>
@@ -2281,7 +2291,7 @@ input,select,textarea{font-size:16px}
 
     <div class="row" style="margin-top:16px;">
       <button class="btn btn-ghost" onclick="closeTastingModal()">Avbryt</button>
-      <button class="btn btn-primary" style="margin-top:0;" onclick="saveTasting()">Lagre</button>
+      <button class="btn btn-blokk btn-ny" style="margin-top:0;" onclick="saveTasting()">Lagre</button>
     </div>
   </div>
 </div>
@@ -2322,7 +2332,7 @@ input,select,textarea{font-size:16px}
 
     <div class="row" style="margin-top:16px;">
       <button class="btn btn-ghost" onclick="closeCommentModal()">Avbryt</button>
-      <button class="btn btn-primary" style="margin-top:0;" onclick="saveComment()">Lagre</button>
+      <button class="btn btn-blokk btn-ny" style="margin-top:0;" onclick="saveComment()">Lagre</button>
     </div>
   </div>
 </div>
@@ -2354,7 +2364,7 @@ input,select,textarea{font-size:16px}
 
     <div class="row" style="margin-top:16px;">
       <button class="btn btn-ghost" onclick="closeChefModal()">Avbryt</button>
-      <button class="btn btn-primary" style="margin-top:0;" onclick="closeChefModal()">Ferdig</button>
+      <button class="btn btn-blokk btn-blaa" style="margin-top:0;" onclick="closeChefModal()">Ferdig</button>
     </div>
   </div>
 </div>
@@ -2397,7 +2407,7 @@ input,select,textarea{font-size:16px}
 
     <div class="row" style="margin-top:14px;">
       <button class="btn btn-ghost" onclick="closeRestoreBackupModal()">Avbryt</button>
-      <button class="btn btn-primary" id="restore-backup-btn" style="margin-top:0;" onclick="submitRestoreBackup()">Gjenopprett</button>
+      <button class="btn btn-blokk btn-blaa" id="restore-backup-btn" style="margin-top:0;" onclick="submitRestoreBackup()">Gjenopprett</button>
     </div>
   </div>
 </div>
@@ -4695,7 +4705,7 @@ function renderIngredientConflictsBox(){
         </div>
         <div class="row" style="margin-top:6px;">
           <button type="button" class="btn btn-ghost" style="padding:6px 10px; font-size:var(--t-meta);" onclick="resolveIngredientConflict(${idx}, false)">Behold mine</button>
-          <button type="button" class="btn btn-primary" style="padding:6px 10px; font-size:var(--t-meta); margin-top:0;" onclick="resolveIngredientConflict(${idx}, true)">Bruk AI</button>
+          <button type="button" class="btn btn-blokk btn-blaa" style="padding:6px 10px; font-size:var(--t-meta); margin-top:0;" onclick="resolveIngredientConflict(${idx}, true)">Bruk AI</button>
         </div>
       </div>
     `).join('')}
@@ -4733,7 +4743,7 @@ function checkTotalNutritionConsistency(){
       </p>
       <div class="row" style="margin-top:4px;">
         <button type="button" class="btn btn-ghost" onclick="$('nutrition-consistency-status').innerHTML=''">Behold min verdi</button>
-        <button type="button" class="btn btn-primary" style="margin-top:0;" onclick="useIngredientNutritionSum()">Bruk summen (${formatAmt(sum.energyKcal)} kcal)</button>
+        <button type="button" class="btn btn-blokk btn-blaa" style="margin-top:0;" onclick="useIngredientNutritionSum()">Bruk summen (${formatAmt(sum.energyKcal)} kcal)</button>
       </div>
     </div>`;
 }
@@ -4783,11 +4793,11 @@ function applyOrConfirmNutrition(newValues, filledAllergens, filledNutrition){
       <div class="row" style="flex-wrap:wrap; gap:8px;">
         ${nutritionConflictCount > 0 ? `
           <button type="button" class="btn btn-ghost" style="padding:8px 12px; font-size:var(--t-meta);" onclick="bulkResolveNutrition(false)">Bruk nåværende næringsinnhold (${nutritionConflictCount})</button>
-          <button type="button" class="btn btn-primary" style="padding:8px 12px; font-size:var(--t-meta); margin-top:0;" onclick="bulkResolveNutrition(true)">Bruk AI næringsinnhold (${nutritionConflictCount})</button>
+          <button type="button" class="btn btn-blokk btn-blaa" style="padding:8px 12px; font-size:var(--t-meta); margin-top:0;" onclick="bulkResolveNutrition(true)">Bruk AI næringsinnhold (${nutritionConflictCount})</button>
         ` : ''}
         ${allergenConflictCount > 0 ? `
           <button type="button" class="btn btn-ghost" style="padding:8px 12px; font-size:var(--t-meta);" onclick="bulkResolveAllergens(false)">Bruk nåværende allergener (${allergenConflictCount})</button>
-          <button type="button" class="btn btn-primary" style="padding:8px 12px; font-size:var(--t-meta); margin-top:0;" onclick="bulkResolveAllergens(true)">Bruk AI allergener (${allergenConflictCount})</button>
+          <button type="button" class="btn btn-blokk btn-blaa" style="padding:8px 12px; font-size:var(--t-meta); margin-top:0;" onclick="bulkResolveAllergens(true)">Bruk AI allergener (${allergenConflictCount})</button>
         ` : ''}
       </div>
     </div>` : '';
@@ -4804,7 +4814,7 @@ function applyOrConfirmNutrition(newValues, filledAllergens, filledNutrition){
           </div>
           <div class="row" style="margin-top:6px;">
             <button type="button" class="btn btn-ghost" style="padding:6px 10px; font-size:var(--t-meta);" onclick="resolveTotalConflict(${idx}, false)">Behold min</button>
-            <button type="button" class="btn btn-primary" style="padding:6px 10px; font-size:var(--t-meta); margin-top:0;" onclick="resolveTotalConflict(${idx}, true)">Bruk AI</button>
+            <button type="button" class="btn btn-blokk btn-blaa" style="padding:6px 10px; font-size:var(--t-meta); margin-top:0;" onclick="resolveTotalConflict(${idx}, true)">Bruk AI</button>
           </div>
         </div>
       `).join('')}
@@ -5158,7 +5168,7 @@ function renderDetailPlanRow(){
   const dager = planDagerFor(currentRecipeId);
   rad.style.display = 'block';
   rad.innerHTML = `
-    <button class="btn ${dager.length ? '' : 'btn-primary'}" style="width:100%; margin-top:0;
+    <button class="btn ${dager.length ? '' : 'btn-blaa'}" style="width:100%; margin-top:0;
             ${dager.length ? 'background:none; border:1.5px solid var(--line); color:var(--ink);' : ''}"
             onclick="openDayPicker('${currentRecipeId}')">
       ${dager.length
@@ -6603,7 +6613,7 @@ function renderPlanMenuTab(){
         <span class="big">📅</span>
         <h3>Ingen middager i uke ${planWeek.week}</h3>
         <p>Gå til oppskriftene og legg dem inn på hver sin dag.</p>
-        <button class="btn btn-primary" style="margin-top:14px;" onclick="gaaTilPlanlegging()">Legg til retter</button>
+        <button class="btn btn-blokk btn-ny" style="margin-top:14px;" onclick="gaaTilPlanlegging()">Legg til retter</button>
       </div>` : '') + PLAN_DAY_NAMES.map((name, i) => {
     const dayNum = i + 1;
     const dishes = week[dayNum] || [];
@@ -6803,7 +6813,7 @@ async function renderPlanIngredientsTab(){
         <span class="big">🧺</span>
         <h3>Ingen retter denne uka</h3>
         <p>Legg til middager, så samles ingrediensene her.</p>
-        <button class="btn btn-primary" style="margin-top:14px;" onclick="gaaTilPlanlegging()">Legg til retter</button>
+        <button class="btn btn-blokk btn-ny" style="margin-top:14px;" onclick="gaaTilPlanlegging()">Legg til retter</button>
       </div>`;
     currentIngRows = [];
     return;

@@ -60,6 +60,10 @@
     --mustard-light: #F0D9A6;
     --line: #E4E8EC;
     --danger: #A64D3C;
+    /* Trykktilstand for roedt, etter samme moenster som de andre
+       -moerk-verdiene. Sletteknappene hadde ingen egen - de arvet den
+       groenne, og ble derfor GROENNE naar man trykte paa dem. */
+    --danger-moerk: #8E4033;
     --shadow: 0 2px 14px rgba(0,0,0,.06);
     --radius: 18px;
   }
@@ -386,23 +390,30 @@
     font-size:var(--t-brod); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
     font-family:'Archivo', sans-serif;
   }
-  /* Legg til vare, Legg til behov, Lagre vare - alle skaper noe.
-     Sto i aksentblaatt, som betyr "valgt", ikke "skaper". */
-  .btn-primary{ background:var(--handling-ny); color:#fff; width:100%; margin-top:14px; }
-  .btn-primary:disabled{ background:#C3CBD4; }
-  .btn-primary:active:not(:disabled){ background:var(--handling-ny-moerk); }
-  .btn-ghost{ background:none; color:var(--ink); border:1.5px solid var(--line); width:100%; }
-  /* Bekreftelsesknappen i dialogene: Flytt og Lagre endrer noe som finnes.
-     Klassenavnet er historisk; rollen er --handling-endre. */
-  .btn-success{ background:var(--handling-endre); color:#fff; }
-  .btn-success:active{ background:var(--handling-endre-moerk); }
+  /* Knappene heter det de betyr, ikke det de er store som:
+     groent lagrer eller legger til, roedt sletter, oker endrer, noeytral
+     avbryter, lilla gaar paa tvers av apper, blaatt er alt annet.
+     Formen ligger for seg i .btn-blokk, saa en knapp kan skifte betydning
+     uten aa skifte stoerrelse. Sammenblandingen var grunnen til at samme
+     klassenavn ble groent her og blaatt i oppskrifter. */
+  .btn-blokk{ width:100%; margin-top:14px; }
+
+  .btn-ny{ background:var(--handling-ny); color:#fff; }
+  .btn-ny:active:not(:disabled){ background:var(--handling-ny-moerk); }
+  .btn-slett{ background:var(--danger); color:#fff; }
+  .btn-slett:active:not(:disabled){ background:var(--danger-moerk); }
+  /* Bekreftelsesknappen i dialogene. Klassen het .btn-success, som sa
+     "vellykket" mens fargen sa "endre". Navnet foelger fargen naa. */
+  .btn-endre{ background:var(--handling-endre); color:#fff; }
+  .btn-endre:active:not(:disabled){ background:var(--handling-endre-moerk); }
   /* Gaar paa tvers av apper: leser inn fra Oppskriftsboka, laster ned eller
      slaar sammen varekatalogen som deles med den. */
   .btn-tvers{ background:var(--handling-tvers); color:#fff; }
-  /* Valgene naar en handletur stoppes - blaatt som start/stopp-knappene */
-  .btn-blaa{ background:var(--blue); color:#fff; width:100%; }
-  .btn-blaa:active{ background:var(--lime-dark); }
-  .btn-tvers:active{ background:var(--handling-tvers-moerk); }
+  .btn-tvers:active:not(:disabled){ background:var(--handling-tvers-moerk); }
+  .btn-blaa{ background:var(--blue); color:#fff; }
+  .btn-blaa:active:not(:disabled){ background:var(--lime-dark); }
+  .btn-ghost{ background:none; color:var(--ink); border:1.5px solid var(--line); width:100%; }
+  .btn-ny:disabled,.btn-blaa:disabled,.btn-slett:disabled,.btn-endre:disabled{ background:#C3CBD4; }
 
   /* ---------- Ny vare ----------
      Tastaturet spiser den nederste halvparten av skjermen. Skjemaet maa
@@ -687,12 +698,12 @@ input,select,textarea{font-size:16px}
         <div id="annet-container"></div>
       </div>
 
-      <button class="btn btn-blaa btn-lang" id="btn-start" style="margin-top:14px;" onclick="startHandel()">Start handel</button>
-      <button class="btn btn-blaa btn-lang" id="btn-stopp" style="margin-top:14px; display:none;" onclick="openStopp()">Avslutt handel</button>
-      <button class="btn btn-blaa btn-lang" id="btn-gjenopprett" style="margin-top:14px; display:none;" onclick="openGjenopprett()">Gjenopprett handel</button>
+      <button class="btn btn-blokk btn-blaa btn-lang" id="btn-start" style="margin-top:14px;" onclick="startHandel()">Start handel</button>
+      <button class="btn btn-blokk btn-blaa btn-lang" id="btn-stopp" style="margin-top:14px; display:none;" onclick="openStopp()">Avslutt handel</button>
+      <button class="btn btn-blokk btn-blaa btn-lang" id="btn-gjenopprett" style="margin-top:14px; display:none;" onclick="openGjenopprett()">Gjenopprett handel</button>
       <button class="btn btn-tvers btn-lang" id="btn-hent" style="margin-top:14px; width:100%;" onclick="openImport()">Hent varer fra Oppskriftsboka</button>
-      <button class="btn btn-primary btn-lang" id="btn-ny" onclick="openNyHandel()">Ny handel</button>
-      <button class="btn btn-primary btn-lang" id="btn-tom" style="background:var(--danger);" onclick="openTomListe()">Slett</button>
+      <button class="btn btn-blokk btn-ny btn-lang" id="btn-ny-handel" onclick="openNyHandel()">Ny handel</button>
+      <button class="btn btn-blokk btn-slett btn-lang" id="btn-tom" onclick="openTomListe()">Slett</button>
 
       <!-- Utkvitterte varer ligger helt nederst, under knappene -->
       <div class="donepane active" id="done-mat"></div>
@@ -770,7 +781,7 @@ input,select,textarea{font-size:16px}
 
       <div class="add-knapper">
         <button class="btn btn-ghost" onclick="goHome()">Avbryt</button>
-        <button class="btn btn-primary" onclick="saveItem()">Lagre vare</button>
+        <button class="btn btn-blokk btn-ny" onclick="saveItem()">Lagre vare</button>
       </div>
     </div>
   </section>
@@ -872,10 +883,10 @@ input,select,textarea{font-size:16px}
     <h3>Hva vil du slette?</h3>
     <p class="lead">Dette kan ikke angres.</p>
 
-    <button class="btn btn-primary" id="tom-varer-btn" style="margin-top:0; background:var(--danger);" onclick="tomListe('varer')">
+    <button class="btn btn-blokk btn-slett" id="tom-varer-btn" style="margin-top:0;" onclick="tomListe('varer')">
       <span id="tom-varer-tekst"></span>
     </button>
-    <button class="btn btn-primary" style="margin-top:10px; background:var(--danger);" onclick="tomListe('handletur')">
+    <button class="btn btn-blokk btn-slett" style="margin-top:10px;" onclick="tomListe('handletur')">
       <span id="tom-hele-tekst"></span>
     </button>
     <button class="btn btn-ghost" style="margin-top:10px;" onclick="closeModal('tom-modal')">Avbryt</button>
@@ -896,7 +907,7 @@ input,select,textarea{font-size:16px}
 
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="avbrytNyHandel()">Avbryt</button>
-      <button class="btn btn-primary" style="margin-top:0;" onclick="bekreftNyHandel()">Opprett</button>
+      <button class="btn btn-blokk btn-ny" style="margin-top:0;" onclick="bekreftNyHandel()">Opprett</button>
     </div>
   </div>
 </div>
@@ -914,7 +925,7 @@ input,select,textarea{font-size:16px}
 
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('gjenopprett-modal')">Avbryt</button>
-      <button class="btn btn-blaa" style="margin-top:0;" onclick="velgKopiMaal()">Neste</button>
+      <button class="btn btn-blokk btn-blaa" style="margin-top:0;" onclick="velgKopiMaal()">Neste</button>
     </div>
   </div>
 </div>
@@ -927,7 +938,7 @@ input,select,textarea{font-size:16px}
     <div id="kopi-liste" style="max-height:46vh; overflow-y:auto; margin-bottom:6px;"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('kopi-modal')">Avbryt</button>
-      <button class="btn btn-blaa" id="kopi-knapp" style="margin-top:0;" onclick="bekreftKopi()">Kopier</button>
+      <button class="btn btn-blokk btn-blaa" id="kopi-knapp" style="margin-top:0;" onclick="bekreftKopi()">Kopier</button>
     </div>
   </div>
 </div>
@@ -942,7 +953,7 @@ input,select,textarea{font-size:16px}
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('omdop-modal')">Avbryt</button>
-      <button class="btn btn-success" style="margin-top:0;" onclick="bekreftOmdop()">Lagre</button>
+      <button class="btn btn-endre" style="margin-top:0;" onclick="bekreftOmdop()">Lagre</button>
     </div>
   </div>
 </div>
@@ -954,26 +965,26 @@ input,select,textarea{font-size:16px}
     <p class="lead" id="stopp-lead"></p>
 
     <!-- Gjenoppta senere gjelder uansett om alt er handlet eller ei -->
-    <button class="btn btn-blaa" style="margin-top:0;" onclick="stoppHandel('pause')">
+    <button class="btn btn-blokk btn-blaa" style="margin-top:0;" onclick="stoppHandel('pause')">
       Gjenoppta senere
     </button>
 
     <!-- Vises bare når det står igjen varer som ikke er krysset av -->
     <div id="stopp-valg" style="display:none;">
-      <button class="btn btn-blaa" id="stopp-flytt-btn" style="margin-top:10px;" onclick="stoppHandel('flytt')">
+      <button class="btn btn-blokk btn-blaa" id="stopp-flytt-btn" style="margin-top:10px;" onclick="stoppHandel('flytt')">
         <span id="stopp-flytt-tekst">Flytt til neste handel</span>
       </button>
-      <button class="btn btn-blaa" style="margin-top:10px;" onclick="stoppHandel('ny')">
+      <button class="btn btn-blokk btn-blaa" style="margin-top:10px;" onclick="stoppHandel('ny')">
         Flytt til en ny handel
       </button>
-      <button class="btn btn-primary" style="margin-top:10px; background:var(--danger);" onclick="stoppHandel('forkast')">
+      <button class="btn btn-blokk btn-slett" style="margin-top:10px;" onclick="stoppHandel('forkast')">
         Forkast varene
       </button>
     </div>
 
     <!-- Vises når alt er handlet -->
     <div id="stopp-enkel" style="display:none;">
-      <button class="btn btn-blaa" style="margin-top:10px;" onclick="stoppHandel('ferdig')">Avslutt handelen</button>
+      <button class="btn btn-blokk btn-blaa" style="margin-top:10px;" onclick="stoppHandel('ferdig')">Avslutt handelen</button>
     </div>
 
     <button class="btn btn-ghost" style="margin-top:10px;" onclick="closeModal('stopp-modal')">Avbryt</button>
@@ -987,7 +998,7 @@ input,select,textarea{font-size:16px}
     <p class="lead"><strong id="del-name"></strong> fjernes fra handleturen.</p>
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('delete-modal')">Avbryt</button>
-      <button class="btn btn-primary" style="margin-top:0; background:var(--danger);" onclick="confirmDelete()">Slett</button>
+      <button class="btn btn-blokk btn-slett" style="margin-top:0;" onclick="confirmDelete()">Slett</button>
     </div>
   </div>
 </div>
@@ -1022,7 +1033,7 @@ input,select,textarea{font-size:16px}
 
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('sum-modal')">Avbryt</button>
-      <button class="btn btn-success" onclick="bekreftListe()">Legg i innboks</button>
+      <button class="btn btn-endre" onclick="bekreftListe()">Legg i innboks</button>
     </div>
   </div>
 </div>
@@ -1035,7 +1046,7 @@ input,select,textarea{font-size:16px}
     <div id="pick-list"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" style="margin-top:0;" onclick="closeModal('pick-modal')">Avbryt</button>
-      <button class="btn btn-success" id="pick-confirm" onclick="hentIngredienser()">Hent ingredienser</button>
+      <button class="btn btn-endre" id="pick-confirm" onclick="hentIngredienser()">Hent ingredienser</button>
     </div>
   </div>
 </div>
@@ -1651,7 +1662,7 @@ function oppdaterStartKnapp(){
   vis('btn-gjenopprett', ferdig);
 
   // Mens man staar i butikken skal ikke opprette og slette ligge i veien
-  vis('btn-ny', !igang);
+  vis('btn-ny-handel', !igang);
   vis('btn-tom', !igang);
 
   // Oppskriftsboka gjelder bare mat, og bare i en handletur som er i bruk
