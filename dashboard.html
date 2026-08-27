@@ -584,8 +584,8 @@ input,select,textarea{font-size:16px}
    et felt som havner bak tastaturet er et felt man ikke ser hva man
    skriver i. To kolonner holder hoeyden nede. */
 .avtale-boks{
-  position:fixed;z-index:61;left:50%;top:14px;transform:translateX(-50%);
-  width:min(94vw,780px);max-height:58vh;overflow-y:auto;overscroll-behavior:contain;
+  position:fixed;z-index:61;left:50%;top:10px;transform:translateX(-50%);
+  width:min(94vw,780px);max-height:46vh;overflow-y:auto;overscroll-behavior:contain;
   background:var(--paper);border:1px solid var(--line);border-radius:18px;
   padding:18px 20px 16px;box-shadow:0 18px 44px rgba(44,62,80,.28);
 }
@@ -608,7 +608,7 @@ input,select,textarea{font-size:16px}
   text-transform:uppercase;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px;
 }
 .av-vokser{flex:1 1 auto}
-.av-vokser textarea{flex:1 1 auto;min-height:132px}
+.av-vokser textarea{flex:1 1 auto;min-height:84px}
 .av-bunn,.av-serie,.av-feil{grid-column:1/-1}
 .av-etikett{
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
@@ -659,7 +659,7 @@ input,select,textarea{font-size:16px}
 .av-bunn{margin-top:2px}
 @media(max-width:640px){
   .av-skjema{grid-template-columns:1fr}
-  .avtale-boks{max-height:64vh}
+  .avtale-boks{max-height:52vh}
 }
 .av-hele{
   display:flex;align-items:center;gap:9px;cursor:pointer;
@@ -1623,21 +1623,22 @@ function apneAvtale(e){
   /* Kalendervalget: bare kalendere vi faktisk kan skrive i. */
   const skrivbare = kalendere.filter(function(c){ return c.kanSkrive; });
   const liste = skrivbare.length ? skrivbare : kalendere;
-  const onsket = e ? e.kalId
-    : (liste.filter(function(c){ return c.navn === 'Familie'; })[0] || liste[0]).id;
-  $('avKal').innerHTML = liste.map(function(c){
-    return '<option value="' + esc(c.id) + '"' + (c.id === onsket ? ' selected' : '') + '>'
-      + esc(c.navn) + '</option>';
-  }).join('');
+  /* Ingen kalender er forhaandsvalgt paa en ny avtale. Hvem den gjelder
+     er det viktigste valget, og et standardvalg blir fort staaende. */
+  const onsket = e ? e.kalId : '';
+  $('avKal').innerHTML = (e ? '' : '<option value="">Velg kalender …</option>')
+    + liste.map(function(c){
+        return '<option value="' + esc(c.id) + '"' + (c.id === onsket ? ' selected' : '') + '>'
+          + esc(c.navn) + '</option>';
+      }).join('');
   /* Graph kan ikke flytte en avtale mellom kalendere. Vi lager den paa
      nytt der i stedet - men det gaar bare paa en enkeltstaaende avtale,
      ikke paa en enkeltdag i en serie. */
   const serie = !!(e && e.type && e.type !== 'singleInstance');
   $('avKal').disabled = serie;
-  $('avKalHint').hidden = !e;
-  $('avKalHint').textContent = serie
-    ? 'Avtalen hører til en serie og kan ikke flyttes til en annen kalender.'
-    : 'Bytter du kalender, lages avtalen på nytt der. Notat og vedlegg blir med.';
+  $('avKalHint').hidden = !serie;
+  $('avKalHint').textContent =
+    'Avtalen hører til en serie og kan ikke flyttes til en annen kalender.';
 
   const start = e ? e.start : dagenViser();
   $('avDato').value = datoNokkel(start);
@@ -1794,6 +1795,12 @@ async function lagreAvtale(){
 
   const tittel = ($('avTittel').value || '').trim();
   if(!tittel){ avtaleFeil('Avtalen trenger en tittel.'); $('avTittel').focus(); return; }
+
+  if(!$('avKal').value){
+    avtaleFeil('Velg hvilken kalender avtalen skal i.');
+    $('avKal').focus();
+    return;
+  }
 
   const dato = $('avDato').value;
   if(!dato){ avtaleFeil('Velg en dato.'); $('avDato').focus(); return; }
