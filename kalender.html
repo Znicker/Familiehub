@@ -573,12 +573,13 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   font-size:var(--t-brod);line-height:1;padding:2px 4px;flex-shrink:0;
 }
 .vedlegg-rad.ny .vedlegg-navn{font-weight:600}
+/* Groenn - den skaper noe, som de andre "legg til"-knappene */
 .vedlegg-legg{
-  margin-top:8px;border:1px dashed var(--line);background:none;color:var(--ink-soft);
-  border-radius:9px;padding:9px;width:100%;cursor:pointer;
+  margin-top:8px;border:none;background:var(--handling-ny);color:#fff;
+  border-radius:9px;padding:10px;width:100%;cursor:pointer;
   font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
 }
-.vedlegg-legg:active{background:var(--bg-2)}
+.vedlegg-legg:active{background:var(--handling-ny-moerk)}
 
 /* Binders paa avtaler som har vedlegg */
 .vedlegg-merke{font-size:.85em;line-height:1;flex-shrink:0;opacity:.75}
@@ -2768,8 +2769,18 @@ function goToday(){
     const gaa = function(){
       const el = $('plan');
       if(!el) return;
-      const sec = el.querySelector('.plan-sec.idag');
-      el.scrollTop = sec ? Math.max(0, sec.offsetTop - 8) : 0;
+      /* Har dagen i dag ingen avtaler, finnes ingen "i dag"-seksjon.
+         Da gaar vi til den foerste dagen fra i dag og framover - ikke
+         til toppen, som kan ligge en maaned bakover. */
+      const iso = dato2str(new Date());
+      let sec = el.querySelector('.plan-sec.idag');
+      if(!sec){
+        const alle = el.querySelectorAll('.plan-sec[data-dato]');
+        for(let i = 0; i < alle.length; i++){
+          if(alle[i].dataset.dato >= iso){ sec = alle[i]; break; }
+        }
+      }
+      el.scrollTop = sec ? Math.max(0, sec.offsetTop - 8) : el.scrollHeight;
     };
     gaa();
     requestAnimationFrame(gaa);
@@ -4170,9 +4181,13 @@ function listeRulling(){
   const el = $('plan');
   if(!el || S.vis !== 'liste' || listeUtvider) return;
 
+  /* fyllFraCache foerst: avtalene for de nye dagene ligger som regel
+     allerede i cachen. Uten dette ble dagene tegnet tomme, hoppet over,
+     og lista saa ut til aa staa stille til hentingen var ferdig. */
   if(el.scrollTop + el.clientHeight > el.scrollHeight - 400){
     listeUtvider = true;
     listeVindu += LISTE_BOLK;
+    fyllFraCache();
     renderListe();
     last(false);
     listeUtvider = false;
@@ -4181,9 +4196,8 @@ function listeRulling(){
 
   if(el.scrollTop < 300){
     listeUtvider = true;
-    /* Hold blikket paa samme dag. Aa regne paa hoeyde bommet, fordi
-       tomme dager faller bort og seksjonene ikke er like hoeye. */
     listeBak += LISTE_BAK_BOLK;
+    fyllFraCache();
     renderListe();          /* holder selv blikket paa samme dag */
     last(false);
     listeUtvider = false;
@@ -4212,8 +4226,10 @@ function renderListe(){
   }
 
   /* Lista tegnes ogsaa naar en henting blir ferdig. Uten dette hoppet
-     den tilbake til toppen midt i rullingen. */
-  const anker = wrap.scrollTop > 0 ? oeversteDag(wrap) : null;
+     den tilbake til toppen midt i rullingen. Ankeret hentes alltid -
+     staar man helt oeverst og lista utvides bakover, er det nettopp da
+     posisjonen maa holdes. */
+  const anker = oeversteDag(wrap);
 
   wrap.innerHTML = '';
   const dager = listePeriode();
