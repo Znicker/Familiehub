@@ -956,6 +956,17 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
     font-size:var(--t-rute);text-align:center;line-height:1.25;
   }
   .pu-mer{display:none}
+
+  /* Dagvisningen: initial oeverst, tid og navn under */
+  .dagtid-ev{flex-direction:column;align-items:center;gap:3px;padding:5px 4px}
+  .dagtid-ini{width:22px;height:22px;font-size:9px}
+  .dagtid-tekst{width:100%;text-align:center}
+  .dagtid-ev-t{font-size:9px}
+  .dagtid-ev-n{font-size:var(--t-rute);line-height:1.2}
+  /* Smalere timeakse saa avtalene faar plassen */
+  .dagtid-akse{width:34px}
+  .dagtid-linje{left:34px;right:34px}
+  .dagtid-felt{left:38px;right:38px}
 }
 
 /* Liggende telefon: panelene har lite hoeyde aa gaa paa, men god bredde */
@@ -966,7 +977,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   /* ---------- Plan: kronologiske dagsoeyler ----------
      Ingen navnekolonne. Farget kantstripe og initial baerer hvem det
      gjelder, saa tomme rader per person slutter aa spise hoeyde. */
-  .pu-rad{display:grid;align-items:start;min-height:100%}
+  .pu-rad{display:grid;align-items:stretch;min-height:100%}
   /* Ingen skillestreker mellom dagene - luften og brikkene holder dem
      fra hverandre, og overskriftsraden viser hvor kolonnene gaar. */
   .pu-kol{
@@ -980,10 +991,11 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .pu-mer-lapp{
     position:sticky;bottom:0;z-index:3;
     background:var(--paper);color:var(--ink-soft);
-    padding:4px 6px;pointer-events:none;
+    border:none;padding:5px 6px;cursor:pointer;width:100%;
     font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
     text-align:center;letter-spacing:.03em;
   }
+  .pu-mer-lapp:active{color:var(--ink)}
 
   /* Fyll og rammefarge settes i JS fra kalenderfargen. */
   .pu-ev{
@@ -3113,14 +3125,16 @@ function klippKolonner(scroll){
   if(!scroll || !scroll.isConnected) return;
 
   const tell = function(){
-    const synligBunn = scroll.scrollTop + scroll.clientHeight;
+    /* Maalt mot skjermen, ikke mot offsetParent. offsetTop pekte paa et
+       annet element enn det som ruller, og ga feil tall. */
+    const bunn = scroll.getBoundingClientRect().bottom;
 
     scroll.querySelectorAll('.pu-kol').forEach(function(kol){
       let lapp = kol.querySelector('.pu-mer-lapp');
 
       let under = 0;
       kol.querySelectorAll('.pu-ev').forEach(function(el){
-        if(el.offsetTop + el.offsetHeight > synligBunn + 2) under++;
+        if(el.getBoundingClientRect().bottom > bunn - 6) under++;
       });
 
       if(!under){
@@ -3128,8 +3142,14 @@ function klippKolonner(scroll){
         return;
       }
       if(!lapp){
-        lapp = document.createElement('div');
+        lapp = document.createElement('button');
+        lapp.type = 'button';
         lapp.className = 'pu-mer-lapp';
+        /* Trykk ruller ned saa de neste kommer til syne */
+        lapp.onclick = function(ev){
+          ev.stopPropagation();
+          scroll.scrollBy({ top: scroll.clientHeight * 0.7, behavior: 'smooth' });
+        };
         kol.appendChild(lapp);
       }
       lapp.textContent = '+' + under + (under === 1 ? ' avtale' : ' avtaler');
