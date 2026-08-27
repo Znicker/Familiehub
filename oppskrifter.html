@@ -2585,15 +2585,24 @@ function fullCrop(){ return {x:0, y:0, width:1, height:1}; }
    Er ingenting endret, gaar Avbryt rett ut uten dialog. Det er hele poenget:
    en dialog man faar hver gang, er en dialog man slutter aa lese. */
 const modalAvtrykk = {};
-function avtrykkAv(rot){
+/* Bilder og filer ligger ikke i et felt - de samles i en JS-liste, og
+   filfeltet nullstilles saa snart fila er lest. Uten dette registeret ville
+   "legg inn bilde, trykk Avbryt" gaatt stille gjennom. Meld inn ny tilstand
+   her naar en modal faar noe som ikke er et skjemafelt. */
+const ekstraTilstand = {
+  'physical-import-modal': () => physicalImportImages.length
+};
+function avtrykkAv(id){
+  const rot = $(id);
   if(!rot) return '';
   const felt = rot.querySelectorAll('textarea, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])');
-  return Array.from(felt).map(el => el.value).join('\u241F');
+  const ekstra = ekstraTilstand[id] ? String(ekstraTilstand[id]()) : '';
+  return Array.from(felt).map(el => el.value).join('\u241F') + '\u241E' + ekstra;
 }
-function huskSkjema(id){ modalAvtrykk[id] = avtrykkAv($(id)); }
+function huskSkjema(id){ modalAvtrykk[id] = avtrykkAv(id); }
 function skjemaEndret(id){
   const foer = modalAvtrykk[id];
-  return foer != null && avtrykkAv($(id)) !== foer;
+  return foer != null && avtrykkAv(id) !== foer;
 }
 /* lukk er funksjonen som faktisk lukker - hver modal har sin egen opprydding. */
 function avbrytSkjema(id, lukk){

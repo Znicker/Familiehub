@@ -2026,11 +2026,25 @@ function apneAvtale(e){
    aa gjoere om. Er ingenting endret, gaar Avbryt rett ut uten dialog: en
    dialog man faar hver gang, er en dialog man slutter aa lese. */
 const modalAvtrykk = {};
+/* Vedlegg ligger ikke i et felt - de samles i JS-lister, og filfeltet
+   nullstilles etterpaa. Uten dette registeret ville "legg ved en fil, trykk
+   Avbryt" gaatt stille gjennom.
+   Bare brukerens egne handlinger telles: nye filer, og gamle vedlegg merket
+   bort. skjemaVedlegg i seg selv fylles av et bakgrunnskall ETTER at
+   avtrykket er tatt, saa lengden paa den ville endret seg av seg selv og
+   gitt et spoersmaal ingen har fortjent. */
+const ekstraTilstand = {
+  'avtaleBoks': function(){
+    const fjernet = skjemaVedlegg.filter(function(v){ return v.fjern; }).length;
+    return nyeFiler.length + ':' + fjernet;
+  }
+};
 function avtrykkAv(id){
   const rot = $(id);
   if(!rot) return '';
   const felt = rot.querySelectorAll('textarea, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])');
-  return Array.from(felt).map(function(el){ return el.value; }).join('\u241F');
+  const ekstra = ekstraTilstand[id] ? String(ekstraTilstand[id]()) : '';
+  return Array.from(felt).map(function(el){ return el.value; }).join('\u241F') + '\u241E' + ekstra;
 }
 function huskSkjema(id){ modalAvtrykk[id] = avtrykkAv(id); }
 function skjemaEndret(id){

@@ -3289,7 +3289,13 @@ function dlgFelter(){
   const rot = $('veil');
   if(!rot) return '';
   const felt = rot.querySelectorAll('textarea, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])');
-  return Array.from(felt).map(function(el){ return el.value; }).join('\u241F');
+  /* Vedlegg ligger ikke i et felt, og filfeltet nullstilles etter valget -
+     uten dette gikk "legg ved en fil, trykk Avbryt" stille gjennom. Bare
+     brukerens egne handlinger telles: nye filer og bortmerkede. vedleggFinnes
+     fylles av et bakgrunnskall etter at avtrykket er tatt, saa den holdes
+     utenfor. */
+  const ekstra = vedleggNye.length + ':' + vedleggSlett.length;
+  return Array.from(felt).map(function(el){ return el.value; }).join('\u241F') + '\u241E' + ekstra;
 }
 function huskDialog(){ dlgAvtrykk = dlgFelter(); }
 function avbrytDialog(){
