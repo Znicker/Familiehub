@@ -399,6 +399,18 @@
   .btn-blaa:active{ background:var(--lime-dark); }
   .btn-tvers:active{ background:var(--handling-tvers-moerk); }
 
+  /* ---------- Ny vare ----------
+     Tastaturet spiser den nederste halvparten av skjermen. Skjemaet maa
+     derfor staa i sin helhet i den oeverste - og det loeses med bredde
+     og kolonner, ikke med hoeyde. Bredden slaas paa av showView(), for
+     resten av sidene skal fortsatt vaere en smal spalte. */
+  body.vis-add main{ max-width:900px; }
+  .add-grid{ display:grid; gap:0 18px; grid-template-columns:1fr; }
+  @media (min-width:640px){ .add-grid{ grid-template-columns:1fr 1fr; } }
+  @media (min-width:980px){ .add-grid{ grid-template-columns:1fr 1fr 1fr; } }
+  .add-knapper{ display:flex; gap:10px; margin-top:6px; }
+  .add-knapper .btn{ flex:1; margin-top:0; }
+
   .field{ margin-bottom:12px; }
   .field label{
     display:block; font-size:var(--t-meta); color:var(--ink-soft); margin-bottom:4px;
@@ -670,7 +682,7 @@ input,select,textarea{font-size:16px}
 
   <!-- ADD / EDIT -->
   <section class="view" id="view-add">
-    <div class="card-panel punched" style="margin-top:20px;">
+    <div class="card-panel punched" style="margin-top:8px;">
       <h2 id="add-title">Ny vare</h2>
       <p class="field-note" id="add-week-note" style="margin:4px 0 0;"></p>
 
@@ -678,6 +690,8 @@ input,select,textarea{font-size:16px}
         <button type="button" class="tab-btn active" id="omr-btn-mat" onclick="settOmrade('mat')">Dagligvare</button>
         <button type="button" class="tab-btn" id="omr-btn-annet" onclick="settOmrade('annet')">Andre varer</button>
       </div>
+
+      <div class="add-grid">
 
       <div class="field">
         <label for="f-name">Vare</label>
@@ -710,8 +724,8 @@ input,select,textarea{font-size:16px}
         <div class="mengde-rad">
           <input type="number" id="f-count" class="f-amt" min="0" step="1"
                  placeholder="1" inputmode="numeric" style="flex:0 0 80px;">
-          <input type="number" id="f-amt" class="f-amt" min="0" step="any"
-                 placeholder="mengde" inputmode="decimal">
+          <input type="text" id="f-amt" class="f-amt"
+                 placeholder="mengde" autocomplete="off">
           <div class="ac-wrap" id="ac-wrap-f-unit" style="flex:0 0 90px;">
             <input type="text" id="f-unit" autocomplete="off" placeholder="stk">
             <div class="ac-drop" id="ac-drop-f-unit"></div>
@@ -732,8 +746,12 @@ input,select,textarea{font-size:16px}
         <textarea id="f-notes" placeholder="Fritekst …"></textarea>
       </div>
 
-      <button class="btn btn-primary" onclick="saveItem()">Lagre vare</button>
-      <button class="btn btn-ghost" style="margin-top:8px;" onclick="goHome()">Avbryt</button>
+      </div><!-- /add-grid -->
+
+      <div class="add-knapper">
+        <button class="btn btn-ghost" onclick="goHome()">Avbryt</button>
+        <button class="btn btn-primary" onclick="saveItem()">Lagre vare</button>
+      </div>
     </div>
   </section>
 
@@ -969,8 +987,8 @@ input,select,textarea{font-size:16px}
       <div class="mengde-rad">
         <input type="number" id="e-count" class="f-amt" min="0" step="1"
                placeholder="antall" inputmode="numeric" style="flex:0 0 80px;">
-        <input type="number" id="e-amt" class="f-amt" min="0" step="any"
-               placeholder="mengde" inputmode="decimal">
+        <input type="text" id="e-amt" class="f-amt"
+               placeholder="mengde" autocomplete="off">
         <div class="ac-wrap" id="ac-wrap-e-unit" style="flex:0 0 90px;">
           <input type="text" id="e-unit" autocomplete="off" placeholder="enhet">
           <div class="ac-drop" id="ac-drop-e-unit"></div>
@@ -5888,6 +5906,8 @@ function showView(navn){
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + navn).classList.add('active');
   const hjem = navn === 'home';
+  /* Bare skjemaet for ny vare bruker den brede spalten. */
+  document.body.classList.toggle('vis-add', navn === 'add');
   document.getElementById('topbar').classList.toggle('subview', !hjem);
   document.getElementById('topbar-back').style.display = hjem ? 'none' : 'flex';
   document.getElementById('topbar-home-actions').style.display = hjem ? 'flex' : 'none';
@@ -6147,7 +6167,9 @@ function initAcFields(){
     fCat.addEventListener('input', () => { typeRortAvBruker = true; });
     fCat.addEventListener('change', () => { typeRortAvBruker = true; });
   }
-  acBind('f-unit', () => ENHETER.filter(e => e), { closed: true });
+  /* Enhetslista er et forslag, ikke en fasit. Skriver man noe annet,
+     tilbys det som en engangsverdi - lista i koden roeres ikke. */
+  acBind('f-unit', () => ENHETER.filter(e => e), { canAddOnce: true });
   acBind('f-by',   () => FAMILY,                 { closed: true });
 
   // Rediger-modal
@@ -6164,7 +6186,7 @@ function initAcFields(){
     }
   });
   acBind('e-cat',  () => VARETYPER,              { closed: true });
-  acBind('e-unit', () => ENHETER.filter(e => e), { closed: true });
+  acBind('e-unit', () => ENHETER.filter(e => e), { canAddOnce: true });
   acBind('e-by',   () => FAMILY,                 { closed: true });
 }
 
