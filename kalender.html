@@ -507,8 +507,8 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .veil[hidden]{display:none}
 .dlg{
-  background:var(--paper);border-radius:18px;width:100%;max-width:460px;
-  max-height:92dvh;display:flex;flex-direction:column;
+  background:var(--paper);border-radius:18px;width:100%;max-width:520px;
+  height:92dvh;max-height:92dvh;display:flex;flex-direction:column;
   box-shadow:0 20px 50px rgba(44,62,80,.3);
 }
 .dlg-head{
@@ -521,7 +521,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   border:1px solid var(--line);background:var(--bg-2);color:var(--ink-soft);
   font-size:var(--t-pil);line-height:1;cursor:pointer;
 }
-.dlg-body{padding:18px 20px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dlg-body{
+  padding:18px 20px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  flex:1;min-height:0;display:flex;flex-direction:column;
+}
 .dlg-foot{
   display:flex;align-items:center;gap:10px;
   padding:14px 20px 18px;border-top:1px solid var(--line);flex-shrink:0;
@@ -542,6 +545,11 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .fld select{background-image:none}
 .fld textarea{resize:vertical;min-height:70px;line-height:1.5}
+/* Notatet er det eneste feltet man skriver mye i. Det faar hele
+   plassen som blir til overs i dialogen, og minst en drøy skjermhoeyde
+   verdt av linjer. */
+.fld-notat{display:flex;flex-direction:column;flex:1;min-height:0;margin-bottom:0}
+.fld-notat textarea{flex:1;min-height:clamp(170px, 34dvh, 420px)}
 .fld input:focus,.fld select:focus,.fld textarea:focus{
   outline:none;border-color:var(--ink);background:var(--paper);
 }
@@ -549,7 +557,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .fld-row > *{flex:1;min-width:0}
 .chk{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:var(--t-brod);font-weight:600}
 .chk input{width:20px;height:20px;accent-color:var(--ink);cursor:pointer}
-.dlg-msg{font-size:var(--t-meta);color:#B4443A;line-height:1.5;margin-top:12px}
+.dlg-msg{font-size:var(--t-meta);color:#B4443A;line-height:1.5;margin-top:12px;flex-shrink:0}
 .dlg-msg[hidden]{display:none}
 
 /* Samme fargespraak som handleliste og oppskrifter:
@@ -980,6 +988,8 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 
 /* Liggende telefon: panelene har lite hoeyde aa gaa paa, men god bredde */
 @media (orientation:landscape) and (max-height:500px){
+  .dlg{height:auto}
+  .fld-notat textarea{min-height:120px}
   .dagpanel,.boble.side{width:52vw;min-width:0}
 }
 
@@ -1179,7 +1189,7 @@ input,select,textarea{font-size:16px}
         <input type="text" id="fWhere" placeholder="Valgfritt" autocomplete="off">
       </div>
 
-      <div class="fld">
+      <div class="fld fld-notat">
         <label for="fNote">Notat</label>
         <textarea id="fNote" placeholder="Valgfritt"></textarea>
       </div>
