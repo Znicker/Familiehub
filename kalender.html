@@ -165,7 +165,7 @@ body{
 }
 /* Nettbrett og smalere: knappene midtstilt, initialene paa egen rad
    under. Da faar rundingene hele bredden og ligger paa én linje. */
-@media(max-width:1280px){
+@media(max-width:1000px){
   .mnav-topp{grid-template-columns:1fr auto 1fr;grid-auto-flow:row}
   .hurtigkal{grid-column:1 / -1;justify-self:center;justify-content:center}
 }
@@ -628,6 +628,16 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   display:block;width:100%;max-height:340px;object-fit:contain;
   border-radius:10px;background:#fff;border:1px solid var(--line);cursor:zoom-in;
 }
+.vedlegg-pdf{
+  display:block;width:100%;height:300px;border:1px solid var(--line);
+  border-radius:10px;background:#fff;
+}
+.vedlegg-aapne{
+  margin-top:5px;width:100%;border:1px solid var(--line);background:var(--paper);
+  color:var(--ink);border-radius:9px;padding:8px;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-rute);font-weight:700;
+}
+.vedlegg-aapne:active{background:var(--bg-2)}
 .boble-knapp{
   margin:0 0 14px;width:100%;background:var(--handling-endre);color:#fff;border:none;
   border-radius:999px;padding:11px;font-family:inherit;font-size:var(--t-meta);
@@ -1027,6 +1037,18 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .dagpanel-tall{
   margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);
   color:var(--ink-soft);
+}
+/* Vei ut. Naar panelet dekker hele skjermen finnes ingen bakgrunn aa
+   trykke utenfor paa, saa den maa staa inne i panelet. */
+.dagpanel-tilbake{
+  display:none;border:none;background:none;padding:0;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+  color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;
+}
+.dagpanel-tilbake:active{color:var(--ink)}
+@media(max-width:700px){
+  .dagpanel-topp{flex-wrap:wrap}
+  .dagpanel-tilbake{display:block;width:100%;text-align:left;margin-bottom:6px}
 }
 .dagpanel-liste{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px}
 .dagpanel-ny{
@@ -2729,20 +2751,25 @@ function renderHurtigKal(){
   const mnav = document.querySelector('.mnav');
   const bredde = (mnav && mnav.clientWidth) || window.innerWidth - 40;
   const plass = Math.max(4, Math.floor(bredde / 37));
-  const nettbrett = window.matchMedia('(min-width:901px) and (max-width:1280px)').matches;
+  const egenRad = window.matchMedia('(max-width:1000px)').matches;
 
   let kol;
-  const pc = window.matchMedia('(min-width:1281px)').matches;
-  if(pc && antall > 7) kol = Math.ceil(antall / 2);
-  else if(antall <= plass && (nettbrett || antall <= 7)) kol = antall;
+  /* Paa egen rad er det plass til alle paa én linje. Ellers deles de
+     paa to, saa raden ikke blir uforholdsmessig bred ved siden av
+     tittelen og visningsknappene. */
+  if(egenRad && antall <= plass) kol = antall;
+  else if(antall > 7) kol = Math.ceil(antall / 2);
+  else if(antall <= plass) kol = antall;
   else kol = Math.min(plass, Math.ceil(antall / Math.ceil(antall / plass)));
   el.style.gridTemplateColumns = 'repeat(' + kol + ', auto)';
 
-  const ingenPaa = hurtigUtvalg && !Object.keys(hurtigUtvalg).length;
+  /* Vises alt, er "ingen" neste steg. Har man plukket ut noen - eller
+     slaatt av alt - er veien tilbake "alle". */
+  const altPaa = !hurtigUtvalg;
   const alle = document.createElement('button');
-  alle.className = 'hk-alle' + (hurtigUtvalg ? '' : ' pa');
-  alle.title = ingenPaa ? 'Vis alle kalendere' : 'Skjul alle kalendere';
-  alle.textContent = ingenPaa ? 'ALLE' : 'INGEN';
+  alle.className = 'hk-alle' + (altPaa ? ' pa' : '');
+  alle.title = altPaa ? 'Skjul alle kalendere' : 'Vis alle kalendere';
+  alle.textContent = altPaa ? 'INGEN' : 'ALLE';
   alle.onclick = visAlleKal;
   el.appendChild(alle);
 }
@@ -3364,35 +3391,51 @@ function erBilde(a){
   return /\.(png|jpe?g|gif|webp|heic|heif|bmp|tiff?)$/i.test(a.name || '');
 }
 
-/* Tegner et bilde vi allerede har innholdet til */
-function tegnBilde(a, boks){
+/* Forhaandsvisning av et vedlegg vi allerede har innholdet til.
+   Bilder vises som bilde, PDF som en liten side man kan bla i. */
+function tegnForhaand(a, boks){
   const ramme = document.createElement('figure');
   ramme.className = 'vedlegg-bilde';
 
-  const img = document.createElement('img');
-  img.src = 'data:' + (a.contentType || 'image/png') + ';base64,' + a.contentBytes;
-  img.alt = a.name || '';
-  img.loading = 'lazy';
-  img.onclick = function(ev){
-    ev.stopPropagation();
-    aapneViser(a);
-  };
+  const kilde = 'data:' + (a.contentType || 'application/octet-stream')
+              + ';base64,' + a.contentBytes;
+
+  let vis;
+  if(erPdf(a)){
+    vis = document.createElement('iframe');
+    vis.className = 'vedlegg-pdf';
+    vis.src = kilde + '#toolbar=0&navpanes=0&view=FitH';
+    vis.title = a.name || 'PDF';
+    /* En iframe fanger trykk selv, saa knappen over den aapner visningen */
+    const over = document.createElement('button');
+    over.type = 'button';
+    over.className = 'vedlegg-aapne';
+    over.textContent = 'Åpne i full størrelse';
+    over.onclick = function(ev){ ev.stopPropagation(); aapneViser(a); };
+    ramme.appendChild(vis);
+    ramme.appendChild(over);
+  } else {
+    vis = document.createElement('img');
+    vis.src = kilde;
+    vis.alt = a.name || '';
+    vis.loading = 'lazy';
+    vis.onclick = function(ev){ ev.stopPropagation(); aapneViser(a); };
+    ramme.appendChild(vis);
+  }
 
   const tekst = document.createElement('figcaption');
   tekst.textContent = a.name || '';
-
-  ramme.appendChild(img);
   ramme.appendChild(tekst);
   boks.appendChild(ramme);
   return ramme;
 }
 
-/* Henter bildet foerst hvis innholdet ikke fulgte med i lista */
-async function visBilde(eventId, a, boks){
+/* Henter innholdet foerst hvis det ikke fulgte med i lista */
+async function hentOgTegn(eventId, a, boks){
   try{
     const d = await graph('/me/events/' + eventId + '/attachments/' + a.id);
     if(!d.contentBytes) return;
-    tegnBilde(d, boks);
+    tegnForhaand(d, boks);
   }catch(err){ /* uten innhold vises det ingenting - bedre enn en feil */ }
 }
 
@@ -3420,11 +3463,11 @@ async function vedleggIVisning(e){
     if(!liste.length){ boks.hidden = true; return; }
 
     liste.forEach(function(a){
-      /* Bilder vises som bilde. Har vi allerede innholdet, slipper vi
-         et ekstra kall. */
-      if(erBilde(a)){
-        if(a.contentBytes) tegnBilde(a, boks);
-        else visBilde(e.id, a, boks);
+      /* Bilder og PDF forhaandsvises. Har vi allerede innholdet,
+         slipper vi et ekstra kall. */
+      if(erBilde(a) || erPdf(a)){
+        if(a.contentBytes) tegnForhaand(a, boks);
+        else hentOgTegn(e.id, a, boks);
         return;
       }
 
@@ -4421,6 +4464,13 @@ function tegnDagPanel(){
     ? 'I dag'
     : DAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].toLowerCase();
   topp.appendChild(tit);
+
+  const tilbake = document.createElement('button');
+  tilbake.type = 'button';
+  tilbake.className = 'dagpanel-tilbake';
+  tilbake.innerHTML = '&larr; Lukk';
+  tilbake.onclick = lukkDagPanel;
+  topp.insertBefore(tilbake, topp.firstChild);
 
   const tall = document.createElement('span');
   tall.className = 'dagpanel-tall';
