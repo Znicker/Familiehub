@@ -938,10 +938,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .uke-lab{position:sticky;left:0;z-index:2}
 }
 
-/* ---------- Telefon i liggende visning ----------
-   Syv kolonner paa under 500px hoeyde blir svaert smalt. Brikkene
-   stables loddrett: initialen oeverst, tid og navn under. */
-@media (orientation:landscape) and (max-height:500px){
+/* ---------- Telefon: syv kolonner blir svaert smalt ----------
+   Brikkene stables loddrett: initialen oeverst, tid og navn under.
+   Gjelder bade staaende (smal skjerm) og liggende (lav skjerm). */
+@media (max-width:560px), (orientation:landscape) and (max-height:500px){
   .pu-ev{padding:5px 4px}
   .pu-topp{
     flex-direction:column;align-items:center;gap:3px;margin-bottom:3px;
@@ -955,7 +955,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
     font-size:var(--t-rute);text-align:center;line-height:1.25;
   }
   .pu-mer{display:none}
-  /* Dagpanelet skal ikke ta hele skjermen naar den er saa lav */
+}
+
+/* Liggende telefon: panelene har lite hoeyde aa gaa paa, men god bredde */
+@media (orientation:landscape) and (max-height:500px){
   .dagpanel,.boble.side{width:52vw;min-width:0}
 }
 
@@ -1291,6 +1294,23 @@ function lagreKalenderValg(){
   try{ localStorage.setItem(KAL_VALG_KEY, JSON.stringify(kalenderValg)); }catch(e){}
 }
 
+/* Hvilke kalendere som ligger i hurtigvelgeren under logoen. Styres av
+   kalenderknappen nede til hoeyre. Kalendere som er tatt ut derfra er
+   heller ikke med i visningen - de er ute av spill. */
+const STRIP_KEY = 'fh_cal_strip';
+let stripValg = {};
+try{ stripValg = JSON.parse(localStorage.getItem(STRIP_KEY) || '{}') || {}; }catch(e){ stripValg = {}; }
+function lagreStripValg(){
+  try{ localStorage.setItem(STRIP_KEY, JSON.stringify(stripValg)); }catch(e){}
+}
+function iStrip(id){ return stripValg[id] !== false; }   /* med som standard */
+
+function toggleStrip(id){
+  stripValg[id] = !iStrip(id);
+  lagreStripValg();
+  brukHurtigUtvalg();
+}
+
 const S = {
   token:null, expires:0, refresh:null,
   me:null,
@@ -1616,7 +1636,8 @@ async function loadCalendars(){
     return {
       id:c.id, name:c.name, color: kalenderFarge(c.name, i),
       kanEndre: c.canEdit !== false,
-      on: prev[c.id] !== undefined ? prev[c.id] : (husket !== undefined ? husket : true)
+      on: iStrip(c.id) &&
+          (prev[c.id] !== undefined ? prev[c.id] : (husket !== undefined ? husket : true))
     };
   });
   byggInitialer();
@@ -2158,10 +2179,10 @@ function renderCalList(){
     }).join('') : '';
 
     return '<div class="cal-rad" data-id="'+c.id+'" data-navn="'+esc(c.name)+'">'
-      + '<div class="cal-row'+(c.on?'':' off')+'" onclick="event.stopPropagation(); toggleCal(\''+c.id+'\')">'
+      + '<div class="cal-row'+(iStrip(c.id)?'':' off')+'" onclick="event.stopPropagation(); toggleStrip(\''+c.id+'\')">'
       +   swatch
       +   '<span class="cal-name">'+esc(c.name)+'</span>'
-      +   '<span class="cal-count">'+(c.on ? tell(c) : '—')+'</span>'
+      +   '<span class="cal-count">'+(iStrip(c.id) ? tell(c) : '—')+'</span>'
       + '</div>'
       + (erFargeAdmin ? '<div class="cal-palett" hidden>'+palett+'</div>' : '')
       + '</div>';
@@ -2269,7 +2290,8 @@ function visAlleKal(){
 
 function brukHurtigUtvalg(){
   S.calendars.forEach(function(c){
-    c.on = hurtigUtvalg ? !!hurtigUtvalg[c.id] : true;
+    const med = iStrip(c.id);
+    c.on = med && (hurtigUtvalg ? !!hurtigUtvalg[c.id] : true);
     kalenderValg[c.id] = c.on;
   });
   lagreKalenderValg();
@@ -2293,7 +2315,8 @@ function renderHurtigKal(){
     return i === -1 ? INITIAL_PRI.length : i;
   };
 
-  S.calendars.slice().sort(function(a, b){
+  S.calendars.filter(function(c){ return iStrip(c.id); })
+    .sort(function(a, b){
     return (rang(a) - rang(b)) || String(a.name||'').localeCompare(String(b.name||''), 'no');
   }).forEach(function(c){
     const b = document.createElement('button');
@@ -2316,16 +2339,6 @@ function renderHurtigKal(){
   el.appendChild(alle);
 }
 
-async function toggleCal(id){
-  const c = S.calendars.filter(function(x){ return x.id===id; })[0];
-  if(!c) return;
-  c.on = !c.on;
-  kalenderValg[id] = c.on;
-  lagreKalenderValg();
-  fyllFraCache();          /* av-slag vises straks; på-slag hentes under */
-  render();
-  last(false);             /* henter kun hvis en ny kalender mangler i cachen */
-}
 function goToday(){
   const t = new Date();
   S.view = new Date(t.getFullYear(), t.getMonth(), 1);
