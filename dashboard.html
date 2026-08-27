@@ -751,6 +751,7 @@ input,select,textarea{font-size:16px}
       <div class="av-serie" id="avSerie" hidden>Del av en serie – endringen gjelder bare denne datoen.</div>
       <div class="av-feil" id="avFeil" hidden></div>
       <div class="hu-knapper av-bunn">
+        <button class="knapp-slett" id="avSlett" onclick="slettAvtale()" hidden>Slett</button>
         <button class="hu-avbryt" onclick="lukkAvtale()">Avbryt</button>
         <button class="knapp-gronn" id="avLagre" onclick="lagreAvtale()">Legg til</button>
       </div>
@@ -1671,6 +1672,10 @@ function apneAvtale(e){
     }).catch(function(){});
   }
 
+  $('avSlett').hidden = !e;
+  $('avSlett').disabled = false;
+  $('avSlett').textContent = 'Slett';
+
   const lagre = $('avLagre');
   lagre.disabled = false;
   lagre.textContent = e ? 'Lagre' : 'Legg til';
@@ -1751,6 +1756,33 @@ function avtaleFeil(tekst){
   const f = $('avFeil');
   f.textContent = tekst;
   f.hidden = false;
+}
+
+/* Sletting ligger bak Endre, ikke i lista - der ville den vaert for lett
+   aa treffe ved et uhell. Gjelder det én dag i en serie, sier vi hva som
+   faktisk skjer foer vi gjoer det. */
+async function slettAvtale(){
+  const e = avtaleEndrer;
+  if(!e) return;
+  const serie = !!(e.type && e.type !== 'singleInstance');
+  const sporsmal = 'Slette «' + (e.tittel || 'avtalen') + '»'
+    + (serie ? ' denne dagen? Resten av serien blir stående.' : '?');
+  if(!confirm(sporsmal)) return;
+
+  const knapp = $('avSlett');
+  knapp.disabled = true;
+  knapp.textContent = 'Sletter …';
+  try{
+    await graph('/me/events/' + enc(e.id), {method:'DELETE'});
+    lukkAvtale();
+    await tegnPlanPaaNytt();
+  }catch(err){
+    knapp.disabled = false;
+    knapp.textContent = 'Slett';
+    avtaleFeil(err.status === 403
+      ? 'Kontoen mangler skrivetilgang til kalenderen. Logg ut og inn igjen, så Microsoft spør om den på nytt.'
+      : 'Fikk ikke slettet avtalen: ' + err.message);
+  }
 }
 
 async function lagreAvtale(){
