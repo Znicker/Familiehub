@@ -219,7 +219,21 @@ body{
 }
 .plan-helg{color:#B4443A;font-weight:700}
 @media(hover:hover){.cal-cell:hover{background:#F2F5F7}}
-.cal-cell.today{box-shadow:inset 0 0 0 2px var(--ink)}
+/* Dagens dato markeres med en ring rundt tallet, tegnet litt skjevt
+   slik man ser i kalenderillustrasjoner - ikke med ramme rundt ruta. */
+.cal-cell.today .cal-num{
+  position:relative;color:var(--ink);
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:26px;height:26px;
+}
+.cal-cell.today .cal-num::before{
+  content:'';position:absolute;left:-4px;right:-4px;top:-3px;bottom:-3px;
+  border:2px solid var(--blaa);
+  /* Ujevne radier gir den haandtegnede, litt ovale streken */
+  border-radius:47% 53% 51% 49% / 55% 47% 53% 45%;
+  transform:rotate(-6deg);
+  pointer-events:none;
+}
 .cal-cell.sel{background:var(--ink)}
 .cal-cell.sel:hover{background:var(--ink)}
 .cal-cell.sel .cal-num,.cal-cell.sel .cal-ev,
@@ -580,8 +594,15 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .uke-dcol:first-of-type{border-left:none}
 @media(hover:hover){.uke-dcol:hover{background:#EDF1F4}}
 .uke-dcol.idag .uke-dnum{
-  background:var(--ink);color:#fff;border-radius:999px;
-  display:inline-block;min-width:26px;padding:1px 6px;
+  position:relative;display:inline-flex;align-items:center;justify-content:center;
+  min-width:30px;height:30px;color:var(--ink);
+}
+.uke-dcol.idag .uke-dnum::before{
+  content:'';position:absolute;left:-4px;right:-4px;top:-2px;bottom:-2px;
+  border:2px solid var(--blaa);
+  border-radius:47% 53% 51% 49% / 55% 47% 53% 45%;
+  transform:rotate(-6deg);
+  pointer-events:none;
 }
 .uke-dcol.sel{background:#EDF1F4;box-shadow:inset 0 -3px 0 var(--ink)}
 .uke-dow{font-size:var(--t-rute);font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
@@ -605,7 +626,6 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .uke-cell:first-of-type{border-left:none}
 .uke-cell.helg{background:rgba(44,62,80,.03)}
-.uke-cell.idag{background:rgba(184,217,71,.12)}
 .uke-chip{
   color:#fff;border-radius:7px;padding:4px 7px;cursor:pointer;
   font-size:var(--t-etikett);font-weight:700;line-height:1.28;overflow:hidden;
@@ -917,6 +937,27 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .uke-lab{position:sticky;left:0;z-index:2}
 }
 
+/* ---------- Telefon i liggende visning ----------
+   Syv kolonner paa under 500px hoeyde blir svaert smalt. Brikkene
+   stables loddrett: initialen oeverst, tid og navn under. */
+@media (orientation:landscape) and (max-height:500px){
+  .pu-ev{padding:5px 4px}
+  .pu-topp{
+    flex-direction:column;align-items:center;gap:3px;margin-bottom:3px;
+  }
+  .pu-ini{width:24px;height:24px;font-size:var(--t-rute)}
+  .pu-tid{
+    font-size:var(--t-rute);text-align:center;
+    white-space:normal;line-height:1.2;
+  }
+  .pu-tittel{
+    font-size:var(--t-rute);text-align:center;line-height:1.25;
+  }
+  .pu-mer{display:none}
+  /* Dagpanelet skal ikke ta hele skjermen naar den er saa lav */
+  .dagpanel,.boble.side{width:52vw;min-width:0}
+}
+
   /* ---------- Plan: kronologiske dagsoeyler ----------
      Ingen navnekolonne. Farget kantstripe og initial baerer hvem det
      gjelder, saa tomme rader per person slutter aa spise hoeyde. */
@@ -928,7 +969,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .pu-kol:first-of-type{border-left:none}
   .pu-kol.helg{background:var(--bg-2)}
   .pu-kol.helligdag{background:rgba(180,68,58,.08)}
-  .pu-kol.idag{background:rgba(184,217,71,.10)}
+  /* Ingen farge bak avtalene - ringen rundt datoen er markeringen */
   .pu-kol.rolig{opacity:.55}          /* rolige dager skal faktisk se rolige ut */
   .pu-ev.skjult{display:none}
   .pu-mer-lapp{
@@ -2218,8 +2259,10 @@ function hurtigVelg(id){
   brukHurtigUtvalg();
 }
 
+/* Er alt paa, slaar knappen alt av - og motsatt. Da fungerer den som
+   en av/paa-bryter i stedet for en doed knapp naar alt alt er valgt. */
 function visAlleKal(){
-  hurtigUtvalg = null;
+  hurtigUtvalg = hurtigUtvalg ? null : {};
   brukHurtigUtvalg();
 }
 
@@ -2263,10 +2306,11 @@ function renderHurtigKal(){
     el.appendChild(b);
   });
 
+  const ingenPaa = hurtigUtvalg && !Object.keys(hurtigUtvalg).length;
   const alle = document.createElement('button');
   alle.className = 'hk-alle' + (hurtigUtvalg ? '' : ' pa');
-  alle.title = 'Vis alle kalendere';
-  alle.textContent = 'ALLE';
+  alle.title = ingenPaa ? 'Vis alle kalendere' : 'Skjul alle kalendere';
+  alle.textContent = ingenPaa ? 'ALLE' : 'INGEN';
   alle.onclick = visAlleKal;
   el.appendChild(alle);
 }
@@ -3162,6 +3206,12 @@ function planEvs(d){
 }
 
 /* Ett avtalekort med notat: ett trykk utvider notatet, langt trykk redigerer */
+/* Under 900px legger rutenettet seg i én kolonne, og hoeyrepanelet
+   havner under innholdet i stedet for ved siden av. */
+function smalSkjerm(){
+  return window.matchMedia('(max-width:900px)').matches;
+}
+
 function planItem(e){
   const it = document.createElement('div');
   it.className = 'plan-item';
@@ -3211,8 +3261,13 @@ function planItem(e){
 
   if(e.id === valgtAvtaleId) it.classList.add('valgt');
 
-  it.onclick = function(){
+  it.onclick = function(ev){
     if(skjulTrykk) return;               /* nettopp langt trykk / sveip */
+
+    /* Paa smale skjermer ligger hoeyrekolonnen langt nede i rullingen.
+       Da vises avtalen som en boble over lista i stedet. */
+    if(smalSkjerm()){ visBoble(e.id, ev); return; }
+
     valgtAvtaleId = e.id;
     renderListe();                       /* markerer raden man valgte */
     tegnValgtAvtale();                   /* detaljene i panelet til hoeyre */
