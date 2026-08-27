@@ -509,7 +509,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 }
 .filviser-knapp svg{width:17px;height:17px;flex-shrink:0}
 .filviser-knapp:active{transform:scale(.96)}
-.filviser-knapp.lukk{
+.filviser-knapp.last{
   background:var(--blaa);border-color:var(--blaa);color:#fff;
 }
 /* Paa telefon fyller bildet skjermen - da holder ikonene alene */
@@ -1095,6 +1095,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .who{display:none}
   .cal-cell{padding:5px}
   .tg{height:72dvh;min-height:0}
+  /* Lista maa vaere sitt eget rulleomraade. Uten fast hoeyde faar den
+     innholdets hoeyde, og da er det siden som ruller - ikke lista.
+     Da slaar hverken "I dag" eller etterlastingen inn. */
+  .plan{height:74dvh;min-height:0}
   .uke-lab{position:sticky;left:0;z-index:2}
 }
 
@@ -1278,11 +1282,11 @@ input,select,textarea{font-size:16px}
   <div class="filviser-kort">
     <div class="filviser-topp">
       <span class="filviser-navn" id="filviserNavn"></span>
-      <button type="button" class="filviser-knapp" onclick="lastNedFraViser()">
+      <button type="button" class="filviser-knapp last" onclick="lastNedFraViser()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"/></svg>
         <span>Last ned</span>
       </button>
-      <button type="button" class="filviser-knapp lukk" onclick="lukkViser()">
+      <button type="button" class="filviser-knapp" onclick="lukkViser()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
         <span>Lukk</span>
       </button>
