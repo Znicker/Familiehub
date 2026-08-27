@@ -334,16 +334,16 @@ body{
 
 /* Knapperaden nederst i skjemaene har samme form og stoerrelse som
    .btn i kalenderen, saa Slett ser lik ut paa begge sider. */
-.av-bunn .knapp-gronn,.av-bunn .knapp-endre,
-.av-bunn .knapp-slett,.av-bunn .hu-avbryt{
+.av-foot .knapp-gronn,.av-foot .knapp-endre,
+.av-foot .knapp-slett,.av-foot .hu-avbryt{
   font-size:var(--t-brod);letter-spacing:.02em;padding:13px 18px;
   border-radius:999px;text-transform:uppercase;
 }
-.av-bunn .hu-avbryt{background:var(--paper);border:1px solid var(--line);color:var(--ink)}
-.av-bunn .knapp-slett,.av-bunn .knapp-gronn,.av-bunn .knapp-endre{border:1px solid transparent}
-.av-bunn .knapp-slett{border-color:var(--rod)}
-.av-bunn .knapp-gronn{border-color:var(--gronn)}
-.av-bunn .knapp-endre{border-color:var(--oransje)}
+.av-foot .hu-avbryt{background:var(--paper);border:1px solid var(--line);color:var(--ink)}
+.av-foot .knapp-slett,.av-foot .knapp-gronn,.av-foot .knapp-endre{border:1px solid transparent}
+.av-foot .knapp-slett{border-color:var(--rod)}
+.av-foot .knapp-gronn{border-color:var(--gronn)}
+.av-foot .knapp-endre{border-color:var(--oransje)}
 
 /* Under dagens avtaler, i full bredde. */
 .ny-avtale{
@@ -609,10 +609,18 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
    skriver i. To kolonner holder hoeyden nede. */
 .avtale-boks{
   position:fixed;z-index:61;left:50%;top:10px;transform:translateX(-50%);
-  width:min(94vw,880px);max-height:min(54vh,520px);
-  overflow-y:auto;overscroll-behavior:contain;
+  width:min(94vw,880px);max-height:min(52vh,520px);
+  display:flex;flex-direction:column;overflow:hidden;
   background:var(--paper);border:1px solid var(--line);border-radius:18px;
   padding:18px 20px 16px;box-shadow:0 18px 44px rgba(44,62,80,.28);
+}
+/* Knapperaden ligger utenfor rullefeltet, saa den staar der uansett hvor
+   hoeyt skjemaet blir. Foer laa den nederst i innholdet, og paa iPad
+   havnet den under tastaturet naar feltene ble hoeye nok. */
+.av-tittel{flex-shrink:0}
+.av-foot{
+  flex-shrink:0;display:flex;align-items:center;gap:7px;justify-content:flex-end;
+  margin-top:12px;padding-top:12px;border-top:1px solid var(--line);
 }
 .avtale-boks[hidden]{display:none}
 .av-tittel{
@@ -625,7 +633,11 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
   display:flex;align-items:center;justify-content:center;line-height:1;
 }
 .av-merke[hidden]{display:none}
-.av-skjema{display:grid;grid-template-columns:1fr 1fr;gap:9px 18px;align-items:stretch}
+.av-skjema{
+  display:grid;grid-template-columns:1fr 1fr;gap:9px 18px;align-items:stretch;
+  flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
 /* Avtaleskjemaet: navn og sted deler venstre halvdel, dato og kalender
    staar under dem, klokkeslettene under der igjen. Notatet faar hele
    hoeyre halvdel og strekker seg over alle tre radene. Hoeyden er det
@@ -639,8 +651,7 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
     "tid   tid   notat"
     ".     .     vedlegg"
     "serie serie serie"
-    "feil  feil  feil"
-    "bunn  bunn  bunn";
+    "feil  feil  feil";
 }
 .a-navn{grid-area:navn}
 .a-sted{grid-area:sted}
@@ -661,7 +672,6 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
 .a-vedlegg{grid-area:vedlegg}
 .av-skjema.av-tre .av-serie{grid-area:serie}
 .av-skjema.av-tre .av-feil{grid-area:feil}
-.av-skjema.av-tre .av-bunn{grid-area:bunn}
 .av-kol{display:flex;flex-direction:column;gap:9px;min-width:0}
 .av-rad{display:flex;gap:9px}
 .av-rad label,.av-felt{
@@ -670,7 +680,7 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
 }
 .av-vokser{flex:1 1 auto}
 .av-vokser textarea{flex:1 1 auto;min-height:68px}
-.av-bunn,.av-serie,.av-feil{grid-column:1/-1}
+.av-serie,.av-feil{grid-column:1/-1}
 .av-etikett{
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--ink-soft);
@@ -792,7 +802,6 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
   .filviser{padding:0}
   .filviser-kort{height:100dvh;border-radius:0;max-width:none}
 }
-.av-bunn{margin-top:2px}
 @media(max-width:640px){
   .av-skjema{grid-template-columns:1fr}
   .av-skjema.av-tre{grid-template-columns:1fr;grid-template-areas:none}
@@ -908,11 +917,11 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
       </div>
       <div class="av-serie" id="avSerie" hidden></div>
       <div class="av-feil" id="avFeil" hidden></div>
-      <div class="hu-knapper av-bunn">
-        <button class="knapp-slett" id="avSlett" onclick="slettAvtale()" hidden>Slett</button>
-        <button class="hu-avbryt" onclick="lukkAvtale()">Avbryt</button>
-        <button class="knapp-gronn" id="avLagre" onclick="lagreAvtale()">Legg til</button>
-      </div>
+    </div>
+    <div class="av-foot">
+      <button class="knapp-slett" id="avSlett" onclick="slettAvtale()" hidden>Slett</button>
+      <button class="hu-avbryt" onclick="lukkAvtale()">Avbryt</button>
+      <button class="knapp-gronn" id="avLagre" onclick="lagreAvtale()">Legg til</button>
     </div>
   </div>
 
@@ -941,11 +950,11 @@ input.hu-felt,select.hu-felt{height:42px;line-height:1.2}
           <textarea class="hu-felt hu-omr" id="huTekst" placeholder="Valgfritt"></textarea>
         </label>
       </div>
-      <div class="hu-knapper av-bunn">
-        <button class="knapp-slett" id="huSlett" onclick="slettFraSkjema()" hidden>Slett</button>
-        <button class="hu-avbryt" onclick="lukkHuskeSkjema()">Avbryt</button>
-        <button class="knapp-gronn" id="huLagre" onclick="lagreHuske()">Legg til</button>
-      </div>
+    </div>
+    <div class="av-foot">
+      <button class="knapp-slett" id="huSlett" onclick="slettFraSkjema()" hidden>Slett</button>
+      <button class="hu-avbryt" onclick="lukkHuskeSkjema()">Avbryt</button>
+      <button class="knapp-gronn" id="huLagre" onclick="lagreHuske()">Legg til</button>
     </div>
   </div>
 
