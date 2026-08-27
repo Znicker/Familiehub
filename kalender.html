@@ -542,7 +542,13 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   font-size:var(--t-meta);color:var(--ink-soft);
 }
 .boble-vedlegg[hidden]{display:none}
-.boble-vedlegg .vedlegg-rad{background:rgba(255,255,255,.55)}
+.boble-vedlegg .vedlegg-rad{background:#fff}
+/* Bildevedlegg vises rett i avtalen */
+.vedlegg-bilde{margin:2px 0 4px}
+.vedlegg-bilde img{
+  display:block;width:100%;max-height:340px;object-fit:contain;
+  border-radius:10px;background:#fff;border:1px solid var(--line);cursor:zoom-in;
+}
 .boble-knapp{
   margin:0 0 14px;width:100%;background:var(--handling-endre);color:#fff;border:none;
   border-radius:999px;padding:11px;font-family:inherit;font-size:var(--t-meta);
@@ -2280,7 +2286,7 @@ function renderDay(){
       : pad(e.start.getHours())+'.'+pad(e.start.getMinutes())
         + '<br>' + pad(e.end.getHours())+'.'+pad(e.end.getMinutes());
     const meta = e.where || '';
-    return '<div class="ev klikk" style="background:'+dus(e.color,.18)+';border-color:'+dus(e.color,.62)+'" onclick="visBoble(\''+e.id+'\', event)">'
+    return '<div class="ev klikk" style="background:'+dusFast(e.color,.18)+';border-color:'+dus(e.color,.62)+'" onclick="visBoble(\''+e.id+'\', event)">'
       + '<div class="ev-stor-ini" style="background:'+e.color+'" title="'+esc(e.calName||'')+'">'
       +   esc(initialFor(e.calId, e.calName))+'</div>'
       + '<div class="ev-time">'+time+'</div>'
@@ -2694,8 +2700,9 @@ function visBoble(id, klikk){
   $('bobleInn').innerHTML = html;
   $('bobleBak').hidden = false;
   b.hidden = false;
-  /* Panelet baerer avtalens farge, som brikkene i kalenderen */
-  b.style.background = dus(e.color, .16);
+  /* Panelet baerer avtalens farge, men maa vaere ugjennomsiktig -
+     det ligger oppaa kalenderen. */
+  b.style.background = dusFast(e.color, .16);
   b.style.borderLeft = '';
   vedleggIVisning(e);
 
@@ -2984,18 +2991,57 @@ async function aapneVedleggFra(eventId, v, knapp){
 
 function redigererId(){ return redigerer ? redigerer.id : ''; }
 
+function erBilde(a){
+  if(a.contentType && /^image\//i.test(a.contentType)) return true;
+  return /\.(png|jpe?g|gif|webp|heic|bmp)$/i.test(a.name || '');
+}
+
+/* Henter bildet og viser det under filnavnet. Trykk aapner det i full
+   stoerrelse. Feiler hentingen, blir lenken staaende som foer. */
+async function visBilde(eventId, a, boks){
+  const ramme = document.createElement('div');
+  ramme.className = 'vedlegg-bilde';
+  boks.appendChild(ramme);
+  try{
+    const d = await graph('/me/events/' + eventId + '/attachments/' + a.id);
+    if(!d.contentBytes){ ramme.remove(); return; }
+    const img = document.createElement('img');
+    img.src = 'data:' + (d.contentType || 'image/png') + ';base64,' + d.contentBytes;
+    img.alt = a.name;
+    img.loading = 'lazy';
+    img.onclick = function(ev){
+      ev.stopPropagation();
+      const v = window.open('', '_blank');
+      if(v) v.document.write('<title>' + esc(a.name) + '</title>'
+        + '<body style="margin:0;background:#111;display:flex;align-items:center;'
+        + 'justify-content:center;min-height:100vh"><img src="' + img.src
+        + '" style="max-width:100%;max-height:100vh"></body>');
+    };
+    ramme.appendChild(img);
+  }catch(err){
+    ramme.remove();
+  }
+}
+
 /* Viser vedleggene i avtalevisningen, med lenke for aa aapne dem.
-   Hentes i bakgrunnen, saa panelet vises med det samme. */
+   Hentes i bakgrunnen, saa panelet vises med det samme. Teller sikrer
+   at et treigt svar fra en tidligere avtale ikke skriver over den man
+   ser paa naa. */
+let vedleggOekt = 0;
+
 async function vedleggIVisning(e){
   const boks = document.getElementById('bobleVedlegg');
   if(!boks) return;
+  vedleggOekt++;
+  const min = vedleggOekt;
   boks.innerHTML = '';
   if(!e.vedlegg){ boks.hidden = true; return; }
 
   boks.hidden = false;
   boks.textContent = 'Henter vedlegg …';
   try{
-    const d = await graph('/me/events/' + e.id + '/attachments?$select=id,name,size');
+    const d = await graph('/me/events/' + e.id + '/attachments?$select=id,name,size,contentType');
+    if(min !== vedleggOekt) return;      /* en annen avtale er aapnet */
     const liste = d.value || [];
     boks.innerHTML = '';
     if(!liste.length){ boks.hidden = true; return; }
@@ -3020,6 +3066,10 @@ async function vedleggIVisning(e){
 
       rad.appendChild(n); rad.appendChild(t);
       boks.appendChild(rad);
+
+      /* Bilder vises som bilde. Et filnavn sier lite om hva som er
+         paa arket - en ukeplan eller et skjema vil man se med én gang. */
+      if(erBilde(a)) visBilde(e.id, a, boks);
     });
   }catch(err){
     boks.textContent = 'Klarte ikke hente vedlegg.';
@@ -3158,6 +3208,14 @@ function rgbAv(hex){
 function dus(hex, a){
   const c = rgbAv(hex);
   return 'rgba('+c.r+','+c.g+','+c.b+','+a+')';
+}
+
+/* Samme tone, men blandet mot hvitt i stedet for gjennomsiktig. Brukes
+   der noe ligger oppaa annet innhold og maa vaere ugjennomsiktig. */
+function dusFast(hex, a){
+  const c = rgbAv(hex);
+  const m = function(v){ return Math.round(v * a + 255 * (1 - a)); };
+  return 'rgb('+m(c.r)+','+m(c.g)+','+m(c.b)+')';
 }
 
 function planFarget(e){
@@ -4001,7 +4059,7 @@ function tegnDagPanel(){
         : pad(e.start.getHours())+'.'+pad(e.start.getMinutes())
           + '<br>' + pad(e.end.getHours())+'.'+pad(e.end.getMinutes());
       const meta = e.where || '';
-      return '<div class="ev klikk" style="background:'+dus(e.color,.18)+';border-color:'+dus(e.color,.62)+'" onclick="visBoble(\''+e.id+'\', event)">'
+      return '<div class="ev klikk" style="background:'+dusFast(e.color,.18)+';border-color:'+dus(e.color,.62)+'" onclick="visBoble(\''+e.id+'\', event)">'
         + '<div class="ev-stor-ini" style="background:'+e.color+'" title="'+esc(e.calName||'')+'">'
         +   esc(initialFor(e.calId, e.calName))+'</div>'
         + '<div class="ev-time">'+time+'</div>'
