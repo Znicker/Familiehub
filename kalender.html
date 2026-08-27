@@ -2026,6 +2026,7 @@ function fyllAvtaler(){
         ini.textContent = initialFor(e.calId, e.calName);
         band.appendChild(ini);
         band.appendChild(document.createTextNode(e.title));
+        klipsPaa(band, e);
       }
       /* Dekker baandet bare denne ene dagen, staar teksten penest midtstilt.
          Gaar det videre, skal den begynne til venstre saa den kan leses. */
@@ -2262,7 +2263,7 @@ function tegnValgtAvtale(){
     + '<span class="boble-ini" style="background:' + e.color + '" title="'
     + esc(e.calName || '') + '">' + esc(initialFor(e.calId, e.calName)) + '</span>'
     + '</div>'
-    + '<div class="boble-tittel">' + esc(e.title) + '</div>'
+    + '<div class="boble-tittel">' + esc(e.title) + klipsHtml(e) + '</div>'
     + '<div class="boble-tid">' + esc(dato) + ' · ' + esc(tid) + '</div>'
     + (e.where ? '<div class="boble-sted">' + esc(e.where) + '</div>' : '')
     + (e.note
@@ -2291,7 +2292,7 @@ function renderDay(){
       +   esc(initialFor(e.calId, e.calName))+'</div>'
       + '<div class="ev-time">'+time+'</div>'
       + '<div class="ev-body">'
-      +   '<div class="ev-title">'+esc(e.title)+'</div>'
+      +   '<div class="ev-title">'+esc(e.title)+klipsHtml(e)+'</div>'
       +   (meta ? '<div class="ev-meta">'+esc(meta)+'</div>' : '')
       + '</div></div>';
   }).join('');
@@ -2688,7 +2689,7 @@ function visBoble(id, klikk){
     + '<span class="boble-ini" style="background:' + e.color + '" title="'
     + esc(e.calName || '') + '">' + esc(initialFor(e.calId, e.calName)) + '</span>'
     + '</div>'
-    + '<div class="boble-tittel">' + esc(e.title) + '</div>'
+    + '<div class="boble-tittel">' + esc(e.title) + klipsHtml(e) + '</div>'
     + '<div class="boble-tid">' + esc(tid) + '</div>'
     + (e.where ? '<div class="boble-sted">' + esc(e.where) + '</div>' : '')
     + (e.note
@@ -2991,6 +2992,23 @@ async function aapneVedleggFra(eventId, v, knapp){
 
 function redigererId(){ return redigerer ? redigerer.id : ''; }
 
+/* Binders naar avtalen har vedlegg. Legges paa et element som allerede
+   har tittelen som tekst. */
+function klipsPaa(el, e){
+  if(!e.vedlegg) return el;
+  const k = document.createElement('span');
+  k.className = 'vedlegg-merke';
+  k.title = 'Har vedlegg';
+  k.textContent = ' 📎';
+  el.appendChild(k);
+  return el;
+}
+
+/* Binders naar avtalen har vedlegg. Brukes overalt der tittelen vises. */
+function klipsHtml(e){
+  return e.vedlegg ? ' <span class="vedlegg-merke" title="Har vedlegg">📎</span>' : '';
+}
+
 function erBilde(a){
   if(a.contentType && /^image\//i.test(a.contentType)) return true;
   return /\.(png|jpe?g|gif|webp|heic|bmp)$/i.test(a.name || '');
@@ -3235,14 +3253,6 @@ function planFarget(e){
   ini.title = e.calName || '';
   topp.appendChild(ini);
 
-  if(e.vedlegg){
-    const kl = document.createElement('span');
-    kl.className = 'vedlegg-merke';
-    kl.title = 'Har vedlegg';
-    kl.textContent = '📎';
-    topp.appendChild(kl);
-  }
-
   const tid = document.createElement('span');
   tid.className = 'pu-tid';
   tid.textContent = e.allDay
@@ -3264,6 +3274,7 @@ function planFarget(e){
   const t = document.createElement('div');
   t.className = 'pu-tittel';
   t.textContent = e.title;
+  klipsPaa(t, e);
   el.appendChild(t);
 
   el.title = e.title;
@@ -3418,6 +3429,7 @@ function renderDagTid(){
       const nav = document.createElement('div');
       nav.className = 'dagtid-ev-n';
       nav.textContent = e.title;
+      klipsPaa(nav, e);
 
       tekst.appendChild(tid);
       tekst.appendChild(nav);
@@ -3724,6 +3736,7 @@ function planItem(e, koll){
   const tittelEl = document.createElement('div');
   tittelEl.className = 'plan-title';
   tittelEl.textContent = e.title;
+  klipsPaa(tittelEl, e);
   main.appendChild(tittelEl);
 
   // Rundingen foran raden sier hvem det gjelder - her staar bare stedet
@@ -4064,7 +4077,7 @@ function tegnDagPanel(){
         +   esc(initialFor(e.calId, e.calName))+'</div>'
         + '<div class="ev-time">'+time+'</div>'
         + '<div class="ev-body">'
-        +   '<div class="ev-title">'+esc(e.title)+'</div>'
+        +   '<div class="ev-title">'+esc(e.title)+klipsHtml(e)+'</div>'
         +   (meta ? '<div class="ev-meta">'+esc(meta)+'</div>' : '')
         + '</div></div>';
     }).join('');
@@ -4130,7 +4143,7 @@ function dagMeny(d){
     row.innerHTML = '<span class="dagpop-ini" style="background:'+e.color+'" title="'
       + esc(e.calName || '')+'">'+esc(initialFor(e.calId, e.calName))+'</span>'
       + '<span class="dagpop-tid">'+esc(tid)+'</span>'
-      + '<span class="dagpop-navn">'+esc(e.title)+'</span>';
+      + '<span class="dagpop-navn">'+esc(e.title)+klipsHtml(e)+'</span>';
     row.onclick = function(){ lukkDagMeny(); endreAvtale(e.id); };
     liste.appendChild(row);
   });
