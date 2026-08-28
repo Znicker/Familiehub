@@ -236,6 +236,11 @@ function neamSystem(k, harVerktoy, bakgrunn){
          'du det og foreslaar noe annet.\n\n' +
          'Du har ingen andre veier inn i systemet enn verktoeyene. Finnes det ' +
          'ikke et som passer, si det - ikke lat som om noe er gjort.\n\n' +
+         'Ta avgjoerelsene du kan ta selv. Spoer bare naar det finnes et ekte ' +
+         'valg som du ikke kan ta paa brukerens vegne - hva som faktisk trengs, ' +
+         'om noe skal vekk. Ting som foelger av regler eller av det du alt vet, ' +
+         'gjoer du uten aa spoerre. Har et verktoey en tabell, legg alt fram i ' +
+         'den ene i stedet for aa spoerre om ett og ett.\n\n' +
          'Kall hvert verktoey saa faa ganger som mulig. Merker du at du er i ' +
          'ferd med aa kalle det samme verktoeyet én gang per rad eller per vare, ' +
          'saa stopp: da mangler svaret du trenger i dataene du alt har faatt, ' +
@@ -334,6 +339,117 @@ async function neamKall(meldinger, system, verktoy){
    Verktoey
    ============================================================ */
 
+/* ============================================================
+   Tabellen
+   ------------------------------------------------------------
+   Et verktoey kan legge fram flere forslag paa én gang i stedet
+   for aa spoerre om ett og ett:
+
+     neamTabell: function(arg){
+       return {
+         tittel: 'Forslag til opprydding',
+         kolonner: ['Vare', 'Forslag'],
+         rader: [{ id:'0', celler:['Potet', 'slås sammen til 2,6 kg'],
+                   hvorfor:'står på to rader', valgt:true }]
+       };
+     }
+
+   Panelet tegner den i samtalen med avkryssing per rad. Brukeren
+   huker av det han vil ha, trykker én gang, og de valgte id-ene
+   sendes til neamUtfor som `valgte`.
+
+   Ti dialoger etter hverandre er ti avgjoerelser tatt uten
+   oversikt. Én tabell er den samme informasjonen der man kan se
+   den under ett - og for Neam er det ett verktoeykall i stedet
+   for ti, som ogsaa er der sekundene ligger.
+   ============================================================ */
+
+let neamTabellSvar = null;   /* resolve for tabellen som staar oppe */
+
+function neamTabellAvbryt(){
+  const f = neamTabellSvar;
+  neamTabellSvar = null;
+  if(f) f(null);
+}
+
+function neamVisTabell(spek){
+  const boks = document.getElementById('neamSamtale');
+  if(!boks) return Promise.resolve(null);
+
+  const ramme = document.createElement('div');
+  ramme.className = 'neam-tabell';
+
+  if(spek.tittel){
+    const t = document.createElement('div');
+    t.className = 'neam-tabell-tittel';
+    t.textContent = spek.tittel;
+    ramme.appendChild(t);
+  }
+
+  const bokser = [];
+  (spek.rader || []).forEach(function(rad){
+    const r = document.createElement('label');
+    r.className = 'neam-tabell-rad';
+
+    const av = document.createElement('input');
+    av.type = 'checkbox';
+    av.checked = rad.valgt !== false;
+    av.dataset.id = rad.id;
+    bokser.push(av);
+    r.appendChild(av);
+
+    const tekst = document.createElement('span');
+    tekst.className = 'neam-tabell-tekst';
+    (rad.celler || []).forEach(function(c, i){
+      const d = document.createElement('span');
+      d.className = i === 0 ? 'neam-tabell-navn' : 'neam-tabell-verdi';
+      d.textContent = c;
+      tekst.appendChild(d);
+    });
+    if(rad.hvorfor){
+      const h = document.createElement('span');
+      h.className = 'neam-tabell-hvorfor';
+      h.textContent = rad.hvorfor;
+      tekst.appendChild(h);
+    }
+    r.appendChild(tekst);
+    ramme.appendChild(r);
+  });
+
+  const rad = document.createElement('div');
+  rad.className = 'neam-tabell-knapper';
+  const nei = document.createElement('button');
+  nei.type = 'button';
+  nei.className = 'neam-tabell-knapp nei';
+  nei.textContent = 'Ikke nå';
+  const ja = document.createElement('button');
+  ja.type = 'button';
+  ja.className = 'neam-tabell-knapp ja';
+  ja.textContent = 'Gjør det';
+  rad.appendChild(nei);
+  rad.appendChild(ja);
+  ramme.appendChild(rad);
+
+  boks.appendChild(ramme);
+  boks.scrollTop = boks.scrollHeight;
+
+  return new Promise(function(ok){
+    neamTabellAvbryt();
+    neamTabellSvar = ok;
+    function svar(v){
+      if(!neamTabellSvar) return;
+      neamTabellSvar = null;
+      ramme.remove();
+      ok(v);
+    }
+    nei.onclick = function(){ svar(null); };
+    ja.onclick  = function(){
+      svar(bokser.filter(function(b){ return b.checked; })
+                 .map(function(b){ return b.dataset.id; }));
+    };
+  });
+}
+
 /* Skriving spoer foerst. Lesing gjoer det ikke - et verktoey som bare
    ser etter noe skal ikke kreve en dialog hver gang. */
 async function neamGodkjenn(def, blokk){
@@ -352,6 +468,34 @@ async function neamKjor(blokk, defer){
   if(!def || typeof window.neamUtfor !== 'function'){
     return { type:'tool_result', tool_use_id:blokk.id, is_error:true,
              content:'Verktøyet finnes ikke på denne siden.' };
+  }
+
+  /* Legger verktoeyet fram flere forslag, tegnes de som en tabell i
+     stedet for aa spoerres om ett og ett. De avhukede id-ene foelger med
+     som `valgte`. */
+  if(def.neamTabell){
+    let spek = null;
+    try{ spek = def.neamTabell(blokk.input || {}); }catch(e){ spek = null; }
+    if(spek && (spek.rader || []).length){
+      const valgte = await neamVisTabell(spek);
+      if(valgte === null){
+        return { type:'tool_result', tool_use_id:blokk.id,
+                 content:'Brukeren lot det ligge. Ikke gjenta forslaget - spør om noe annet.' };
+      }
+      if(!valgte.length){
+        return { type:'tool_result', tool_use_id:blokk.id,
+                 content:'Brukeren hakte av ingenting. Ingenting ble gjort.' };
+      }
+      try{
+        const arg = Object.assign({}, blokk.input || {}, { valgte: valgte });
+        const svar = await window.neamUtfor(blokk.name, arg);
+        return { type:'tool_result', tool_use_id:blokk.id,
+                 content: JSON.stringify(svar === undefined ? null : svar) };
+      }catch(e){
+        return { type:'tool_result', tool_use_id:blokk.id, is_error:true,
+                 content: String((e && e.message) || 'Verktøyet feilet.') };
+      }
+    }
   }
 
   if(!(await neamGodkjenn(def, blokk))){
@@ -468,6 +612,9 @@ function neamSkrivSted(k){
 }
 
 function neamLukk(){
+  /* Staar det en tabell og venter, teller lukking som «ikke naa» - ellers
+     blir verktoeykallet haengende og panelet staar laast neste gang. */
+  neamTabellAvbryt();
   const bak = document.getElementById('neamBak');
   if(bak) bak.hidden = true;
 }
@@ -523,15 +670,11 @@ function neamTegn(){
     if(!m) return;
 
     if(typeof m.content === 'string'){
-      if(p.auto){
-        /* Sida ba om dette, ikke brukeren. Vises som en dempet linje saa
-           ingen tror de skrev det selv. */
-        const el = document.createElement('div');
-        el.className = 'neam-anrop';
-        el.textContent = m.content;
-        boks.appendChild(el);
-        return;
-      }
+      /* Beskjeden sida ga Neam vises ikke. Den maa ligge i historikken -
+         API-et kjenner ingen annen maate aa gi en instruks paa - men den
+         er skrevet for ham, ikke for brukeren, og en instruks man leser
+         over skulderen gjoer bare samtalen lengre. */
+      if(p.auto) return;
       neamBoble(boks, m.role === 'user' ? 'meg' : 'bot', m.content);
       return;
     }

@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
-<link rel="stylesheet" href="/felles-neam.css?v=3">
+<link rel="stylesheet" href="/felles-neam.css?v=4">
 <!-- ?v=1: bump tallet naar felles-skall.css endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -908,7 +908,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=6"></script>
+<script src="/felles-neam.js?v=7"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -2415,9 +2415,11 @@ async function neamGjennomgang(navn){
   + 'varer som står på to rader fordi mengdene ikke lot seg summere, mengder '
   + 'som ser rare ut, og varer uten varetype. Ta også med basisvarer som '
   + 'kanskje ikke trenger å kjøpes. '
-  + 'Si først kort hva du fant. Ta det så én vare av gangen: foreslå én retting '
-  + 'og vent på svar før du går videre til neste. Finner du ingenting å rette, '
-  + 'si det med én setning.',
+  + 'Sett varetype selv på de som mangler den - ikke spør om det. '
+  + 'Alt annet du vil foreslå, legger du fram samlet med foresla_opprydding, '
+  + 'med én kort begrunnelse per linje. Ikke still spørsmål før tabellen; '
+  + 'gjør de vurderingene du kan gjøre selv, og la brukeren hake av. '
+  + 'Finner du ingenting å rette, si det med én setning.',
     { friskt:true });
 }
 
@@ -6322,9 +6324,101 @@ window.neamVerktoy = async function(){
         return 'Endre på ' + neamOktNavn(arg) + ':\n\n' + foer + '\n→ '
              + (etter.join(', ') || 'ingenting');
       }
+    },
+    {
+      name: 'sett_varetype',
+      description: 'Setter varetype på én eller flere varer. Dette er den ene endringen '
+                 + 'du gjør uten å spørre: varetypen styrer bare rekkefølgen varene står '
+                 + 'i mens man handler, den er synlig med det samme, og den er like lett '
+                 + 'å rette igjen. Ser du en vare uten type, gi den en - ikke spør.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          varer: {
+            type:'array',
+            items:{ type:'object',
+                    properties:{ vare:{type:'string'}, type:{type:'string', enum:VARETYPER} },
+                    required:['vare','type'] },
+            description:'Varene og typen hver av dem skal ha.'
+          },
+          omrade:   { type:'string', enum:['mat','annet'] },
+          handletur:{ type:'string' }
+        },
+        required: ['varer']
+      }
+      /* Ingen neamSkriver: varetype settes uten dialog. Grensen for hva som
+         maa bekreftes gaar ved om en feil er lett aa se og lett aa rette -
+         en gal varetype er begge deler. */
+    },
+    {
+      name: 'foresla_opprydding',
+      description: 'Legger flere endringer fram i én tabell brukeren kan hake av i. '
+                 + 'BRUK DENNE når du har mer enn én ting å foreslå - ikke ett og ett '
+                 + 'spørsmål etter hverandre. Rekkefølgen du sender i spiller ingen rolle: '
+                 + 'fjerninger kjøres først, så endringer, så tillegg, slik at «slå to '
+                 + 'rader sammen til én» blir riktig. Skriv en kort begrunnelse på hver '
+                 + 'linje - det er den brukeren leser når han bestemmer seg.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          tittel: { type:'string', description:'Overskrift, f.eks. «Forslag til opprydding».' },
+          endringer: {
+            type:'array',
+            items:{
+              type:'object',
+              properties:{
+                handling: { type:'string', enum:['fjern','endre','legg_til'] },
+                vare:     { type:'string', description:'Navnet varen har nå.' },
+                nyttNavn: { type:'string' },
+                mengde:   { type:'string', description:'Målet: «2,6 kg», «1 pose».' },
+                antall:   { type:'string', description:'Hvor mange av målet - «2» i «2 x 1,5 l».' },
+                type:     { type:'string', enum:VARETYPER },
+                hvorfor:  { type:'string', description:'Én kort setning om hvorfor.' }
+              },
+              required:['handling','vare']
+            }
+          },
+          omrade:   { type:'string', enum:['mat','annet'] },
+          handletur:{ type:'string' }
+        },
+        required: ['endringer']
+      },
+      neamTabell: function(arg){
+        return {
+          tittel: arg.tittel || 'Forslag',
+          rader: (arg.endringer || []).map(function(e, i){
+            return { id: String(i), valgt: true, hvorfor: e.hvorfor || '',
+                     celler: [ e.vare || '', neamForslagTekst(e) ] };
+          })
+        };
+      }
     }
   ];
 };
+
+/* Én linje som sier hva forslaget gjoer, paa norsk. Den staar i tabellen
+   og er alt brukeren har aa gaa etter - derfor ikke feltnavn og verdier,
+   men en setning. */
+function neamForslagTekst(e){
+  if(e.handling === 'fjern')   return 'fjernes fra lista';
+  if(e.handling === 'legg_til'){
+    const m = neamMaalTekst(e);
+    return 'legges til' + (m ? ' – ' + m : '');
+  }
+  const deler = [];
+  if(e.nyttNavn) deler.push('nytt navn: ' + e.nyttNavn);
+  const m = neamMaalTekst(e);
+  if(m) deler.push('mengde: ' + m);
+  if(e.type) deler.push('type: ' + e.type);
+  return deler.length ? deler.join(', ') : 'ingen endring';
+}
+
+function neamMaalTekst(e){
+  if(e.mengde === undefined && e.antall === undefined) return '';
+  const p = { qty:'', count:'', amt:'', unit:'' };
+  neamSettMengde(p, e.mengde, e.antall);
+  return p.qty;
+}
 
 /* Slaar opp én rad paa navn. Brukes baade av bekreftelsesteksten - som
    maa vise hva som staar der FOER - og av endringen selv.
@@ -6472,6 +6566,8 @@ window.neamUtfor = async function(navn, arg){
   if (navn === 'legg_til_varer') return await neamLeggTilVarer(arg);
   if (navn === 'fjern_varer')    return await neamFjernVarer(arg);
   if (navn === 'endre_vare')     return await neamEndreVare(arg);
+  if (navn === 'sett_varetype')  return await neamSettVaretype(arg);
+  if (navn === 'foresla_opprydding') return await neamOpprydding(arg);
 
   throw new Error('Ukjent verktøy: ' + navn);
 };
@@ -6620,6 +6716,72 @@ async function neamEndreVare(arg){
     foer: foer,
     etter: { navn: v.name, mengde: v.qty, type: v.cat, butikk: v.store, kjopt: !!v.done }
   };
+}
+
+/* Setter varetype paa flere varer i én omgang, uten dialog. Se
+   kommentaren ved verktoeydefinisjonen for hvorfor akkurat denne
+   endringen slipper unna godkjenningen. */
+async function neamSettVaretype(arg){
+  const okt = neamFinnOkt(arg, false);
+  if (!okt) return { handletur:null, beskjed:'Ingen handletur er åpen i dette området.' };
+  const erMat = oktOmrade(okt) === 'mat';
+
+  const satt = [], fantIkke = [];
+  (arg.varer || []).forEach(o => {
+    if (!o || !VARETYPER.includes(String(o.type || '').trim())) return;
+    const traff = neamRader({ vare:o.vare }, okt);
+    if (!traff.length){ fantIkke.push(o.vare); return; }
+    traff.forEach(v => { v.cat = o.type; if (erMat) katalogLagre(v.name, v.cat, !!v.basis); });
+    satt.push({ vare: traff[0].name, type: o.type });
+  });
+
+  if (satt.length){
+    await medLaas(async () => { if (erMat) await lagreKatalog(); await save(); });
+    render();
+  }
+  return { handletur: oktNavn(okt), satt, fantIkke };
+}
+
+/* Kjoerer det brukeren haket av i tabellen.
+
+   Rekkefoelgen er fast og uavhengig av hva Neam sendte: fjerninger,
+   saa endringer, saa tillegg. «Slaa to poteter sammen til én» sendes
+   som fjern + legg_til, og gjoeres det i motsatt rekkefoelge, fjerner
+   fjerningen den nye raden ogsaa. */
+async function neamOpprydding(arg){
+  const alle = Array.isArray(arg.endringer) ? arg.endringer : [];
+  const valgte = Array.isArray(arg.valgte)
+    ? arg.valgte.map(Number).filter(i => alle[i]).map(i => alle[i])
+    : alle;
+  if (!valgte.length) return { gjort:[], beskjed:'Ingenting var haket av.' };
+
+  const rang = { fjern:0, endre:1, legg_til:2 };
+  const rekke = valgte.slice().sort((a,b) => (rang[a.handling] ?? 9) - (rang[b.handling] ?? 9));
+
+  const gjort = [], feilet = [];
+  const felles = { omrade: arg.omrade, handletur: arg.handletur };
+
+  for (const e of rekke){
+    try{
+      if (e.handling === 'fjern'){
+        await neamFjernVarer(Object.assign({ varer:[e.vare] }, felles));
+      } else if (e.handling === 'legg_til'){
+        await neamLeggTilVarer(Object.assign({
+          varer:[{ vare:e.nyttNavn || e.vare, mengde:e.mengde, antall:e.antall, type:e.type }]
+        }, felles));
+      } else {
+        await neamEndreVare(Object.assign({
+          vare:e.vare, nyttNavn:e.nyttNavn, mengde:e.mengde, antall:e.antall, type:e.type
+        }, felles));
+      }
+      gjort.push(e.vare + ': ' + neamForslagTekst(e));
+    }catch(err){
+      /* Én som ryker skal ikke stoppe resten - brukeren haket av flere ting
+         og forventer at de andre gaar gjennom. */
+      feilet.push({ vare:e.vare, feil:String((err && err.message) || 'feilet') });
+    }
+  }
+  return { gjort, feilet };
 }
 
 /* Fjerner rader fra den aapne handleturen. Bare derfra: en vare med
