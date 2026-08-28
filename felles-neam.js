@@ -48,6 +48,12 @@
 
    Mangler funksjonene, virker panelet fortsatt - Neam kan bare
    ikke se hvor du er eller gjoere noe.
+
+   ANDRE VEIEN kan sida starte en samtale selv:
+
+     await neamStart('...', {friskt:true});
+
+   Se kommentaren over funksjonen.
    ------------------------------------------------------------
 
    REGELEN: lesing gaar rett gjennom, skriving stopper og spoer.
@@ -462,6 +468,15 @@ function neamTegn(){
     if(!m) return;
 
     if(typeof m.content === 'string'){
+      if(p.auto){
+        /* Sida ba om dette, ikke brukeren. Vises som en dempet linje saa
+           ingen tror de skrev det selv. */
+        const el = document.createElement('div');
+        el.className = 'neam-anrop';
+        el.textContent = m.content;
+        boks.appendChild(el);
+        return;
+      }
       neamBoble(boks, m.role === 'user' ? 'meg' : 'bot', m.content);
       return;
     }
@@ -501,8 +516,16 @@ async function neamSend(){
   neamVoks();
 
   neamPoster.push({ api:{ role:'user', content:tekst } });
+  await neamTur();
+}
+
+/* Én runde: send det som staar, kjoer verktoeyene Neam ber om, gjenta til
+   han er ferdig. Delt mellom det brukeren skriver og det sida ber om
+   gjennom neamStart(). */
+async function neamTur(){
   neamVenter = true;
-  document.getElementById('neamSend').disabled = true;
+  const knapp = document.getElementById('neamSend');
+  if(knapp) knapp.disabled = true;
   neamLagre();
   neamTegn();
 
@@ -550,6 +573,40 @@ async function neamSend(){
     neamLagre();
     neamTegn();
   }
+}
+
+/* ============================================================
+   Naar sida tar kontakt
+   ------------------------------------------------------------
+   Sida kan starte en samtale selv:
+
+     await neamStart('Varene er lagt over. Gaa gjennom lista og ...');
+
+   Beskjeden lagres som en brukertur - API-et kjenner ingen annen
+   maate aa gi en instruks paa - men den TEGNES som en linje, ikke
+   som en boble. Brukeren skal se hva Neam ble bedt om, uten at det
+   ser ut som noe han skrev selv.
+
+   `friskt` tommer samtalen foerst. Bruk det naar sida starter noe
+   nytt: en gjennomgang som arver et halvferdig resonnement fra en
+   time siden begynner paa feil sted.
+
+   Staar Neam alt og jobber, gjoer kallet ingenting. Én ting av
+   gangen i ett panel.
+   ============================================================ */
+async function neamStart(beskjed, valg){
+  const v = valg || {};
+  if(neamVenter) return;
+  const tekst = String(beskjed || '').trim();
+  if(!tekst) return;
+
+  neamBygg();
+  if(v.friskt){ neamPoster = []; }
+  document.getElementById('neamBak').hidden = false;
+  neamSkrivSted(await neamSted());
+
+  neamPoster.push({ api:{ role:'user', content:tekst }, auto:true });
+  await neamTur();
 }
 
 /* ============================================================
