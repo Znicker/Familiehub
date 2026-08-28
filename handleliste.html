@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
-<link rel="stylesheet" href="/felles-neam.css?v=6">
+<link rel="stylesheet" href="/felles-neam.css?v=7">
 <!-- ?v=1: bump tallet naar felles-skall.css endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -908,7 +908,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=11"></script>
+<script src="/felles-neam.js?v=12"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -2428,7 +2428,11 @@ async function neamGjennomgang(navn){
   + 'trengs, og et langt svar foran risikerer å bli kuttet av så tabellen aldri kommer. '
   + 'Ikke still spørsmål før tabellen; gjør de vurderingene du kan gjøre selv, '
   + 'og la brukeren hake av. Finner du ingenting å rette, si det med én setning.',
-    { friskt:true });
+    /* Gjennomgangen ber om Sonnet uansett hva knappen staar paa: den skal
+       lese hele lista, se hva som hoerer sammen og foreslaa summer. Har
+       noen satt Haiku for aa prate raskt, skal ikke den innstillingen
+       foelge med inn i en oppgave som krever mer. */
+    { friskt:true, modell:'sonnet' });
 }
 
 // Ukemenyen i Oppskriftsboka er lagret per kalenderuke. Handleturene har

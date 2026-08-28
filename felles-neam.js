@@ -51,7 +51,7 @@
 
    ANDRE VEIEN kan sida starte en samtale selv:
 
-     await neamStart('...', {friskt:true});
+     await neamStart('...', {friskt:true, modell:'sonnet'});
 
    Se kommentaren over funksjonen.
    ------------------------------------------------------------
@@ -94,12 +94,29 @@ const NEAM_MODELLER = [
 ];
 const NEAM_MODELL_LAGER = 'neam_modell';
 
+/* Modellen en OPPGAVE har bedt om, satt av neamStart({modell:'sonnet'}).
+
+   Knappen i topplinja er hva brukeren prater med. En oppgave sida starter
+   er noe annet: den vet hva den krever, og skal ikke faa Haiku fordi noen
+   satte den til noe raskt for aa slaa av en prat i gaar. Derfor overstyrer
+   oppgaven knappen - men den VISES i knappen, saa det aldri staar ett navn
+   mens et annet svarer.
+
+   Nullstilles av «Ny samtale» og av friskt:true: da er oppgaven over. */
+let neamPaatvunget = null;
+
+function neamModellId(navn){
+  const s = String(navn || '').toLowerCase();
+  const m = NEAM_MODELLER.find(function(x){ return x.navn.toLowerCase() === s || x.id === navn; });
+  return m ? m.id : null;
+}
+
 /* localStorage, ikke sessionStorage som samtalen: dette er en innstilling,
    ikke en del av en samtale, og den staar skrevet i topplinja hele tiden.
    Det som huskes uten aa vises er det som blir et problem. */
 function neamModell(){
-  let valgt = null;
-  try{ valgt = localStorage.getItem(NEAM_MODELL_LAGER); }catch(e){}
+  let valgt = neamPaatvunget;
+  if(!valgt){ try{ valgt = localStorage.getItem(NEAM_MODELL_LAGER); }catch(e){} }
   return NEAM_MODELLER.find(function(m){ return m.id === valgt; }) || NEAM_MODELLER[1];
 }
 
@@ -629,7 +646,11 @@ function neamBygg(){
     /* Ikke midt i en tur: modellen som svarer skal vaere den som ble
        spurt. Byttet gjelder fra neste melding. */
     if(neamVenter) return;
-    neamNesteModell();
+    /* Har en oppgave laast modellen, loefter foerste trykk laasen i stedet
+       for aa hoppe videre - ellers maatte man gjennom hele runden for aa
+       komme tilbake til den man alt saa paa. */
+    if(neamPaatvunget){ neamPaatvunget = null; }
+    else neamNesteModell();
     neamTegnModell();
   };
   neamTegnModell();
@@ -674,7 +695,12 @@ async function neamAapne(){
 
 function neamTegnModell(){
   const k = document.getElementById('neamModell');
-  if(k) k.textContent = neamModell().navn;
+  if(!k) return;
+  k.textContent = neamModell().navn;
+  k.classList.toggle('fast', !!neamPaatvunget);
+  k.title = neamPaatvunget
+    ? 'Oppgaven ba om denne modellen. Trykk for å velge selv.'
+    : 'Bytt modell';
 }
 
 function neamSkrivSted(k){
@@ -695,7 +721,9 @@ async function neamNySamtale(){
      !(await bekreft('Starte på nytt? Det som står her forsvinner.',
                      {jaTekst:'Start på nytt'}))) return;
   neamPoster = [];
+  neamPaatvunget = null;      /* oppgaven er over */
   neamLagre();
+  neamTegnModell();
   neamTegn();
 }
 
@@ -926,7 +954,15 @@ async function neamStart(beskjed, valg){
   if(!tekst) return;
 
   neamBygg();
-  if(v.friskt){ neamPoster = []; }
+  if(v.friskt){ neamPoster = []; neamPaatvunget = null; }
+  /* Oppgaven kan si hva den trenger: neamStart(..., {modell:'sonnet'}).
+     Ukjent navn ignoreres - da gaar det som foer, i stedet for at en
+     skrivefeil stopper en gjennomgang. */
+  if(v.modell){
+    const id = neamModellId(v.modell);
+    if(id) neamPaatvunget = id;
+  }
+  neamTegnModell();
   document.getElementById('neamBak').hidden = false;
   neamSkrivSted(await neamSted());
 

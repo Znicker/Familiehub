@@ -90,6 +90,11 @@
 /* Modellen staar skrevet, ikke gjemt i en meny: en innstilling man ikke
    ser er en innstilling man glemmer at man har satt. Dempet flate - den
    skal kunne leses, ikke trekke blikket. */
+/* Laast av en oppgave: fylt flate, saa det synes at valget ikke er ditt
+   akkurat naa. Ett trykk loefter laasen. */
+.neam-topp-knapp.modell.fast{
+  background:var(--aksent-lys); border-color:var(--boks-kant); color:var(--ink);
+}
 .neam-topp-knapp.modell{
   background:none; border-color:var(--line); color:var(--ink-soft);
   font-weight:600; letter-spacing:.03em;
