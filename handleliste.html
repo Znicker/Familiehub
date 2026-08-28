@@ -908,7 +908,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=15"></script>
+<script src="/felles-neam.js?v=16"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -6668,7 +6668,10 @@ function neamSettMengde(v, mengde, antall){
   const fri = normaliserMengde(String(mengde == null ? '' : mengde).trim());
   const p = parseMengde(fri);
   v.count = c;
-  v.amt  = p ? String(p.tall) : '';
+  /* fmtTall, ikke String(): parseMengde gir et JS-tall, og «7.5» med
+     punktum staar feil ved siden av resten av lista, som skriver «7,5».
+     Samme formatering som normaliserMengde bruker. */
+  v.amt  = p ? fmtTall(p.tall) : '';
   v.unit = p ? normEnhet(p.enhet) : '';
   /* Lar seg mengden ikke lese som tall og enhet - «1 stor pose» - blir
      friteksten staaende som den er. Bedre en mengde ingen kan regne paa

@@ -747,6 +747,11 @@ async function neamNySamtale(){
   if(neamPoster.length &&
      !(await bekreft('Starte på nytt? Det som står her forsvinner.',
                      {jaTekst:'Start på nytt'}))) return;
+  /* Staar det en tabell og venter, hoerer den til samtalen som naa er
+     borte. Uten dette ble den haengende igjen paa skjermen mens loekka
+     ventet paa et svar ingen lenger kunne gi - og «Neam tenker …» sto
+     til sida ble lastet paa nytt. */
+  neamTabellAvbryt();
   neamPoster = [];
   neamPaatvunget = null;      /* oppgaven er over */
   neamLagre();
