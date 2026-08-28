@@ -80,7 +80,36 @@
 
 const NEAM_LAGER  = 'neam_samtale';
 const NEAM_MERKE  = '/bilder/merke-neam.png';
-const NEAM_MODELL = 'claude-sonnet-5';
+/* Modellene man kan veksle mellom, i rekkefoelge fra raskest til
+   grundigst. Knappen i topplinja gaar rundt.
+
+   Farten er utskriving, ikke venting: rundt 200 tokens i sekundet paa
+   Sonnet, saa et langt svar tar tjue sekunder uansett hvor lite som
+   skjer. Haiku skriver fortere og holder lenge til aa lese en liste og
+   finne dubletter. Opus er for naar svaret betyr mer enn sekundene. */
+const NEAM_MODELLER = [
+  { id:'claude-haiku-4-5-20251001', navn:'Haiku'  },
+  { id:'claude-sonnet-5',           navn:'Sonnet' },
+  { id:'claude-opus-5',             navn:'Opus'   }
+];
+const NEAM_MODELL_LAGER = 'neam_modell';
+
+/* localStorage, ikke sessionStorage som samtalen: dette er en innstilling,
+   ikke en del av en samtale, og den staar skrevet i topplinja hele tiden.
+   Det som huskes uten aa vises er det som blir et problem. */
+function neamModell(){
+  let valgt = null;
+  try{ valgt = localStorage.getItem(NEAM_MODELL_LAGER); }catch(e){}
+  return NEAM_MODELLER.find(function(m){ return m.id === valgt; }) || NEAM_MODELLER[1];
+}
+
+function neamNesteModell(){
+  const naa = neamModell();
+  const i = NEAM_MODELLER.findIndex(function(m){ return m.id === naa.id; });
+  const ny = NEAM_MODELLER[(i + 1) % NEAM_MODELLER.length];
+  try{ localStorage.setItem(NEAM_MODELL_LAGER, ny.id); }catch(e){}
+  return ny;
+}
 
 /* Hvor mye av samtalen som sendes med. Hele historikken gaar med i
    hvert kall - API-et husker ingenting selv - saa dette er baade et
@@ -284,7 +313,7 @@ function neamSystem(k, harVerktoy, bakgrunn){
    laerdom som i oppskrifter. */
 async function neamEttForsok(meldinger, system, verktoy){
   const kropp = {
-    model: NEAM_MODELL,
+    model: neamModell().id,
     /* 4000, ikke 2000: en full oppryddingstabell er mange verktoeyfelter,
        og blir svaret kuttet midt i et kall, faller hele runden bort. */
     max_tokens: 4000,
@@ -574,7 +603,10 @@ function neamBygg(){
     +       '<span class="neam-navn">Neam</span>'
     +       '<span class="neam-sted" id="neamSted"></span>'
     +     '</span>'
-    +     '<button type="button" class="neam-topp-knapp" id="neamNy">Ny samtale</button>'
+    +     '<button type="button" class="neam-topp-knapp modell" id="neamModell" '
+    +       'title="Bytt modell"></button>'
+    +     '<button type="button" class="neam-topp-knapp" id="neamNy">'
+    +       '<span class="lang">Ny samtale</span><span class="kort">Ny</span></button>'
     +     '<button type="button" class="neam-lukk" id="neamLukk" aria-label="Lukk">&times;</button>'
     +   '</div>'
     +   '<div class="neam-samtale" id="neamSamtale"></div>'
@@ -593,6 +625,14 @@ function neamBygg(){
   document.getElementById('neamLukk').onclick = neamLukk;
   document.getElementById('neamSend').onclick = neamSend;
   document.getElementById('neamNy').onclick   = neamNySamtale;
+  document.getElementById('neamModell').onclick = function(){
+    /* Ikke midt i en tur: modellen som svarer skal vaere den som ble
+       spurt. Byttet gjelder fra neste melding. */
+    if(neamVenter) return;
+    neamNesteModell();
+    neamTegnModell();
+  };
+  neamTegnModell();
 
   /* Klikk paa bakgrunnen lukker, slik modalene ellers gjoer. */
   bak.onclick = function(ev){ if(ev.target === bak) neamLukk(); };
@@ -630,6 +670,11 @@ async function neamAapne(){
   /* Stedet hentes hver gang panelet aapnes - visningen kan ha byttet
      siden sist. */
   neamSkrivSted(await neamSted());
+}
+
+function neamTegnModell(){
+  const k = document.getElementById('neamModell');
+  if(k) k.textContent = neamModell().navn;
 }
 
 function neamSkrivSted(k){

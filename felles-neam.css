@@ -87,6 +87,21 @@
   font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
 }
 .neam-topp-knapp:active{ transform:scale(.96); }
+/* Modellen staar skrevet, ikke gjemt i en meny: en innstilling man ikke
+   ser er en innstilling man glemmer at man har satt. Dempet flate - den
+   skal kunne leses, ikke trekke blikket. */
+.neam-topp-knapp.modell{
+  background:none; border-color:var(--line); color:var(--ink-soft);
+  font-weight:600; letter-spacing:.03em;
+}
+/* Topplinja har fire ting paa smal skjerm. «Ny samtale» kortes ned foer
+   noe annet gir etter - det er den lengste og den lettest gjenkjennelige. */
+.neam-topp-knapp .kort{ display:none; }
+@media(max-width:520px){
+  .neam-topp-knapp .lang{ display:none; }
+  .neam-topp-knapp .kort{ display:inline; }
+  .neam-topp-knapp{ padding:7px 10px; }
+}
 .neam-lukk{
   flex-shrink:0; border:none; background:none; color:var(--ink-soft);
   font-size:22px; line-height:1; padding:6px 8px; cursor:pointer;
