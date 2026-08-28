@@ -2412,8 +2412,9 @@ async function neamGjennomgang(navn){
   await neamStart(
     'Varene fra Matlaging er lagt inn: ' + navn.join(', ') + '. '
   + 'Les hele handlelista - også det som sto der fra før - og se etter '
-  + 'dobbeltføringer, mengder som ser rare ut (blandede enheter, mål som ikke '
-  + 'lar seg regne på der det burde gå), og varer uten varetype. '
+  + 'varer som står på to rader fordi mengdene ikke lot seg summere, mengder '
+  + 'som ser rare ut, og varer uten varetype. Ta også med basisvarer som '
+  + 'kanskje ikke trenger å kjøpes. '
   + 'Si først kort hva du fant. Ta det så én vare av gangen: foreslå én retting '
   + 'og vent på svar før du går videre til neste. Finner du ingenting å rette, '
   + 'si det med én setning.',
@@ -2581,13 +2582,16 @@ async function leggIListen(varer){
       const finnes = data.items.find(x => x && x.omrade === 'mat' && !x.done
                                        && String(x.name || '').trim().toLowerCase() === maal);
       if(finnes){
-        const samlet = [finnes.qty, v.qty].map(t => String(t || '').trim()).filter(Boolean).join(' + ');
-        finnes.qty = normaliserMengde(samlet);
-        const p = parseMengde(finnes.qty);
-        finnes.amt  = p ? String(p.tall) : '';
-        finnes.unit = p ? normEnhet(p.enhet) : '';
-        if(!finnes.cat && cat) finnes.cat = cat;
-        return;
+        const samlet = slaaMengderOmMulig(finnes.qty, v.qty);
+        /* Gikk det opp, blir det én rad. Gikk det ikke opp, faller vi
+           gjennom og lager en rad til: to rader med samme navn er noe
+           Neam ser og kan spoerre om, mens «1 boks + 150 g» i ett felt
+           bare ser ut som en mengde. */
+        if(samlet !== null){
+          settMaal(finnes, samlet);
+          if(!finnes.cat && cat) finnes.cat = cat;
+          return;
+        }
       }
     }
 
@@ -2597,11 +2601,10 @@ async function leggIListen(varer){
       oktId: okt.id,
       store: butikk, cat: cat, by: '',
       notes: '',
-      qty: v.qty || '',
-      amt: (() => { const p = parseMengde(v.qty || ''); return p ? String(p.tall) : ''; })(),
-      unit: (() => { const p = parseMengde(v.qty || ''); return p ? normEnhet(p.enhet) : ''; })(),
+      qty: '', count: '', amt: '', unit: '',
       basis: !!v.basis, omrade: 'mat', done: false
     });
+    settMaal(data.items[data.items.length - 1], v.qty || '');
     katalogLagre(v.name, cat, !!v.basis);
     if (butikk) data.butikkvalg[v.name.trim().toLowerCase()] = butikk;
   });
@@ -5040,6 +5043,39 @@ function slaaMengder(a, b){
   return normaliserMengde(a + ' + ' + b);
 }
 
+/* Som slaaMengder, men gir null naar de to IKKE lot seg slaa sammen.
+
+   normaliserMengde summerer per enhet, saa «2 dl + 1 dl» blir «3 dl».
+   Er enhetene ulike, blir strengen staaende som den er - «1 boks + 150 g» -
+   og da er den ikke lenger en mengde, bare en setning om to mengder.
+   parseMengde leser den som tallet 1 med enheten «boks + 150 g», og
+   soeppelet blir liggende i feltene uten at noen ser det.
+
+   Vi slaar derfor bare sammen naar det gaar opp. Gjoer det ikke det, blir
+   de to staaende som hver sin rad - og da kan Neam foreslaa hva de skal
+   bli i gjennomgangen, der et menneske svarer. En maskin som gjetter at
+   én boks mais og 150 gram mais til sammen er «1 boks + 150 g», har ikke
+   loest noe; den har bare flyttet spoersmaalet til handleturen. */
+function slaaMengderOmMulig(a, b){
+  const x = String(a || '').trim();
+  const y = String(b || '').trim();
+  if (!x) return normaliserMengde(y);
+  if (!y) return normaliserMengde(x);
+  const samlet = normaliserMengde(x + ' + ' + y);
+  return samlet.includes(' + ') ? null : samlet;
+}
+
+/* Setter qty, amt og unit i takt. Bestaar mengden av flere ledd, blir
+   amt og unit staaende tomme - de er felt for ETT tall med ÉN enhet, og
+   et halvt lest ledd der er verre enn ingenting. */
+function settMaal(v, qty){
+  const q = String(qty || '').trim();
+  v.qty = q;
+  const p = q.includes(' + ') ? null : parseMengde(q);
+  v.amt  = p ? String(p.tall) : '';
+  v.unit = p ? normEnhet(p.enhet) : '';
+}
+
 // Varer med samme navn i samme handletur og butikk blir til én
 function flettDuplikater(){
   const sett = new Map();
@@ -5047,13 +5083,16 @@ function flettDuplikater(){
   data.items.forEach(v => {
     const n = (v.name || '').trim().toLowerCase() + '|' + v.oktId +
               '|' + (v.store || '') + '|' + (v.done ? 1 : 0);
-    if (sett.has(n)){
+    const samlet = sett.has(n) ? slaaMengderOmMulig(sett.get(n).qty, v.qty) : null;
+    if (sett.has(n) && samlet !== null){
       const f = sett.get(n);
-      f.qty = slaaMengder(f.qty, v.qty);
+      settMaal(f, samlet);
       const noter = [f.notes, v.notes].filter(Boolean).join(', ');
       f.notes = [...new Set(noter.split(', ').filter(Boolean))].join(', ');
     } else {
-      sett.set(n, v);
+      /* Lot mengdene seg ikke slaa sammen, blir raden staaende ved siden
+         av den andre i stedet for aa bli borte i en uleselig streng. */
+      if (!sett.has(n)) sett.set(n, v);
       beholdt.push(v);
     }
   });
@@ -6092,6 +6131,15 @@ window.neamBakgrunn = async function(){
     'ikke lar seg regne paa, som «1 stor pose», er helt greie. Staar mengden',
     'tom, er det fordi ingen har sagt noe; ikke finn paa en. Et tall uten',
     'enhet betyr antall stykk.',
+    '',
+    'TO RADER MED SAMME NAVN er som regel ikke en glipp. Kommer den samme',
+    'vara fra to retter med enheter som ikke kan summeres - én boks mais og',
+    '150 g mais, eller 1600 g potet og 1 kg potet - blir de staaende hver for',
+    'seg med vilje. Huset summerer bare naar det gaar opp av seg selv («2 dl»',
+    'og «1 dl» blir «3 dl»); ellers overlates det til noen som vet hva som',
+    'faktisk trengs. Det er DER du kommer inn: foreslaa én mengde, spoer, og',
+    'rett den ene raden mens den andre fjernes. Merk at kg og g ikke slaas',
+    'sammen automatisk selv om de kunne det - regn om og foreslaa summen.',
     '',
     'VARETYPE er butikkategorien, og den bestemmer rekkefoelgen varene staar i',
     'mens man handler - meieri for seg, frukt for seg. Er du usikker, la den',
