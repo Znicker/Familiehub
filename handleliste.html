@@ -6096,7 +6096,10 @@ window.neamVerktoy = async function(){
             }
           },
           omrade: { type:'string', enum:['mat','annet'],
-                    description:'mat = Dagligvarer, annet = Andre varer. Standard er det brukeren har oppe.' }
+                    description:'mat = Dagligvarer, annet = Andre varer. Standard er det brukeren har oppe.' },
+          handletur: { type:'string',
+                       description:'Navnet på en annen handletur enn den åpne. Da bestemmer '
+                                 + 'turen selv området. Bruk list_handleturer om du ikke vet navnet.' }
         },
         required: ['varer']
       },
@@ -6112,8 +6115,9 @@ window.neamVerktoy = async function(){
       name: 'fjern_varer',
       description: 'Fjerner varer fra den åpne handleturen. Send alle i ett kall - '
                  + 'brukeren skal godkjenne én gang. Brukes også når en vare skal '
-                 + 'flyttes til det andre området: fjern her, legg til der. Varer som '
-                 + 'ikke finnes blir rapportert tilbake, ikke behandlet som en feil.',
+                 + 'flyttes til det andre området eller til en annen handletur: fjern '
+                 + 'her, legg til der. Varer som ikke finnes blir rapportert tilbake, '
+                 + 'ikke behandlet som en feil.',
       input_schema: {
         type: 'object',
         properties: {
@@ -6121,7 +6125,10 @@ window.neamVerktoy = async function(){
                    description:'Varenavnene slik de står på lista.' },
           omrade: { type:'string', enum:['mat','annet'],
                     description:'mat = Dagligvarer, annet = Andre varer. '
-                              + 'Standard er det brukeren har oppe.' }
+                              + 'Standard er det brukeren har oppe.' },
+          handletur: { type:'string',
+                       description:'Navnet på en annen handletur enn den åpne. Da bestemmer '
+                                 + 'turen selv området. Bruk list_handleturer om du ikke vet navnet.' }
         },
         required: ['varer']
       },
@@ -6148,10 +6155,40 @@ function neamOmrade(arg){
   return (v === 'annet' || v === 'mat') ? v : aktivOmrade();
 }
 
-function neamOktNavn(arg){
+/* Handleturen et verktoeykall gjelder.
+
+   Uten `handletur` er det den som er aapen i omraadet. Er den navngitt,
+   leter vi den opp - og da bestemmer TUREN omraadet, ikke `omrade`.
+   Ellers kunne de to argumentene motsi hverandre, og et verktoey som maa
+   velge mellom to ting brukeren sa er et verktoey som gjoer feil.
+
+   Fjerning kunne foerst bare naa den aapne turen. Det var strammere enn
+   situasjonen krever: bekreftelsen sier uansett hvilken tur det gjelder,
+   og verste utfall paa en handleliste er at en vare maa skrives inn paa
+   nytt. Lesing kunne alt naa hvilken som helst tur, og halvveis er
+   verre enn begge deler. */
+function neamFinnOkt(arg, opprett){
+  if (arg && arg.handletur){
+    const sok = String(arg.handletur).trim().toLowerCase();
+    const okt = data.okter.find(o => (o.navn || '').trim().toLowerCase() === sok)
+             || data.okter.find(o => (o.navn || '').trim().toLowerCase().includes(sok));
+    if (okt) return okt;
+    const navn = data.okter.map(o => oktNavn(o)).join(', ');
+    throw new Error('Fant ingen handletur som heter «' + arg.handletur + '». '
+                  + (navn ? 'Disse finnes: ' + navn + '.' : 'Det finnes ingen handleturer.'));
+  }
   const omr = neamOmrade(arg);
-  const okt = aktivOkt(omr);
-  return okt ? oktNavn(okt) : (omr === 'annet' ? 'Andre varer' : 'Dagligvarer');
+  return opprett ? sikreAktivOkt(omr) : aktivOkt(omr);
+}
+
+/* Til bekreftelsesteksten. Kaster oppslaget - navnet finnes ikke -
+   sier vi det her ogsaa, saa dialogen ikke lyver om hvor det havner. */
+function neamOktNavn(arg){
+  try{
+    const okt = neamFinnOkt(arg, false);
+    if (okt) return oktNavn(okt);
+  }catch(e){ return '(en handletur som ikke finnes)'; }
+  return neamOmrade(arg) === 'annet' ? 'Andre varer' : 'Dagligvarer';
 }
 
 /* Taket paa 200 er et tak paa svaret til Neam, ikke paa lista. En
@@ -6234,8 +6271,8 @@ async function neamLeggTilVarer(arg){
   const varer = Array.isArray(arg.varer) ? arg.varer.filter(v => v && String(v.vare || '').trim()) : [];
   if (!varer.length) throw new Error('Ingen varer å legge til.');
 
-  const omr = neamOmrade(arg);
-  const okt = sikreAktivOkt(omr);
+  const okt = neamFinnOkt(arg, true);
+  const omr = oktOmrade(okt);
   const butikk = omr === 'mat' ? standardButikk() : '';
 
   const lagt = [];
@@ -6308,9 +6345,9 @@ async function neamFjernVarer(arg){
     ? arg.varer.map(v => String(v || '').trim()).filter(Boolean) : [];
   if (!navn.length) throw new Error('Ingen varer å fjerne.');
 
-  const omr = neamOmrade(arg);
-  const okt = aktivOkt(omr);
+  const okt = neamFinnOkt(arg, false);
   if (!okt) return { handletur:null, beskjed:'Ingen handletur er åpen i dette området.' };
+  const omr = oktOmrade(okt);
 
   const fjernet = [];
   const fantIkke = [];
