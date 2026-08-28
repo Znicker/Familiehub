@@ -3088,14 +3088,14 @@ async function last(force){
   /* Merket vises bare naar noe faktisk maa hentes over nett. Ligger
      alt i cachen fra foer, gaar det saa fort at et merke bare blinker. */
   const maaHente = force || !cacheDekker();
-  /* Foerste henting er den trege: kalenderlista maa hentes, og deretter
-     én calendarView per kalender. Den gikk stille fordi lasterStille
-     settes saa snart det finnes lokal cache - men cachen inneholder
-     avtaler, ikke kalenderlista. Uten kalendere er det ingenting aa se
-     paa mens man venter. Da vises merket uansett, og med én gang. */
-  const forste = !S.calendars.length;
+  /* Merket skal bare dekke skjermen naar det ikke er noe aa se paa.
+     Kalenderlista lagres ikke lokalt, saa S.calendars er tom ved hver
+     innlasting - den alene kan derfor ikke avgjoere. Er det cachede
+     avtaler paa skjermen, skal de bli staaende mens vi henter friskt;
+     den snurrende oppdater-knappen er tegnet paa at noe skjer. */
+  const ingenting = !S.calendars.length && !(S.all && S.all.length);
   S.loading = true;
-  if(maaHente && (forste || !lasterStille)) visLaster(true, forste || lasterStraks);
+  if(maaHente && (ingenting || !lasterStille)) visLaster(true, ingenting || lasterStraks);
   lasterStraks = false;
   msg($('calMsg'), '');
   try{

@@ -405,6 +405,19 @@ for å unngå struping, men `graph()` prøver nå om igjen av seg selv ved 429 p
 lesing, så strupingen håndteres der den oppstår i stedet for ved å holde
 igjen alle. Satt til 6: én runde.
 
+**En regresjon fra samme dag, rettet:** lasteoverlegget ble endret til å
+vises «når `S.calendars` er tom». Men kalenderlista lagres aldri lokalt, så
+den er tom ved *hver* innlasting – ikke bare den første. Overlegget la seg
+derfor over de cachede avtalene hver gang og ble stående til alle seks
+kalenderne var hentet, i tre–fire sekunder. Vilkåret er nå at det heller
+ikke finnes cachede avtaler: er det noe på skjermen, blir det stående, og
+den snurrende oppdater-knappen er tegnet på at noe skjer.
+
+**Neste lever, ikke tatt:** kalenderlista kunne caches lokalt som avtalene
+er. Da ville rutenettet og initialstripa stått ferdig ved innlasting i
+stedet for å vente på `/me/calendars`. Må gjøres etter at `hentTildeling()`
+er ferdig, ellers kan en kalender noen ikke skal se blinke innom.
+
 **Neste lever, ikke tatt:** `hentVindu` henter `body` for hver avtale over et
 vindu på minst 225 dager, ganger seks kalendere, og kjører `htmlTilTekst`
 (DOMParser) på hvert notat. Det er trolig den dominerende kostnaden nå.
