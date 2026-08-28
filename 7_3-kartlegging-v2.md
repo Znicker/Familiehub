@@ -166,9 +166,10 @@ Kom til i denne økta, og hører hjemme i regnestykket:
    oppskrifter + handleliste, `?v=1`.
 3. ~~**Felles `:root` + typeskala**~~ – **GJORT.** `felles-rot.css`, alle fem
    sidene, med omdøpingene beskrevet i designsystemet.
-4. **Avbryt-regelen og utklippstavla inn i felles atferdsfil** – regelen er
-   innført på alle fem sidene og i designsystemet, men koden ligger fortsatt
-   som fire nesten like kopier. Selve fellesfila gjenstår.
+4. **Avbryt-regelen og utklippstavla inn i felles atferdsfil** – DELVIS.
+   `bekreft()`/`varsle()` er felles (`felles-dialog.js`), men `avtrykkAv`,
+   `huskSkjema`, `skjemaEndret` og `avbrytSkjema` ligger fortsatt som fire
+   nesten like kopier. Lim-inn-fra-utklippstavla likeså.
 5. ~~**Filviseren**~~ – **GJORT.** `felles-filviser.css` + `felles-filviser.js`
    (`?v=2`), dashboard + kalender. PDF-forhåndsvisningen ble samtidig byttet
    fra innebygd iframe til et klikkbart kort – se designsystemet.
@@ -356,7 +357,39 @@ heter `Familien`. Den treffer altså aldri, og faller på `palettFor`. Ett ord
 
 ---
 
-## 9. Delingsfella – oppdaget 28. august 2026
+## 9. Dialoger og flytting – 28. august 2026
+
+**`felles-dialog.css` + `felles-dialog.js`.** Nettleserens `confirm()` og
+`alert()` er ute av kalender, dashboard og handleliste – elleve kallsteder.
+De så ut som noe annet enn resten av huben, og på iOS stopper de alt annet
+på sida mens de står.
+
+    await bekreft('Slette avtalen?', {jaTekst:'Slett', fare:true})
+    varsle('Fikk ikke lagret: …')
+
+`bekreft()` er asynkron der `confirm()` var synkron, så kallstedene måtte
+bli `async`. Fire funksjoner ble det – og `lukkMiddagNotat` ble oppdaget av
+syntaksjekken, ikke av lesing. Markupen lages av JS-en ved første bruk, så
+ingen side har noe liggende i HTML-en. Rødt bare når knappen faktisk sletter;
+avbryt er alltid nøytral, etter avbryt-regelen.
+
+**Gjenstår:** `oppskrifter.html` har sin egen `showConfirmModal` med ni
+kallsteder. Den er allerede i sida og virker – den ser bare ikke lik ut.
+
+**`flyttAvtale()` er felles og kalenderen har fått den.** Kalenderen låste
+kalendervelgeren ved redigering med kommentaren «flytting mellom kalendere
+støttes ikke»; dashboard fikk funksjonen senere og kalenderen ble aldri
+oppdatert. Nå ligger den i `felles-graph.js` og begge bruker den. Låst
+fortsatt på serier – en enkeltdag kan ikke løftes ut av en gjentakende serie.
+
+Den delte versjonen henter vedleggslista fra Graph i stedet for fra sidens
+skjema, og tar med alt som ligger igjen. Vedlegg som skal bort slettes fra
+originalen først. Det er samme lærdom som i `slettVedlegg`: vedlegg-id-er fra
+da dialogen ble åpnet kan ha gått ut på dato.
+
+---
+
+## 10. Delingsfella – oppdaget 28. august 2026
 
 **En kalender som først deles med visningsrett og senere endres til «Kan
 redigere», forblir skrivebeskyttet hos mottakeren.** Rettigheten ser riktig
@@ -389,7 +422,7 @@ Microsoft-familiegruppa (ingen dokumentasjon støtter at det kreves).
 
 ---
 
-## 10. Navnebyttet – 28. august 2026
+## 11. Navnebyttet – 28. august 2026
 
 «Familie Hub» er ute. Systemet heter **Neam** – husassistenten er stemmen,
 roboten er maskotten, og navnet favner alt.

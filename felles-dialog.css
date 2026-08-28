@@ -1,0 +1,51 @@
+/* ============================================================
+   Neam - felles dialoger
+   ------------------------------------------------------------
+   Bekreftelser og meldinger tegnet i sida, ikke av nettleseren.
+   Trukket ut 28. august 2026.
+
+   Grunnen til at nettleserens confirm() og alert() maatte vekk:
+   de ser ut som noe annet enn resten av huben, de kan ikke
+   formuleres i vaart eget spraak visuelt, og paa iOS stopper de
+   alt annet som skjer paa sida mens de staar.
+
+   Markupen lages av felles-dialog.js - ingen side trenger aa ha
+   den liggende.
+   ============================================================ */
+
+.dlg-bak{
+  position:fixed; inset:0; z-index:120;
+  background:rgba(44,62,80,.45);
+  -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.dlg-bak[hidden]{ display:none; }
+
+.dlg-kort{
+  background:var(--paper); border-radius:var(--radius);
+  box-shadow:0 20px 50px rgba(44,62,80,.34);
+  width:100%; max-width:400px; padding:24px 24px 20px;
+  font-family:'Archivo',sans-serif;
+}
+.dlg-tekst{
+  color:var(--ink); font-size:var(--t-brod); line-height:1.5;
+  margin:0 0 20px; white-space:pre-wrap;
+}
+.dlg-rad{ display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+.dlg-knapp{
+  border:none; border-radius:999px; padding:12px 24px; cursor:pointer;
+  font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
+}
+.dlg-knapp:active{ transform:scale(.97); }
+/* Avbryt er alltid noeytral - se avbryt-regelen i designsystemet. */
+.dlg-knapp.nei{
+  background:var(--paper); color:var(--ink); border:1.5px solid var(--line);
+}
+.dlg-knapp.ja{ background:var(--aksent); color:#FFFFFF; }
+/* Roedt bare naar knappen faktisk sletter noe. */
+.dlg-knapp.ja.fare{ background:var(--danger); }
+
+@media(max-width:400px){
+  .dlg-rad{ flex-direction:column-reverse; }
+  .dlg-knapp{ width:100%; }
+}

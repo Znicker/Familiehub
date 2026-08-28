@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/felles-rot.css?v=1">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
+<link rel="stylesheet" href="/felles-dialog.css?v=1">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -928,6 +929,7 @@ select.hu-felt{
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
 <script src="/felles-graph.js?v=1"></script>
+<script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
 <script>
 /* ============================================================
@@ -1481,7 +1483,7 @@ async function aapneVedleggFra(kalId, eventId, v, knapp){
     if(!a.name) a.name = v.name;
     aapneViser(a);
   }catch(err){
-    alert('Klarte ikke åpne vedlegget: ' + err.message);
+    varsle('Klarte ikke åpne vedlegget: ' + err.message);
   }finally{
     if(knapp) knapp.disabled = false;
   }
@@ -1597,30 +1599,6 @@ function redigerAvtale(){
   if(e) apneAvtale(e);
 }
 
-/* Flytting mellom kalendere finnes ikke i Graph. Vi lager avtalen paa
-   nytt i den nye kalenderen, tar med vedleggene, og sletter originalen
-   til slutt - i den rekkefoelgen, saa ingenting forsvinner om noe ryker
-   underveis. */
-async function flyttAvtale(e, nyKalId, kropp){
-  const ny = await graph('/me/calendars/' + enc(nyKalId) + '/events',
-                         {method:'POST', body:kropp});
-  if(!ny || !ny.id) throw new Error('Den nye avtalen ble ikke opprettet');
-  for(const v of skjemaVedlegg){
-    if(v.fjern || !v.fil) continue;
-    const full = await graph(avtaleSti(e.kalId, e.id) + '/attachments/' + enc(v.id));
-    await graph(avtaleSti(nyKalId, ny.id) + '/attachments', {
-      method: 'POST',
-      body: {
-        '@odata.type': '#microsoft.graph.fileAttachment',
-        name: full.name,
-        contentType: full.contentType || 'application/octet-stream',
-        contentBytes: full.contentBytes
-      }
-    });
-  }
-  await graph(avtaleSti(e.kalId, e.id), {method:'DELETE'});
-  return ny.id;
-}
 
 /* Neste hele time, som utgangspunkt for en ny avtale i dag. */
 function nesteTime(){
@@ -1636,7 +1614,7 @@ function dagenEtter(datotekst){
 
 function apneAvtale(e){
   if(!kalendere.length){
-    alert('Kalenderne er ikke hentet ennå. Prøv Oppdater først.');
+    varsle('Kalenderne er ikke hentet ennå. Prøv Oppdater først.');
     return;
   }
   avtaleEndrer = e || null;
@@ -1760,9 +1738,10 @@ function skjemaEndret(id){
   const foer = modalAvtrykk[id];
   return foer != null && avtrykkAv(id) !== foer;
 }
-function avbrytSkjema(id, lukk){
+async function avbrytSkjema(id, lukk){
   if(skjemaEndret(id) &&
-     !confirm('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.')) return;
+     !(await bekreft('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.',
+                     {jaTekst:'Forkast', fare:true}))) return;
   lukk();
 }
 
@@ -1863,7 +1842,7 @@ async function slettAvtale(){
   const serie = !!(e.type && e.type !== 'singleInstance');
   const sporsmal = 'Slette «' + (e.tittel || 'avtalen') + '»'
     + (serie ? ' denne dagen? Resten av serien blir stående.' : '?');
-  if(!confirm(sporsmal)) return;
+  if(!(await bekreft(sporsmal, {jaTekst:'Slett', fare:true}))) return;
 
   const knapp = $('avSlett');
   knapp.disabled = true;
@@ -1939,7 +1918,13 @@ async function lagreAvtale(){
       malId = ny && ny.id;
     }else if(flytter){
       malKalId = $('avKal').value;
-      malId = await flyttAvtale(e, malKalId, kropp);
+      /* Vedlegg som er merket bort fjernes fra originalen foer flyttingen,
+         saa den delte flyttAvtale() kan ta med alt som er igjen. */
+      for(const v of skjemaVedlegg){
+        if(v.fjern) await graph(avtaleSti(e.kalId, e.id) + '/attachments/' + enc(v.id),
+                                {method:'DELETE'});
+      }
+      malId = await flyttAvtale(e.kalId, e.id, malKalId, kropp);
     }else{
       /* Vedlegg som er merket bort fjernes FOER avtalen oppdateres.
          Graph gjoer vedlegg-id-ene ugyldige naar selve avtalen endres, og
@@ -1958,7 +1943,7 @@ async function lagreAvtale(){
       try{
         for(const f of nyeFiler) await leggVedFil(malKalId, malId, f);
       }catch(vf){
-        alert('Avtalen ble lagret, men et vedlegg kom ikke med: ' + vf.message);
+        varsle('Avtalen ble lagret, men et vedlegg kom ikke med: ' + vf.message);
       }
     }
     lukkAvtale();
@@ -2458,7 +2443,7 @@ async function vekslFerdig(id){
       });
     });
   }catch(e){
-    alert('Fikk ikke huket av merknaden: ' + e.message);
+    varsle('Fikk ikke huket av merknaden: ' + e.message);
   }
 }
 
@@ -2624,7 +2609,7 @@ async function lagreHuske(){
       }, felter)]);
     });
   }catch(e){
-    alert('Fikk ikke lagret merknaden: ' + e.message);
+    varsle('Fikk ikke lagret merknaden: ' + e.message);
   }
 }
 
@@ -2634,7 +2619,8 @@ async function slettFraSkjema(){
   const id = huskeSkjema && huskeSkjema.id;
   if(!id) return;
   const m = (huskeliste || []).find(function(x){ return x.id === id; });
-  if(!confirm('Slette «' + ((m && m.overskrift) || 'merknaden') + '»?')) return;
+  if(!(await bekreft('Slette «' + ((m && m.overskrift) || 'merknaden') + '»?',
+                     {jaTekst:'Slett', fare:true}))) return;
   lukkHuskeSkjema();
   await slettHuske(id);
 }
@@ -2645,7 +2631,7 @@ async function slettHuske(id){
       return liste.filter(function(m){ return m.id !== id; });
     });
   }catch(e){
-    alert('Fikk ikke slettet merknaden: ' + e.message);
+    varsle('Fikk ikke slettet merknaden: ' + e.message);
   }
 }
 
@@ -2715,12 +2701,13 @@ function apneMiddagNotat(){
   const f = $('middagFelt');
   if(f){ f.focus(); f.select(); }
 }
-function lukkMiddagNotat(){
+async function lukkMiddagNotat(){
   /* Avbryt-regelen: feltet er forhaandsfylt med det lagrede notatet, saa vi
      spoer bare hvis teksten faktisk er en annen. */
   const f = $('middagFelt');
   if(f && (f.value || '').trim() !== middagNotat().trim() &&
-     !confirm('Du har endret middagsnotatet. Forkaster du endringen nå, er den borte.')) return;
+     !(await bekreft('Du har endret middagsnotatet. Forkaster du endringen nå, er den borte.',
+                     {jaTekst:'Forkast', fare:true}))) return;
   middagRedig = false;
   tegnMiddag(sisteRetter || []);
 }
@@ -2740,7 +2727,7 @@ async function lagreMiddagNotat(){
     if(!r.ok) throw new Error('HTTP ' + r.status);
     middagNotater = fersk;
   }catch(e){
-    alert('Fikk ikke lagret middagsnotatet: ' + e.message);
+    varsle('Fikk ikke lagret middagsnotatet: ' + e.message);
   }
   tegnMiddag(sisteRetter || []);
 }

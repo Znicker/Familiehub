@@ -200,3 +200,51 @@ function htmlTilTekst(innhold, type){
             .trim();
   }
 }
+
+/* ============================================================
+   Flytting mellom kalendere
+   ------------------------------------------------------------
+   Graph kan ikke flytte en avtale. Vi lager den paa nytt i
+   maalkalenderen, tar med vedleggene, og sletter originalen
+   til slutt - i den rekkefoelgen, saa ingenting forsvinner om
+   noe ryker underveis.
+
+   Fungerer bare paa en enkeltstaaende avtale. En enkeltdag kan
+   ikke loeftes ut av en serie, og kallstedet maa sperre for det.
+
+   Alle vedlegg blir med. Skal noen bort, skal de slettes fra
+   originalen FOER dette kallet - da slipper vi aa sende med en
+   liste over id-er som kan ha blitt ugyldige siden skjemaet ble
+   aapnet, slik de erfaringsmessig blir.
+   ============================================================ */
+async function flyttAvtale(fraKalId, eventId, tilKalId, kropp){
+  const ny = await graph('/me/calendars/' + enc(tilKalId) + '/events',
+                         {method:'POST', body:kropp});
+  if(!ny || !ny.id) throw new Error('Den nye avtalen ble ikke opprettet');
+
+  /* Lista hentes paa nytt her, ikke fra skjemaet: id-ene fra da dialogen
+     ble aapnet kan ha gaatt ut paa dato. */
+  let liste = [];
+  try{
+    const d = await graph(avtaleSti(fraKalId, eventId) + '/attachments?$select=id,name,contentType');
+    liste = (d && d.value) || [];
+  }catch(e){ /* ingen vedlegg aa hente - flyttingen skal ikke stoppe av det */ }
+
+  for(const v of liste){
+    /* Et vedlegg kan ogsaa vaere en avtale eller en e-post. Bare vanlige
+       filvedlegg kan kopieres. */
+    const type = String(v['@odata.type'] || '');
+    if(type && type.indexOf('fileAttachment') === -1) continue;
+    const full = await graph(avtaleSti(fraKalId, eventId) + '/attachments/' + enc(v.id));
+    if(!full || !full.contentBytes) continue;
+    await graph(avtaleSti(tilKalId, ny.id) + '/attachments', {method:'POST', body:{
+      '@odata.type': '#microsoft.graph.fileAttachment',
+      name: full.name || v.name,
+      contentType: full.contentType || 'application/octet-stream',
+      contentBytes: full.contentBytes
+    }});
+  }
+
+  await graph(avtaleSti(fraKalId, eventId), {method:'DELETE'});
+  return ny.id;
+}

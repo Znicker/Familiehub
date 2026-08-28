@@ -8,6 +8,7 @@
 <!-- Felles app-skall: sidemoensteret oppskrifter og handleliste deler.
      Maa lastes FOER <style> under, saa sida kan overstyre. -->
 <link rel="stylesheet" href="/felles-skall.css?v=1">
+<link rel="stylesheet" href="/felles-dialog.css?v=1">
 <!-- ?v=1: bump tallet naar felles-skall.css endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -879,6 +880,7 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
+<script src="/felles-dialog.js?v=1"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -5805,7 +5807,7 @@ function closeModal(id){ document.getElementById(id).classList.remove('active');
    aa gjoere om. Er ingenting endret, gaar Avbryt rett ut uten dialog: en
    dialog man faar hver gang, er en dialog man slutter aa lese.
 
-   Bekreftelsen bruker nettleserens egen confirm() slik dashboard og kalender
+   Bekreftelsen bruker felles bekreft() slik dashboard og kalender
    alt gjoer. Oppskrifter har en egen modal for samme formaal - aa samle de to
    i én komponent hoerer til fellesfil-jobben (7.3), ikke hit. */
 const modalAvtrykk = {};
@@ -5820,9 +5822,10 @@ function skjemaEndret(id){
   const foer = modalAvtrykk[id];
   return foer != null && avtrykkAv(id) !== foer;
 }
-function avbrytSkjema(id, lukk){
+async function avbrytSkjema(id, lukk){
   if(skjemaEndret(id) &&
-     !confirm('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.')) return;
+     !(await bekreft('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.',
+                     {jaTekst:'Forkast', fare:true}))) return;
   lukk();
 }
 

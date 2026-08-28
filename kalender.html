@@ -11,6 +11,7 @@
 <title>Kalender – Neam</title>
 <link rel="stylesheet" href="/felles-rot.css?v=1">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
+<link rel="stylesheet" href="/felles-dialog.css?v=1">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -1508,6 +1509,7 @@ input,select,textarea{font-size:16px}
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
 <script src="/felles-graph.js?v=1"></script>
+<script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
 <script>
 /* ============================================================
@@ -3346,7 +3348,12 @@ function endreAvtale(id){
   }
 
   fyllKalendervalg(e.calId);
-  $('fCal').disabled = true;              // flytting mellom kalendere støttes ikke
+  /* Flytting mellom kalendere gaar via flyttAvtale() i felles-graph.js:
+     avtalen lages paa nytt i maalkalenderen og originalen slettes. Det
+     virker bare paa en enkeltstaaende avtale - en enkeltdag kan ikke
+     loeftes ut av en serie, saa da staar velgeren laast. */
+  const erSerie = !!(e.type && e.type !== 'singleInstance');
+  $('fCal').disabled = erSerie || !e.kanEndre;
   $('btnSlett').hidden = !e.kanEndre;
   $('btnLagre').disabled = !e.kanEndre;
   allDagToggle();
@@ -3403,9 +3410,10 @@ function dlgFelter(){
   return Array.from(felt).map(function(el){ return el.value; }).join('\u241F') + '\u241E' + ekstra;
 }
 function huskDialog(){ dlgAvtrykk = dlgFelter(); }
-function avbrytDialog(){
+async function avbrytDialog(){
   if(dlgAvtrykk !== null && dlgFelter() !== dlgAvtrykk &&
-     !confirm('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.')) return;
+     !(await bekreft('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.',
+                     {jaTekst:'Forkast', fare:true}))) return;
   dlgAvtrykk = null;
   lukk();
 }
@@ -3766,16 +3774,26 @@ async function lagreAvtale(){
     let id;
     /* Ny avtale havner i kalenderen som er valgt i skjemaet; en eksisterende
        ligger allerede i sin egen. */
-    const kalId = redigerer ? redigerer.calId : $('fCal').value;
+    const valgtKal = $('fCal').value;
+    const flytter  = !!redigerer && !$('fCal').disabled && valgtKal !== redigerer.calId;
+    let kalId = redigerer ? redigerer.calId : valgtKal;
     if(redigerer){
-      /* Slettingen foerst, mens id-ene fortsatt gjelder - se slettVedlegg. */
+      /* Slettingen foerst, mens id-ene fortsatt gjelder - se slettVedlegg.
+         Ved flytting maa den ogsaa skje foerst: flyttAvtale() tar med alt
+         som ligger paa originalen. */
       if(vedleggSlett.length){
         $('btnLagre').textContent = 'Fjerner vedlegg …';
         await slettVedlegg(redigerer.calId, redigerer.id);
       }
-      $('btnLagre').textContent = 'Lagrer …';
-      await graph(avtaleSti(redigerer.calId, redigerer.id), {method:'PATCH', body:p});
-      id = redigerer.id;
+      if(flytter){
+        $('btnLagre').textContent = 'Flytter …';
+        id = await flyttAvtale(redigerer.calId, redigerer.id, valgtKal, p);
+        kalId = valgtKal;
+      } else {
+        $('btnLagre').textContent = 'Lagrer …';
+        await graph(avtaleSti(redigerer.calId, redigerer.id), {method:'PATCH', body:p});
+        id = redigerer.id;
+      }
     } else {
       const laget = await graph('/me/calendars/' + enc($('fCal').value) + '/events', {method:'POST', body:p});
       id = laget && laget.id;
@@ -3796,7 +3814,7 @@ async function lagreAvtale(){
 
 async function slettAvtale(){
   if(!redigerer) return;
-  if(!confirm('Slette «' + redigerer.title + '»?')) return;
+  if(!(await bekreft('Slette «' + redigerer.title + '»?', {jaTekst:'Slett', fare:true}))) return;
 
   $('btnSlett').disabled = true;
   try{
