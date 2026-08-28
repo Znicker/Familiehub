@@ -908,7 +908,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=8"></script>
+<script src="/felles-neam.js?v=9"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -5660,7 +5660,12 @@ function visVarePopup(v){
   const stortBilde = document.createElement('img');
   stortBilde.src = varebildeSrc(v.name);
   stortBilde.alt = '';
-  stortBilde.onerror = function(){ this.src = VARE_BILDE_DEFAULT; };
+  /* Samme sperre som i lista - se kommentaren der. */
+  stortBilde.onerror = function(){
+    this.onerror = null;
+    if(this.getAttribute('src') === VARE_BILDE_DEFAULT) this.style.visibility = 'hidden';
+    else this.src = VARE_BILDE_DEFAULT;
+  };
   bildeWrap.appendChild(stortBilde);
   card.appendChild(bildeWrap);
 
@@ -5975,7 +5980,14 @@ function tegnSeksjon(c, varer, erHandlet, utenType, handlemodus){
         vareImg.src = varebildeSrc(v.name);
         vareImg.className = 'vare-bilde';
         vareImg.alt = '';
-        vareImg.onerror = function(){ this.src = VARE_BILDE_DEFAULT; };
+        /* Mangler ogsaa reservebildet, setter onerror den samme adressen
+           om igjen - som feiler om igjen. Bildet blinker da uavbrutt.
+           Derfor bare ett forsoek: gaar det ikke, skjules det. */
+        vareImg.onerror = function(){
+          this.onerror = null;
+          if(this.getAttribute('src') === VARE_BILDE_DEFAULT) this.style.visibility = 'hidden';
+          else this.src = VARE_BILDE_DEFAULT;
+        };
         row.appendChild(vareImg);
 
         const body2 = document.createElement('div');

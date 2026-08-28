@@ -274,7 +274,9 @@ function neamSystem(k, harVerktoy, bakgrunn){
 async function neamEttForsok(meldinger, system, verktoy){
   const kropp = {
     model: NEAM_MODELL,
-    max_tokens: 2000,
+    /* 4000, ikke 2000: en full oppryddingstabell er mange verktoeyfelter,
+       og blir svaret kuttet midt i et kall, faller hele runden bort. */
+    max_tokens: 4000,
     /* NB: ikke sett temperature - modellen avviser den. */
     system: system,
     messages: meldinger
@@ -756,7 +758,23 @@ async function neamTur(){
       neamLagre();
       neamTegn();
 
-      if(svar.stop_reason !== 'tool_use') break;
+      if(svar.stop_reason !== 'tool_use'){
+        /* En melding uten tekst tegner ingenting, og da ser panelet ut som
+           om det ga opp i stillhet. Det skjer naar svaret blir kuttet av
+           paa max_tokens midt i et verktoeykall: stop_reason er ikke
+           'tool_use', saa loekka avsluttes, men det finnes ingen tekst aa
+           vise. Da sier vi det i stedet for aa la brukeren staa og se paa
+           en tom skjerm. */
+        const harTekst = (svar.content || []).some(function(b){
+          return b.type === 'text' && String(b.text || '').trim();
+        });
+        if(!harTekst){
+          neamPoster.push({ feil: svar.stop_reason === 'max_tokens'
+            ? 'Neam skrev for mye på én gang og ble kuttet av. Be om mindre av gangen.'
+            : 'Neam svarte uten tekst (' + (svar.stop_reason || 'ukjent grunn') + ').' });
+        }
+        break;
+      }
 
       if(++runde > NEAM_MAKS_RUNDER){
         /* neamReparer() fyller inn svarene som mangler foer neste tur, saa
