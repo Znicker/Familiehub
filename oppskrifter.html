@@ -965,6 +965,73 @@
   }
   .shop-table tr.ing-bolk + tr td{ border-top:none; }
 
+  /* ---------- Klargjoering for handlelista ---------- */
+  .klar-kort{
+    background:var(--paper); border-radius:var(--radius); width:100%;
+    max-width:560px; max-height:88dvh; display:flex; flex-direction:column;
+    box-shadow:0 20px 50px rgba(44,62,80,.34); overflow:hidden; text-align:left;
+  }
+  .klar-topp{ padding:18px 20px 12px; border-bottom:1px solid var(--line); flex-shrink:0; }
+  .klar-topp h3{ font-size:var(--t-stor); }
+  .klar-status{ font-size:var(--t-meta); color:var(--ink-soft); margin:4px 0 0; }
+  .klar-inn{ flex:1; min-height:0; overflow-y:auto; padding:16px 20px; }
+  .klar-bunn{
+    padding:12px 20px 16px; border-top:1px solid var(--line); flex-shrink:0;
+    display:flex; gap:10px;
+  }
+  .klar-bunn .btn{ flex:1; margin-top:0; }
+  .klar-bolk{ margin-bottom:22px; }
+  .klar-bolk:last-child{ margin-bottom:0; }
+  .klar-bolk h4{
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+    text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-soft); margin:0 0 4px;
+  }
+  .klar-hjelp{ font-size:var(--t-meta); color:var(--ink-soft); margin:0 0 10px; }
+  /* Avkryssing: umerket betyr "vi har den". Bare det du krysser av havner
+     paa lista - se kommentaren i klargjorOgSend(). */
+  .klar-kryss{
+    display:flex; align-items:center; gap:10px; padding:9px 11px;
+    border:1px solid var(--line); border-radius:10px; margin-bottom:7px; background:var(--paper);
+  }
+  .klar-kryss input{ width:20px; height:20px; flex-shrink:0; }
+  .klar-kryss span{ font-size:var(--t-brod); color:var(--ink); }
+  .klar-kryss.valgt{ background:var(--boks-mild); border-color:var(--boks-kant); }
+  .klar-tvil{
+    border:1px solid var(--boks-kant); border-radius:10px; background:var(--boks-mild);
+    padding:11px 13px; margin-bottom:8px;
+  }
+  .klar-tvil p{ font-size:var(--t-brod); color:var(--ink); margin:0 0 9px; }
+  .klar-tvil .row{ display:flex; gap:8px; }
+  .klar-svar{
+    flex:1; border:1.5px solid var(--line); background:var(--paper); color:var(--ink);
+    border-radius:999px; padding:8px; font-family:'Archivo',sans-serif;
+    font-size:var(--t-meta); font-weight:700;
+  }
+  .klar-svar.valgt{ background:var(--aksent); border-color:var(--aksent); color:#fff; }
+  .klar-rad{
+    display:grid; grid-template-columns:1fr 92px; gap:7px; align-items:start;
+    padding:9px 0; border-bottom:1px solid var(--line);
+  }
+  .klar-rad:last-child{ border-bottom:none; }
+  .klar-rad input, .klar-rad select{
+    width:100%; padding:8px 9px; border-radius:9px; border:1.5px solid var(--line);
+    background:#fff; color:var(--ink); font-size:16px; font-family:'Archivo',sans-serif;
+  }
+  .klar-rad .klar-type{ grid-column:1 / -1; }
+  .klar-merk{
+    grid-column:1 / -1; font-size:var(--t-etikett); color:var(--handling-tvers);
+    font-weight:700; text-transform:uppercase; letter-spacing:0.04em;
+  }
+  .klar-fjern{
+    grid-column:1 / -1; justify-self:start; border:none; background:none;
+    color:var(--danger); font-size:var(--t-etikett); font-weight:700;
+    text-transform:uppercase; letter-spacing:0.04em; padding:2px 0;
+  }
+  .klar-feil{
+    background:#FBEAE7; border:1px solid var(--danger); border-radius:10px;
+    padding:11px 13px; font-size:var(--t-meta); color:var(--danger-moerk);
+  }
+
   .confirm-box{
     background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow);
     padding:20px; margin-top:16px; text-align:center;
@@ -2246,6 +2313,20 @@ input,select,textarea{font-size:16px}
     <div class="row" style="margin-top:14px;">
       <button class="btn btn-ghost" onclick="avbrytSkjema('restore-backup-modal', closeRestoreBackupModal)">Avbryt</button>
       <button class="btn btn-blokk btn-blaa" id="restore-backup-btn" style="margin-top:0;" onclick="submitRestoreBackup()">Gjenopprett</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="klargjor-modal">
+  <div class="klar-kort">
+    <div class="klar-topp">
+      <h3>Klargjør for handlelista</h3>
+      <p class="klar-status" id="klar-status"></p>
+    </div>
+    <div class="klar-inn" id="klar-inn"></div>
+    <div class="klar-bunn">
+      <button class="btn btn-ghost" onclick="lukkKlargjor()">Avbryt</button>
+      <button class="btn btn-blokk btn-ny" id="klar-ok" onclick="godkjennKlargjoring()" disabled>Legg i handlelista</button>
     </div>
   </div>
 </div>
@@ -7457,6 +7538,411 @@ async function byggHandleliste(){
   };
 }
 
+/* ============================================================
+   Klargjoering for handlelista
+   ------------------------------------------------------------
+   Trykker du "legg i handlelista", gaar varene gjennom AI foer de
+   sendes: sammenslaaing mot det som ALT ligger paa lista, omregning
+   til handlemengder, og spoersmaal der noe er uklart. Du retter og
+   godkjenner, og pakka gaar i innboksen ferdig behandlet.
+
+   Foeringene ligger i KV (noekkelen `foeringer`), ikke her. Det er
+   husets regler, ikke oppskriftsappens - Neam skal lese de samme
+   senere, og to sett regler som spriker er verre enn ingen.
+   ============================================================ */
+
+const FOERINGER_API   = '/api/data?key=foeringer';
+const HANDLELISTE_API = '/api/data?key=handleliste:v1';
+
+/* Gjelder til noen har lagret sine egne. */
+const FOERINGER_STANDARD = [
+  'Slå sammen bare varer som er samme vare I BUTIKKEN - samme hylle, samme pakning.',
+  'Tilberedning i navnet teller ikke: «løk, finhakket» og «løk» er samme vare.',
+  'Formen du kjøper teller: «revet ost» og «ost i skiver» er to varer.',
+  'En presisering slås sammen med det generelle når butikken ikke tvinger et valg: «gul løk» og «løk» er samme. «Rødløk» og «løk» er ikke.',
+  'Fett- og styrkegrad skiller: kremfløte/matfløte, helmelk/lettmelk, kjøttdeig 14 %/5 %.',
+  'Fersk, tørket og hermetisk skiller, selv om ordet er det samme.',
+  'Slår du sammen, behold det mest presise navnet som forekom.',
+  'Mengden skal være en HANDLEMENGDE, ikke en oppskriftsmengde: 3 dl fløte + 2 ss fløte blir «1 beger fløte», ikke «3,2 dl».',
+  'Finnes det ingen naturlig pakning - krydder, «etter smak» - behold oppskriftsmengden.',
+  'Varenavnet skal være det som står på hylla: «kyllingfilet», ikke «kyllingfilet, ca. 600 g, i strimler».',
+  'Er du i tvil om to navn er samme vare, SPØR. Ikke slå sammen på gjetning.'
+].join('\n');
+
+async function hentFoeringer(){
+  try{
+    const r = await fetch(FOERINGER_API, {cache:'no-store'});
+    if(!r.ok) return FOERINGER_STANDARD;
+    const txt = await r.text();
+    if(!txt) return FOERINGER_STANDARD;
+    let d = JSON.parse(txt);
+    if(d && typeof d === 'object' && d.value !== undefined) d = d.value;
+    if(d && typeof d === 'object') d = d.tekst || '';
+    return String(d || '').trim() || FOERINGER_STANDARD;
+  }catch(e){ return FOERINGER_STANDARD; }
+}
+
+/* Varene som ALT ligger paa handlelista. Uten dem kan ikke AI-en slaa
+   sammen mot det som ble sendt i forrige runde - og da er "Rydd i varene"
+   fortsatt noedvendig som eget skritt.
+
+   Vi filtrerer paa omraade og avkrysset, ikke paa aktiv handleoekt:
+   hvilken oekt som er aktiv ligger i handlelistas minne per enhet
+   (viewOktId), ikke i dataene, saa den kan ikke leses utenfra. Oekter som
+   er avsluttet for godt faller bort. */
+async function hentEksisterendeVarer(){
+  try{
+    const r = await fetch(HANDLELISTE_API, {cache:'no-store'});
+    if(!r.ok) return [];
+    const txt = await r.text();
+    if(!txt) return [];
+    let d = JSON.parse(txt);
+    if(d && typeof d === 'object' && d.value !== undefined) d = d.value;
+    if(typeof d === 'string') d = JSON.parse(d);
+    if(!d || !Array.isArray(d.items)) return [];
+    const doede = new Set((d.okter || [])
+      .filter(o => o && o.avsluttet && !o.startet).map(o => o.id));
+    return d.items
+      .filter(v => v && v.omrade === 'mat' && !v.done && !doede.has(v.oktId))
+      .map(v => ({ navn: v.name, mengde: v.qty || '', type: v.cat || '' }));
+  }catch(e){ return []; }
+}
+
+const KLARGJOR_SYSTEM = 'Du klargjør ingredienser for en norsk handleliste. '
+  + 'Du får husets føringer, ingrediensene som skal legges til, og varene som ALLEREDE ligger på handlelista. '
+  + 'Følg føringene nøyaktig. Svar med KUN et rått JSON-objekt - ingen kodegjerder, ingen tekst før eller etter. '
+  + 'Formen er: {"varer":[{"navn":string,"mengde":string,"type":string,"basis":boolean,"leggTilPaa":string|null,"fra":string[]}],'
+  + '"sporsmal":[{"id":string,"type":"basis"|"tvil","tekst":string,"varer":string[]}]}. '
+  + '"mengde" er en handlemengde som tekst ("1 beger", "500 g", "3 stk"), eller tom streng når mengde ikke gir mening. '
+  + '"type" må være nøyaktig én av: Frukt, Grønnsaker, Kjøtt, Fisk og sjømat, Meieri, Pålegg, Brød og bakevarer, Tørrvarer, Hermetikk, Krydder og saus, Frysevarer, Snacks, Drikke, Annet. '
+  + '"leggTilPaa" er navnet på den EKSISTERENDE vara når denne skal legges til den i stedet for å bli en ny rad - ellers null. '
+  + '"fra" er rettene vara kommer fra. '
+  + 'Legg i "sporsmal" alt du er usikker på. type "basis" er et ja/nei om huset har vara fra før (tekst som «Har dere sukker?»), '
+  + 'og "varer" skal da inneholde nøyaktig det ene varenavnet slik det står i "varer"-lista. '
+  + 'type "tvil" er alt annet du vil ha avklart, typisk om to navn er samme vare; "varer" er navnene det gjelder. '
+  + 'Ta med varen i "varer"-lista uansett - spørsmålet avgjør om den blir stående, ikke om den finnes. '
+  + 'Still ingen spørsmål du kan svare på selv ut fra føringene.';
+
+let klarForslag = null;
+let klarPakke   = null;
+
+function lukkKlargjor(){
+  closeModal('klargjor');
+  klarForslag = null;
+  klarPakke = null;
+}
+
+function klarStatus(t){ const el = $('klar-status'); if(el) el.textContent = t || ''; }
+
+/* Inngangen fra begge sendeknappene. */
+async function klargjorOgSend(pakke, filnavn, hva){
+  klarPakke = pakke;
+  klarPakke._filnavn = filnavn;
+  klarPakke._hva = hva;
+  klarForslag = null;
+
+  $('klar-inn').textContent = '';
+  $('klar-ok').disabled = true;
+  klarStatus('Går gjennom varene …');
+  openModal('klargjor');
+
+  const [foeringer, eksisterende] = await Promise.all([hentFoeringer(), hentEksisterendeVarer()]);
+
+  const inn = {
+    foeringer,
+    nyeVarer: (pakke.varer || []).map(v => ({
+      navn: v.vare, type: v.type || '',
+      mengde: (v.mengder || []).map(m => (m.mengde != null ? m.mengde + ' ' : '') + (m.enhet || '')).join(' + '),
+      fritekst: v.fritekst || [], fraRetter: v.fraRetter || []
+    })),
+    basisvarer: pakke.basisvarer || [],
+    alleredePaaLista: eksisterende
+  };
+
+  let svar;
+  try{
+    const tekst = await callClaudeText(KLARGJOR_SYSTEM, JSON.stringify(inn), 8000);
+    svar = JSON.parse(String(tekst).replace(/```json|```/g, '').trim());
+  }catch(e){
+    klarStatus('');
+    visKlarFeil(e && e.message ? e.message : 'AI-en svarte ikke som ventet.');
+    return;
+  }
+
+  klarForslag = {
+    varer: (svar.varer || []).map(v => ({
+      navn: String(v.navn || '').trim(),
+      mengde: String(v.mengde || '').trim(),
+      type: VARETYPER.includes(v.type) ? v.type : 'Annet',
+      basis: !!v.basis,
+      leggTilPaa: v.leggTilPaa || null,
+      fra: Array.isArray(v.fra) ? v.fra : [],
+      med: true
+    })).filter(v => v.navn),
+    sporsmal: (svar.sporsmal || []).map((q, i) => ({
+      id: q.id || ('q' + i),
+      type: q.type === 'basis' ? 'basis' : 'tvil',
+      tekst: String(q.tekst || ''),
+      varer: Array.isArray(q.varer) ? q.varer : [],
+      svar: null
+    })).filter(q => q.tekst)
+  };
+
+  /* Basisvarer er som utgangspunkt IKKE med: det vanlige er at huset har
+     dem. Du krysser av det dere mangler. */
+  klarForslag.varer.forEach(v => { if(v.basis) v.med = false; });
+
+  klarStatus('');
+  tegnKlargjoring();
+}
+
+function visKlarFeil(melding){
+  const inn = $('klar-inn');
+  inn.textContent = '';
+  const boks = document.createElement('div');
+  boks.className = 'klar-feil';
+  boks.textContent = melding + ' Du kan prøve igjen, eller sende uten klargjøring.';
+  inn.appendChild(boks);
+
+  [['Prøv igjen', () => klargjorOgSend(klarPakke, klarPakke._filnavn, klarPakke._hva)],
+   ['Send uten klargjøring', async () => { const p = klarPakke; lukkKlargjor(); await sendPakke(p, p._filnavn, p._hva); }]
+  ].forEach(([tekst, fn], i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn btn-ghost';
+    b.style.marginTop = i ? '8px' : '12px';
+    b.textContent = tekst;
+    b.onclick = fn;
+    inn.appendChild(b);
+  });
+}
+
+/* ---- Skjermbildet ---- */
+function tegnKlargjoring(){
+  const inn = $('klar-inn');
+  inn.textContent = '';
+  if(!klarForslag) return;
+
+  const bolk = (tittel, hjelp) => {
+    const d = document.createElement('div');
+    d.className = 'klar-bolk';
+    const h = document.createElement('h4'); h.textContent = tittel; d.appendChild(h);
+    if(hjelp){ const p = document.createElement('p'); p.className = 'klar-hjelp'; p.textContent = hjelp; d.appendChild(p); }
+    inn.appendChild(d);
+    return d;
+  };
+
+  /* 1. Basisvarer - ett spoersmaal, mange avkryssinger */
+  const basis = klarForslag.varer.filter(v => v.basis);
+  if(basis.length){
+    const d = bolk('Har dere dette hjemme?', 'Kryss av det dere mangler. Det du ikke krysser av, blir ikke handlet.');
+    basis.forEach(v => {
+      const rad = document.createElement('label');
+      rad.className = 'klar-kryss' + (v.med ? ' valgt' : '');
+      const boks = document.createElement('input');
+      boks.type = 'checkbox';
+      boks.checked = v.med;
+      boks.onchange = () => { v.med = boks.checked; rad.classList.toggle('valgt', v.med); oppdaterKlarKnapp(); };
+      const navn = document.createElement('span');
+      navn.textContent = v.navn;
+      rad.appendChild(boks); rad.appendChild(navn);
+      d.appendChild(rad);
+    });
+  }
+
+  /* 2. Tvilstilfellene - maa besvares foer knappen aapner */
+  const tvil = klarForslag.sporsmal.filter(q => q.type !== 'basis');
+  if(tvil.length){
+    const d = bolk('Usikker på dette', 'Svar før du går videre.');
+    tvil.forEach(q => {
+      const boks = document.createElement('div');
+      boks.className = 'klar-tvil';
+      const p = document.createElement('p'); p.textContent = q.tekst; boks.appendChild(p);
+      const rad = document.createElement('div'); rad.className = 'row';
+      [['Ja', true], ['Nei', false]].forEach(([tekst, verdi]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'klar-svar' + (q.svar === verdi ? ' valgt' : '');
+        b.textContent = tekst;
+        b.onclick = () => { q.svar = verdi; tegnKlargjoring(); };
+        rad.appendChild(b);
+      });
+      boks.appendChild(rad);
+      d.appendChild(boks);
+    });
+  }
+
+  /* 3. Lista, redigerbar */
+  const vanlige = klarForslag.varer.filter(v => !v.basis);
+  const d = bolk('Varer', vanlige.length ? 'Rett navn, mengde og type hvis noe er feil.' : 'Ingen varer å legge til.');
+  vanlige.forEach(v => {
+    const rad = document.createElement('div');
+    rad.className = 'klar-rad';
+
+    const navn = document.createElement('input');
+    navn.value = v.navn;
+    navn.oninput = () => { v.navn = navn.value; };
+    rad.appendChild(navn);
+
+    const mengde = document.createElement('input');
+    mengde.value = v.mengde;
+    mengde.placeholder = 'Mengde';
+    mengde.oninput = () => { v.mengde = mengde.value; };
+    rad.appendChild(mengde);
+
+    const type = document.createElement('select');
+    type.className = 'klar-type';
+    VARETYPER.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t; o.textContent = t; o.selected = (t === v.type);
+      type.appendChild(o);
+    });
+    type.onchange = () => { v.type = type.value; };
+    rad.appendChild(type);
+
+    if(v.leggTilPaa){
+      const merk = document.createElement('span');
+      merk.className = 'klar-merk';
+      merk.textContent = '↗ legges til «' + v.leggTilPaa + '» som alt står på lista';
+      rad.appendChild(merk);
+    }
+
+    const fjern = document.createElement('button');
+    fjern.type = 'button';
+    fjern.className = 'klar-fjern';
+    fjern.textContent = 'Fjern';
+    fjern.onclick = () => { v.med = false; tegnKlargjoring(); };
+    rad.appendChild(fjern);
+
+    if(v.med) d.appendChild(rad);
+  });
+
+  oppdaterKlarKnapp();
+}
+
+/* Ubesvarte tvilsspoersmaal sperrer knappen. Basisavkryssingene gjoer det
+   ikke - "ingen kryss" er et gyldig svar og betyr at dere har alt. */
+function oppdaterKlarKnapp(){
+  const knapp = $('klar-ok');
+  if(!knapp || !klarForslag) return;
+  const ubesvart = klarForslag.sporsmal.filter(q => q.type !== 'basis' && q.svar === null).length;
+  knapp.disabled = ubesvart > 0;
+  klarStatus(ubesvart ? (ubesvart === 1 ? 'Ett spørsmål står ubesvart.'
+                                        : ubesvart + ' spørsmål står ubesvarte.') : '');
+}
+
+/* Bygger den ferdige pakka og legger den i innboksen. Formen er den samme
+   som foer - handleliste kjenner den igjen - men `godkjent` sier at den er
+   gjennomgaatt og ikke skal spoerres om paa nytt. */
+async function godkjennKlargjoring(){
+  if(!klarForslag || !klarPakke) return;
+  const med = klarForslag.varer.filter(v => v.med && v.navn);
+
+  const pakke = {
+    format: 'neam-handleliste-1',
+    kilde: klarPakke.kilde || 'Oppskriftsboka',
+    laget: new Date().toISOString(),
+    godkjent: true,
+    uke: klarPakke.uke,
+    aar: klarPakke.aar,
+    fraOppskrift: klarPakke.fraOppskrift,
+    porsjoner: klarPakke.porsjoner,
+    varer: med.map(v => ({
+      vare: v.navn,
+      type: v.type,
+      mengder: [],
+      fritekst: v.mengde ? [v.mengde] : [],
+      fraRetter: v.fra,
+      basis: v.basis,
+      leggTilPaa: v.leggTilPaa || null
+    })),
+    basisvarer: [],                      /* avgjort her - ikke send dem videre */
+    raalinjer: klarPakke.raalinjer || [],
+    varekatalog: klarPakke.varekatalog
+  };
+
+  /* Filnavnet leses FOER lukkKlargjor(), som nuller klarPakke. Det brukes
+     bare paa reserveveien, naar innboksen ikke svarer og fila lastes ned. */
+  const filnavn = klarPakke._filnavn || 'handleliste.json';
+  lukkKlargjor();
+  await sendPakke(pakke, filnavn,
+                  med.length + (med.length === 1 ? ' vare' : ' varer'));
+}
+
+/* ============================================================
+   Innboksen
+   ------------------------------------------------------------
+   Overleveringen til Handle. Erstatter fil-broen: pakka legges i
+   KV under noekkelen `innboks`, og Handle henter den derfra.
+
+   Egne kall mot /api/data, ikke Store: Store speiler til IndexedDB
+   og fletter lokalt mot sky. En innboks som leses fra en lokal
+   kopi er ikke en innboks - den maa hentes ferskt hver gang, og
+   den skal ikke ligge igjen paa denne enheten.
+
+   Verdien er en LISTE, ikke én pakke: sender du ukemenyen og saa
+   en enkelt oppskrift, skal ikke den andre spise den foerste.
+   ============================================================ */
+const INNBOKS_API = '/api/data?key=innboks';
+
+async function lesInnboks(){
+  const r = await fetch(INNBOKS_API, {cache:'no-store', headers:{'Accept':'application/json'}});
+  if(r.status === 404) return [];                      // aldri skrevet enda
+  if(!r.ok) throw new Error('innboks ' + r.status);
+  const txt = await r.text();
+  if(!txt) return [];
+  let d = JSON.parse(txt);
+  /* Svaret kan komme som {value:"<json>"} eller som verdien selv - vi
+     taaler begge, slik dashboard alt gjoer mot samme endepunkt. */
+  if(d && typeof d === 'object' && !Array.isArray(d) && d.value !== undefined) d = d.value;
+  if(typeof d === 'string') d = JSON.parse(d);
+  return Array.isArray(d) ? d : [];
+}
+
+async function skrivInnboks(liste){
+  const r = await fetch(INNBOKS_API, {
+    method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(liste)
+  });
+  if(!r.ok) throw new Error('innboks ' + r.status);
+}
+
+/* Nedlasting og utklippstavle, slik det var foer innboksen. Brukes nu
+   bare som reserve: uten den ville en mislykket overlevering forsvunnet
+   i stillhet, og det er den ene maaten innboksen kan gjoere noe verre
+   enn fila var. */
+async function lastNedPakke(pakke, filnavn){
+  const tekst = JSON.stringify(pakke, null, 2);
+  let kopiert = false;
+  try{ await navigator.clipboard.writeText(tekst); kopiert = true; }
+  catch(e){ /* ikke tillatt her - fila holder */ }
+
+  const blob = new Blob([tekst], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filnavn;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return kopiert;
+}
+
+/* Én vei ut for begge senderne. */
+async function sendPakke(pakke, filnavn, hva){
+  pakke.id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  try{
+    const liste = await lesInnboks();
+    liste.push(pakke);
+    await skrivInnboks(liste);
+    showToast(hva + ' lagt i innboksen til Handle.');
+  }catch(e){
+    const kopiert = await lastNedPakke(pakke, filnavn);
+    showToast('Fikk ikke kontakt med innboksen - lastet ned fila i stedet'
+              + (kopiert ? ', og kopierte den.' : '.'), true);
+  }
+}
+
 /* Samme pakkeformat som ukemenyen bruker, men bygget av én oppskrift og
    skalert til porsjonene som vises. Handlelisteappen gjoer sin egen
    sammenslaaing, saa vi sender raalinjene ved siden av. */
@@ -7501,50 +7987,15 @@ async function sendTilHandleliste(){
     varekatalog: { katalog: varekatalog, avvist: vareAvvist, typer: VARETYPER }
   };
 
-  const tekst = JSON.stringify(pakke, null, 2);
-  let kopiert = false;
-  try{
-    await navigator.clipboard.writeText(tekst);
-    kopiert = true;
-  }catch(e){ /* ikke tillatt her - vi laster ned i stedet */ }
-
-  const blob = new Blob([tekst], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `handleliste-${(r.title || 'oppskrift').replace(/[^\wÆØÅæøå-]+/g, '-').toLowerCase()}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
-
-  showToast(`${varer.length} varer klar for handlelista${kopiert ? ' – også kopiert' : ''}.`);
+  const filnavn = `handleliste-${(r.title || 'oppskrift').replace(/[^\wÆØÅæøå-]+/g, '-').toLowerCase()}.json`;
+  await klargjorOgSend(pakke, filnavn, `${varer.length} varer`);
 }
 
 async function tilHandlelista(){
   if(!currentIngRows.length){ showToast('Ingen ingredienser å overføre.', true); return; }
   const pakke = await byggHandleliste();
-  const tekst = JSON.stringify(pakke, null, 2);
-
-  // Prøv utklippstavlen først - da kan den limes rett inn i Handle senere
-  let kopiert = false;
-  try{
-    await navigator.clipboard.writeText(tekst);
-    kopiert = true;
-  }catch(e){ /* ikke tillatt her, vi laster ned i stedet */ }
-
-  const blob = new Blob([tekst], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `handleliste-uke${planWeek.week}-${planWeek.year}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
-
-  const antall = pakke.varer.length;
-  showToast(`${antall} varer klar for handlelista${kopiert ? ' - også kopiert' : ''}.`);
+  const filnavn = `handleliste-uke${planWeek.week}-${planWeek.year}.json`;
+  await klargjorOgSend(pakke, filnavn, `${pakke.varer.length} varer`);
 }
 
 async function resetIngEdits(){

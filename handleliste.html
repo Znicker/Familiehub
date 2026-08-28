@@ -195,6 +195,27 @@
     text-transform:none; letter-spacing:0; text-decoration:underline; text-underline-offset:3px;
   }
   .btn-quiet:active{ color:var(--ink); }
+  /* Innboksen oeverst i importmodalen. Radene er kort, ikke pilleknapper:
+     de baerer to linjer tekst og skal leses, ikke bare trykkes. */
+  .innboks-boks{ margin-bottom:16px; }
+  .innboks-tittel-rad{
+    font-size:var(--t-meta); color:var(--ink-soft); font-weight:600;
+    margin:0 0 8px;
+  }
+  .innboks-rad{
+    display:block; width:100%; text-align:left; margin-bottom:8px;
+    border:1px solid var(--boks-kant); border-radius:12px;
+    background:var(--boks-mild); padding:11px 13px;
+    font-family:'Archivo',sans-serif;
+  }
+  .innboks-rad:active{ background:var(--aksent-lys); }
+  .innboks-navn{
+    display:block; font-size:var(--t-brod); font-weight:700; color:var(--ink);
+    overflow-wrap:anywhere;
+  }
+  .innboks-meta{
+    display:block; font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px;
+  }
   .item-body{ flex:1; min-width:0; }
   .item-name{
     font-size:var(--t-brod); font-weight:600; line-height:1.25; color:var(--ink);
@@ -663,6 +684,8 @@ input,select,textarea{font-size:16px}
     <p class="lead">Velg handlelista du lastet ned fra Oppskriftsboka, eller lim inn innholdet.</p>
 
     <div id="import-error" class="import-error" style="display:none;"></div>
+
+    <div id="innboks-boks" class="innboks-boks" style="display:none;"></div>
 
     <button class="file-btn" onclick="document.getElementById('import-file').click()">Velg JSON-fil</button>
     <input type="file" id="import-file" accept=".json,application/json" style="display:none;" onchange="readImportFile(this)">
@@ -1906,12 +1929,129 @@ let impRecipes = [];   // oppskriftene i fila
 let impPlan = null;    // mealPlan hvis den finnes
 let impValg = [];      // {id, title, servings, checked}
 
+/* ---- Innboksen ----
+   Det Oppskriftsboka har sendt hit, lagret i KV under `innboks`.
+   Egne kall mot /api/data, ikke Store: Store speiler til IndexedDB, og
+   en innboks som leses fra en lokal kopi ville ikke sett hva den andre
+   enheten nettopp la inn. */
+const INNBOKS_API = '/api/data?key=innboks';
+let innboks = [];
+let innboksValgtId = null;   /* pakka sammendraget staar paa, hvis den kom herfra */
+
+async function lesInnboks(){
+  const r = await fetch(INNBOKS_API, {cache:'no-store', headers:{'Accept':'application/json'}});
+  if (r.status === 404) return [];                     // aldri skrevet enda
+  if (!r.ok) throw new Error('innboks ' + r.status);
+  const txt = await r.text();
+  if (!txt) return [];
+  let d = JSON.parse(txt);
+  if (d && typeof d === 'object' && !Array.isArray(d) && d.value !== undefined) d = d.value;
+  if (typeof d === 'string') d = JSON.parse(d);
+  return Array.isArray(d) ? d : [];
+}
+
+async function skrivInnboks(liste){
+  const r = await fetch(INNBOKS_API, {
+    method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(liste)
+  });
+  if (!r.ok) throw new Error('innboks ' + r.status);
+}
+
+/* Feiler hentingen, staar innboksen tom og filvelgeren under er veien
+   inn. Den er reserven, og den virker. */
+async function hentInnboks(){
+  try { innboks = await lesInnboks(); }
+  catch(e){ innboks = []; }
+  tegnInnboksMerke();
+}
+
+function tegnInnboksMerke(){
+  const b = document.getElementById('btn-hent');
+  if (!b) return;
+  b.textContent = innboks.length
+    ? 'Hent varer fra Oppskriftsboka (' + innboks.length + ')'
+    : 'Hent varer fra Oppskriftsboka';
+}
+
+function innboksNavn(p){
+  if (p.fraOppskrift) return String(p.fraOppskrift);
+  if (p.uke) return 'Uke ' + p.uke;
+  return 'Handleliste';
+}
+
+function tegnInnboksListe(){
+  const el = document.getElementById('innboks-boks');
+  if (!el) return;
+  if (!innboks.length){ el.style.display = 'none'; el.textContent = ''; return; }
+
+  el.style.display = 'block';
+  el.textContent = '';
+  const tittel = document.createElement('p');
+  tittel.className = 'innboks-tittel-rad';
+  tittel.textContent = innboks.length === 1
+    ? 'Én pakke venter fra Oppskriftsboka'
+    : innboks.length + ' pakker venter fra Oppskriftsboka';
+  el.appendChild(tittel);
+
+  /* Bygget med DOM, ikke innerHTML: navnene kommer fra oppskriftstitler
+     som brukeren selv har skrevet, og sida har ingen escape-hjelper. */
+  innboks.forEach((p, i) => {
+    const rad = document.createElement('button');
+    rad.type = 'button';
+    rad.className = 'innboks-rad';
+    rad.onclick = () => velgFraInnboks(i);
+
+    const navn = document.createElement('span');
+    navn.className = 'innboks-navn';
+    navn.textContent = innboksNavn(p);
+
+    const meta = document.createElement('span');
+    meta.className = 'innboks-meta';
+    const antall = (p.varer || []).length;
+    let tekst = antall + (antall === 1 ? ' vare' : ' varer');
+    if (p.laget){
+      const d = new Date(p.laget);
+      if (!isNaN(d)) tekst += ' · ' + d.toLocaleString('nb-NO',
+        {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+    }
+    meta.textContent = tekst;
+
+    rad.appendChild(navn);
+    rad.appendChild(meta);
+    el.appendChild(rad);
+  });
+}
+
+function velgFraInnboks(i){
+  const p = innboks[i];
+  if (!p) return;
+  innboksValgtId = p.id || null;
+  closeModal('import-modal');
+  visListeSammendrag(p);
+}
+
+/* Fjernes foerst naar bekreftListe() har gaatt gjennom - ikke naar pakka
+   vises. Avbryter du sammendraget, ligger den der fortsatt. */
+async function fjernFraInnboks(id){
+  if (!id) return;
+  try {
+    const liste = await lesInnboks();
+    await skrivInnboks(liste.filter(p => p.id !== id));
+    innboks = innboks.filter(p => p.id !== id);
+    tegnInnboksMerke();
+  } catch(e){ /* varene er alt lagt inn - pakka blir liggende og kan sees igjen */ }
+}
+
 function openImport(){
   document.getElementById('import-text').value = '';
   document.getElementById('import-file').value = '';
   document.getElementById('import-error').style.display = 'none';
   document.getElementById('import-tekst').style.display = 'none';
+  innboksValgtId = null;
+  tegnInnboksListe();
   huskSkjema('import-modal'); document.getElementById('import-modal').classList.add('active');
+  /* Hentes paa nytt mens modalen staar: noen kan ha sendt noe i mellomtiden. */
+  hentInnboks().then(tegnInnboksListe);
 }
 
 function readImportFile(input){
@@ -1950,6 +2090,9 @@ function mengdeTekst(amount, amountText, unit){
 }
 
 function parseImport(){
+  /* Kom pakka fra fil eller utklippstavle, hoerer den ikke til noen post
+     i innboksen - da skal ingenting fjernes derfra etterpaa. */
+  innboksValgtId = null;
   const raw = document.getElementById('import-text').value.trim();
   if (!raw) return importFeil('Velg en fil, eller lim inn innholdet.');
 
@@ -2181,6 +2324,10 @@ async function bekreftListe(){
   impListe = null;
   closeModal('sum-modal');
   await leggIListen(varer);
+
+  const id = innboksValgtId;
+  innboksValgtId = null;
+  await fjernFraInnboks(id);
 
   // Gjennomgangen starter av seg selv rett etter import
   openMerge();
@@ -6069,10 +6216,15 @@ async function synkroniserFraSky(){
 }
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') synkroniserFraSky();
+  if (document.visibilityState === 'visible'){
+    synkroniserFraSky();
+    /* Innboksen ogsaa: kommer du tilbake til fana etter aa ha sendt noe
+       fra Oppskriftsboka, skal antallet paa knappen stemme. */
+    hentInnboks();
+  }
 });
 
-init();
+init().then(hentInnboks);
 </script>
 
 <script>
