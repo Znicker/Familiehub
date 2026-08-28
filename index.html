@@ -392,6 +392,7 @@ const SLIPP_INN = [
   'nmidttun@hotmail.com',
   'emma@neam.no',
   'andrea@neam.no',
+  'kitchen@neam.no',
   'sys@neam.no'
 ];
 
@@ -661,7 +662,10 @@ document.addEventListener('visibilitychange', () => {
    Piloten er foreloepig kun for sys, saa flisen skjules for de andre.
    Sperren ligger ogsaa i dashboard.html selv — dette er bare for aa
    slippe aa vise en snarvei folk blir avvist fra. */
-const DASH_TILGANG = ['sys@neam.no'];
+/* Hvem som ser dashboard-flisen. Samme liste som i dashboard.html.
+   Sys staar igjen ved siden av kitchen: uten den ville en feil paa
+   kitchen-kontoen gjort veggskjermen utilgjengelig uten vei inn. */
+const DASH_TILGANG = ['kitchen@neam.no', 'sys@neam.no'];
 
 function normEpostDash(s){
   s = String(s || '').toLowerCase().trim();

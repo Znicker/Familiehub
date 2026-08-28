@@ -911,6 +911,21 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   display:flex;align-items:center;justify-content:center;line-height:1;
 }
 .tm-alle:active{transform:scale(.96)}
+/* Bunnraden foelger med naar panelet rulles - med seks kalendere og to
+   spalter kan den ellers havne under skjermkanten. Negative marger
+   trekker den ut i panelets egen padding, saa streken gaar helt ut. */
+.tm-bunn{
+  position:sticky;bottom:-22px;z-index:1;
+  margin:18px -24px -22px;padding:14px 24px 18px;
+  background:var(--paper);border-top:1px solid var(--line);
+  display:flex;justify-content:flex-end;
+}
+.tm-ferdig{
+  border:none;background:var(--aksent);color:#FFFFFF;border-radius:999px;
+  padding:12px 32px;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-brod);font-weight:700;
+}
+.tm-ferdig:active{transform:scale(.97)}
 
 /* Kalenderlista bor nå i toppmenyen */
 #app .side-cals{display:none}
@@ -2821,6 +2836,13 @@ function renderCalList(){
       + '</div>';
   }).join('') + '</div>';
 
+  /* Endringene er lagret i det de gjoeres - knappen lukker, den lagrer
+     ikke. Derfor "Ferdig" og ikke "Lagre": en Lagre-knapp ville lovet at
+     noe skjer naar man trykker, og at ingenting skjer hvis man lar vaere. */
+  html += '<div class="tm-bunn">'
+    + '<button class="tm-ferdig" onclick="event.stopPropagation(); lukkCalMeny()">Ferdig</button>'
+    + '</div>';
+
   el.innerHTML = html;
 }
 
@@ -2875,6 +2897,11 @@ function vekslTildeling(i, epost, felt){
   /* Sys ser sin egen endring med én gang naar den gjelder sys selv. */
   brukHurtigUtvalg();
   renderCalList();
+}
+
+function lukkCalMeny(){
+  const p = $('caldropPanel');
+  if(p) p.hidden = true;
 }
 
 /* Åpne/lukke kalendermenyen; lukkes ved klikk utenfor */
@@ -3138,8 +3165,14 @@ async function last(force){
   /* Merket vises bare naar noe faktisk maa hentes over nett. Ligger
      alt i cachen fra foer, gaar det saa fort at et merke bare blinker. */
   const maaHente = force || !cacheDekker();
+  /* Foerste henting er den trege: kalenderlista maa hentes, og deretter
+     én calendarView per kalender. Den gikk stille fordi lasterStille
+     settes saa snart det finnes lokal cache - men cachen inneholder
+     avtaler, ikke kalenderlista. Uten kalendere er det ingenting aa se
+     paa mens man venter. Da vises merket uansett, og med én gang. */
+  const forste = !S.calendars.length;
   S.loading = true;
-  if(maaHente && !lasterStille) visLaster(true, lasterStraks);
+  if(maaHente && (forste || !lasterStille)) visLaster(true, forste || lasterStraks);
   lasterStraks = false;
   msg($('calMsg'), '');
   try{
