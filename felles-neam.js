@@ -131,6 +131,53 @@ function neamKlipp(msgs){
   return msgs;
 }
 
+/* Reparerer et tool_use som aldri fikk sitt tool_result.
+
+   API-et krever at hvert kall har et svar i meldingen rett etter. Mangler
+   ett, avvises HELE samtalen - ikke bare det neste kallet, men alt videre,
+   ogsaa etter en ny innlasting, siden historikken ligger i sessionStorage.
+   Samtalen blir da uopprettelig uten «Ny samtale».
+
+   Det kan skje paa tre maater, og alle tre har vi sett eller kan se:
+   - taket paa antall runder slaar inn etter at kallene er lagt inn
+   - noe kaster mellom kallet og svarene
+   - fana lukkes midt i en runde
+
+   Vi fyller derfor inn manglende svar med en beskjed om at kallet ble
+   avbrutt. Neam faar vite at det ikke ble noe av, og samtalen kan gaa
+   videre i stedet for aa staa laast. */
+function neamReparer(){
+  const ut = [];
+  for(let i = 0; i < neamPoster.length; i++){
+    const p = neamPoster[i];
+    ut.push(p);
+    if(!p.api || p.api.role !== 'assistant' || !Array.isArray(p.api.content)) continue;
+
+    const kall = p.api.content.filter(function(b){ return b.type === 'tool_use'; });
+    if(!kall.length) continue;
+
+    const neste = neamPoster[i + 1];
+    const svar = (neste && neste.api && neste.api.role === 'user'
+                  && Array.isArray(neste.api.content)) ? neste.api.content : null;
+    const sett = new Set((svar || [])
+      .filter(function(b){ return b.type === 'tool_result'; })
+      .map(function(b){ return b.tool_use_id; }));
+
+    const mangler = kall.filter(function(b){ return !sett.has(b.id); })
+      .map(function(b){
+        return { type:'tool_result', tool_use_id:b.id, is_error:true,
+                 content:'Avbrutt - verktøyet ble aldri kjørt.' };
+      });
+    if(!mangler.length) continue;
+
+    /* Finnes svarmeldingen alt, men er ufullstendig, fylles den ut.
+       Ellers skytes en ny inn foer det som kommer etter. */
+    if(svar) svar.push.apply(svar, mangler);
+    else ut.push({ api:{ role:'user', content:mangler } });
+  }
+  neamPoster = ut;
+}
+
 function neamHistorikk(){
   return neamKlipp(neamPoster.filter(function(p){ return p.api; })
                              .map(function(p){ return p.api; }));
@@ -387,6 +434,9 @@ function neamBygg(){
   });
 
   neamPoster = neamHent();
+  /* En samtale som ble avbrutt midt i en runde ligger her med et hull i.
+     Den lappes foer den vises, ikke naar den feiler. */
+  neamReparer();
   neamTegn();
 }
 
@@ -523,6 +573,7 @@ async function neamSend(){
    han er ferdig. Delt mellom det brukeren skriver og det sida ber om
    gjennom neamStart(). */
 async function neamTur(){
+  neamReparer();
   neamVenter = true;
   const knapp = document.getElementById('neamSend');
   if(knapp) knapp.disabled = true;
@@ -549,7 +600,10 @@ async function neamTur(){
       if(svar.stop_reason !== 'tool_use') break;
 
       if(++runde > NEAM_MAKS_RUNDER){
-        neamPoster.push({ feil:'Neam ble stående og gjenta seg selv, så jeg stoppet det.' });
+        /* neamReparer() fyller inn svarene som mangler foer neste tur, saa
+           samtalen kan fortsette selv om denne runden ble stoppet. */
+        neamPoster.push({ feil:'Neam holdt på for lenge med samme oppgave, så jeg stoppet det. '
+                             + 'Prøv å be om én ting av gangen.' });
         break;
       }
 

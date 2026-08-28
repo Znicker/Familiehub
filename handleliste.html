@@ -908,7 +908,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=4"></script>
+<script src="/felles-neam.js?v=5"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -6149,12 +6149,17 @@ window.neamVerktoy = async function(){
     {
       name: 'sok_varekatalog',
       description: 'Søker i varekatalogen - varer huset har handlet før, med varetypen '
-                 + 'de pleier å få. Katalogen er ikke handlelista; den sier hva en vare '
-                 + 'ER, ikke at den skal kjøpes.',
+                 + 'de pleier å få og om de er basisvarer. Katalogen er ikke handlelista; '
+                 + 'den sier hva en vare ER, ikke at den skal kjøpes. Uten søkeord listes '
+                 + 'alt. Trenger du bare å vite om varene PÅ LISTA er basisvarer, står det '
+                 + 'allerede i les_handlelista - ikke søk opp én og én.',
       input_schema: {
         type: 'object',
-        properties: { sok: { type:'string', description:'Del av et varenavn.' } },
-        required: ['sok']
+        properties: {
+          sok: { type:'string', description:'Del av et varenavn. Utelat for å liste alt.' },
+          bareBasis: { type:'boolean', description:'true gir bare basisvarene.' }
+        },
+        required: []
       }
     },
     {
@@ -6350,12 +6355,19 @@ function neamOktNavn(arg){
 const NEAM_MAKS_VARER = 200;
 
 function neamVareLinje(v){
+  /* Basisvare hentes fra katalogen, ikke bare fra raden: raden faar flagget
+     satt ved import, mens katalogen er der huset faktisk vet hva det alltid
+     har. Uten dette maatte Neam sla opp hver eneste vare for seg - og det
+     gjorde han: én katalogsoek per vare, til taket paa antall runder slo
+     inn og samtalen brakk. */
+  const oppf = katalogOppslag(v.name);
   return {
     vare: v.name,
     mengde: byggMengdeTekst(v.count, v.amt, v.unit) || v.qty || '',
     type: v.cat || '',
     butikk: v.store || '',
-    kjopt: !!v.done
+    kjopt: !!v.done,
+    basisvare: !!(v.basis || (oppf && oppf.basis))
   };
 }
 
@@ -6398,12 +6410,15 @@ window.neamUtfor = async function(navn, arg){
 
   if (navn === 'sok_varekatalog'){
     const sok = String(arg.sok || '').trim().toLowerCase();
-    if (!sok) throw new Error('Søket var tomt.');
-    const treff = Object.values(katalog.katalog)
-      .filter(k => String(k.vare || '').toLowerCase().includes(sok))
-      .slice(0, 40)
-      .map(k => ({ vare:k.vare, type:k.type || '', basisvare: !!k.basis }));
-    return { sok: arg.sok, antall: treff.length, treff };
+    const alle = Object.values(katalog.katalog)
+      .filter(k => !sok || String(k.vare || '').toLowerCase().includes(sok))
+      .filter(k => !arg.bareBasis || !!k.basis);
+    return {
+      sok: arg.sok || null,
+      antall: alle.length,
+      treff: alle.slice(0, 120).map(k => ({ vare:k.vare, type:k.type || '', basisvare: !!k.basis })),
+      avkortet: alle.length > 120
+    };
   }
 
   if (navn === 'legg_til_varer') return await neamLeggTilVarer(arg);
