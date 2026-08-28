@@ -2128,8 +2128,12 @@ async function hentVindu(a, b, bare){
   }
 
   /* Parallelt, men ikke alle på én gang — for mange samtidige kall mot
-     Graph gir struping, som var årsaken til at avtaler forsvant. */
-  const GRENSE = 3;
+     Graph gir struping, som var årsaken til at avtaler forsvant.
+     Grensen sto på 3. Med seks kalendere ble det to runder etter
+     hverandre, altså dobbel ventetid. Nå prøver graph() om igjen av seg
+     selv ved 429 på lesing, så strupingen er håndtert der den oppstår i
+     stedet for ved å holde igjen alle. */
+  const GRENSE = 6;
   const resultater = [];
   for(let i = 0; i < aktive.length; i += GRENSE){
     const bolk = aktive.slice(i, i + GRENSE);
@@ -2820,7 +2824,9 @@ function lukkCalMeny(){
 function toggleCalMeny(ev){
   if(ev) ev.stopPropagation();
   const p = $('caldropPanel');
-  if(p) p.hidden = !p.hidden;
+  if(!p) return;
+  p.hidden = !p.hidden;
+  if(!p.hidden) renderCalList();     /* bygges naar den aapnes, ikke foer */
 }
 document.addEventListener('click', function(ev){
   const dd = $('caldrop'), p = $('caldropPanel'), btn = $('caldropBtn');
@@ -2881,7 +2887,12 @@ function render(){
   if(liste) tegnValgtAvtale();
   else if(!bred) renderDay();
   else if(dagPanelEl) tegnDagPanel();   /* holder en aapen popup i takt */
-  renderCalList();
+  /* Matrisen bygges bare naar den faktisk staar oppe. Den sto foer i
+     hver render() - alts&aring; ved hver navigering, hvert sveip og hver
+     bakgrunnsoppdatering - og bygde 72 knapper pluss tell() over alle
+     avtalene, seks ganger, for et panel ingen saa. */
+  const kalPanelAapent = kalAdgang && $('caldropPanel') && !$('caldropPanel').hidden;
+  if(kalPanelAapent) renderCalList();
   renderHurtigKal();
   oppdaterBlapiler();
   sjekkSnu();

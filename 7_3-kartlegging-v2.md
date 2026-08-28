@@ -389,7 +389,33 @@ da dialogen ble åpnet kan ha gått ut på dato.
 
 ---
 
-## 10. Delingsfella – oppdaget 28. august 2026
+## 10. Ytelse i kalenderen – 28. august 2026
+
+Sida ble merkbart tregere da kalenderne gikk fra fire til seks. To ting, og
+begge var mekaniske:
+
+**Matrisen ble bygget i hver `render()`.** Altså ved hver navigering, hvert
+sveip og hver bakgrunnsoppdatering – 72 knapper i strengbygging pluss
+`tell()` over alle avtalene, seks ganger, for et panel som sto lukket.
+Bygges nå bare når panelet faktisk er oppe, og når det åpnes.
+
+**`GRENSE` i `hentVindu()` sto på 3.** Med seks kalendere ble det to runder
+etter hverandre – dobbel ventetid på hver eneste henting. Grensen var satt
+for å unngå struping, men `graph()` prøver nå om igjen av seg selv ved 429 på
+lesing, så strupingen håndteres der den oppstår i stedet for ved å holde
+igjen alle. Satt til 6: én runde.
+
+**Neste lever, ikke tatt:** `hentVindu` henter `body` for hver avtale over et
+vindu på minst 225 dager, ganger seks kalendere, og kjører `htmlTilTekst`
+(DOMParser) på hvert notat. Det er trolig den dominerende kostnaden nå.
+Å hente notatet først når en avtale åpnes ville kuttet både nedlasting og
+parsing kraftig – men det må gjøres varsomt: `bodyPreview` i stedet for
+`body` ga i sin tid stille avkorting av notater ved lagring, og den fella
+skal ikke gjenåpnes.
+
+---
+
+## 11. Delingsfella – oppdaget 28. august 2026
 
 **En kalender som først deles med visningsrett og senere endres til «Kan
 redigere», forblir skrivebeskyttet hos mottakeren.** Rettigheten ser riktig
@@ -422,7 +448,7 @@ Microsoft-familiegruppa (ingen dokumentasjon støtter at det kreves).
 
 ---
 
-## 11. Navnebyttet – 28. august 2026
+## 12. Navnebyttet – 28. august 2026
 
 «Familie Hub» er ute. Systemet heter **Neam** – husassistenten er stemmen,
 roboten er maskotten, og navnet favner alt.
