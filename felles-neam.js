@@ -41,6 +41,15 @@
                   panelet foerst, og gjoer ingenting uten ja.
      neamBeskriv  function(arg) -> setning som forklarer hva som
                   kommer til aa skje. Vises i bekreftelsen.
+     neamTabell   function(arg) -> flere forslag lagt fram under
+                  ett, med avkryssing per rad, tegnet i panelet.
+     neamSkjerm   async function(arg) -> sida tegner sin EGEN
+                  skjerm og svarer med det brukeren bestemte.
+                  Panelet gjemmer seg mens den staar. Svaret
+                  legges oppaa arg-ene foer neamUtfor kalles;
+                  null betyr at brukeren gikk ut uten aa velge.
+                  Brukes naar en tabell i et smalt panel er for
+                  lite - da hoerer flata hjemme i sida.
 
    neamUtfor(navn, arg) - kjoerer verktoeyet og returnerer noe som
    taaler JSON.stringify. Kaster den, gaar feilen tilbake til Neam
@@ -528,7 +537,10 @@ function neamVisTabell(spek){
   ramme.appendChild(rad);
 
   boks.appendChild(ramme);
-  boks.scrollTop = boks.scrollHeight;
+  /* Rull etter at den er tegnet: knappene ligger nederst i tabellen, og en
+     tabell som slutter under skjermkanten ser ut som en tabell uten
+     knapper. Det er da man blir staaende og lure paa hva man skal gjoere. */
+  requestAnimationFrame(function(){ boks.scrollTop = boks.scrollHeight; });
 
   return new Promise(function(ok){
     neamTabellAvbryt();
@@ -567,6 +579,42 @@ async function neamKjor(blokk, defer){
   if(!def || typeof window.neamUtfor !== 'function'){
     return { type:'tool_result', tool_use_id:blokk.id, is_error:true,
              content:'Verktøyet finnes ikke på denne siden.' };
+  }
+
+  /* Vil verktoeyet ha en hel skjerm, er det sida som tegner den - i sine
+     egne farger, med sin egen layout, med plass til aa endre paa det Neam
+     foreslo. Panelet trekker seg unna mens den staar.
+
+     Panelet vet ikke hvordan sida ser ut, og skal ikke vite det. Derfor
+     eier sida skjermen og svarer med et objekt som legges oppaa arg-ene
+     foer neamUtfor kalles - noeyaktig som `valgte` fra tabellen. */
+  if(def.neamSkjerm){
+    const gjemt = document.getElementById('neamBak');
+    const varGjemt = gjemt ? gjemt.hidden : true;
+    if(gjemt) gjemt.hidden = true;
+    let svar = null;
+    try{
+      svar = await def.neamSkjerm(blokk.input || {});
+    }catch(e){
+      console.warn('neamSkjerm(' + blokk.name + ') feilet:', e);
+      svar = null;
+    }finally{
+      if(gjemt) gjemt.hidden = varGjemt;
+      neamTegn();
+    }
+    if(svar === null || svar === undefined){
+      return { type:'tool_result', tool_use_id:blokk.id,
+               content:'Brukeren lukket skjermen uten å gjøre noe. Ikke gjenta forslaget - spør om noe annet.' };
+    }
+    try{
+      const arg = Object.assign({}, blokk.input || {}, svar);
+      const ut = await window.neamUtfor(blokk.name, arg);
+      return { type:'tool_result', tool_use_id:blokk.id,
+               content: JSON.stringify(ut === undefined ? null : ut) };
+    }catch(e){
+      return { type:'tool_result', tool_use_id:blokk.id, is_error:true,
+               content: String((e && e.message) || 'Verktøyet feilet.') };
+    }
   }
 
   /* Legger verktoeyet fram flere forslag, tegnes de som en tabell i
@@ -834,7 +882,11 @@ function neamTegn(){
     });
   });
 
-  if(neamVenter) neamBoble(boks, 'bot tenker', 'Neam tenker …');
+  /* Ikke «tenker» mens en tabell venter paa svar. Loekka staar riktignok
+     og venter - men den venter paa BRUKEREN, ikke paa modellen, og en
+     tekst som sier at Neam jobber faar folk til aa vente i stedet for aa
+     trykke. Det var akkurat det som skjedde. */
+  if(neamVenter && !neamTabellEl) neamBoble(boks, 'bot tenker', 'Neam tenker …');
 
   /* Tabellen er ikke en melding og ligger derfor ikke i neamPoster - men
      den henger i den samme boksen, som toemmes her. Blir den tegnet bort

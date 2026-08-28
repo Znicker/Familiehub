@@ -332,6 +332,35 @@
   .field-hint{ font-size:var(--t-etikett); color:var(--aksent-moerk); margin:4px 0 0; font-weight:600; }
   .field-note{ font-size:var(--t-etikett); color:var(--ink-soft); margin:4px 0 0; }
 
+  /* ---- Neams forslagsvisning ---- */
+  .forslag-rad{
+    display:flex; align-items:flex-start; gap:12px;
+    padding:12px 0; border-bottom:1px solid var(--line);
+  }
+  .forslag-rad:last-child{ border-bottom:none; }
+  /* Fravalgt rad blir dus, ikke borte: man skal se hva man valgte bort. */
+  .forslag-rad.av{ opacity:.42; }
+  .forslag-av{ width:22px; height:22px; margin-top:3px; flex-shrink:0; }
+  .forslag-tekst{ flex:1; min-width:0; }
+  .forslag-navn{ font-weight:700; font-size:var(--t-brod); color:var(--ink); }
+  .forslag-hva{ font-size:var(--t-meta); color:var(--ink); margin-top:1px; }
+  .forslag-hvorfor{ font-size:var(--t-etikett); color:var(--ink-soft); margin-top:3px; line-height:1.4; }
+  /* Mengden kan rettes her. Det er den ene verdien man faktisk vet bedre
+     enn Neam - han gjetter paa summen, du vet hva dere trenger. */
+  .forslag-mengde{
+    margin-top:6px; width:150px; max-width:100%; padding:7px 10px;
+    border:1.5px solid var(--line); border-radius:8px; font-size:16px;
+    color:var(--ink); background:#fff;
+  }
+  .forslag-merke{
+    display:inline-block; font-size:var(--t-etikett); font-weight:700;
+    letter-spacing:.04em; text-transform:uppercase; border-radius:6px;
+    padding:2px 7px; margin-bottom:3px;
+  }
+  .forslag-merke.fjern{ background:var(--danger); color:#fff; }
+  .forslag-merke.endre{ background:var(--handling-endre); color:#fff; }
+  .forslag-merke.legg_til{ background:var(--handling-ny); color:#fff; }
+
   /* ---- Varebilder ---- */
   .vare-bilde{
     width:40px; height:40px; object-fit:contain; flex-shrink:0;
@@ -642,6 +671,27 @@ input,select,textarea{font-size:16px}
   </section>
 
   <!-- RYDD -->
+  <!-- Neams gjennomgang. Egen visning, ikke en tabell i panelet: en
+       gjennomgang er en arbeidsflate, og den hoerer hjemme i sida med
+       sidens farger og bredde. Panelet trekker seg unna mens den staar. -->
+  <section class="view" id="view-forslag">
+    <div class="card-panel punched" style="margin-top:20px;">
+      <h2>Neam foreslår</h2>
+      <p class="field-note" id="forslag-undertittel" style="margin:4px 0 14px;"></p>
+
+      <div id="forslag-liste"></div>
+
+      <div class="field" style="margin-top:16px;">
+        <label for="forslag-melding">Noe Neam bør vite?</label>
+        <textarea id="forslag-melding" rows="2"
+                  placeholder="F.eks. «vann trenger vi ikke, det har vi i springen»"></textarea>
+      </div>
+
+      <button class="btn-blaa btn-blokk" id="forslag-ferdig">Ferdig</button>
+      <button class="btn-ghost btn-blokk" id="forslag-avbryt">Avbryt</button>
+    </div>
+  </section>
+
   <section class="view" id="view-merge">
     <div class="card-panel punched" style="margin-top:20px;">
       <h2>Rydd i varene</h2>
@@ -908,7 +958,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=16"></script>
+<script src="/felles-neam.js?v=18"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -6108,6 +6158,12 @@ window.addEventListener('popstate', e => {
 });
 
 function showView(navn){
+  /* Forlates Neams forslagsvisning uten at noen trykket - swipe tilbake,
+     en knapp et annet sted - teller det som avbryt. Ellers blir loeftet
+     staaende og panelet venter paa et svar som aldri kommer. */
+  if (navn !== 'forslag' && forslagSvar){
+    const f = forslagSvar; forslagSvar = null; f(null);
+  }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + navn).classList.add('active');
   const hjem = navn === 'home';
@@ -6415,7 +6471,8 @@ window.neamVerktoy = async function(){
     },
     {
       name: 'foresla_opprydding',
-      description: 'Legger flere endringer fram i én tabell brukeren kan hake av i. '
+      description: 'Legger flere endringer fram på en egen skjerm der brukeren haker '
+                 + 'av og kan rette mengdene selv. '
                  + 'BRUK DENNE når du har mer enn én ting å foreslå - ikke ett og ett '
                  + 'spørsmål etter hverandre. Rekkefølgen du sender i spiller ingen rolle: '
                  + 'fjerninger kjøres først, så endringer, så tillegg, slik at «slå to '
@@ -6453,18 +6510,126 @@ window.neamVerktoy = async function(){
       neamBeskriv: function(arg){
         return 'Neam vil gjøre ' + ((arg.endringer || []).length) + ' endringer på lista.';
       },
-      neamTabell: function(arg){
-        return {
-          tittel: arg.tittel || 'Forslag',
-          rader: (arg.endringer || []).map(function(e, i){
-            return { id: String(i), valgt: true, hvorfor: e.hvorfor || '',
-                     celler: [ e.vare || '', neamForslagTekst(e) ] };
-          })
-        };
-      }
+      /* Egen skjerm i sida, ikke en tabell i panelet: forslagene skal kunne
+         leses i bredden, og mengden skal kunne rettes foer den godtas. */
+      neamSkjerm: neamForslagSkjerm
     }
   ];
 };
+
+/* Neams gjennomgang som egen visning.
+
+   Returnerer det brukeren bestemte - {valgte, mengder, melding} - eller
+   null om han gikk ut. felles-neam.js legger svaret oppaa arg-ene og
+   kaller neamUtfor, saa denne funksjonen endrer ingenting selv.
+
+   Mengden kan rettes her. Det er den ene verdien brukeren vet bedre enn
+   Neam: han regner ut en sum av det som staar, mens du vet hva dere
+   faktisk trenger. Resten - hva som skal fjernes, hva som skal hete hva -
+   er avkryssing.
+
+   Meldingsfeltet gaar tilbake som tekst. Den er ofte mer verdt enn
+   avkryssingene: «vann trenger vi ikke, det har vi i springen» er noe
+   Neam kan gjoere noe med neste gang. */
+let forslagSvar = null;
+
+function neamForslagSkjerm(arg){
+  const endringer = Array.isArray(arg.endringer) ? arg.endringer : [];
+  if (!endringer.length) return Promise.resolve(null);
+
+  document.getElementById('forslag-undertittel').textContent =
+    (arg.tittel || 'Forslag til opprydding') + ' – ' + neamOktNavn(arg);
+
+  const boks = document.getElementById('forslag-liste');
+  boks.textContent = '';
+
+  const merkeTekst = { fjern:'Fjernes', endre:'Endres', legg_til:'Legges til' };
+
+  endringer.forEach((e, i) => {
+    /* div, ikke label: et tekstfelt inne i en label gjoer at hvert klikk i
+       feltet haker av raden. Avkryssingen skjer i boksen, ikke i raden. */
+    const rad = document.createElement('div');
+    rad.className = 'forslag-rad';
+
+    const av = document.createElement('input');
+    av.type = 'checkbox';
+    av.className = 'forslag-av';
+    av.checked = true;
+    av.dataset.i = String(i);
+    av.onchange = () => rad.classList.toggle('av', !av.checked);
+    rad.appendChild(av);
+
+    const tekst = document.createElement('div');
+    tekst.className = 'forslag-tekst';
+
+    const merke = document.createElement('span');
+    merke.className = 'forslag-merke ' + e.handling;
+    merke.textContent = merkeTekst[e.handling] || e.handling;
+    tekst.appendChild(merke);
+
+    const navn = document.createElement('div');
+    navn.className = 'forslag-navn';
+    navn.textContent = e.nyttNavn ? (e.vare + ' → ' + e.nyttNavn) : (e.vare || '');
+    tekst.appendChild(navn);
+
+    if (e.type){
+      const hva = document.createElement('div');
+      hva.className = 'forslag-hva';
+      hva.textContent = 'Varetype: ' + e.type;
+      tekst.appendChild(hva);
+    }
+
+    if (e.hvorfor){
+      const hvorfor = document.createElement('div');
+      hvorfor.className = 'forslag-hvorfor';
+      hvorfor.textContent = e.hvorfor;
+      tekst.appendChild(hvorfor);
+    }
+
+    /* Mengdefelt bare der en mengde er i spill. En fjerning har ingen. */
+    if (e.handling !== 'fjern'){
+      const felt = document.createElement('input');
+      felt.className = 'forslag-mengde';
+      felt.dataset.i = String(i);
+      felt.value = neamMaalTekst(e);
+      felt.placeholder = 'Mengde';
+      tekst.appendChild(felt);
+    }
+
+    rad.appendChild(tekst);
+    boks.appendChild(rad);
+  });
+
+  document.getElementById('forslag-melding').value = '';
+  showView('forslag');
+
+  return new Promise(ok => {
+    /* Bare ett svar. Gaar man ut med nettleserens tilbakeknapp uten aa
+       trykke, blir loeftet staaende - derfor svarer avbryt ogsaa naar
+       visningen forlates. */
+    forslagSvar = svar => { forslagSvar = null; ok(svar); };
+
+    document.getElementById('forslag-avbryt').onclick = () => {
+      if (forslagSvar) forslagSvar(null);
+      goHome();
+    };
+
+    document.getElementById('forslag-ferdig').onclick = () => {
+      const valgte = [];
+      const mengder = {};
+      boks.querySelectorAll('input.forslag-av').forEach(el => {
+        if (el.checked) valgte.push(el.dataset.i);
+      });
+      boks.querySelectorAll('input.forslag-mengde').forEach(el => {
+        const v = el.value.trim();
+        if (v !== neamMaalTekst(endringer[Number(el.dataset.i)])) mengder[el.dataset.i] = v;
+      });
+      const melding = document.getElementById('forslag-melding').value.trim();
+      if (forslagSvar) forslagSvar({ valgte, mengder, melding });
+      goHome();
+    };
+  });
+}
 
 /* Én linje som sier hva forslaget gjoer, paa norsk. Den staar i tabellen
    og er alt brukeren har aa gaa etter - derfor ikke feltnavn og verdier,
@@ -6844,6 +7009,18 @@ async function neamOpprydding(arg){
   const rang = { fjern:0, endre:1, legg_til:2 };
   const rekke = valgte.slice().sort((a,b) => (rang[a.handling] ?? 9) - (rang[b.handling] ?? 9));
 
+  /* Brukeren kan ha rettet mengden i skjermen. Da er det HANS tall som
+     gjelder, ikke Neams - og `antall` nullstilles, siden den rettede
+     teksten er hele mengden. */
+  if (arg.mengder){
+    rekke.forEach(e => {
+      const rettet = arg.mengder[String(alle.indexOf(e))];
+      if (rettet === undefined) return;
+      e.mengde = rettet;
+      e.antall = '';      /* den rettede teksten ER hele mengden */
+    });
+  }
+
   const gjort = [], feilet = [];
   const felles = { omrade: arg.omrade, handletur: arg.handletur };
 
@@ -6867,7 +7044,11 @@ async function neamOpprydding(arg){
       feilet.push({ vare:e.vare, feil:String((err && err.message) || 'feilet') });
     }
   }
-  return { gjort, feilet };
+  /* Meldingen gaar tilbake til Neam som en del av resultatet. Den er ofte
+     det viktigste i hele runden - en foering han kan bruke neste gang. */
+  const ut = { gjort, feilet };
+  if (arg.melding) ut.fraBrukeren = arg.melding;
+  return ut;
 }
 
 /* Fjerner rader fra den aapne handleturen. Bare derfra: en vare med
