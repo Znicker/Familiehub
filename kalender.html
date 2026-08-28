@@ -847,11 +847,43 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   position:fixed;right:20px;z-index:47;
   bottom:calc(88px + env(safe-area-inset-bottom));
   background:var(--paper);border:1px solid var(--line);border-radius:14px;
-  box-shadow:0 16px 40px rgba(44,62,80,.22);padding:8px 14px;
-  min-width:240px;max-width:300px;max-height:60vh;overflow-y:auto;
+  box-shadow:0 16px 40px rgba(44,62,80,.22);padding:15px 17px 17px;
+  width:min(580px, calc(100vw - 40px));
+  max-height:min(74vh, 660px);overflow-y:auto;
 }
 .caldrop-panel[hidden]{display:none}
-@media(max-width:900px){ .caldrop-panel{right:auto;left:0} }
+@media(max-width:900px){ .caldrop-panel{right:16px;left:16px;width:auto} }
+
+/* ---------- Tilgangsmatrisen ----------
+   Bare sys ser denne. Den legger seg gjerne oppaa kalenderen - den er
+   et oppsettsverktoey, ikke noe man jobber ved siden av. */
+.tm-topp{
+  font-size:var(--t-etikett);color:var(--ink-soft);font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px;
+}
+.tm-hjelp{font-size:var(--t-etikett);color:var(--ink-soft);margin:0 0 12px;line-height:1.45}
+.cal-rad{border-top:1px solid var(--line);padding:11px 0 12px}
+.cal-rad:first-of-type{border-top:none;padding-top:2px}
+.tm-navn{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.tm-navn .cal-name{
+  flex:1;min-width:0;font-family:'Archivo',sans-serif;font-weight:700;
+  font-size:var(--t-brod);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tm-linje{display:flex;align-items:center;gap:7px;margin-top:6px;flex-wrap:wrap}
+.tm-merke{
+  width:112px;flex-shrink:0;font-size:var(--t-etikett);color:var(--ink-soft);
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.tm-ini{
+  width:33px;height:33px;border-radius:50%;flex-shrink:0;cursor:pointer;padding:0;
+  border:2px solid var(--line);background:var(--paper);color:var(--ink-soft);
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  transition:transform .12s ease;
+}
+.tm-ini.pa{background:var(--aksent);border-color:var(--aksent);color:#FFFFFF}
+.tm-ini:active{transform:scale(.92)}
+.tm-ini.laast{opacity:.32;cursor:default}
 
 /* Kalenderlista bor nå i toppmenyen */
 #app .side-cals{display:none}
@@ -1442,7 +1474,7 @@ const CFG = {
   clientId : 'ccab6959-abc2-4d09-9212-4b33c0db025c',
   tenantId : '9fcd8ee6-9b49-4904-ae55-117ba14373c3',
   authority: 'common',
-  scopes   : 'openid profile offline_access User.Read Calendars.Read Calendars.ReadWrite Calendars.ReadWrite.Shared'
+  scopes   : 'openid profile offline_access User.Read Calendars.Read Calendars.ReadWrite'
 };
 const REDIRECT  = location.origin + location.pathname;
 const AUTH_BASE = 'https://login.microsoftonline.com/' + CFG.authority + '/oauth2/v2.0';
@@ -1473,11 +1505,45 @@ const FASTE_FARGER = {
 };
 
 /* Bare disse kan endre farger. Alle andre ser dem, men kan ikke røre dem. */
-const FARGE_ADMIN = ['sys@neam.no', 'magne@neam.no'];
+const FARGE_ADMIN = ['sys@neam.no'];
+
+/* Husstanden, i den rekkefoelgen initialene skal staa i matrisen.
+   Initialen her er personens, ikke kalenderens - en kalender kan hete
+   det samme som en person uten aa vaere den personens. */
+const HUSSTAND = [
+  { epost:'sys@neam.no',    ini:'S' },
+  { epost:'magne@neam.no',  ini:'M' },
+  { epost:'nina@neam.no',   ini:'N' },
+  { epost:'emma@neam.no',   ini:'E' },
+  { epost:'andrea@neam.no', ini:'A' }
+];
+
+/* Kalendermenyen nede til hoeyre - velge hvilke kalendere som er i
+   spill, og farge paa dem - er sys sin alene. Alle fem kalenderne
+   ligger paa sys og er delt til alle, saa hver konto ser ogsaa sin
+   egen standardkalender, bursdager og helligdager i Graph-lista.
+   Menyen er stedet man tar dem ut av spill, og det er en avgjoerelse
+   for husstanden, ikke noe hver enkelt skal sitte og fikle med per
+   enhet. */
+const KAL_ADMIN = ['sys@neam.no'];
 const FARGE_KEY   = 'kal-farger';        /* i KV: fh:kal-farger */
+
+/* Hvem som ser hvilke kalendere. Sys bestemmer, alle leser.
+   Noekla paa kalendernavn, ikke id: en delt kalender har én id i sys
+   sin postkasse og en annen i Emmas, saa id-er kan ikke krysse kontoer.
+   Navn kan. Fargene ligger paa samme prinsipp.
+
+     { "Magne": { tilgang:[epost...], vis:[epost...] }, ... }
+
+   tilgang = kalenderen finnes i det hele tatt for denne personen
+   vis     = den staar paa naar oekta begynner; de andre er ett trykk
+             unna paa initialstripa */
+const TILGANG_KEY = 'kal-tilgang';       /* i KV: fh:kal-tilgang */
+let tildeling = {};
 
 let fargeOverstyring = {};   /* navn -> hex, hentet fra Cloudflare KV */
 let erFargeAdmin    = false;
+let erKalAdmin      = false;
 let minEpost        = null;
 
 /* Gjeldende farge for en kalender: overstyring → standard → palett */
@@ -1503,6 +1569,7 @@ function normEpost(s){
    brukerbytte paa delt iPad, og da ville feil person faatt fargevelgeren. */
 function settRettigheter(){
   erFargeAdmin = !!minEpost && FARGE_ADMIN.indexOf(minEpost) !== -1;
+  erKalAdmin   = !!minEpost && KAL_ADMIN.indexOf(minEpost)   !== -1;
 }
 async function hentIdentitet(){
   if(minEpost){ settRettigheter(); return; }
@@ -1540,6 +1607,52 @@ async function hentFarger(){
     if(d && typeof d === 'object') fargeOverstyring = d;
   }catch(e){ console.warn('Kunne ikke hente farger:', e.message); }
 }
+/* ---- Tilgangsmatrisen i Cloudflare KV ---- */
+async function hentTildeling(){
+  try{
+    const r = await fetch('/api/data?key=' + TILGANG_KEY, {cache:'no-store'});
+    if(!r.ok) return;                      /* 404 = ikke satt opp ennå */
+    const txt = await r.text();
+    if(!txt) return;
+    let d = JSON.parse(txt);
+    if(d && typeof d === 'object' && d.value !== undefined){
+      d = (typeof d.value === 'string') ? JSON.parse(d.value) : d.value;
+    }
+    if(d && typeof d === 'object') tildeling = d;
+  }catch(e){ console.warn('Kunne ikke hente tilgang:', e.message); }
+}
+async function lagreTildeling(){
+  try{
+    await fetch('/api/data?key=' + TILGANG_KEY, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(tildeling)
+    });
+  }catch(e){ console.warn('Kunne ikke lagre tilgang:', e.message); }
+}
+
+/* Er matrisen tom, har ingen satt den opp ennå, og da gjelder det gamle:
+   alt vises for alle. Fra det oeyeblikket sys lagrer noe, er matrisen
+   fasit - og en kalender som ikke staar der, finnes ikke for noen.
+   Det er nettopp poenget: Emmas private standardkalender har sys aldri
+   sett, og skal derfor aldri dukke opp i huben. */
+function tomTildeling(){
+  for(const n in tildeling) if(Object.prototype.hasOwnProperty.call(tildeling, n)) return false;
+  return true;
+}
+function harTilgang(navn){
+  if(!minEpost || tomTildeling()) return true;
+  const t = tildeling[navn];
+  return !!(t && t.tilgang && t.tilgang.indexOf(minEpost) !== -1);
+}
+function visVedStart(navn){
+  if(!harTilgang(navn)) return false;
+  if(!minEpost || tomTildeling()) return true;
+  const t = tildeling[navn];
+  if(!t || !t.vis) return true;
+  return t.vis.indexOf(minEpost) !== -1;
+}
+
 async function lagreFarger(){
   try{
     await fetch('/api/data?key=' + FARGE_KEY, {
@@ -1550,30 +1663,11 @@ async function lagreFarger(){
   }catch(e){ console.warn('Kunne ikke lagre farger:', e.message); }
 }
 
-/* Husk hvilke kalendere som er slått på/av, per enhet. */
-const KAL_VALG_KEY = 'fh_cal_valgt';
-let kalenderValg = {};
-try{ kalenderValg = JSON.parse(localStorage.getItem(KAL_VALG_KEY) || '{}') || {}; }catch(e){ kalenderValg = {}; }
-function lagreKalenderValg(){
-  try{ localStorage.setItem(KAL_VALG_KEY, JSON.stringify(kalenderValg)); }catch(e){}
-}
-
-/* Hvilke kalendere som ligger i hurtigvelgeren under logoen. Styres av
-   kalenderknappen nede til hoeyre. Kalendere som er tatt ut derfra er
-   heller ikke med i visningen - de er ute av spill. */
-const STRIP_KEY = 'fh_cal_strip';
-let stripValg = {};
-try{ stripValg = JSON.parse(localStorage.getItem(STRIP_KEY) || '{}') || {}; }catch(e){ stripValg = {}; }
-function lagreStripValg(){
-  try{ localStorage.setItem(STRIP_KEY, JSON.stringify(stripValg)); }catch(e){}
-}
-function iStrip(id){ return stripValg[id] !== false; }   /* med som standard */
-
-function toggleStrip(id){
-  stripValg[id] = !iStrip(id);
-  lagreStripValg();
-  brukHurtigUtvalg();
-}
+/* Hvilke kalendere som er i spill, og hvilke som staar paa naar oekta
+   begynner, kommer fra tilgangsmatrisen i KV - ikke fra localStorage.
+   De to gamle noeklene laa per enhet og var noekla paa kalender-id, og
+   doede derfor hver gang kalenderne ble bygget om. Ryddes bort her. */
+try{ localStorage.removeItem('fh_cal_valgt'); localStorage.removeItem('fh_cal_strip'); }catch(e){}
 
 /* Standardvisning etter skjermstoerrelse: telefon viser dagen, nettbrett
    uka, PC hele maaneden. Byttet man visning selv, gjelder det ut oekta. */
@@ -1801,12 +1895,12 @@ const TZ = 'Europe/Oslo';
 const enc = encodeURIComponent;
 
 /* Stien til én avtale.
-   /me/events/{id} betyr "avtalen i MIN postkasse". Det holdt saa lenge alle
-   kalenderne laa paa én konto og ble delt derfra. Naa deles standard-
-   kalenderen fra hver enkelt konto, og da bor avtalen i eierens postkasse -
-   der finner ikke /me/events den, og Graph svarer "The specified object was
-   not found in the store". Vi gaar derfor gjennom kalenderen avtalen ligger
-   i, som er samme vei vi leser den ut. */
+   /me/events/{id} betyr "avtalen i MIN postkasse". Alle fem kalenderne bor
+   paa sys og er delt derfra, saa for alle andre enn sys ligger avtalen i en
+   annen postkasse enn deres egen - der finner ikke /me/events den, og Graph
+   svarer "The specified object was not found in the store". Vi gaar derfor
+   gjennom kalenderen avtalen ligger i, som er samme vei vi leser den ut.
+   Riktig for sys ogsaa, saa det er én sti for alle. */
 function avtaleSti(calId, eventId){
   return calId
     ? '/me/calendars/' + enc(calId) + '/events/' + enc(eventId)
@@ -1939,15 +2033,29 @@ async function loadCalendars(){
   const prev = {};
   S.calendars.forEach(function(c){ prev[c.id] = c.on; });
   S.calendars = (d.value||[]).map(function(c,i){
-    const husket = kalenderValg[c.id];
     return {
       id:c.id, name:c.name, color: kalenderFarge(c.name, i),
       kanEndre: c.canEdit !== false,
-      on: iStrip(c.id) &&
-          (prev[c.id] !== undefined ? prev[c.id] : (husket !== undefined ? husket : true))
+      on: harTilgang(c.name) &&
+          (prev[c.id] !== undefined ? prev[c.id] : visVedStart(c.name))
     };
   });
   byggInitialer();
+  if(!startUtvalgSatt){ startUtvalgSatt = true; settStartUtvalg(); }
+}
+
+/* Oppstartstilstanden paa initialstripa. Kjoeres én gang per oekt -
+   trykker man seg videre etterpaa, skal ikke en bakgrunnsoppdatering
+   dra visningen tilbake til utgangspunktet.
+   Er alt som er i spill ogsaa satt til aa vises, er null det riktige
+   svaret: det er samme tilstand som ALLE-knappen faller tilbake til. */
+let startUtvalgSatt = false;
+function settStartUtvalg(){
+  const med = S.calendars.filter(function(c){ return harTilgang(c.name); });
+  const vis = med.filter(function(c){ return visVedStart(c.name); });
+  if(vis.length === med.length){ hurtigUtvalg = null; return; }
+  hurtigUtvalg = {};
+  vis.forEach(function(c){ hurtigUtvalg[c.id] = true; });
 }
 
 /* Hvilken periode som skal hentes, ut fra valgt visning */
@@ -2602,6 +2710,10 @@ function tell(c){
 function renderCalList(){
   const el = $('caldropPanel');
   if(!el) return;
+  /* Panelet er sys sitt, men render() kaller hit for alle. Uten denne
+     sperra ville Emmas nettleser saadd sine egne private kalendere inn
+     i det delte oppsettet og lagret dem for hele husstanden. */
+  if(!erKalAdmin){ el.innerHTML = ''; return; }
   const på = S.calendars.filter(function(c){ return c.on; }).length;
   const btn = $('caldropBtn');
   if(btn){
@@ -2613,10 +2725,44 @@ function renderCalList(){
     el.innerHTML = '<div class="msg">Ingen kalendere funnet.</div>';
     return;
   }
-  const vis = S.calendars;
+  /* Nye kalendere foeres inn med full tilgang foerste gang sys aapner
+     panelet. Uten dette ville en nyopprettet kalender vaert usynlig for
+     alle til noen husket aa krysse den av - en stille feil. */
+  let nytt = false;
+  S.calendars.forEach(function(c){
+    if(!tildeling[c.name]){
+      tildeling[c.name] = {
+        tilgang: HUSSTAND.map(function(p){ return p.epost; }),
+        vis:     HUSSTAND.map(function(p){ return p.epost; })
+      };
+      nytt = true;
+    }
+  });
+  if(nytt) lagreTildeling();
 
-  let html = vis.map(function(c){
-    /* Bare sys@ og magne@ får fargevelger — alle andre ser bare prikken. */
+  const rad = function(c, i, felt, merke){
+    const t = tildeling[c.name] || {};
+    const satt = t[felt] || [];
+    const gate = t.tilgang || [];
+    const knapper = HUSSTAND.map(function(p){
+      /* Vis-raden kan ikke gi noen noe de ikke har tilgang til. Da ville
+         to brytere sagt hver sin ting om samme person. */
+      const laast = (felt === 'vis') && gate.indexOf(p.epost) === -1;
+      return '<button class="tm-ini' + (satt.indexOf(p.epost) !== -1 ? ' pa' : '')
+        + (laast ? ' laast' : '') + '" title="' + p.epost + '"'
+        + (laast ? ' disabled' : '')
+        + ' onclick="event.stopPropagation(); vekslTildeling(' + i + ',\'' + p.epost + '\',\'' + felt + '\')">'
+        + p.ini + '</button>';
+    }).join('');
+    return '<div class="tm-linje"><span class="tm-merke">' + merke + '</span>' + knapper + '</div>';
+  };
+
+  let html = '<div class="tm-topp">Kalendere og tilgang</div>'
+    + '<p class="tm-hjelp">Tilgang avgjør om kalenderen finnes for personen.'
+    + ' Vis ved start avgjør om den står på når økta begynner &ndash; resten'
+    + ' ligger dempet på stripa, ett trykk unna.</p>';
+
+  html += S.calendars.map(function(c, i){
     const swatch = erFargeAdmin
       ? '<button class="cal-swatch" style="background:'+c.color+'" title="Endre farge"'
         + ' onclick="event.stopPropagation(); vekslPalett(this)"></button>'
@@ -2629,16 +2775,49 @@ function renderCalList(){
     }).join('') : '';
 
     return '<div class="cal-rad" data-id="'+c.id+'" data-navn="'+esc(c.name)+'">'
-      + '<div class="cal-row'+(iStrip(c.id)?'':' off')+'" onclick="event.stopPropagation(); toggleStrip(\''+c.id+'\')">'
+      + '<div class="tm-navn">'
       +   swatch
       +   '<span class="cal-name">'+esc(c.name)+'</span>'
-      +   '<span class="cal-count">'+(iStrip(c.id) ? tell(c) : '—')+'</span>'
+      +   '<span class="cal-count">'+tell(c)+'</span>'
       + '</div>'
       + (erFargeAdmin ? '<div class="cal-palett" hidden>'+palett+'</div>' : '')
+      + rad(c, i, 'tilgang', 'Tilgang')
+      + rad(c, i, 'vis', 'Vis ved start')
       + '</div>';
   }).join('');
 
   el.innerHTML = html;
+}
+
+/* Ett trykk i matrisen. Kalenderen sendes som indeks, ikke navn - da
+   slipper vi aa sitere navn med apostrof inn i en onclick-streng. */
+function vekslTildeling(i, epost, felt){
+  if(!erKalAdmin) return;
+  const c = S.calendars[i];
+  if(!c) return;
+  const t = tildeling[c.name] || (tildeling[c.name] = { tilgang:[], vis:[] });
+  if(!t.tilgang) t.tilgang = [];
+  if(!t.vis)     t.vis     = [];
+
+  const liste = t[felt];
+  const p = liste.indexOf(epost);
+  if(p === -1) liste.push(epost); else liste.splice(p, 1);
+
+  /* Tilgangen er den ytre porten: tas den bort, kan ikke vis-raden staa
+     igjen og love noe porten ikke slipper gjennom. Motsatt vei aapner vi
+     porten automatisk - aa be om aa vise noe er aa be om tilgang. */
+  if(felt === 'tilgang' && p !== -1){
+    const v = t.vis.indexOf(epost);
+    if(v !== -1) t.vis.splice(v, 1);
+  }
+  if(felt === 'vis' && p === -1 && t.tilgang.indexOf(epost) === -1){
+    t.tilgang.push(epost);
+  }
+
+  lagreTildeling();
+  /* Sys ser sin egen endring med én gang naar den gjelder sys selv. */
+  brukHurtigUtvalg();
+  renderCalList();
 }
 
 /* Åpne/lukke kalendermenyen; lukkes ved klikk utenfor */
@@ -2656,7 +2835,18 @@ function render(){
   const inn = !!(S.token || S.refresh);
   $('gate').hidden = inn;
   $('app').hidden  = !inn;
-  $('caldrop').hidden = !inn;
+  /* Skjult inntil identiteten er lest, ikke synlig inntil den er
+     avkreftet: minEpost er null foer Graph svarer, og da skal knappen
+     dukke opp for sys naar svaret kommer - ikke blinke innom hos de
+     fire andre foerst. loadMe() kaller render() paa nytt. */
+  const kalAdgang = inn && erKalAdmin;
+  $('caldrop').hidden = !kalAdgang;
+  const kalKnapp = $('caldropBtn');
+  if(kalKnapp) kalKnapp.hidden = !kalAdgang;
+  if(!kalAdgang){
+    const kalPanel = $('caldropPanel');
+    if(kalPanel) kalPanel.hidden = true;
+  }
   $('bottomBar').hidden = !inn;
   $('mnav').hidden = !inn;
   oppdaterBlapiler();
@@ -2737,11 +2927,9 @@ function visAlleKal(){
 
 function brukHurtigUtvalg(){
   S.calendars.forEach(function(c){
-    const med = iStrip(c.id);
+    const med = harTilgang(c.name);
     c.on = med && (hurtigUtvalg ? !!hurtigUtvalg[c.id] : true);
-    kalenderValg[c.id] = c.on;
   });
-  lagreKalenderValg();
   fyllFraCache();
   render();
   last(false);
@@ -2762,7 +2950,7 @@ function renderHurtigKal(){
     return i === -1 ? INITIAL_PRI.length : i;
   };
 
-  S.calendars.filter(function(c){ return iStrip(c.id); })
+  S.calendars.filter(function(c){ return harTilgang(c.name); })
     .sort(function(a, b){
     return (rang(a) - rang(b)) || String(a.name||'').localeCompare(String(b.name||''), 'no');
   }).forEach(function(c){
@@ -4765,7 +4953,8 @@ window.addEventListener('orientationchange', function(){
     await Promise.all([
       loadMe().catch(function(){}),
       identitet,
-      hentFarger()
+      hentFarger(),
+      hentTildeling()
     ]);
 
     /* Delt iPad: Access-sesjonen og Microsoft-tokenet er to uavhengige
