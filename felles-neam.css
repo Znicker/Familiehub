@@ -120,6 +120,21 @@
 .neam-melding.tenker{ color:var(--ink-soft); animation:neamPuls 1.2s ease-in-out infinite; }
 @keyframes neamPuls{ 0%,100%{ opacity:.45; } 50%{ opacity:1; } }
 
+/* Et verktoeykall er noe som SKJEDDE, ikke noe som ble sagt. Derfor en
+   linje og ikke en boble - den skal kunne leses forbi. Selve resultatet
+   vises aldri: det er Neams arbeidsmateriale, og han gjenforteller det
+   som betyr noe i svaret sitt. */
+.neam-verktoy{
+  align-self:flex-start; display:inline-flex; align-items:center; gap:7px;
+  color:var(--ink-soft); font-size:var(--t-etikett);
+  letter-spacing:.03em; text-transform:uppercase; font-weight:700;
+  padding:1px 2px;
+}
+.neam-verktoy::before{
+  content:''; width:6px; height:6px; border-radius:50%;
+  background:var(--aksent); flex-shrink:0;
+}
+
 .neam-tom{
   margin:auto; text-align:center; color:var(--ink-soft);
   font-size:var(--t-meta); line-height:1.5; padding:0 20px;

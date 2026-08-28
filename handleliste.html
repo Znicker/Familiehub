@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
-<link rel="stylesheet" href="/felles-neam.css?v=1">
+<link rel="stylesheet" href="/felles-neam.css?v=2">
 <!-- ?v=1: bump tallet naar felles-skall.css endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -908,7 +908,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=1"></script>
+<script src="/felles-neam.js?v=2"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -6024,6 +6024,119 @@ window.neamKontekst = async function(){
     antallVarer: varer.length,
     gjenstaar: varer.filter(v => !v.done).length
   };
+};
+
+/* ---- Verktoeyene Neam har paa denne sida ----
+   Bare lesing foreloepig. Skriving kommer som egne verktoey med
+   neamSkriver:true, og da spoer panelet foer noe skjer.
+
+   Beskrivelsene er skrevet for Neam, ikke for oss. De er det eneste
+   han har aa gaa etter naar han velger verktoey, saa de sier hva
+   verktoeyet gjoer OG naar det ikke passer. */
+window.neamVerktoy = async function(){
+  return [
+    {
+      name: 'les_handlelista',
+      description: 'Leser varene i en handletur: navn, mengde, varetype, butikk og '
+                 + 'om varen er huket av som kjøpt. Uten argumenter leses handleturen '
+                 + 'brukeren har oppe akkurat nå. Bruk dette i stedet for å gjette på '
+                 + 'hva som står på lista.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          omrade: { type:'string', enum:['mat','annet'],
+                    description:'mat = Dagligvarer, annet = Andre varer. '
+                              + 'Standard er det brukeren har oppe.' },
+          handletur: { type:'string',
+                       description:'Navnet på en bestemt handletur. Standard er den aktive. '
+                                 + 'Bruk list_handleturer først hvis du ikke vet navnet.' }
+        },
+        required: []
+      }
+    },
+    {
+      name: 'list_handleturer',
+      description: 'Lister alle handleturer med navn, område og hvor mange varer hver '
+                 + 'har. Bruk denne når brukeren nevner en handletur du ikke vet navnet på.',
+      input_schema: { type:'object', properties:{}, required:[] }
+    },
+    {
+      name: 'sok_varekatalog',
+      description: 'Søker i varekatalogen - varer huset har handlet før, med varetypen '
+                 + 'de pleier å få. Katalogen er ikke handlelista; den sier hva en vare '
+                 + 'ER, ikke at den skal kjøpes.',
+      input_schema: {
+        type: 'object',
+        properties: { sok: { type:'string', description:'Del av et varenavn.' } },
+        required: ['sok']
+      }
+    }
+  ];
+};
+
+/* Taket paa 200 er et tak paa svaret til Neam, ikke paa lista. En
+   handletur som er lengre enn det er uansett ikke noe han bør faa
+   servert i sin helhet. */
+const NEAM_MAKS_VARER = 200;
+
+function neamVareLinje(v){
+  return {
+    vare: v.name,
+    mengde: byggMengdeTekst(v.count, v.amt, v.unit) || v.qty || '',
+    type: v.cat || '',
+    butikk: v.store || '',
+    kjopt: !!v.done
+  };
+}
+
+window.neamUtfor = async function(navn, arg){
+  arg = arg || {};
+
+  if (navn === 'les_handlelista'){
+    const omr = arg.omrade === 'annet' ? 'annet' : (arg.omrade === 'mat' ? 'mat' : aktivOmrade());
+    let okt;
+    if (arg.handletur){
+      const sok = String(arg.handletur).trim().toLowerCase();
+      okt = data.okter.find(o => (o.navn || '').trim().toLowerCase() === sok)
+         || data.okter.find(o => (o.navn || '').trim().toLowerCase().includes(sok));
+      if (!okt) throw new Error('Fant ingen handletur som heter «' + arg.handletur + '».');
+    } else {
+      okt = aktivOkt(omr);
+      if (!okt) return { handletur:null, beskjed:'Ingen handletur er åpen i dette området.' };
+    }
+    const varer = data.items.filter(v => v.oktId === okt.id);
+    return {
+      handletur: oktNavn(okt),
+      omrade: oktOmrade(okt) === 'annet' ? 'Andre varer' : 'Dagligvarer',
+      antall: varer.length,
+      gjenstaar: varer.filter(v => !v.done).length,
+      varer: varer.slice(0, NEAM_MAKS_VARER).map(neamVareLinje),
+      avkortet: varer.length > NEAM_MAKS_VARER
+    };
+  }
+
+  if (navn === 'list_handleturer'){
+    return {
+      handleturer: data.okter.map(o => ({
+        navn: oktNavn(o),
+        omrade: oktOmrade(o) === 'annet' ? 'Andre varer' : 'Dagligvarer',
+        antall: data.items.filter(v => v.oktId === o.id).length,
+        aktiv: viewOktId[oktOmrade(o)] === o.id
+      }))
+    };
+  }
+
+  if (navn === 'sok_varekatalog'){
+    const sok = String(arg.sok || '').trim().toLowerCase();
+    if (!sok) throw new Error('Søket var tomt.');
+    const treff = Object.values(katalog.katalog)
+      .filter(k => String(k.vare || '').toLowerCase().includes(sok))
+      .slice(0, 40)
+      .map(k => ({ vare:k.vare, type:k.type || '', basisvare: !!k.basis }));
+    return { sok: arg.sok, antall: treff.length, treff };
+  }
+
+  throw new Error('Ukjent verktøy: ' + navn);
 };
 
 // Avgrenset til forsiden, ellers nullstilles fanene i rydde-visningen

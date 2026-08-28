@@ -1,43 +1,57 @@
 /* ============================================================
    Neam - samtaleflaten (oppfoersel)
    ------------------------------------------------------------
-   Haandtaket, panelet og samtalen mot /api/claude.
-   Laget 28. august 2026.
+   Haandtaket, panelet, samtalen og verktoeyloekka mot
+   /api/claude. Laget 28. august 2026; verktoey lagt til samme dag.
 
    Fila monterer seg selv. Sida trenger bare aa laste den - ingen
    markup, ingen oppstartskall.
 
    ------------------------------------------------------------
-   KONTRAKTEN MOT SIDA - den ene tingen som betyr noe
+   KONTRAKTEN MOT SIDA - tre funksjoner, alle valgfrie
 
-   Hver side definerer:
+     window.neamKontekst = async function(){ ... };
+     window.neamVerktoy  = async function(){ ... };
+     window.neamUtfor    = async function(navn, arg){ ... };
 
-     window.neamKontekst = async function(){
-       return { sted:'Handleliste', visning:'Forsiden', ... };
-     };
+   ALLE ER ASYNKRONE MED VILJE, ogsaa de som svarer med én gang i
+   dag. Skal panelet en gang ligge i en ramme (hub.html), gaar
+   spoersmaalene over en dokumentgrense og maa gaa via
+   postMessage - og et svar som kommer tilbake senere kan ikke
+   returneres synkront. Skrives kallstedene med await naa, merker
+   de flyttingen overhodet ikke.
 
-   Den ER asynkron, og den skal vaere det selv om sida svarer med
-   én gang i dag. Grunnen: kommer det en ramme (hub.html), gaar
-   spoersmaalet over en dokumentgrense og maa gaa via postMessage,
-   og et svar som kommer tilbake senere kan ikke returneres
-   synkront. Skrives kallstedene med await naa, merker de
-   flyttingen overhodet ikke. Skrives de synkrone, maa hvert
-   eneste ett skrives om.
+   neamKontekst() - "hvor er jeg og hva ser jeg paa". Feltene er
+   frie; alt sendes med som JSON i systemteksten. Bare `sted` og
+   `visning` leses her, og bare for aa skrives ut i topplinja.
 
-   Feltene er frie. Alt som kommer tilbake sendes med til Neam som
-   JSON, saa en side kan utvide sin egen kontekst uten aa roere
-   denne fila. Bare `sted` og `visning` leses her, og bare for aa
-   skrives ut i topplinja.
+   neamVerktoy() - lista over hva som kan gjoeres PAA DENNE SIDA.
+   Vanlige verktoeydefinisjoner (name, description, input_schema)
+   pluss to felter som er vaare egne og strippes foer sending:
 
-   Mangler funksjonen, virker panelet fortsatt - Neam vet bare
-   ikke hvor du er.
+     neamSkriver  true naar verktoeyet endrer noe. Da spoer
+                  panelet foerst, og gjoer ingenting uten ja.
+     neamBeskriv  function(arg) -> setning som forklarer hva som
+                  kommer til aa skje. Vises i bekreftelsen.
+
+   neamUtfor(navn, arg) - kjoerer verktoeyet og returnerer noe som
+   taaler JSON.stringify. Kaster den, gaar feilen tilbake til Neam
+   som et feilresultat, ikke til brukeren som en krasj.
+
+   Mangler funksjonene, virker panelet fortsatt - Neam kan bare
+   ikke se hvor du er eller gjoere noe.
    ------------------------------------------------------------
 
+   REGELEN: lesing gaar rett gjennom, skriving stopper og spoer.
+   Spoer du hva som staar paa lista, skal ikke Neam be om lov til
+   aa se etter. Skal han endre noe, ser du hva som kommer til aa
+   skje foer det skjer.
+
    Samtalen ligger i sessionStorage, ikke i KV eller localStorage.
-   Det er med vilje: den skal overleve at du gaar fra handlelista
-   til kalenderen, og doe naar du lukker fana. Samme vurdering som
-   kalenderens hurtigvalg - en samtale som overlever oekta blir en
-   samtale du ikke husker at du startet.
+   Den skal overleve at du gaar fra handlelista til kalenderen, og
+   doe naar du lukker fana. Samme vurdering som kalenderens
+   hurtigvalg - en samtale som overlever oekta blir en samtale du
+   ikke husker at du startet.
 
    FORVENTER av sida som laster fila:
      bekreft()  - fra felles-dialog.js, som maa lastes FOER denne
@@ -55,9 +69,16 @@ const NEAM_MODELL = 'claude-sonnet-5';
 const NEAM_SENDT  = 24;
 const NEAM_LAGRET = 60;
 
-/* {rolle:'meg'|'bot'|'feil', tekst} - 'feil' er vaare egne
-   feilmeldinger og sendes aldri til API-et. */
-let neamMeldinger = [];
+/* Tak paa hvor mange ganger Neam faar kalle verktoey for én melding.
+   Uten det kan en modell som misforstaar staa og kalle det samme om
+   igjen til noen lukker fana. */
+const NEAM_MAKS_RUNDER = 6;
+
+/* Postene er enten en ekte API-melding eller vaar egen feilmelding.
+   API-meldingene lagres slik de sendes - med verktoeyblokkene i - saa
+   historikken kan spilles av igjen etter en sideveksling uten at
+   paret tool_use/tool_result gaar i stykker. */
+let neamPoster = [];
 let neamVenter = false;
 let neamBygd = false;
 
@@ -75,9 +96,30 @@ function neamHent(){
 
 function neamLagre(){
   try{
-    sessionStorage.setItem(NEAM_LAGER,
-      JSON.stringify(neamMeldinger.slice(-NEAM_LAGRET)));
+    sessionStorage.setItem(NEAM_LAGER, JSON.stringify(neamPoster.slice(-NEAM_LAGRET)));
   }catch(e){ /* full eller avslaatt - samtalen lever ut sida uansett */ }
+}
+
+/* ============================================================
+   Historikken som sendes
+   ============================================================ */
+
+/* Et tool_result maa ha sitt tool_use rett foran seg. Klipper vi blindt
+   paa antall, kan vi ende opp med aa sende et resultat uten kallet det
+   svarer paa, og API-et avviser hele meldingen. Vi klipper derfor bare
+   der en ekte brukertur begynner. Finner vi ikke et slikt sted, sender
+   vi heller for mye enn noe oedelagt. */
+function neamKlipp(msgs){
+  if(msgs.length <= NEAM_SENDT) return msgs;
+  for(let i = msgs.length - NEAM_SENDT; i < msgs.length; i++){
+    if(msgs[i].role === 'user' && typeof msgs[i].content === 'string') return msgs.slice(i);
+  }
+  return msgs;
+}
+
+function neamHistorikk(){
+  return neamKlipp(neamPoster.filter(function(p){ return p.api; })
+                             .map(function(p){ return p.api; }));
 }
 
 /* ============================================================
@@ -88,41 +130,55 @@ function neamLagre(){
    kontrakt som kaster, en kontrakt som aldri svarer - alle tre gir
    null, og panelet gaar videre uten. Neam skal ikke kunne henge paa
    at en side svarer daarlig. */
-async function neamSted(){
-  if(typeof window.neamKontekst !== 'function') return null;
+async function neamSpor(navn, arg){
+  if(typeof window[navn] !== 'function') return null;
   try{
-    const svar = await Promise.race([
-      Promise.resolve(window.neamKontekst()),
+    return await Promise.race([
+      Promise.resolve(window[navn](arg)),
       new Promise(function(ok){ setTimeout(function(){ ok(null); }, 2000); })
     ]);
-    return (svar && typeof svar === 'object') ? svar : null;
   }catch(e){
-    console.warn('neamKontekst() feilet:', e);
+    console.warn(navn + '() feilet:', e);
     return null;
   }
 }
 
-function neamStedTekst(k){
-  if(!k) return '';
-  const deler = [k.sted, k.visning].filter(Boolean);
-  return deler.join(' · ');
+async function neamSted(){
+  const svar = await neamSpor('neamKontekst');
+  return (svar && typeof svar === 'object') ? svar : null;
 }
 
-function neamSystem(k){
+async function neamVerktoyliste(){
+  const svar = await neamSpor('neamVerktoy');
+  return Array.isArray(svar) ? svar : [];
+}
+
+function neamStedTekst(k){
+  if(!k) return '';
+  return [k.sted, k.visning].filter(Boolean).join(' \u00B7 ');
+}
+
+function neamSystem(k, harVerktoy){
   let s =
     'Du er Neam, husassistenten i familiens hub. Du svarer paa norsk (bokmaal), ' +
-    'kort og konkret. Familien er Magne, Nina, Emma og Andrea.\n\n' +
-    'Du kan foreloepig bare snakke. Du har ingen tilgang til aa endre noe i ' +
-    'appene, styre lys eller lese data utover det som staar nedenfor. Blir du ' +
-    'bedt om aa gjoere noe, si hva du ville gjort og at handlingene ikke er ' +
-    'koblet paa ennaa. Ikke lat som om noe er utfoert.\n\n' +
-    'Ikke gjett paa hva som staar i listene eller kalenderen. Vet du det ikke, ' +
-    'si det.';
-  if(k){
-    s += '\n\nHer staar brukeren akkurat naa:\n' + JSON.stringify(k, null, 1);
+    'kort og konkret. Familien er Magne, Nina, Emma og Andrea.\n\n';
+
+  if(harVerktoy){
+    s += 'Du har verktoey for denne sida. Bruk dem heller enn aa gjette - vet du ' +
+         'ikke hva som staar paa en liste, saa les den. Verktoey som endrer noe ' +
+         'blir lagt fram for brukeren foer de kjoerer; avslaar brukeren, godtar ' +
+         'du det og foreslaar noe annet.\n\n' +
+         'Du har ingen andre veier inn i systemet enn verktoeyene. Finnes det ' +
+         'ikke et som passer, si det - ikke lat som om noe er gjort.\n\n';
   }else{
-    s += '\n\nDu vet ikke hvilken side brukeren staar paa.';
+    s += 'Du har ingen verktoey paa denne sida. Du kan bare snakke. Blir du bedt ' +
+         'om aa gjoere noe, si hva du ville gjort og at det ikke er koblet paa ' +
+         'her ennaa. Ikke lat som om noe er utfoert.\n\n';
   }
+
+  s += 'Ikke gjett paa hva som staar i listene eller kalenderen.';
+  s += k ? ('\n\nHer staar brukeren akkurat naa:\n' + JSON.stringify(k, null, 1))
+         : '\n\nDu vet ikke hvilken side brukeren staar paa.';
   return s;
 }
 
@@ -134,19 +190,28 @@ function neamSystem(k){
    kommer det en HTML-side eller en tom kropp i retur, og response.json()
    kaster da en melding som ikke sier noe om hva som skjedde. Samme
    laerdom som i oppskrifter. */
-async function neamEttForsok(meldinger, system){
+async function neamEttForsok(meldinger, system, verktoy){
+  const kropp = {
+    model: NEAM_MODELL,
+    max_tokens: 2000,
+    /* NB: ikke sett temperature - modellen avviser den. */
+    system: system,
+    messages: meldinger
+  };
+  /* Vaare egne felter foelger ikke med ut - API-et avviser ukjente
+     noekler i en verktoeydefinisjon. */
+  if(verktoy.length){
+    kropp.tools = verktoy.map(function(v){
+      return { name:v.name, description:v.description, input_schema:v.input_schema };
+    });
+  }
+
   let r;
   try{
     r = await fetch('/api/claude', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({
-        model: NEAM_MODELL,
-        max_tokens: 1500,
-        /* NB: ikke sett temperature - modellen avviser den. */
-        system: system,
-        messages: meldinger
-      })
+      body: JSON.stringify(kropp)
     });
   }catch(e){
     const feil = new Error('Fikk ikke kontakt med Neam. Sjekk nettforbindelsen.');
@@ -174,24 +239,62 @@ async function neamEttForsok(meldinger, system){
     feil.kanProvesIgjen = r.status === 429 || r.status >= 500;
     throw feil;
   }
-
-  const tekst = (d.content || [])
-    .filter(function(b){ return b.type === 'text'; })
-    .map(function(b){ return b.text; })
-    .join('\n').trim();
-  if(!tekst) throw new Error('Neam svarte uten tekst.');
-  return tekst;
+  return d;
 }
 
-/* Ett nytt forsoek ved forbigaaende feil. Ekte feil fra API-et prøves
+/* Ett nytt forsoek ved forbigaaende feil. Ekte feil fra API-et proeves
    ikke om igjen - da er svaret det samme neste gang. */
-async function neamKall(meldinger, system){
+async function neamKall(meldinger, system, verktoy){
   try{
-    return await neamEttForsok(meldinger, system);
+    return await neamEttForsok(meldinger, system, verktoy);
   }catch(e){
     if(!e.kanProvesIgjen) throw e;
     await new Promise(function(ok){ setTimeout(ok, 1200); });
-    return await neamEttForsok(meldinger, system);
+    return await neamEttForsok(meldinger, system, verktoy);
+  }
+}
+
+/* ============================================================
+   Verktoey
+   ============================================================ */
+
+/* Skriving spoer foerst. Lesing gjoer det ikke - et verktoey som bare
+   ser etter noe skal ikke kreve en dialog hver gang. */
+async function neamGodkjenn(def, blokk){
+  if(!def || !def.neamSkriver) return true;
+  let tekst = '';
+  try{
+    if(def.neamBeskriv) tekst = def.neamBeskriv(blokk.input || {}) || '';
+  }catch(e){ tekst = ''; }
+  if(!tekst) tekst = 'Neam vil kjøre «' + blokk.name + '». Skal den få lov?';
+  return await bekreft(tekst, {jaTekst:'Gjør det'});
+}
+
+async function neamKjor(blokk, defer){
+  const def = defer.find(function(d){ return d.name === blokk.name; });
+
+  if(!def || typeof window.neamUtfor !== 'function'){
+    return { type:'tool_result', tool_use_id:blokk.id, is_error:true,
+             content:'Verktøyet finnes ikke på denne siden.' };
+  }
+
+  if(!(await neamGodkjenn(def, blokk))){
+    /* Avslag er ikke en feil. Neam skal forstaa at brukeren sa nei og
+       finne paa noe annet, ikke proeve det samme om igjen. */
+    return { type:'tool_result', tool_use_id:blokk.id,
+             content:'Brukeren avslo. Ikke prøv dette igjen uten å foreslå noe annet først.' };
+  }
+
+  try{
+    const svar = await window.neamUtfor(blokk.name, blokk.input || {});
+    return { type:'tool_result', tool_use_id:blokk.id,
+             content: JSON.stringify(svar === undefined ? null : svar) };
+  }catch(e){
+    /* Feilen gaar til Neam, ikke til brukeren som en krasj: han kan si
+       hva som gikk galt med egne ord, eller proeve en annen vei. */
+    console.warn('neamUtfor(' + blokk.name + ') feilet:', e);
+    return { type:'tool_result', tool_use_id:blokk.id, is_error:true,
+             content: String((e && e.message) || 'Verktøyet feilet.') };
   }
 }
 
@@ -259,7 +362,7 @@ function neamBygg(){
     if(ev.key === 'Enter' && !ev.shiftKey){ ev.preventDefault(); neamSend(); }
   });
 
-  neamMeldinger = neamHent();
+  neamPoster = neamHent();
   neamTegn();
 }
 
@@ -277,7 +380,10 @@ async function neamAapne(){
 
   /* Stedet hentes hver gang panelet aapnes - visningen kan ha byttet
      siden sist. */
-  const k = await neamSted();
+  neamSkrivSted(await neamSted());
+}
+
+function neamSkrivSted(k){
   const ut = document.getElementById('neamSted');
   if(ut) ut.textContent = neamStedTekst(k);
 }
@@ -288,10 +394,10 @@ function neamLukk(){
 }
 
 async function neamNySamtale(){
-  if(neamMeldinger.length &&
+  if(neamPoster.length &&
      !(await bekreft('Starte på nytt? Det som står her forsvinner.',
                      {jaTekst:'Start på nytt'}))) return;
-  neamMeldinger = [];
+  neamPoster = [];
   neamLagre();
   neamTegn();
 }
@@ -305,37 +411,60 @@ function neamVoks(){
 
 /* ============================================================
    Tegning
+   ------------------------------------------------------------
+   Alt tegnes ut fra de lagrede API-meldingene. Da finnes det bare
+   én sannhet om hva som har skjedd, og en samtale som hentes fram
+   igjen etter en sideveksling ser lik ut som foer.
    ============================================================ */
+
+function neamBoble(boks, klasse, tekst){
+  const el = document.createElement('div');
+  el.className = 'neam-melding ' + klasse;
+  el.textContent = tekst;
+  boks.appendChild(el);
+}
 
 function neamTegn(){
   const boks = document.getElementById('neamSamtale');
   if(!boks) return;
   boks.innerHTML = '';
 
-  if(!neamMeldinger.length && !neamVenter){
+  if(!neamPoster.length && !neamVenter){
     const tom = document.createElement('p');
     tom.className = 'neam-tom';
-    tom.textContent = 'Neam vet hvilken side du står på. '
-                    + 'Spør om noe, så ser vi hvor langt vi kommer.';
+    tom.textContent = 'Neam vet hvilken side du står på, og kan lese det som ligger her. '
+                    + 'Spør om noe.';
     boks.appendChild(tom);
     return;
   }
 
-  neamMeldinger.forEach(function(m){
-    const el = document.createElement('div');
-    el.className = 'neam-melding ' + (m.rolle === 'meg' ? 'meg'
-                                    : m.rolle === 'feil' ? 'feil' : 'bot');
-    el.textContent = m.tekst;
-    boks.appendChild(el);
+  neamPoster.forEach(function(p){
+    if(p.feil){ neamBoble(boks, 'feil', p.feil); return; }
+    const m = p.api;
+    if(!m) return;
+
+    if(typeof m.content === 'string'){
+      neamBoble(boks, m.role === 'user' ? 'meg' : 'bot', m.content);
+      return;
+    }
+
+    (m.content || []).forEach(function(b){
+      if(b.type === 'text' && String(b.text || '').trim()){
+        neamBoble(boks, 'bot', b.text);
+      }else if(b.type === 'tool_use'){
+        /* Verktoeykallet vises som en linje, ikke som en boble: det er
+           noe som skjedde, ikke noe som ble sagt. Resultatet vises ikke -
+           det er Neams arbeidsmateriale, og han gjenforteller det som
+           betyr noe i svaret sitt. */
+        const el = document.createElement('div');
+        el.className = 'neam-verktoy';
+        el.textContent = String(b.name || '').replace(/_/g, ' ');
+        boks.appendChild(el);
+      }
+    });
   });
 
-  if(neamVenter){
-    const el = document.createElement('div');
-    el.className = 'neam-melding bot tenker';
-    el.textContent = 'Neam tenker …';
-    boks.appendChild(el);
-  }
-
+  if(neamVenter) neamBoble(boks, 'bot tenker', 'Neam tenker …');
   boks.scrollTop = boks.scrollHeight;
 }
 
@@ -353,35 +482,49 @@ async function neamSend(){
   felt.value = '';
   neamVoks();
 
-  neamMeldinger.push({ rolle:'meg', tekst:tekst });
+  neamPoster.push({ api:{ role:'user', content:tekst } });
   neamVenter = true;
   document.getElementById('neamSend').disabled = true;
   neamLagre();
   neamTegn();
 
   try{
-    /* Konteksten hentes paa nytt for hver melding, ikke én gang ved
-       aapning: panelet staar oppe mens du kan ha byttet visning bak
-       det. Den ligger i systemteksten, som bygges paa nytt hvert kall,
-       saa historikken holder seg ren for stedsbeskrivelser. */
+    /* Kontekst og verktoey hentes paa nytt for hver melding, ikke én
+       gang ved aapning: panelet staar oppe mens du kan ha byttet
+       visning bak det. De ligger utenfor historikken, saa den holder
+       seg ren. */
     const k = await neamSted();
-    const ut = document.getElementById('neamSted');
-    if(ut) ut.textContent = neamStedTekst(k);
+    neamSkrivSted(k);
+    const defer  = await neamVerktoyliste();
+    const system = neamSystem(k, defer.length > 0);
 
-    const historikk = neamMeldinger
-      .filter(function(m){ return m.rolle !== 'feil'; })
-      .slice(-NEAM_SENDT)
-      .map(function(m){
-        return { role: m.rolle === 'meg' ? 'user' : 'assistant', content: m.tekst };
-      });
+    let runde = 0;
+    while(true){
+      const svar = await neamKall(neamHistorikk(), system, defer);
+      neamPoster.push({ api:{ role:'assistant', content:svar.content || [] } });
+      neamLagre();
+      neamTegn();
 
-    const svar = await neamKall(historikk, neamSystem(k));
-    neamMeldinger.push({ rolle:'bot', tekst:svar });
+      if(svar.stop_reason !== 'tool_use') break;
+
+      if(++runde > NEAM_MAKS_RUNDER){
+        neamPoster.push({ feil:'Neam ble stående og gjenta seg selv, så jeg stoppet det.' });
+        break;
+      }
+
+      const kall = (svar.content || []).filter(function(b){ return b.type === 'tool_use'; });
+      const resultater = [];
+      for(const b of kall) resultater.push(await neamKjor(b, defer));
+
+      neamPoster.push({ api:{ role:'user', content:resultater } });
+      neamLagre();
+      neamTegn();
+    }
   }catch(e){
     console.warn('Neam:', e);
-    neamMeldinger.push({ rolle:'feil', tekst:e.message || 'Noe gikk galt.' });
+    neamPoster.push({ feil: (e && e.message) || 'Noe gikk galt.' });
   }finally{
-    /* I finally, ikke etter kallet: ryker noe uventet, skal panelet
+    /* I finally, ikke etter loekka: ryker noe uventet, skal panelet
        fortsatt kunne brukes. */
     neamVenter = false;
     const send = document.getElementById('neamSend');
