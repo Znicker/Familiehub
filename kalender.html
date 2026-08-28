@@ -881,9 +881,23 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   display:flex;align-items:center;justify-content:center;line-height:1;
   transition:transform .12s ease;
 }
-.tm-ini.pa{background:var(--aksent);border-color:var(--aksent);color:#FFFFFF}
+/* Flaten settes inline til kalenderens egen farge - raden skal leses som
+   én kalender, slik initialstripa gjoer. Alle kalenderfargene er moerke
+   nok til at hvit initial er lesbar oppaa; se FASTE_FARGER. */
+.tm-ini.pa{color:#FFFFFF}
 .tm-ini:active{transform:scale(.92)}
 .tm-ini.laast{opacity:.32;cursor:default}
+/* Av/paa for hele raden. Ligger etter initialene, ikke foer - man leser
+   hvem som er med foerst, og griper hurtigvalget etterpaa. */
+.tm-alle{
+  height:33px;padding:0 13px;border-radius:999px;flex-shrink:0;cursor:pointer;
+  margin-left:4px;border:1.5px solid var(--line);
+  background:var(--paper);color:var(--ink-soft);
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
+  letter-spacing:.06em;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.tm-alle:active{transform:scale(.96)}
 
 /* Kalenderlista bor nå i toppmenyen */
 #app .side-cals{display:none}
@@ -2748,13 +2762,20 @@ function renderCalList(){
       /* Vis-raden kan ikke gi noen noe de ikke har tilgang til. Da ville
          to brytere sagt hver sin ting om samme person. */
       const laast = (felt === 'vis') && gate.indexOf(p.epost) === -1;
-      return '<button class="tm-ini' + (satt.indexOf(p.epost) !== -1 ? ' pa' : '')
-        + (laast ? ' laast' : '') + '" title="' + p.epost + '"'
+      const paa   = satt.indexOf(p.epost) !== -1;
+      const stil  = paa ? ' style="background:' + c.color + ';border-color:' + c.color + '"' : '';
+      return '<button class="tm-ini' + (paa ? ' pa' : '')
+        + (laast ? ' laast' : '') + '" title="' + p.epost + '"' + stil
         + (laast ? ' disabled' : '')
         + ' onclick="event.stopPropagation(); vekslTildeling(' + i + ',\'' + p.epost + '\',\'' + felt + '\')">'
         + p.ini + '</button>';
     }).join('');
-    return '<div class="tm-linje"><span class="tm-merke">' + merke + '</span>' + knapper + '</div>';
+    const altPaa = HUSSTAND.every(function(p){ return satt.indexOf(p.epost) !== -1; });
+    const alle = '<button class="tm-alle" title="' + (altPaa ? 'Fjern alle' : 'Velg alle') + '"'
+      + ' onclick="event.stopPropagation(); vekslAlle(' + i + ',\'' + felt + '\')">'
+      + (altPaa ? 'INGEN' : 'ALLE') + '</button>';
+    return '<div class="tm-linje"><span class="tm-merke">' + merke + '</span>'
+      + knapper + alle + '</div>';
   };
 
   let html = '<div class="tm-topp">Kalendere og tilgang</div>'
@@ -2787,6 +2808,28 @@ function renderCalList(){
   }).join('');
 
   el.innerHTML = html;
+}
+
+/* Hele raden av eller paa. Er alle med, tommer knappen raden; ellers
+   fyller den den. Samme kobling mellom de to radene som ved ett trykk. */
+function vekslAlle(i, felt){
+  if(!erKalAdmin) return;
+  const c = S.calendars[i];
+  if(!c) return;
+  const t = tildeling[c.name] || (tildeling[c.name] = { tilgang:[], vis:[] });
+  if(!t.tilgang) t.tilgang = [];
+  if(!t.vis)     t.vis     = [];
+
+  const alle  = HUSSTAND.map(function(p){ return p.epost; });
+  const fullt = alle.every(function(e){ return t[felt].indexOf(e) !== -1; });
+  t[felt] = fullt ? [] : alle.slice();
+
+  if(felt === 'tilgang' && fullt)  t.vis     = [];
+  if(felt === 'vis'     && !fullt) t.tilgang = alle.slice();
+
+  lagreTildeling();
+  brukHurtigUtvalg();
+  renderCalList();
 }
 
 /* Ett trykk i matrisen. Kalenderen sendes som indeks, ikke navn - da

@@ -1509,6 +1509,20 @@ function lukkDetalj(){
 const VEDLEGG_MAKS = 3 * 1024 * 1024;
 const enc = encodeURIComponent;
 
+/* Stien til én avtale.
+   /me/events/{id} betyr "avtalen i MIN postkasse". Det holdt saa lenge
+   dashboard alltid kjoerte som sys, som eier alle kalenderne. Kjoerer den
+   som en konto kalenderne bare er DELT til, bor avtalen i en annen
+   postkasse, og Graph svarer "The specified object was not found in the
+   store". Vi gaar derfor gjennom kalenderen avtalen ligger i, som er
+   samme vei vi leser den ut. Riktig for sys ogsaa, saa det er én sti for
+   alle. Identisk med kalender.html. */
+function avtaleSti(kalId, eventId){
+  return kalId
+    ? '/me/calendars/' + enc(kalId) + '/events/' + enc(eventId)
+    : '/me/events/' + enc(eventId);
+}
+
 function storrelse(b){
   const n = Number(b) || 0;
   if(n < 1024) return n + ' B';
@@ -1516,15 +1530,15 @@ function storrelse(b){
   return (n / 1048576).toFixed(1).replace('.', ',') + ' MB';
 }
 
-async function hentVedlegg(eventId){
-  const d = await graph('/me/events/' + enc(eventId)
+async function hentVedlegg(kalId, eventId){
+  const d = await graph(avtaleSti(kalId, eventId)
     + '/attachments?$select=id,name,contentType,size');
   return (d && d.value) || [];
 }
 
-async function leggVedFil(eventId, fil){
+async function leggVedFil(kalId, eventId, fil){
   const b64 = await filTilBase64(fil);
-  await graph('/me/events/' + enc(eventId) + '/attachments', {
+  await graph(avtaleSti(kalId, eventId) + '/attachments', {
     method: 'POST',
     body: {
       '@odata.type': '#microsoft.graph.fileAttachment',
@@ -1540,10 +1554,10 @@ async function leggVedFil(eventId, fil){
    det som er sidespesifikt: aapneVedleggFra() og valgteFiler(). */
 
 /* Henter innholdet fra Graph og aapner det. */
-async function aapneVedleggFra(eventId, v, knapp){
+async function aapneVedleggFra(kalId, eventId, v, knapp){
   if(knapp) knapp.disabled = true;
   try{
-    const a = await graph('/me/events/' + enc(eventId) + '/attachments/' + enc(v.id));
+    const a = await graph(avtaleSti(kalId, eventId) + '/attachments/' + enc(v.id));
     if(!a || !a.contentBytes) throw new Error('Vedlegget kunne ikke hentes.');
     if(!a.name) a.name = v.name;
     aapneViser(a);
@@ -1555,9 +1569,9 @@ async function aapneVedleggFra(eventId, v, knapp){
 }
 
 /* Henter innholdet foerst hvis det ikke fulgte med i lista */
-async function hentOgTegn(eventId, a, boks){
+async function hentOgTegn(kalId, eventId, a, boks){
   try{
-    const d = await graph('/me/events/' + enc(eventId) + '/attachments/' + enc(a.id));
+    const d = await graph(avtaleSti(kalId, eventId) + '/attachments/' + enc(a.id));
     if(!d || !d.contentBytes) return;
     tegnForhaand(d, boks);
   }catch(err){ /* uten innhold vises det ingenting - bedre enn en feil */ }
@@ -1573,7 +1587,7 @@ async function visDetaljVedlegg(i, e){
   try{
     /* Uten $select foelger innholdet med, saa smaa filer kan vises uten
        et ekstra kall per vedlegg. */
-    const d = await graph('/me/events/' + enc(e.id) + '/attachments');
+    const d = await graph(avtaleSti(e.kalId, e.id) + '/attachments');
     if(min !== vedleggOekt || detaljIndeks !== i) return;   /* en annen avtale */
     const liste = (d && d.value) || [];
     boks.innerHTML = '';
@@ -1582,7 +1596,7 @@ async function visDetaljVedlegg(i, e){
     liste.forEach(function(a){
       if(erBilde(a) || erPdf(a)){
         if(a.contentBytes) tegnForhaand(a, boks);
-        else hentOgTegn(e.id, a, boks);
+        else hentOgTegn(e.kalId, e.id, a, boks);
         return;
       }
       const rad = document.createElement('div');
@@ -1596,7 +1610,7 @@ async function visDetaljVedlegg(i, e){
         n.title = 'Åpne ' + (a.name || '');
         n.onclick = function(ev){
           ev.stopPropagation();
-          aapneVedleggFra(e.id, a, ev.currentTarget);
+          aapneVedleggFra(e.kalId, e.id, a, ev.currentTarget);
         };
       }else{
         n.disabled = true;
@@ -1620,7 +1634,8 @@ async function visDetaljVedlegg(i, e){
 /* ============================================================
    Avtaler — opprette og endre
    Ett skjema for begge deler. Ny avtale skrives til den valgte
-   kalenderen, endring gaar paa avtalen selv (PATCH /me/events/<id>).
+   kalenderen, endring gaar paa avtalen der den ligger (PATCH via
+   avtaleSti).
    Aa flytte en avtale mellom kalendere kan ikke gjoeres med en endring
    i Graph, saa kalendervalget er laast naar man endrer.
    ============================================================ */
@@ -1673,8 +1688,8 @@ async function flyttAvtale(e, nyKalId, kropp){
   if(!ny || !ny.id) throw new Error('Den nye avtalen ble ikke opprettet');
   for(const v of skjemaVedlegg){
     if(v.fjern || !v.fil) continue;
-    const full = await graph('/me/events/' + enc(e.id) + '/attachments/' + enc(v.id));
-    await graph('/me/events/' + enc(ny.id) + '/attachments', {
+    const full = await graph(avtaleSti(e.kalId, e.id) + '/attachments/' + enc(v.id));
+    await graph(avtaleSti(nyKalId, ny.id) + '/attachments', {
       method: 'POST',
       body: {
         '@odata.type': '#microsoft.graph.fileAttachment',
@@ -1684,7 +1699,7 @@ async function flyttAvtale(e, nyKalId, kropp){
       }
     });
   }
-  await graph('/me/events/' + enc(e.id), {method:'DELETE'});
+  await graph(avtaleSti(e.kalId, e.id), {method:'DELETE'});
   return ny.id;
 }
 
@@ -1767,7 +1782,7 @@ function apneAvtale(e){
   tegnSkjemaVedlegg();
   if(e && e.harVedlegg){
     const mitt = e.id;
-    hentVedlegg(e.id).then(function(liste){
+    hentVedlegg(e.kalId, e.id).then(function(liste){
       if(!avtaleAapen || !avtaleEndrer || avtaleEndrer.id !== mitt) return;
       skjemaVedlegg = liste.map(function(v){
         return {id:v.id, name:v.name, size:v.size, fil:erFil(v), fjern:false};
@@ -1870,7 +1885,7 @@ function velgVedlegg(){ $('avFil').click(); }
 function apneSkjemaVedlegg(i, knapp){
   const v = skjemaVedlegg[i];
   if(!v || !avtaleEndrer) return;
-  aapneVedleggFra(avtaleEndrer.id, v, knapp);
+  aapneVedleggFra(avtaleEndrer.kalId, avtaleEndrer.id, v, knapp);
 }
 /* En fil som ikke er lastet opp ennaa aapnes rett fra maskinen. */
 function apneNyFil(i){
@@ -1935,7 +1950,7 @@ async function slettAvtale(){
   knapp.disabled = true;
   knapp.textContent = 'Sletter …';
   try{
-    await graph('/me/events/' + enc(e.id), {method:'DELETE'});
+    await graph(avtaleSti(e.kalId, e.id), {method:'DELETE'});
     lukkAvtale();
     await tegnPlanPaaNytt();
   }catch(err){
@@ -1997,13 +2012,15 @@ async function lagreAvtale(){
   lagre.textContent = 'Lagrer …';
 
   try{
-    let malId;
+    let malId, malKalId;
     if(!e){
-      const ny = await graph('/me/calendars/' + enc($('avKal').value) + '/events',
+      malKalId = $('avKal').value;
+      const ny = await graph('/me/calendars/' + enc(malKalId) + '/events',
                              {method:'POST', body:kropp});
       malId = ny && ny.id;
     }else if(flytter){
-      malId = await flyttAvtale(e, $('avKal').value, kropp);
+      malKalId = $('avKal').value;
+      malId = await flyttAvtale(e, malKalId, kropp);
     }else{
       /* Vedlegg som er merket bort fjernes FOER avtalen oppdateres.
          Graph gjoer vedlegg-id-ene ugyldige naar selve avtalen endres, og
@@ -2011,15 +2028,16 @@ async function lagreAvtale(){
          store" paa id-er vi hentet da skjemaet ble aapnet. Sto etter
          PATCH-en foer, og derfor har sletting av vedlegg aldri virket. */
       for(const v of skjemaVedlegg){
-        if(v.fjern) await graph('/me/events/' + enc(e.id) + '/attachments/' + enc(v.id),
+        if(v.fjern) await graph(avtaleSti(e.kalId, e.id) + '/attachments/' + enc(v.id),
                                 {method:'DELETE'});
       }
-      await graph('/me/events/' + enc(e.id), {method:'PATCH', body:kropp});
-      malId = e.id;
+      await graph(avtaleSti(e.kalId, e.id), {method:'PATCH', body:kropp});
+      malId   = e.id;
+      malKalId = e.kalId;
     }
     if(malId && nyeFiler.length){
       try{
-        for(const f of nyeFiler) await leggVedFil(malId, f);
+        for(const f of nyeFiler) await leggVedFil(malKalId, malId, f);
       }catch(vf){
         alert('Avtalen ble lagret, men et vedlegg kom ikke med: ' + vf.message);
       }
