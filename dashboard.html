@@ -930,6 +930,7 @@ select.hu-felt{
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
 <script src="/felles-graph.js?v=1"></script>
 <script src="/felles-dialog.js?v=1"></script>
+<script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
 <script>
 /* ============================================================
@@ -1705,45 +1706,23 @@ function apneAvtale(e){
   $('avTittel').focus();
 }
 
-/* ---- Avbryt-regelen (se designsystemet) ----
-   Avbryt er alltid noeytral - roedt er reservert for sletting. Advarselen
-   ligger derfor ikke i fargen, men i en bekreftelse, og bare naar det finnes
-   noe aa miste: tekst, tall eller filer som er lagt inn siden skjemaet ble
-   aapnet. Valg i nedtrekk og avkryssinger teller ikke - de koster ingenting
-   aa gjoere om. Er ingenting endret, gaar Avbryt rett ut uten dialog: en
-   dialog man faar hver gang, er en dialog man slutter aa lese. */
-const modalAvtrykk = {};
-/* Vedlegg ligger ikke i et felt - de samles i JS-lister, og filfeltet
-   nullstilles etterpaa. Uten dette registeret ville "legg ved en fil, trykk
-   Avbryt" gaatt stille gjennom.
-   Bare brukerens egne handlinger telles: nye filer, og gamle vedlegg merket
-   bort. skjemaVedlegg i seg selv fylles av et bakgrunnskall ETTER at
-   avtrykket er tatt, saa lengden paa den ville endret seg av seg selv og
-   gitt et spoersmaal ingen har fortjent. */
-const ekstraTilstand = {
-  'avtaleBoks': function(){
-    const fjernet = skjemaVedlegg.filter(function(v){ return v.fjern; }).length;
-    return nyeFiler.length + ':' + fjernet;
-  }
+/* ---- Avbryt-regelen ----
+   Selve regelen ligger i felles-skjema.js. Her staar bare det som er
+   dashboardets eget: hva som teller som en endring i avtaleskjemaet
+   utenom feltene.
+
+   Vedlegg ligger ikke i et felt - de samles i JS-lister, og filfeltet
+   nullstilles etterpaa. Uten dette ville "legg ved en fil, trykk Avbryt"
+   gaatt stille gjennom.
+
+   Bare brukerens egne handlinger telles: nye filer, og gamle vedlegg
+   merket bort. skjemaVedlegg i seg selv fylles av et bakgrunnskall ETTER
+   at avtrykket er tatt, saa lengden paa den ville endret seg av seg selv
+   og gitt et spoersmaal ingen har fortjent. */
+ekstraTilstand['avtaleBoks'] = function(){
+  const fjernet = skjemaVedlegg.filter(function(v){ return v.fjern; }).length;
+  return nyeFiler.length + ':' + fjernet;
 };
-function avtrykkAv(id){
-  const rot = $(id);
-  if(!rot) return '';
-  const felt = rot.querySelectorAll('textarea, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])');
-  const ekstra = ekstraTilstand[id] ? String(ekstraTilstand[id]()) : '';
-  return Array.from(felt).map(function(el){ return el.value; }).join('\u241F') + '\u241E' + ekstra;
-}
-function huskSkjema(id){ modalAvtrykk[id] = avtrykkAv(id); }
-function skjemaEndret(id){
-  const foer = modalAvtrykk[id];
-  return foer != null && avtrykkAv(id) !== foer;
-}
-async function avbrytSkjema(id, lukk){
-  if(skjemaEndret(id) &&
-     !(await bekreft('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.',
-                     {jaTekst:'Forkast', fare:true}))) return;
-  lukk();
-}
 
 function lukkAvtale(){
   avtaleAapen = false;
