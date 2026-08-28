@@ -2477,18 +2477,20 @@ async function neamGjennomgang(navn){
   + 'varer som står på to rader fordi mengdene ikke lot seg summere, mengder '
   + 'som ser rare ut, og varer uten varetype. Ta også med basisvarer som '
   + 'kanskje ikke trenger å kjøpes. '
-  + 'Sett varetype selv på de som mangler den, med sett_varetype - bruk '
-  + 'foreslattType som står ved siden av varen, og ikke søk i katalogen for '
-  + 'å finne den. Ikke spør om varetype. '
-  + 'Slå sammen rader som åpenbart er samme vare selv, med slaa_sammen - '
-  + '«salt til kjøtt» og «salt til ris» er salt, og det skal ikke brukeren '
-  + 'måtte bekrefte. Regn om til samme enhet og oppgi summen. '
-  + 'Bare det som endrer hva som faktisk blir kjøpt, legger du fram med foresla_opprydding, '
-  + 'med én kort begrunnelse per linje - høyst 8 linjer, de viktigste først. '
-  + 'Ikke skriv noen oppsummering før tabellen; begrunnelsene i den sier det som '
-  + 'trengs, og et langt svar foran risikerer å bli kuttet av så tabellen aldri kommer. '
-  + 'Ikke still spørsmål før tabellen; gjør de vurderingene du kan gjøre selv, '
-  + 'og la brukeren hake av. Finner du ingenting å rette, si det med én setning.',
+  + 'Kall finn_opprydding FØRST. Den sier hva som er verdt å rydde i, sortert '
+  + 'i faste bolker, så du slipper å lese hele lista og vurdere selv.\n\n'
+  + 'Hver bolk har sin faste behandling:\n'
+  + '- sammenslaainger med kanSummeres=true: slå sammen med slaa_sammen, uten å spørre. '
+  + 'Bruk foreslattNavn og sum slik de står.\n'
+  + '- sammenslaainger med kanSummeres=false: mengdene går ikke opp, så det trengs en '
+  + 'vurdering. Legg dem i foresla_opprydding med et forslag til samlet mengde.\n'
+  + '- utenType: sett den med sett_varetype, uten å spørre. Bruk foreslattType står den der.\n'
+  + '- springvann: foreslå å fjerne, i foresla_opprydding. Dette er vann fra oppskrifter, '
+  + 'og det handler man ikke - men det er brukeren som bestemmer.\n'
+  + '- basisvarer: foreslå å fjerne, i foresla_opprydding. Huset har dem fra før.\n'
+  + '- utenMengde: la stå. Ingen har sagt noe om mengde, og det er som regel greit.\n\n'
+  + 'Skriv ingen oppsummering underveis. Gjør det som skal gjøres, legg resten fram, '
+  + 'og si etterpå med én setning hva du gjorde. Er alle bolkene tomme, si det kort.',
     /* Gjennomgangen ber om Sonnet uansett hva knappen staar paa: den skal
        lese hele lista, se hva som hoerer sammen og foreslaa summer. Har
        noen satt Haiku for aa prate raskt, skal ikke den innstillingen
@@ -6250,6 +6252,11 @@ window.neamBakgrunn = async function(){
     'tom, er det fordi ingen har sagt noe; ikke finn paa en. Et tall uten',
     'enhet betyr antall stykk.',
     '',
+    'NAAR NOEN BER OM EN GJENNOMGANG av lista, start med finn_opprydding.',
+    'Den bruker husets egen algoritme til aa finne hva som er samme vare og',
+    'regner ut summene, saa du slipper aa vurdere det selv. Bolkene den gir',
+    'har hver sin faste behandling, beskrevet i verktoeyene.',
+    '',
     'TO RADER MED SAMME NAVN er som regel ikke en glipp. Kommer den samme',
     'vara fra to retter med enheter som ikke kan summeres - én boks mais og',
     '150 g mais, eller 1600 g potet og 1 kg potet - blir de staaende hver for',
@@ -6471,6 +6478,25 @@ window.neamVerktoy = async function(){
       /* Ingen neamSkriver: varetype settes uten dialog. Grensen for hva som
          maa bekreftes gaar ved om en feil er lett aa se og lett aa rette -
          en gal varetype er begge deler. */
+    },
+    {
+      name: 'finn_opprydding',
+      description: 'Går gjennom handleturen og sier hva som er verdt å rydde i, sortert i '
+                 + 'faste bolker. START HER ved en gjennomgang - ikke les hele lista og '
+                 + 'vurder selv. Huset bruker sin egen algoritme til å finne varer som er '
+                 + 'samme vare, og regner ut summen når enhetene tillater det. Bolkene er: '
+                 + 'sammenslaainger (samme vare på flere rader), basisvarer (huset har det '
+                 + 'fra før), springvann (vann fra oppskrifter, aldri noe man handler), '
+                 + 'utenType og utenMengde. Hver bolk har sin faste behandling - se '
+                 + 'beskrivelsen av de andre verktøyene.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          omrade: { type:'string', enum:['mat','annet'] },
+          handletur: { type:'string' }
+        },
+        required: []
+      }
     },
     {
       name: 'slaa_sammen',
@@ -6849,6 +6875,7 @@ window.neamUtfor = async function(navn, arg){
   if (navn === 'fjern_varer')    return await neamFjernVarer(arg);
   if (navn === 'endre_vare')     return await neamEndreVare(arg);
   if (navn === 'sett_varetype')  return await neamSettVaretype(arg);
+  if (navn === 'finn_opprydding') return neamFinnOpprydding(arg);
   if (navn === 'slaa_sammen')    return await neamSlaaSammen(arg);
   if (navn === 'foresla_opprydding') return await neamOpprydding(arg);
 
@@ -7027,6 +7054,92 @@ async function neamSettVaretype(arg){
     render();
   }
   return { handletur: oktNavn(okt), satt, fantIkke };
+}
+
+/* Finner det som er verdt aa rydde i, sortert i faste bolker.
+
+   Poenget er aa flytte VURDERINGEN fra Neam til koden. Foer maatte han
+   lese hele lista og selv finne ut hva som var samme vare, hva som var
+   basisvarer og hva som ikke burde staa der - og da ble resultatet ulikt
+   fra gang til gang, og det tok tid. Her gjoer huset funnet med sin egen
+   algoritme, og Neam foelger faste regler for hver bolk.
+
+   finnKlynger() og foreslaattTotal() er de samme som «Rydd i varene»
+   brukte. De ble skrevet for noeyaktig denne jobben. */
+function neamFinnOpprydding(arg){
+  const okt = neamFinnOkt(arg, false);
+  if (!okt) return { handletur:null, beskjed:'Ingen handletur er åpen i dette området.' };
+  const omr = oktOmrade(okt);
+  const varer = data.items.filter(v => v && v.oktId === okt.id && (v.omrade || 'mat') === omr);
+
+  const iOkt = navn => varer.some(v => String(v.name || '').trim().toLowerCase() === navn.toLowerCase());
+
+  /* Sammenslaainger, gruppert paa foerste ord i kjernen.
+
+     finnKlynger() alene rakk ikke: den krever at det ene navnets kjerne er
+     inneholdt i det andres, saa «Vann» og «Vann til ris» ble funnet, mens
+     «Salt til kjoett» og «Salt til ris» ikke ble det - de deler bare ett av
+     to ord. Det var nettopp det tilfellet som fylte skjermen.
+
+     Foerste ord i kjernen er derfor gruppen: «salt til X» er salt, «olje
+     til X» er olje. Ordene etter er presiseringer om hvilken rett den kom
+     fra, ikke om hvilken vare det er.
+
+     Regelen kan ta feil - «pasta» og «pastasaus» blir ikke gruppert, de har
+     ulike foerste ord, men «mais» og «mais i boks» blir det, og de er ikke
+     helt det samme. Derfor slaas ingenting sammen av seg selv med mindre
+     enhetene ogsaa gaar opp: en gal gruppering med ulike enheter havner paa
+     skjermen, der noen ser den. */
+  const grupper = {};
+  varer.forEach(v => {
+    const k = kjerne(v.name);
+    if (!k.length) return;
+    /* Springvann holdes utenfor: det foreslaas fjernet uansett, og da er
+       det bortkastet aa slaa det sammen foerst. */
+    if (k[0] === 'vann') return;
+    (grupper[k[0]] = grupper[k[0]] || []).push(String(v.name || '').trim());
+  });
+
+  const sammenslaainger = Object.keys(grupper).map(ord => {
+    const navn = [...new Set(grupper[ord])];
+    if (navn.length < 2) return null;
+    const sum = foreslaattTotal(navn);
+    /* Korteste kjerne er nesten alltid det reine varenavnet. */
+    const kortest = navn.slice().sort((a, b) =>
+      kjerne(a).length - kjerne(b).length || a.length - b.length)[0];
+    return {
+      navn: navn.slice().sort((a, b) => a.localeCompare(b, 'no')),
+      foreslattNavn: kjerne(kortest).length === 1 ? kortest
+                   : (ord.charAt(0).toUpperCase() + ord.slice(1)),
+      mengder: navn.map(x => ({ vare:x, mengde: samletMengde(x) })),
+      sum: sum || null,
+      kanSummeres: !!sum
+    };
+  }).filter(Boolean);
+
+  /* Springvann. FOERSTE ord i kjernen er «vann» - det fanger «vann»,
+     «Vann til ris» og «vann, kaldt». Farris, mineralvann og kokosvann
+     faller utenfor: de er ett ord hver, og det ordet er ikke «vann». */
+  const springvann = varer
+    .filter(v => kjerne(v.name)[0] === 'vann')
+    .map(v => ({ vare: v.name, mengde: v.qty || '' }));
+
+  const basisvarer = varer.filter(v => {
+    const oppf = katalogOppslag(v.name);
+    return !!(v.basis || (oppf && oppf.basis));
+  }).map(v => ({ vare: v.name, mengde: v.qty || '' }));
+
+  const utenType = varer.filter(v => !v.cat)
+    .map(v => ({ vare: v.name, foreslattType: foreslaattType(v.name) || null }));
+
+  const utenMengde = varer.filter(v => !v.qty).map(v => ({ vare: v.name }));
+
+  return {
+    handletur: oktNavn(okt),
+    omrade: omr === 'annet' ? 'Andre varer' : 'Dagligvarer',
+    antallVarer: varer.length,
+    sammenslaainger, springvann, basisvarer, utenType, utenMengde
+  };
 }
 
 /* Slaar flere rader til én. Uten dialog - se kommentaren ved
