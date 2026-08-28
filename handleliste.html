@@ -908,7 +908,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=2"></script>
+<script src="/felles-neam.js?v=3"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -6024,6 +6024,48 @@ window.neamKontekst = async function(){
     antallVarer: varer.length,
     gjenstaar: varer.filter(v => !v.done).length
   };
+};
+
+/* ---- Det Neam maa vite om handlelista ----
+   Begrepene appen bruker, og som han ellers maatte gjettet seg til.
+   Dette er det som ALLTID er sant; neamKontekst svarer paa hva som er
+   sant akkurat naa. Endrer datamodellen seg, er det denne teksten som
+   maa foelge med - ikke verktoeybeskrivelsene. */
+window.neamBakgrunn = async function(){
+  return [
+    'HANDLELISTA har to atskilte omraader: Dagligvarer (mat) og Andre varer',
+    '(alt annet - jernvare, apotek, klaer). De deler ingenting. Hver vare hoerer',
+    'til ett av dem, og hvert omraade har sine egne handleturer og sin egen',
+    'aapne tur. Skal noe over fra det ene til det andre, maa det fjernes ett',
+    'sted og legges til det andre.',
+    '',
+    'EN HANDLETUR er én handel med et fritt navn - «Uke 36», «Hyttetur»,',
+    '«Bursdag». Det finnes flere om gangen, og én er aapen i hvert omraade.',
+    'Systemet var tidligere bundet til kalenderuker; det er det ikke lenger,',
+    'saa gaa aldri ut fra at et navn betyr en bestemt uke.',
+    '',
+    'VARER krysses av under handelen, de slettes ikke. En avkrysset vare er',
+    'kjoept, ikke borte. Mengde er fritekst - «2», «500 g», «1 liter» - og',
+    'staar den tom, er det fordi ingen har sagt noe. Ikke finn paa en mengde',
+    'brukeren ikke har oppgitt. Uten enhet betyr et tall antall stykk.',
+    '',
+    'VARETYPE er butikkategorien, og den bestemmer rekkefoelgen varene staar i',
+    'mens man handler - meieri for seg, frukt for seg. Er du usikker, la den',
+    'staa tom: huset gjetter selv ut fra navnet og ut fra hva varen har faatt',
+    'foer, og den gjettingen er som regel bedre enn din.',
+    '',
+    'VAREKATALOGEN er ikke en liste over hva som skal kjoepes. Den er hva huset',
+    'har handlet foer, med varetypen varen pleier aa faa, og brukes til aa fylle',
+    'ut automatisk. At noe staar i katalogen betyr ingenting om hva som trengs',
+    'naa. En basisvare er noe huset alltid har.',
+    '',
+    'Dagligvarer gaar som regel paa Kiwi, som settes inn av seg selv.',
+    'Varer kan ogsaa komme inn ved import fra Oppskriftsboka (Matlaging),',
+    'der ingrediensene i en middag legges over samlet.',
+    '',
+    'Snakk om dette som en handleliste, ikke som en database. Brukeren sier',
+    '«lista» og «uka», ikke «poster» og «omraader».'
+  ].join('\n');
 };
 
 /* ---- Verktoeyene Neam har paa denne sida ----

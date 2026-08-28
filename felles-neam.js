@@ -11,6 +11,7 @@
    KONTRAKTEN MOT SIDA - tre funksjoner, alle valgfrie
 
      window.neamKontekst = async function(){ ... };
+     window.neamBakgrunn = async function(){ ... };
      window.neamVerktoy  = async function(){ ... };
      window.neamUtfor    = async function(navn, arg){ ... };
 
@@ -24,6 +25,13 @@
    neamKontekst() - "hvor er jeg og hva ser jeg paa". Feltene er
    frie; alt sendes med som JSON i systemteksten. Bare `sted` og
    `visning` leses her, og bare for aa skrives ut i topplinja.
+
+   neamBakgrunn() - hvordan denne appen henger sammen, som fri tekst.
+   Begrepene, reglene og vanene Neam ellers maatte gjettet seg til.
+   Skrevet én gang og lagt til systemteksten hver gang. Kontekst
+   svarer paa hva som er sant NAA; bakgrunn paa hva som alltid er
+   sant. Blandes de, blir det uklart hva som maa oppdateres naar
+   noe endrer seg.
 
    neamVerktoy() - lista over hva som kan gjoeres PAA DENNE SIDA.
    Vanlige verktoeydefinisjoner (name, description, input_schema)
@@ -148,6 +156,11 @@ async function neamSted(){
   return (svar && typeof svar === 'object') ? svar : null;
 }
 
+async function neamBakgrunn(){
+  const svar = await neamSpor('neamBakgrunn');
+  return (typeof svar === 'string') ? svar.trim() : '';
+}
+
 async function neamVerktoyliste(){
   const svar = await neamSpor('neamVerktoy');
   return Array.isArray(svar) ? svar : [];
@@ -158,7 +171,7 @@ function neamStedTekst(k){
   return [k.sted, k.visning].filter(Boolean).join(' \u00B7 ');
 }
 
-function neamSystem(k, harVerktoy){
+function neamSystem(k, harVerktoy, bakgrunn){
   let s =
     'Du er Neam, husassistenten i familiens hub. Du svarer paa norsk (bokmaal), ' +
     'kort og konkret. Familien er Magne, Nina, Emma og Andrea.\n\n';
@@ -177,6 +190,11 @@ function neamSystem(k, harVerktoy){
   }
 
   s += 'Ikke gjett paa hva som staar i listene eller kalenderen.';
+
+  /* Bakgrunnen foerst, saa konteksten: det som alltid er sant staar
+     over det som er sant akkurat naa. */
+  if(bakgrunn) s += '\n\n--- Om denne appen ---\n' + bakgrunn;
+
   s += k ? ('\n\nHer staar brukeren akkurat naa:\n' + JSON.stringify(k, null, 1))
          : '\n\nDu vet ikke hvilken side brukeren staar paa.';
   return s;
@@ -496,7 +514,7 @@ async function neamSend(){
     const k = await neamSted();
     neamSkrivSted(k);
     const defer  = await neamVerktoyliste();
-    const system = neamSystem(k, defer.length > 0);
+    const system = neamSystem(k, defer.length > 0, await neamBakgrunn());
 
     let runde = 0;
     while(true){
