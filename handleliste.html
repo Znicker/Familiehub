@@ -9,6 +9,9 @@
      Maa lastes FOER <style> under, saa sida kan overstyre. -->
 <link rel="stylesheet" href="/felles-skall.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
+<!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
+     kan lastes av en ramme i stedet for av hver side en dag. -->
+<link rel="stylesheet" href="/felles-neam.css?v=1">
 <!-- ?v=1: bump tallet naar felles-skall.css endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -905,6 +908,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
+<script src="/felles-neam.js?v=1"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -5990,6 +5994,37 @@ function goHome(){
   render();
   showView('home');
 }
+
+/* ---- Kontrakten mot Neam ----
+   Svarer paa "hvor er jeg og hva ser jeg paa". felles-neam.js sender
+   hele objektet med som JSON i hver melding.
+
+   ASYNKRON MED VILJE. Sida svarer med én gang i dag, men skal panelet
+   en dag ligge i en ramme, gaar spoersmaalet over en dokumentgrense og
+   maa gaa via postMessage - og det kan ikke svares synkront. Signaturen
+   er den samme naa som da, saa flyttingen koster ingenting her.
+
+   Ingen varenavn sendes med, bare tall. Neam trenger aa vite at det
+   staar elleve varer igjen, ikke hvilke - og et helt varelager i hver
+   melding er baade dyrt og unoedvendig. Naar Neam skal jobbe med selve
+   varene, blir det et verktoeykall som henter dem, ikke kontekst som
+   foelger med uansett hva du spoer om. */
+window.neamKontekst = async function(){
+  const omr = aktivOmrade();
+  const okt = aktivOkt(omr);
+  const el  = document.querySelector('.view.active');
+  const id  = el ? el.id.replace('view-', '') : 'home';
+  const varer = okt ? data.items.filter(v => v.oktId === okt.id) : [];
+
+  return {
+    sted: 'Handleliste',
+    visning: { home:'Lista', add:'Skjema for vare', merge:'Rydd i varene' }[id] || id,
+    omrade: omr === 'annet' ? 'Andre varer' : 'Dagligvarer',
+    handletur: okt ? oktNavn(okt) : null,
+    antallVarer: varer.length,
+    gjenstaar: varer.filter(v => !v.done).length
+  };
+};
 
 // Avgrenset til forsiden, ellers nullstilles fanene i rydde-visningen
 // og omradevelgeren i skjemaet, som bruker samme klasser

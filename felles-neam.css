@@ -1,0 +1,161 @@
+/* ============================================================
+   Neam - samtaleflaten
+   ------------------------------------------------------------
+   Haandtaket som foelger deg rundt, og panelet det aapner.
+   Laget 28. august 2026.
+
+   Flata er bygget som sin egen fil med vilje. I dag lastes den av
+   hver enkelt side; blir det en ramme (hub.html) en dag, lastes
+   den én gang der i stedet, og ingenting inni maa skrives om.
+
+   Haandtaket staar nede til VENSTRE. Hoeyre hjoerne er opptatt av
+   sidenes egne knapper - handleliste har .bottom-bar der.
+
+   z-index: haandtak 90, panel 92. Under filviseren (95),
+   modalene (100) og dialogene (120), saa en bekreftelse fra
+   felles-dialog.js legger seg oppaa panelet og ikke under.
+
+   Panelet har én bolk i dag - samtalen. Enheter og sikkerhet
+   kommer som egne bolker mellom .neam-topp og .neam-samtale.
+
+   Lastes etter felles-rot.css. Oppfoerselen ligger i
+   felles-neam.js.
+   ============================================================ */
+
+/* ---------- Haandtaket ---------- */
+/* Samme beskjaering som .home-hero-icon: merket er tegnet tett, saa
+   bildets bredde ER sirkelens diameter og bildet stilles til toppen.
+   Padding null - ellers stikker den hvite sirkelen fram rundt. */
+.neam-handtak{
+  position:fixed; z-index:90;
+  left:20px; bottom:calc(24px + env(safe-area-inset-bottom));
+  width:54px; height:54px; border-radius:50%;
+  border:none; padding:0; overflow:hidden;
+  background:var(--paper); box-shadow:0 4px 14px rgba(44,62,80,.28);
+  display:flex; align-items:flex-start; justify-content:center;
+  cursor:pointer;
+}
+.neam-handtak[hidden]{ display:none; }
+.neam-handtak img{ width:100%; height:auto; display:block; flex:none; }
+.neam-handtak:active{ transform:scale(.94); }
+
+/* ---------- Panelet ---------- */
+/* Reiser seg fra haandtaket, ikke fra midten: det skal leses som at
+   knappen ble stoerre, ikke som en ny skjerm. */
+.neam-bak{
+  position:fixed; inset:0; z-index:92;
+  background:rgba(44,62,80,.35);
+  -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+  display:flex; align-items:flex-end; justify-content:flex-start;
+  padding:20px;
+}
+.neam-bak[hidden]{ display:none; }
+
+.neam-panel{
+  background:var(--paper); border-radius:var(--radius);
+  box-shadow:0 20px 50px rgba(44,62,80,.34);
+  width:100%; max-width:420px; height:min(620px, 80dvh);
+  display:flex; flex-direction:column; overflow:hidden;
+  font-family:'Archivo',sans-serif;
+}
+
+/* ---------- Topplinja ---------- */
+.neam-topp{
+  display:flex; align-items:center; gap:10px; flex-shrink:0;
+  padding:12px 12px 12px 14px; border-bottom:1px solid var(--line);
+}
+.neam-topp-merke{
+  width:34px; height:34px; border-radius:50%; overflow:hidden; flex-shrink:0;
+  background:var(--paper); border:1px solid var(--line);
+  display:flex; align-items:flex-start; justify-content:center;
+}
+.neam-topp-merke img{ width:100%; height:auto; display:block; }
+.neam-topp-tekst{ flex:1; min-width:0; }
+.neam-navn{
+  font-size:var(--t-brod); font-weight:700; color:var(--ink); line-height:1.2;
+}
+/* Stedet skrives ut fordi det er den eneste maaten aa se at Neam
+   faktisk vet hvor du staar. Gaar hentingen galt, staar linja tom -
+   og da vet du det ogsaa. */
+.neam-sted{
+  display:block; font-size:var(--t-etikett); color:var(--ink-soft);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.neam-topp-knapp{
+  flex-shrink:0; border:1px solid var(--line); background:var(--boks-mild);
+  color:var(--ink); border-radius:999px; padding:7px 12px; cursor:pointer;
+  font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+}
+.neam-topp-knapp:active{ transform:scale(.96); }
+.neam-lukk{
+  flex-shrink:0; border:none; background:none; color:var(--ink-soft);
+  font-size:22px; line-height:1; padding:6px 8px; cursor:pointer;
+}
+
+/* ---------- Samtalen ---------- */
+.neam-samtale{
+  flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:14px; display:flex; flex-direction:column; gap:10px;
+  background:var(--bg-2);
+}
+.neam-melding{
+  max-width:86%; padding:10px 13px; border-radius:14px;
+  font-size:var(--t-brod); line-height:1.45; white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.neam-melding.meg{
+  align-self:flex-end; background:var(--aksent); color:#FFFFFF;
+  border-bottom-right-radius:5px;
+}
+.neam-melding.bot{
+  align-self:flex-start; background:var(--paper); color:var(--ink);
+  border:1px solid var(--line); border-bottom-left-radius:5px;
+}
+/* Feil er ikke et svar fra Neam, og skal ikke se ut som ett. */
+.neam-melding.feil{
+  align-self:stretch; max-width:none; background:#FFFFFF;
+  border:1px solid var(--danger); color:var(--danger);
+  font-size:var(--t-meta);
+}
+.neam-melding.tenker{ color:var(--ink-soft); animation:neamPuls 1.2s ease-in-out infinite; }
+@keyframes neamPuls{ 0%,100%{ opacity:.45; } 50%{ opacity:1; } }
+
+.neam-tom{
+  margin:auto; text-align:center; color:var(--ink-soft);
+  font-size:var(--t-meta); line-height:1.5; padding:0 20px;
+}
+
+/* ---------- Innskrivingen ---------- */
+.neam-bunn{
+  flex-shrink:0; display:flex; align-items:flex-end; gap:8px;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line); background:var(--paper);
+}
+/* 16px er et gulv, ikke en smakssak: under det zoomer iOS inn naar
+   feltet faar fokus, og sida hopper. Samme regel som .field input. */
+.neam-felt{
+  flex:1; min-width:0; resize:none; max-height:120px;
+  border:1.5px solid var(--line); border-radius:14px;
+  padding:10px 12px; background:#FFFFFF; color:var(--ink);
+  font-family:'Archivo',sans-serif; font-size:16px; line-height:1.4;
+}
+.neam-felt:focus{ outline:none; border-color:var(--aksent); }
+.neam-send{
+  flex-shrink:0; border:none; border-radius:50%; width:42px; height:42px;
+  background:var(--aksent); color:#FFFFFF; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.neam-send svg{ width:19px; height:19px; }
+.neam-send:disabled{ background:var(--line); cursor:default; }
+.neam-send:not(:disabled):active{ transform:scale(.94); }
+
+/* ---------- Smal skjerm ---------- */
+/* Panelet blir et ark fra bunnen. Haandtaket staar der det staar -
+   det er under panelet uansett. */
+@media(max-width:520px){
+  .neam-bak{ padding:0; }
+  .neam-panel{
+    max-width:none; height:88dvh;
+    border-radius:var(--radius) var(--radius) 0 0;
+  }
+}
