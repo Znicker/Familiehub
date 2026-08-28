@@ -847,37 +847,50 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   position:fixed;right:20px;z-index:47;
   bottom:calc(88px + env(safe-area-inset-bottom));
   background:var(--paper);border:1px solid var(--line);border-radius:14px;
-  box-shadow:0 16px 40px rgba(44,62,80,.22);padding:15px 17px 17px;
-  width:min(580px, calc(100vw - 40px));
-  max-height:min(74vh, 660px);overflow-y:auto;
+  box-shadow:0 16px 40px rgba(44,62,80,.22);padding:20px 24px 22px;
+  width:min(1120px, calc(100vw - 40px));
+  max-height:min(80vh, 780px);overflow-y:auto;
 }
 .caldrop-panel[hidden]{display:none}
-@media(max-width:900px){ .caldrop-panel{right:16px;left:16px;width:auto} }
+@media(max-width:1000px){ .caldrop-panel{right:16px;left:16px;width:auto} }
 
 /* ---------- Tilgangsmatrisen ----------
    Bare sys ser denne. Den legger seg gjerne oppaa kalenderen - den er
    et oppsettsverktoey, ikke noe man jobber ved siden av. */
 .tm-topp{
-  font-size:var(--t-etikett);color:var(--ink-soft);font-weight:700;
-  text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px;
+  font-size:var(--t-meta);color:var(--ink-soft);font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;margin:0 0 5px;
 }
-.tm-hjelp{font-size:var(--t-etikett);color:var(--ink-soft);margin:0 0 12px;line-height:1.45}
-.cal-rad{border-top:1px solid var(--line);padding:11px 0 12px}
-.cal-rad:first-of-type{border-top:none;padding-top:2px}
-.tm-navn{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.tm-hjelp{font-size:var(--t-meta);color:var(--ink-soft);margin:0 0 16px;line-height:1.5}
+/* To spalter. Panelet er sys sitt oppsettsverktoey og faar bruke plassen -
+   seks kalendere under hverandre ble en rulleliste, ved siden av hverandre
+   er de ett blikk. Under 1000px faller det tilbake til én spalte. */
+.tm-rutenett{
+  display:grid;grid-template-columns:1fr 1fr;
+  column-gap:30px;align-items:start;
+}
+@media(max-width:1000px){ .tm-rutenett{grid-template-columns:1fr} }
+.cal-rad{border-top:1px solid var(--line);padding:13px 0 15px}
+/* Begge spaltene starter oeverst, saa begge foerste rader skal vaere uten
+   strek - ikke bare den aller foerste. */
+.tm-rutenett > .cal-rad:nth-child(-n+2){border-top:none;padding-top:2px}
+@media(max-width:1000px){
+  .tm-rutenett > .cal-rad:nth-child(2){border-top:1px solid var(--line);padding-top:13px}
+}
+.tm-navn{display:flex;align-items:center;gap:10px;margin-bottom:9px}
 .tm-navn .cal-name{
   flex:1;min-width:0;font-family:'Archivo',sans-serif;font-weight:700;
-  font-size:var(--t-brod);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:var(--t-stor);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.tm-linje{display:flex;align-items:center;gap:7px;margin-top:6px;flex-wrap:wrap}
+.tm-linje{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
 .tm-merke{
-  width:112px;flex-shrink:0;font-size:var(--t-etikett);color:var(--ink-soft);
+  width:124px;flex-shrink:0;font-size:var(--t-meta);color:var(--ink-soft);
   text-transform:uppercase;letter-spacing:.05em;
 }
 .tm-ini{
-  width:33px;height:33px;border-radius:50%;flex-shrink:0;cursor:pointer;padding:0;
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;cursor:pointer;padding:0;
   border:2px solid var(--line);background:var(--paper);color:var(--ink-soft);
-  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
+  font-family:'Archivo',sans-serif;font-size:var(--t-brod);font-weight:700;
   display:flex;align-items:center;justify-content:center;line-height:1;
   transition:transform .12s ease;
 }
@@ -890,10 +903,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* Av/paa for hele raden. Ligger etter initialene, ikke foer - man leser
    hvem som er med foerst, og griper hurtigvalget etterpaa. */
 .tm-alle{
-  height:33px;padding:0 13px;border-radius:999px;flex-shrink:0;cursor:pointer;
-  margin-left:4px;border:1.5px solid var(--line);
+  height:38px;padding:0 15px;border-radius:999px;flex-shrink:0;cursor:pointer;
+  margin-left:5px;border:1.5px solid var(--line);
   background:var(--paper);color:var(--ink-soft);
-  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);font-weight:700;
   letter-spacing:.06em;
   display:flex;align-items:center;justify-content:center;line-height:1;
 }
@@ -1525,11 +1538,12 @@ const FARGE_ADMIN = ['sys@neam.no'];
    Initialen her er personens, ikke kalenderens - en kalender kan hete
    det samme som en person uten aa vaere den personens. */
 const HUSSTAND = [
-  { epost:'sys@neam.no',    ini:'S' },
-  { epost:'magne@neam.no',  ini:'M' },
-  { epost:'nina@neam.no',   ini:'N' },
-  { epost:'emma@neam.no',   ini:'E' },
-  { epost:'andrea@neam.no', ini:'A' }
+  { epost:'nina@neam.no',    ini:'N' },
+  { epost:'emma@neam.no',    ini:'E' },
+  { epost:'andrea@neam.no',  ini:'A' },
+  { epost:'magne@neam.no',   ini:'M' },
+  { epost:'kitchen@neam.no', ini:'K' },
+  { epost:'sys@neam.no',     ini:'S' }
 ];
 
 /* Kalendermenyen nede til hoeyre - velge hvilke kalendere som er i
@@ -2783,7 +2797,7 @@ function renderCalList(){
     + ' Vis ved start avgjør om den står på når økta begynner &ndash; resten'
     + ' ligger dempet på stripa, ett trykk unna.</p>';
 
-  html += S.calendars.map(function(c, i){
+  html += '<div class="tm-rutenett">' + S.calendars.map(function(c, i){
     const swatch = erFargeAdmin
       ? '<button class="cal-swatch" style="background:'+c.color+'" title="Endre farge"'
         + ' onclick="event.stopPropagation(); vekslPalett(this)"></button>'
@@ -2805,7 +2819,7 @@ function renderCalList(){
       + rad(c, i, 'tilgang', 'Tilgang')
       + rad(c, i, 'vis', 'Vis ved start')
       + '</div>';
-  }).join('');
+  }).join('') + '</div>';
 
   el.innerHTML = html;
 }

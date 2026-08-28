@@ -1163,7 +1163,10 @@ async function graph(sti, valg){
    Access-porten kan i prinsippet omgaa den. Det holder her, siden
    siden bare leser data alle uansett har tilgang til.
    ============================================================ */
-const DASH_TILGANG = ['sys@neam.no'];
+/* Kjoekkenskjermen kjoerer som kitchen. Sys staar igjen med vilje:
+   uten den ville en feil paa kitchen-kontoen laast oss ute av
+   veggskjermen uten vei inn. */
+const DASH_TILGANG = ['kitchen@neam.no', 'sys@neam.no'];
 
 function normEpost(s){
   s = String(s || '').toLowerCase().trim();
