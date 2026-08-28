@@ -490,6 +490,19 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
 }
 .laster[hidden]{display:none}
+/* Mild variant: en liten pille oeverst i stedet for et teppe over hele
+   skjermen. Brukes naar det alt staar cachet innhold der - man skal se
+   at noe skjer, ikke miste det man ser paa. */
+.laster.mild{
+  background:none; -webkit-backdrop-filter:none; backdrop-filter:none;
+  align-items:flex-start; justify-content:center; padding-top:14px;
+}
+.laster.mild .laster-kort{
+  flex-direction:row; align-items:center; gap:11px;
+  padding:9px 18px; font-size:var(--t-meta);
+  box-shadow:0 6px 20px rgba(44,62,80,.26);
+}
+.laster.mild .laster-hjul{ width:17px; height:17px; border-width:2px; }
 .laster-kort{
   display:flex;flex-direction:column;align-items:center;gap:20px;
   background:var(--ink);color:#fff;border-radius:var(--radius);
@@ -2170,6 +2183,14 @@ function lagreLokalt(){
       til: S.loaded[1].toISOString(),
       ider: Array.from(S.loadedIds || []),
       naar: Date.now(),
+      /* Kalenderlista maa vaere med. Uten den er S.calendars tom ved neste
+         innlasting, og fyllFraCache() filtrerer bort ALT - cachen fantes,
+         men skjermen sto tom til /me/calendars og seks calendarView-kall
+         var ferdige. Lista er slik DENNE brukeren saa den sist, saa den
+         viser ikke noe vedkommende ikke allerede hadde paa skjermen. */
+      kalendere: (S.calendars || []).map(function(c){
+        return [c.id, c.name, c.color, c.kanEndre ? 1 : 0, c.on ? 1 : 0];
+      }),
       avtaler: S.all.slice(0, CACHE_MAKS).map(function(e){
         return [e.id, e.title, e.allDay ? 1 : 0, e.start.toISOString(), e.end.toISOString(),
                 e.where || '', e.note || '', e.calId, e.color, e.calName,
@@ -2191,6 +2212,13 @@ function lesLokalt(){
     });
     S.loaded = [new Date(d.fra), new Date(d.til)];
     S.loadedIds = new Set(d.ider || []);
+    /* Kalenderlista foerst - fyllFraCache() spoer den om hva som er paa. */
+    if(Array.isArray(d.kalendere) && d.kalendere.length){
+      S.calendars = d.kalendere.map(function(c){
+        return { id:c[0], name:c[1], color:c[2], kanEndre:!!c[3], on:!!c[4] };
+      });
+      byggInitialer();
+    }
     return S.all.length > 0;
   }catch(err){ return false; }
 }
@@ -3070,11 +3098,12 @@ let lasterStraks = false;
    bakgrunnen uten at noe legger seg over skjermen. */
 let lasterStille = false;
 
-function visLaster(paa, straks){
+function visLaster(paa, straks, mild){
   const el = $('laster');
   if(!el) return;
   clearTimeout(lasterTimer);
   if(paa){
+    el.classList.toggle('mild', !!mild);
     if(straks) el.hidden = false;
     else lasterTimer = setTimeout(function(){ el.hidden = false; }, 90);
   } else {
@@ -3095,7 +3124,10 @@ async function last(force){
      den snurrende oppdater-knappen er tegnet paa at noe skjer. */
   const ingenting = !S.calendars.length && !(S.all && S.all.length);
   S.loading = true;
-  if(maaHente && (ingenting || !lasterStille)) visLaster(true, ingenting || lasterStraks);
+  /* Er det noe paa skjermen, skal det bli staaende - da holder et lite
+     merke oeverst. Er skjermen tom, dekker vi den, for da er det
+     ingenting aa se paa likevel. */
+  if(maaHente) visLaster(true, ingenting || lasterStraks, !ingenting);
   lasterStraks = false;
   msg($('calMsg'), '');
   try{

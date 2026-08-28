@@ -413,10 +413,21 @@ kalenderne var hentet, i tre–fire sekunder. Vilkåret er nå at det heller
 ikke finnes cachede avtaler: er det noe på skjermen, blir det stående, og
 den snurrende oppdater-knappen er tegnet på at noe skjer.
 
-**Neste lever, ikke tatt:** kalenderlista kunne caches lokalt som avtalene
-er. Da ville rutenettet og initialstripa stått ferdig ved innlasting i
-stedet for å vente på `/me/calendars`. Må gjøres etter at `hentTildeling()`
-er ferdig, ellers kan en kalender noen ikke skal se blinke innom.
+**Rotårsaken til de tre–fire sekundene, funnet og rettet:** `fyllFraCache()`
+bygger lista over påslåtte kalendere fra `S.calendars`, som var tom ved
+innlasting fordi kalenderlista aldri ble lagret lokalt. Cachen fantes, men
+ble filtrert bort til ingenting – skjermen sto tom til `/me/calendars` og
+seks `calendarView`-kall var ferdige. «Vis det vi hadde sist» hadde altså
+aldri virket ved oppstart, i noen versjon.
+
+Kalenderlista lagres nå sammen med avtalene i `fh_kal_cache` (id, navn,
+farge, `kanEndre`, `on`). Lista er slik *denne* brukeren så den sist, så den
+kan ikke vise noe vedkommende ikke allerede hadde på skjermen – ingen
+lekkasje mens `hentTildeling()` er underveis.
+
+**Lasteindikatoren har fått en mild variant.** `.laster.mild` er en liten
+pille øverst i stedet for et teppe over hele skjermen, brukt når det alt
+står cachet innhold der. Full dekning bare når skjermen faktisk er tom.
 
 **Neste lever, ikke tatt:** `hentVindu` henter `body` for hver avtale over et
 vindu på minst 225 dager, ganger seks kalendere, og kjører `htmlTilTekst`
