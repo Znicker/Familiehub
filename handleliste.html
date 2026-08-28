@@ -2042,6 +2042,51 @@ async function fjernFraInnboks(id){
   } catch(e){ /* varene er alt lagt inn - pakka blir liggende og kan sees igjen */ }
 }
 
+/* En pakke merket `godkjent` er alt gjennomgaatt i Oppskriftsboka - da skal
+   den ikke gjennom sammendraget og et nytt ja. Den legges rett inn, og du
+   ser resultatet i lista. Ugodkjente pakker blir liggende og vises i
+   importmodalen som foer.
+
+   Varene fra en godkjent pakke er ferdig formet: navnet er varenavnet,
+   mengden ligger i fritekst, og typen er satt. Ingen sammenslaaing eller
+   omregning her - den er alt gjort. */
+async function taImotGodkjente(){
+  const klare = innboks.filter(p => p && p.godkjent);
+  if(!klare.length) return 0;
+
+  const varer = [];
+  klare.forEach(p => {
+    (p.varer || []).forEach(v => {
+      const navn = String(v.vare || '').trim();
+      if(!navn) return;
+      varer.push({
+        name: navn,
+        qty: mengdeFraListe(v.mengder, v.fritekst),
+        cat: VARETYPER.includes((v.type || '').trim()) ? (v.type || '').trim() : 'Annet',
+        fra: Array.isArray(v.fraRetter) ? v.fraRetter : [],
+        basis: !!v.basis,
+        leggTilPaa: v.leggTilPaa || null
+      });
+    });
+    taInnKatalog(p.varekatalog);
+  });
+
+  if(varer.length) await leggIListen(varer);
+
+  /* Fjernes foerst naar varene er inne. Ryker skrivingen mot KV, blir
+     pakkene liggende og kommer inn ved neste innlasting - en dublett er
+     lettere aa rydde enn en handleliste som mangler halvparten. */
+  const tatt = new Set(klare.map(p => p.id));
+  try{
+    const liste = await lesInnboks();
+    await skrivInnboks(liste.filter(p => !tatt.has(p.id)));
+    innboks = innboks.filter(p => !tatt.has(p.id));
+    tegnInnboksMerke();
+  }catch(e){}
+
+  return varer.length;
+}
+
 function openImport(){
   document.getElementById('import-text').value = '';
   document.getElementById('import-file').value = '';
@@ -2483,6 +2528,27 @@ async function leggIListen(varer){
   const butikk = standardButikk();
   varer.filter(Boolean).forEach(v => {
     const cat = (v.cat || '').trim();
+
+    /* leggTilPaa: denne vara er samme vare som noe som alt staar paa lista,
+       avgjort i den korte gjennomgangen ved overfoering. Da skal mengden
+       legges til den raden i stedet for aa lage en ny som ser lik ut.
+       Finner vi den ikke igjen - den kan ha blitt krysset av eller slettet
+       mens pakka laa i innboksen - blir det en vanlig ny rad. */
+    if(v.leggTilPaa){
+      const maal = String(v.leggTilPaa).trim().toLowerCase();
+      const finnes = data.items.find(x => x && x.omrade === 'mat' && !x.done
+                                       && String(x.name || '').trim().toLowerCase() === maal);
+      if(finnes){
+        const samlet = [finnes.qty, v.qty].map(t => String(t || '').trim()).filter(Boolean).join(' + ');
+        finnes.qty = normaliserMengde(samlet);
+        const p = parseMengde(finnes.qty);
+        finnes.amt  = p ? String(p.tall) : '';
+        finnes.unit = p ? normEnhet(p.enhet) : '';
+        if(!finnes.cat && cat) finnes.cat = cat;
+        return;
+      }
+    }
+
     data.items.push({
       id: nyId('i'),
       name: v.name,
@@ -6224,7 +6290,15 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-init().then(hentInnboks);
+/* Rekkefoelgen er ikke tilfeldig: innboksen maa vaere lest foer godkjente
+   pakker kan tas imot, og lista maa vaere lastet foer varene legges i den. */
+init()
+  .then(hentInnboks)
+  .then(taImotGodkjente)
+  .then(antall => {
+    if(!antall) return;
+    visMelding(antall + (antall === 1 ? ' vare' : ' varer') + ' lagt inn fra Matlaging.');
+  });
 </script>
 
 <script>
