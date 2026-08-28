@@ -3595,7 +3595,12 @@ async function callClaudeText(system, content, maxTokens){
       console.warn(`Tomt svar med max_tokens ${tak}. Prøver ${trapp[i + 1]}.`);
     }
   }
-  const slutt = new Error('AI-tjenesten svarer tomt uansett svarlengde. Prøv igjen om litt.');
+  /* Ta med den siste underliggende feilen. Uten den forsvant stop_reason og
+     blokktypene her, og meldingen sa bare "tomt uansett svarlengde" - som
+     ikke skiller et avkortet svar fra en tom kropp. */
+  const slutt = new Error('AI-tjenesten svarer tomt uansett svarlengde.'
+    + (sisteFeil && sisteFeil.message ? ' Siste: ' + sisteFeil.message : '')
+    + ' Prøv igjen om litt.');
   slutt.tomtHeleVeien = true;
   throw slutt;
 }
