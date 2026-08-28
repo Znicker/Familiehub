@@ -1,5 +1,5 @@
 /* ============================================================
-   Familie Hub - felles filviser (oppfoersel)
+   Neam - felles filviser (oppfoersel)
    ------------------------------------------------------------
    Brukes av dashboard og kalender. Trukket ut 27. august 2026
    (7.3, tredje flytting). Der de to versjonene sprikte, vant

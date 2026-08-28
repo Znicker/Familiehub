@@ -1,4 +1,4 @@
-# Familiehub
+# Neam
 
 En mobilvennlig familieportal for oppskrifter, handleliste, kalender og andre familieverktøy.
 
