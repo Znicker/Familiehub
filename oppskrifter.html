@@ -8,6 +8,7 @@
 <!-- Felles app-skall: sidemoensteret oppskrifter og handleliste deler.
      Maa lastes FOER <style> under, saa sida kan overstyre. -->
 <link rel="stylesheet" href="/felles-skall.css?v=1">
+<link rel="stylesheet" href="/felles-dialog.css?v=1">
 <!-- ?v=1: bump tallet naar felles-skall.css endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -548,12 +549,10 @@
   .photo-editor-static.locked img{ aspect-ratio:4/3; object-fit:cover; }
   .photo-editor-static .photo-editor-rm-static{ top:8px; right:8px; width:30px; height:30px; font-size:var(--t-brod); }
 
-  /* Bekreftelsen kan aapnes OPPAA en annen modal - avbryt-regelen gjoer det
-     hver gang man forlater et utfylt skjema. Alle modaler deler z-index 100,
-     og #confirm-modal staar midt i markupen, saa de seks som kommer etter den
-     i dokumentet malte over den: dialogen kom, men laa bak, og Avbryt saa ut
-     til aa gjoere ingenting. Den maa ligge over alt annet. */
-  #confirm-modal{ z-index:120; }
+  /* Bekreftelsen laa foer som #confirm-modal midt i markupen og maatte
+     loeftes til z-index 120 for ikke aa bli malt over av modalene etter
+     den. Felles-dialogen har 120 i felles-dialog.css og legges nederst i
+     body av seg selv, saa problemet finnes ikke lenger. */
   .btn{
     display:inline-flex; align-items:center; justify-content:center; gap:8px;
     padding:13px 18px; border-radius:999px; border:none;
@@ -2050,16 +2049,6 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
-<div class="modal-backdrop" id="confirm-modal">
-  <div class="confirm-box" style="max-width:380px; margin:0; width:100%;">
-    <p id="confirm-modal-text"></p>
-    <div class="row">
-      <button class="btn btn-ghost" onclick="closeConfirmModal()">Avbryt</button>
-      <button class="btn btn-slett" id="confirm-modal-yes">Slett</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-backdrop" id="new-recipe-modal">
   <div class="confirm-box" style="max-width:380px; margin:0; width:100%; text-align:left;">
     <p style="text-align:center; font-weight:700; color:var(--ink); margin:0 0 14px;">Ny oppskrift</p>
@@ -2261,6 +2250,8 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
+<script src="/felles-dialog.js?v=1"></script>
+<script src="/felles-skjema.js?v=1"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB-basert erstatning for window.storage.
@@ -2428,43 +2419,15 @@ input,select,textarea{font-size:16px}
 function $(id){ return document.getElementById(id); }
 // Standardutsnitt = hele bildet. Nytt objekt hver gang, så to bilder aldri deler samme crop.
 function fullCrop(){ return {x:0, y:0, width:1, height:1}; }
-/* ---- Avbryt-regelen (se designsystemet) ----
-   Avbryt er alltid noeytral. Roedt er reservert for sletting - en farge kan
-   ikke bety to ting. Advarselen ligger derfor ikke i fargen, men i en
-   bekreftelse, og bare naar det finnes noe aa miste: tekst, tall eller filer
-   som er lagt inn siden skjemaet ble aapnet. Valg i nedtrekk og avkryssinger
-   teller ikke - de koster ingenting aa gjoere om.
-   Er ingenting endret, gaar Avbryt rett ut uten dialog. Det er hele poenget:
-   en dialog man faar hver gang, er en dialog man slutter aa lese. */
-const modalAvtrykk = {};
-/* Bilder og filer ligger ikke i et felt - de samles i en JS-liste, og
-   filfeltet nullstilles saa snart fila er lest. Uten dette registeret ville
-   "legg inn bilde, trykk Avbryt" gaatt stille gjennom. Meld inn ny tilstand
-   her naar en modal faar noe som ikke er et skjemafelt. */
-const ekstraTilstand = {
-  'physical-import-modal': () => physicalImportImages.length
-};
-function avtrykkAv(id){
-  const rot = $(id);
-  if(!rot) return '';
-  const felt = rot.querySelectorAll('textarea, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])');
-  const ekstra = ekstraTilstand[id] ? String(ekstraTilstand[id]()) : '';
-  return Array.from(felt).map(el => el.value).join('\u241F') + '\u241E' + ekstra;
-}
-function huskSkjema(id){ modalAvtrykk[id] = avtrykkAv(id); }
-function skjemaEndret(id){
-  const foer = modalAvtrykk[id];
-  return foer != null && avtrykkAv(id) !== foer;
-}
-/* lukk er funksjonen som faktisk lukker - hver modal har sin egen opprydding. */
-function avbrytSkjema(id, lukk){
-  if(skjemaEndret(id)){
-    showConfirmModal('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.',
-      lukk, 'Forkast');
-    return;
-  }
-  lukk();
-}
+/* ---- Avbryt-regelen ----
+   Selve regelen ligger i felles-skjema.js. Her staar bare oppskriftenes
+   eget bidrag.
+
+   Bilder og filer ligger ikke i et felt - de samles i en JS-liste, og
+   filfeltet nullstilles saa snart fila er lest. Uten dette ville "legg inn
+   bilde, trykk Avbryt" gaatt stille gjennom. Meld inn ny tilstand her naar
+   en modal faar noe som ikke er et skjemafelt. */
+ekstraTilstand['physical-import-modal'] = () => physicalImportImages.length;
 
 function openModal(name){ huskSkjema(name + '-modal'); $(name + '-modal').classList.add('active'); }
 function closeModal(name){ $(name + '-modal').classList.remove('active'); }
@@ -2645,14 +2608,11 @@ function skjemaErEndret(){
   return skjemaAvtrykk !== null && skjemaFingeravtrykk() !== skjemaAvtrykk;
 }
 
-function goAddBack(){
+async function goAddBack(){
   if(skjemaErEndret()){
-    showConfirmModal(
-      'Du har endringer som ikke er lagret. Forkaster du dem nå, er de borte.',
-      () => { skjemaAvtrykk = null; forlatAddSkjema(); },
-      'Forkast endringene'
-    );
-    return;
+    if(!(await bekreft('Du har endringer som ikke er lagret. Forkaster du dem nå, er de borte.',
+                       {jaTekst:'Forkast endringene', fare:true}))) return;
+    skjemaAvtrykk = null;
   }
   forlatAddSkjema();
 }
@@ -3207,15 +3167,15 @@ async function handleCardTap(id){
     await openRecipe(id);
   }
 }
-function deleteRecipeFromHome(id){
+async function deleteRecipeFromHome(id){
   const r = recipes.find(x => x.id === id);
   if(!r) return;
-  showConfirmModal(`Slette "${r.title || 'oppskriften'}"? Dette kan ikke angres.`, async () => {
-    recipes = recipes.filter(x => x.id !== id);
-    await persistRecipeIndex();
-    await deleteFullRecipe(id);
-    renderHome();
-  });
+  if(!(await bekreft(`Slette "${r.title || 'oppskriften'}"? Dette kan ikke angres.`,
+                     {jaTekst:'Slett', fare:true}))) return;
+  recipes = recipes.filter(x => x.id !== id);
+  await persistRecipeIndex();
+  await deleteFullRecipe(id);
+  renderHome();
 }
 
 /* ---- Gjenopprett sikkerhetskopi ---- */
@@ -3750,27 +3710,9 @@ async function submitPhysicalImport(){
   }
 }
 
-/* ---- Generic in-app confirm modal (native confirm() is blocked in this sandbox) ---- */
-let confirmModalCallback = null;
-/* jaTekst er valgfri. Standard er "Slett" fordi alle de opprinnelige
-   kallstedene sletter noe - men modalen brukes naa ogsaa til aa forkaste
-   et utkast, og da er "Slett" feil ord. */
-function showConfirmModal(message, onYes, jaTekst){
-  $('confirm-modal-text').textContent = message;
-  const ja = $('confirm-modal-yes');
-  if(ja) ja.textContent = jaTekst || 'Slett';
-  confirmModalCallback = onYes;
-  openModal('confirm');
-}
-function closeConfirmModal(){
-  closeModal('confirm');
-  confirmModalCallback = null;
-}
-$('confirm-modal-yes').addEventListener('click', () => {
-  const cb = confirmModalCallback;
-  closeConfirmModal();
-  if(cb) cb();
-});
+/* Bekreftelsene ligger i felles-dialog.js - bekreft() og varsle().
+   Oppskriftenes egen showConfirmModal er borte: den var den siste
+   bekreftelsen i huben som saa ut som noe annet enn de andre. */
 
 /* ---------------- Add / edit form ---------------- */
 function resetAddForm(){
@@ -5084,21 +5026,20 @@ async function syncIndexRating(r){
   idxEntry.ratingCount = countRecipeRatings(r);
   await persistRecipeIndex();
 }
-function deleteEntry(kind, idx){
+async function deleteEntry(kind, idx){
   const cfg = ENTRY_TYPES[kind];
   const r = recipeCache[currentRecipeId];
   const list = r && r[cfg.field];
   if(!list || !list[idx]) return;
-  showConfirmModal(cfg.confirmText, async () => {
-    list.splice(idx, 1);
-    try{
-      await persistFullRecipe(r);
-      if(cfg.syncsRating) await syncIndexRating(r);
-    }catch(e){
-      console.error(cfg.errorText, e);
-    }
-    cfg.rerender();
-  });
+  if(!(await bekreft(cfg.confirmText, {jaTekst:'Slett', fare:true}))) return;
+  list.splice(idx, 1);
+  try{
+    await persistFullRecipe(r);
+    if(cfg.syncsRating) await syncIndexRating(r);
+  }catch(e){
+    console.error(cfg.errorText, e);
+  }
+  cfg.rerender();
 }
 
 function countRecipeRatings(r){
@@ -5599,18 +5540,16 @@ function startTipsRediger(i){
   const f = $('tips-felt-' + i);
   if(f){ f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
 }
-function avbrytTips(){
+async function avbrytTips(){
   /* Avbryt-regelen: feltet er forhaandsfylt med det lagrede tipset, saa vi
      spoer bare hvis teksten faktisk er en annen. */
   const r = recipeCache[currentRecipeId];
   const i = tipsRedigerer;
   const felt = (i != null) ? $('tips-felt-' + i) : null;
   const lagret = (r && Array.isArray(r.tips) && i != null) ? (r.tips[i] || '') : '';
-  if(felt && felt.value.trim() !== String(lagret).trim()){
-    showConfirmModal('Du har endret tipset. Forkaster du endringen nå, er den borte.',
-      () => { tipsRedigerer = null; renderTips(); }, 'Forkast endringen');
-    return;
-  }
+  if(felt && felt.value.trim() !== String(lagret).trim() &&
+     !(await bekreft('Du har endret tipset. Forkaster du endringen nå, er den borte.',
+                     {jaTekst:'Forkast endringen', fare:true}))) return;
   tipsRedigerer = null;
   renderTips();
 }
@@ -5628,15 +5567,14 @@ async function lagreTips(i){
   catch(e){ console.error('Kunne ikke lagre tipset', e); }
 }
 
-function slettTips(i){
+async function slettTips(i){
   const r = recipeCache[currentRecipeId];
   if(!r || !Array.isArray(r.tips)) return;
-  showConfirmModal('Slette dette tipset?', async () => {
-    r.tips.splice(i, 1);
-    try{ await persistFullRecipe(r); }
-    catch(e){ console.error('Kunne ikke slette tipset', e); }
-    renderTips();
-  });
+  if(!(await bekreft('Slette dette tipset?', {jaTekst:'Slett', fare:true}))) return;
+  r.tips.splice(i, 1);
+  try{ await persistFullRecipe(r); }
+  catch(e){ console.error('Kunne ikke slette tipset', e); }
+  renderTips();
 }
 
 function addTipsRow(tekst){
@@ -6027,11 +5965,9 @@ async function avbrytStegRedigering(){
       chefComments: r.chefComments || [],
       tastings: r.tastings || []
     });
-    if(naaSjekk !== utkastFoer){
-      showConfirmModal('Du har endringer som ikke er lagret. Forkaster du dem nå, er de borte.',
-        () => gjennomfoerAvbrytSteg(), 'Forkast endringene');
-      return;
-    }
+    if(naaSjekk !== utkastFoer &&
+       !(await bekreft('Du har endringer som ikke er lagret. Forkaster du dem nå, er de borte.',
+                       {jaTekst:'Forkast endringene', fare:true}))) return;
   }
   await gjennomfoerAvbrytSteg();
 }
@@ -7611,32 +7547,32 @@ async function tilHandlelista(){
   showToast(`${antall} varer klar for handlelista${kopiert ? ' - også kopiert' : ''}.`);
 }
 
-function resetIngEdits(){
-  showConfirmModal('Nullstille fjernede varer og mengder for denne uka? Varekatalogen beholdes.', async () => {
-    delete ingEdits[planWeekKey(planWeek)];
-    try{ await persistIngEdits(); }
-    catch(e){ showToast('Klarte ikke lagre endringen.'); }
-    renderPlanIngredientsTab();
-  });
+async function resetIngEdits(){
+  if(!(await bekreft('Nullstille fjernede varer og mengder for denne uka? Varekatalogen beholdes.',
+                     {jaTekst:'Nullstill', fare:true}))) return;
+  delete ingEdits[planWeekKey(planWeek)];
+  try{ await persistIngEdits(); }
+  catch(e){ showToast('Klarte ikke lagre endringen.'); }
+  renderPlanIngredientsTab();
 }
 
-function removeFromPlan(key, dayNum, idx){
+async function removeFromPlan(key, dayNum, idx){
   const list = mealPlan[key] && mealPlan[key][dayNum];
   if(!list || !list[idx]) return;
-  showConfirmModal(`Fjerne "${list[idx].title}" fra planen?`, async () => {
-    const removed = list.splice(idx, 1)[0];
-    if(!list.length) delete mealPlan[key][dayNum];
-    try{
-      await persistMealPlan();
-    }catch(e){
-      if(!mealPlan[key][dayNum]) mealPlan[key][dayNum] = [];
-      mealPlan[key][dayNum].splice(idx, 0, removed);
-      showToast('Klarte ikke lagre. Prøv en gang til.');
-      return;
-    }
-    renderPlanView();
-    renderHome();
-  });
+  if(!(await bekreft(`Fjerne "${list[idx].title}" fra planen?`,
+                     {jaTekst:'Fjern', fare:true}))) return;
+  const removed = list.splice(idx, 1)[0];
+  if(!list.length) delete mealPlan[key][dayNum];
+  try{
+    await persistMealPlan();
+  }catch(e){
+    if(!mealPlan[key][dayNum]) mealPlan[key][dayNum] = [];
+    mealPlan[key][dayNum].splice(idx, 0, removed);
+    showToast('Klarte ikke lagre. Prøv en gang til.');
+    return;
+  }
+  renderPlanView();
+  renderHome();
 }
 
 async function backfillRatingCounts(){
