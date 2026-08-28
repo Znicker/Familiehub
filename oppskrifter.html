@@ -7626,11 +7626,9 @@ async function kortGjennomgang(pakke){
    Et valg man ikke faar tatt er bedre enn en overfoering som
    stopper.
    ============================================================ */
-const HANDLE_API = '/api/data?key=handleliste:v1';
-
 async function hentHandleturer(){
   try{
-    const r = await fetch(HANDLE_API, {cache:'no-store', headers:{'Accept':'application/json'}});
+    const r = await fetch(HANDLELISTE_API, {cache:'no-store', headers:{'Accept':'application/json'}});
     if(!r.ok) return null;
     const txt = await r.text();
     if(!txt) return null;
@@ -7706,7 +7704,7 @@ function velgHandletur(okter){
   });
 }
 
-/* Ett trykk: velg handletur, gjennomgang, overfoering, og over i handlelista. */
+/* Ett trykk: velg handletur, overfoering, og over i handlelista. */
 async function overfoerTilHandlelista(pakke, filnavn, hva){
   const okter = await hentHandleturer();
   if(okter){
@@ -7714,9 +7712,23 @@ async function overfoerTilHandlelista(pakke, filnavn, hva){
     if(!valg) return;                       /* ombestemte seg - ingenting sendes */
     pakke.tilOkt = valg;
   }
-  showToast('Går gjennom varene …');
+  /* Her laa kortGjennomgang() - et AI-kall som prøvde aa koble nye varer
+     mot dem som alt sto paa lista, og satte leggTilPaa slik at mengdene
+     ble slaatt sammen ved import.
+
+     Tatt ut 29. august 2026, av to grunner. Den gjorde sendingen treg paa
+     et sted der ingen venter paa noe - man har nettopp trykket send, og
+     staar og ser paa en toast mens en modell tenker. Og den gjorde jobben
+     Neam naa gjoer paa den andre siden, der et menneske svarer: samme
+     vurdering, men uten noen aa spoerre.
+
+     Sammenslaaingen skal ikke gjettes foer noen kan bekrefte den. Varene
+     gaar over som de er, staar som egne rader om enhetene ikke gaar opp,
+     og Neam legger fram forslaget naar du er framme.
+
+     kortGjennomgang() og hjelperne rundt blir staaende ubrukt inntil
+     videre - de ryddes bort naar dette har staatt en stund. */
   pakke.godkjent = true;
-  await kortGjennomgang(pakke);
   const ok = await sendPakke(pakke, filnavn, hva);
   /* Gikk overfoeringen i vasken, ble fila lastet ned i stedet - da skal du
      bli staaende, ikke sendes til en liste der ingenting har kommet. */
