@@ -369,17 +369,30 @@ async function neamEttForsok(meldinger, system, verktoy){
   ut.push({ type:'web_search_20250305', name:'web_search', max_uses:3 });
   kropp.tools = ut;
 
+  /* Et kall uten tak kan bli haengende for alltid, og da staar «Neam
+     tenker …» til noen laster sida paa nytt. Med tenkningen av er et
+     svar sjelden over ti sekunder; ett minutt er rikelig, og det som
+     tar lenger tid kommer ikke. */
+  const stopper = new AbortController();
+  const klokke = setTimeout(function(){ stopper.abort(); }, 60000);
+
   let r;
   try{
     r = await fetch('/api/claude', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify(kropp)
+      body: JSON.stringify(kropp),
+      signal: stopper.signal
     });
   }catch(e){
-    const feil = new Error('Fikk ikke kontakt med Neam. Sjekk nettforbindelsen.');
-    feil.kanProvesIgjen = true;
+    const brutt = (e && e.name === 'AbortError');
+    const feil = new Error(brutt
+      ? 'Neam svarte ikke innen ett minutt. Prøv igjen, eller be om mindre av gangen.'
+      : 'Fikk ikke kontakt med Neam. Sjekk nettforbindelsen.');
+    feil.kanProvesIgjen = !brutt;   /* et nytt forsoek som ogsaa tar for lang tid hjelper ingen */
     throw feil;
+  }finally{
+    clearTimeout(klokke);
   }
 
   const raa = await r.text();

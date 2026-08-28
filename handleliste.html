@@ -908,7 +908,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=14"></script>
+<script src="/felles-neam.js?v=15"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -2068,7 +2068,15 @@ async function taImotGodkjente(){
       varer.push({
         name: navn,
         qty: mengdeFraListe(v.mengder, v.fritekst),
-        cat: VARETYPER.includes((v.type || '').trim()) ? (v.type || '').trim() : 'Annet',
+        /* Tom, ikke 'Annet', naar pakka ikke har en gyldig type. leggIListen
+           gjetter da med foreslaattType(), som kjenner stikkordene.
+
+           Foer sto det 'Annet' her, og den ble skrevet rett inn i
+           varekatalogen som om noen hadde bestemt det. Katalogen slaas opp
+           FOER stikkordene, saa én import var nok til at «vann» var Annet
+           for alltid - selv om vann staar under Drikke i tabellen. En
+           reserveverdi skal ikke bli til lærdom. */
+        cat: VARETYPER.includes((v.type || '').trim()) ? (v.type || '').trim() : '',
         fra: Array.isArray(v.fraRetter) ? v.fraRetter : [],
         basis: !!v.basis,
         leggTilPaa: v.leggTilPaa || null
@@ -2606,7 +2614,7 @@ async function leggIListen(varer, tilOkt){
   const okt = oktForPakke(tilOkt);
   const butikk = standardButikk();
   varer.filter(Boolean).forEach(v => {
-    const cat = (v.cat || '').trim();
+    const cat = (v.cat || '').trim() || foreslaattType(v.name);
 
     /* leggTilPaa: denne vara er samme vare som noe som alt staar paa lista,
        avgjort i den korte gjennomgangen ved overfoering. Da skal mengden
@@ -2642,7 +2650,9 @@ async function leggIListen(varer, tilOkt){
       basis: !!v.basis, omrade: 'mat', done: false
     });
     settMaal(data.items[data.items.length - 1], v.qty || '');
-    katalogLagre(v.name, cat, !!v.basis);
+    /* Bare naar vi faktisk har en type. En tom gjetning skal ikke laeres
+       bort som et svar - se kommentaren i taImotGodkjente. */
+    if (cat) katalogLagre(v.name, cat, !!v.basis);
     if (butikk) data.butikkvalg[v.name.trim().toLowerCase()] = butikk;
   });
   await lagreKatalog();
@@ -6711,8 +6721,9 @@ async function neamLeggTilVarer(arg){
     neamSettMengde(rad, v.mengde, v.antall);
     data.items.push(rad);
 
-    /* Katalogen er bare for Dagligvarer - samme grense som saveItem. */
-    if (omr === 'mat'){
+    /* Katalogen er bare for Dagligvarer - samme grense som saveItem. Og
+       bare naar vi har en type: en tom gjetning er ikke laerdom. */
+    if (omr === 'mat' && cat){
       katalogLagre(navn, cat, false);
       if (butikk) data.butikkvalg[navn.toLowerCase()] = butikk;
     }
