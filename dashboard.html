@@ -964,8 +964,19 @@ const FASTE_FARGER = {
   'Emma':'#8A6BB1', 'Andrea':'#C65B7C'
 };
 let fargeOverstyring = {};
-function kalenderFarge(navn, i){
-  return fargeOverstyring[navn] || FASTE_FARGER[navn] || PALETTE[i % PALETTE.length];
+/* Reservefargen naar ingen har valgt én. Utledes av navnet, ikke av
+   plassen i kalenderlista: den plassen er forskjellig i hver postkasse -
+   sys har flere kalendere og i annen rekkefoelge enn kitchen - og samme
+   kalender fikk derfor ulik farge hos ulike folk. Navnet er likt overalt.
+   Enkel deterministisk sum; den skal bare vaere stabil, ikke jevn. */
+function palettFor(navn){
+  const s = String(navn || '');
+  let sum = 0;
+  for(let i = 0; i < s.length; i++) sum = (sum * 31 + s.charCodeAt(i)) >>> 0;
+  return PALETTE[sum % PALETTE.length];
+}
+function kalenderFarge(navn){
+  return fargeOverstyring[navn] || FASTE_FARGER[navn] || palettFor(navn);
 }
 
 const DAGER = ['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'];
@@ -1317,8 +1328,8 @@ async function hentPlan(){
   const slutt = new Date(start.getTime() + 86400000);
 
   const kal = await graph('/me/calendars?$top=50');
-  const aktive = (kal.value || []).map(function(c, i){
-    return { id:c.id, navn:c.name, farge:kalenderFarge(c.name, i),
+  const aktive = (kal.value || []).map(function(c){
+    return { id:c.id, navn:c.name, farge:kalenderFarge(c.name),
              kanSkrive: c.canEdit !== false };
   });
   /* Skjemaet trenger den samme lista for aa vite hvor en ny avtale skal. */
@@ -2458,8 +2469,7 @@ function tett(hex, a){
 }
 
 function huskeFarge(navn){
-  const i = PERSONER.indexOf(navn);
-  return kalenderFarge(navn, i < 0 ? 0 : i);
+  return kalenderFarge(navn);
 }
 function datoNokkel(d){
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());

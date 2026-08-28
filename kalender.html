@@ -1590,8 +1590,19 @@ let erKalAdmin      = false;
 let minEpost        = null;
 
 /* Gjeldende farge for en kalender: overstyring → standard → palett */
-function kalenderFarge(navn, i){
-  return fargeOverstyring[navn] || FASTE_FARGER[navn] || PALETTE[i % PALETTE.length];
+/* Reservefargen naar ingen har valgt én. Utledes av navnet, ikke av
+   plassen i kalenderlista: den plassen er forskjellig i hver postkasse -
+   sys har flere kalendere og i annen rekkefoelge enn kitchen - og samme
+   kalender fikk derfor ulik farge hos ulike folk. Navnet er likt overalt.
+   Enkel deterministisk sum; den skal bare vaere stabil, ikke jevn. */
+function palettFor(navn){
+  const s = String(navn || '');
+  let sum = 0;
+  for(let i = 0; i < s.length; i++) sum = (sum * 31 + s.charCodeAt(i)) >>> 0;
+  return PALETTE[sum % PALETTE.length];
+}
+function kalenderFarge(navn){
+  return fargeOverstyring[navn] || FASTE_FARGER[navn] || palettFor(navn);
 }
 
 /* Microsoft oppgir av og til gjeste-format som «magne_neam.no#EXT#@...».
@@ -2046,8 +2057,13 @@ function byggInitialer(){
     return i === -1 ? INITIAL_PRI.length : i;
   };
 
-  // Husstanden foerst, saa de faar sin ene bokstav foer noen andre
-  S.calendars.slice()
+  /* Bare kalendere som faktisk er i spill teller med. Kollisjonene ble
+     foer regnet over hele lista i egen postkasse, og sys - som ser sin
+     egen standardkalender, bursdager og alt annet - delte derfor ut to
+     bokstaver der kitchen klarte seg med én. Samme kalender fikk ulikt
+     merke hos ulike folk. Husstanden foerst, saa de faar sin ene bokstav
+     foer noen andre. */
+  S.calendars.filter(function(c){ return harTilgang(c.name); })
     .sort(function(a, b){ return rang(a) - rang(b); })
     .forEach(function(c){
       // Maks to tegn - lengre merker blir uleselige i rutenettet
@@ -2075,9 +2091,9 @@ async function loadCalendars(){
   const d = await graph('/me/calendars?$top=50');
   const prev = {};
   S.calendars.forEach(function(c){ prev[c.id] = c.on; });
-  S.calendars = (d.value||[]).map(function(c,i){
+  S.calendars = (d.value||[]).map(function(c){
     return {
-      id:c.id, name:c.name, color: kalenderFarge(c.name, i),
+      id:c.id, name:c.name, color: kalenderFarge(c.name),
       kanEndre: c.canEdit !== false,
       on: harTilgang(c.name) &&
           (prev[c.id] !== undefined ? prev[c.id] : visVedStart(c.name))
