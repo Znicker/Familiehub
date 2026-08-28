@@ -495,7 +495,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
    at noe skjer, ikke miste det man ser paa. */
 .laster.mild{
   background:none; -webkit-backdrop-filter:none; backdrop-filter:none;
-  align-items:flex-start; justify-content:center; padding-top:14px;
+  /* .laster er flex-direction:column - da styrer align-items vannrett og
+     justify-content loddrett. Byttet om paa dem foerst, saa pilla havnet
+     mot venstre kant midt paa hoeyden. */
+  align-items:center; justify-content:flex-start; padding-top:14px;
 }
 .laster.mild .laster-kort{
   flex-direction:row; align-items:center; gap:11px;
