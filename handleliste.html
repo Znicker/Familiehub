@@ -958,7 +958,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=18"></script>
+<script src="/felles-neam.js?v=19"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -2480,7 +2480,10 @@ async function neamGjennomgang(navn){
   + 'Sett varetype selv på de som mangler den, med sett_varetype - bruk '
   + 'foreslattType som står ved siden av varen, og ikke søk i katalogen for '
   + 'å finne den. Ikke spør om varetype. '
-  + 'Alt annet du vil foreslå, legger du fram samlet med foresla_opprydding, '
+  + 'Slå sammen rader som åpenbart er samme vare selv, med slaa_sammen - '
+  + '«salt til kjøtt» og «salt til ris» er salt, og det skal ikke brukeren '
+  + 'måtte bekrefte. Regn om til samme enhet og oppgi summen. '
+  + 'Bare det som endrer hva som faktisk blir kjøpt, legger du fram med foresla_opprydding, '
   + 'med én kort begrunnelse per linje - høyst 8 linjer, de viktigste først. '
   + 'Ikke skriv noen oppsummering før tabellen; begrunnelsene i den sier det som '
   + 'trengs, og et langt svar foran risikerer å bli kuttet av så tabellen aldri kommer. '
@@ -6470,11 +6473,43 @@ window.neamVerktoy = async function(){
          en gal varetype er begge deler. */
     },
     {
+      name: 'slaa_sammen',
+      description: 'Slår flere rader som er samme vare sammen til én. GJØR DETTE SELV, '
+                 + 'uten å spørre: fem rader «salt til kjøtt», «salt til ris» og så '
+                 + 'videre er ikke en avgjørelse noen skal ta stilling til, det er '
+                 + 'opprydding. Du oppgir navnet den samlede raden skal ha og den samlede '
+                 + 'mengden - regn om til samme enhet først. Er du usikker på om det '
+                 + 'FAKTISK er samme vare, eller lar mengdene seg ikke summere, skal det '
+                 + 'i foresla_opprydding i stedet.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          varer:  { type:'array', items:{ type:'string' },
+                    description:'Navnene på radene som skal bli én. Minst to.' },
+          navn:   { type:'string', description:'Navnet den samlede raden skal ha, f.eks. «Salt».' },
+          mengde: { type:'string', description:'Den samlede mengden, f.eks. «3,5 ts».' },
+          antall: { type:'string', description:'Hvor mange av mengden, om det trengs.' },
+          type:   { type:'string', enum: VARETYPER },
+          omrade: { type:'string', enum:['mat','annet'] },
+          handletur:{ type:'string' }
+        },
+        required: ['varer','navn']
+      }
+      /* Ingen neamSkriver. Sammenslaaingen endrer ikke hva som blir kjoept -
+         den samler det som alt staar der. Feilen er synlig med det samme og
+         like lett aa rette. Det som ENDRER handleturen - at noe fjernes,
+         eller at to ting kanskje ikke er samme vare - hoerer hjemme i
+         foresla_opprydding, der noen svarer. */
+    },
+    {
       name: 'foresla_opprydding',
       description: 'Legger flere endringer fram på en egen skjerm der brukeren haker '
                  + 'av og kan rette mengdene selv. '
-                 + 'BRUK DENNE når du har mer enn én ting å foreslå - ikke ett og ett '
-                 + 'spørsmål etter hverandre. Rekkefølgen du sender i spiller ingen rolle: '
+                 + 'BARE for det som ENDRER hva som blir kjøpt: at noe skal bort fra '
+                 + 'lista, at to ting kanskje ikke er samme vare likevel, at en mengde '
+                 + 'ikke lar seg summere. Rene sammenslåinger av samme vare gjør du selv '
+                 + 'med slaa_sammen - de skal ikke ta plass her fra det brukeren faktisk '
+                 + 'må ta stilling til. Rekkefølgen du sender i spiller ingen rolle: '
                  + 'fjerninger kjøres først, så endringer, så tillegg, slik at «slå to '
                  + 'rader sammen til én» blir riktig. Skriv en kort begrunnelse på hver '
                  + 'linje - det er den brukeren leser når han bestemmer seg.',
@@ -6814,6 +6849,7 @@ window.neamUtfor = async function(navn, arg){
   if (navn === 'fjern_varer')    return await neamFjernVarer(arg);
   if (navn === 'endre_vare')     return await neamEndreVare(arg);
   if (navn === 'sett_varetype')  return await neamSettVaretype(arg);
+  if (navn === 'slaa_sammen')    return await neamSlaaSammen(arg);
   if (navn === 'foresla_opprydding') return await neamOpprydding(arg);
 
   throw new Error('Ukjent verktøy: ' + navn);
@@ -6991,6 +7027,68 @@ async function neamSettVaretype(arg){
     render();
   }
   return { handletur: oktNavn(okt), satt, fantIkke };
+}
+
+/* Slaar flere rader til én. Uten dialog - se kommentaren ved
+   verktoeydefinisjonen for hvor grensen gaar.
+
+   Den foerste raden som finnes blir staaende og faar nytt navn og ny
+   mengde; resten fjernes. Da beholdes notatet, butikken og plassen, i
+   stedet for at alt erstattes av en ny rad som bare ser lik ut. */
+async function neamSlaaSammen(arg){
+  const navn = Array.isArray(arg.varer)
+    ? arg.varer.map(v => String(v || '').trim()).filter(Boolean) : [];
+  if (navn.length < 2) throw new Error('Trenger minst to rader å slå sammen.');
+  const nyttNavn = String(arg.navn || '').trim();
+  if (!nyttNavn) throw new Error('Mangler navnet den samlede raden skal ha.');
+
+  const okt = neamFinnOkt(arg, false);
+  if (!okt) return { handletur:null, beskjed:'Ingen handletur er åpen i dette området.' };
+  const omr = oktOmrade(okt);
+
+  let rader = [];
+  navn.forEach(n => { rader = rader.concat(neamRader({ vare:n }, okt)); });
+  if (rader.length < 2){
+    throw new Error('Fant bare ' + rader.length + ' av radene. Les lista på nytt.');
+  }
+
+  const beholdt = rader[0];
+  const resten  = rader.slice(1);
+
+  /* Notatene samles - de sier ofte hvilken rett varen kom fra. */
+  const noter = rader.map(v => String(v.notes || '').trim()).filter(Boolean);
+  beholdt.notes = [...new Set(noter)].join(', ');
+
+  const nyttNavnet = String(beholdt.name || '').trim().toLowerCase() !== nyttNavn.toLowerCase();
+  beholdt.name = nyttNavn;
+  if (arg.mengde !== undefined || arg.antall !== undefined){
+    neamSettMengde(beholdt, arg.mengde, arg.antall);
+  }
+
+  /* Varetypen beskrev det GAMLE navnet. Blir «Salt til kjøtt» til «Salt»,
+     skal typen utledes av det nye navnet - ellers arver den samlede raden
+     en type som gjaldt noe annet. Oppgir Neam en type selv, vinner den. */
+  if (arg.type && VARETYPER.includes(arg.type)) beholdt.cat = arg.type;
+  else if (nyttNavnet || !beholdt.cat) beholdt.cat = foreslaattType(nyttNavn) || beholdt.cat || '';
+
+  const vekk = new Set(resten.map(v => v.id));
+  data.items = data.items.filter(v => !vekk.has(v.id));
+
+  if (omr === 'mat' && beholdt.cat) katalogLagre(beholdt.name, beholdt.cat, !!beholdt.basis);
+
+  await medLaas(async () => {
+    if (omr === 'mat') await lagreKatalog();
+    await save();
+  });
+  renderOktLabel();
+  render();
+  oppdaterRyddMerke();
+
+  return {
+    handletur: oktNavn(okt),
+    ble: { vare: beholdt.name, mengde: beholdt.qty, type: beholdt.cat },
+    slaattSammenFra: rader.length + ' rader'
+  };
 }
 
 /* Kjoerer det brukeren haket av i tabellen.
