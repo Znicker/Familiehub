@@ -331,10 +331,23 @@ function neamSystem(k, harVerktoy, bakgrunn){
 async function neamEttForsok(meldinger, system, verktoy){
   const kropp = {
     model: neamModell().id,
-    /* 8000. Vi vet at taket gaar gjennom - maalt mot /api/claude - og at
-       han faktisk skriver seg forbi 4000 etter ett listeoppslag. Hva han
-       skriver saa mye av, vet vi ikke ennaa; loggen under sier det. */
-    max_tokens: 8000,
+    max_tokens: 4000,
+
+    /* Utvidet tenkning AV.
+
+       Dette var hele forklaringen paa tregheten. Modellen tenkte i 28 000
+       tegn - rundt 7000 tokens - foer den begynte aa skrive, og traff taket
+       midt i tenkningen. Resultatet var et panel som sto i tretti sekunder
+       og saa ga en feilmelding: alt budsjettet gikk med, ingenting kom ut.
+
+       Aa heve taket gjoer det bare tregere. Oppgavene her - les en liste,
+       finn dubletter, foreslaa en sum - trenger ikke et resonnement paa
+       flere tusen ord.
+
+       Skulle en tyngre oppgave trenge det en dag, hoerer det hjemme som et
+       valg pr. oppgave, ved siden av modellvalget - ikke som noe som staar
+       paa hele tiden uten at noen har bestemt det. */
+    thinking: { type: 'disabled' },
     /* NB: ikke sett temperature - modellen avviser den. */
     system: system,
     messages: meldinger
