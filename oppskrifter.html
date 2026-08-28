@@ -3547,7 +3547,21 @@ async function calludeEttForsok(system, content, maxTokens){
     throw feil;
   }
   const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
-  if(!textBlocks.length) throw new Error('Fikk ikke noe svar fra AI-en');
+  if(!textBlocks.length){
+    /* Svaret var gyldig og uten feil, men inneholdt ingen tekst. Det skjedde
+       foerste gang klargjoeringen ble proevd, og meldingen sa den gang bare
+       "fikk ikke noe svar" - uten aa nevne HVA som kom i stedet. Naa foelger
+       stop_reason og blokktypene med, saa det gaar an aa se forskjell paa et
+       avkortet svar (max_tokens) og et tomt content. */
+    const typer = (data.content || []).map(b => b && b.type).filter(Boolean);
+    const feil = new Error('AI-en svarte uten tekst (stop_reason: '
+      + (data.stop_reason || 'ukjent')
+      + (typer.length ? ', blokker: ' + typer.join(', ') : ', content tom') + ').');
+    /* Avkortet svar er det samme som tomt svar for trappa under: gaa ned et
+       trinn i stedet for aa proeve det samme paa nytt. */
+    if(data.stop_reason === 'max_tokens'){ feil.tomtSvar = true; feil.kanProvesIgjen = true; }
+    throw feil;
+  }
   return textBlocks.join('\n').trim();
 }
 
@@ -7701,7 +7715,8 @@ function visKlarFeil(melding){
   inn.textContent = '';
   const boks = document.createElement('div');
   boks.className = 'klar-feil';
-  boks.textContent = melding + ' Du kan prøve igjen, eller sende uten klargjøring.';
+  const slutt = /[.!?]$/.test(melding) ? '' : '.';
+  boks.textContent = melding + slutt + ' Du kan prøve igjen, eller sende uten klargjøring.';
   inn.appendChild(boks);
 
   [['Prøv igjen', () => klargjorOgSend(klarPakke, klarPakke._filnavn, klarPakke._hva)],
