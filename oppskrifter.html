@@ -2255,7 +2255,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=7"></script>
+<script src="/felles-neam.js?v=8"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB-basert erstatning for window.storage.
@@ -7614,8 +7614,106 @@ async function kortGjennomgang(pakke){
   return pakke;
 }
 
-/* Ett trykk: gjennomgang, overfoering, og over i handlelista. */
+/* ============================================================
+   Hvilken handletur skal varene til?
+   ------------------------------------------------------------
+   Handleturene bor i handlelistas data, ikke her. Vi leser dem
+   rett fra KV - samme noekkel som Handle lagrer under - og lar
+   brukeren velge foer pakka sendes. Valget foelger med i pakka;
+   Handle oppretter turen om den ikke finnes.
+
+   Feiler lesingen, sender vi som foer, til den aapne turen.
+   Et valg man ikke faar tatt er bedre enn en overfoering som
+   stopper.
+   ============================================================ */
+const HANDLE_API = '/api/data?key=handleliste:v1';
+
+async function hentHandleturer(){
+  try{
+    const r = await fetch(HANDLE_API, {cache:'no-store', headers:{'Accept':'application/json'}});
+    if(!r.ok) return null;
+    const txt = await r.text();
+    if(!txt) return null;
+    let d = JSON.parse(txt);
+    if(d && typeof d === 'object' && !Array.isArray(d) && d.value !== undefined) d = d.value;
+    if(typeof d === 'string') d = JSON.parse(d);
+    const okter = (d && Array.isArray(d.okter)) ? d.okter : [];
+    /* Bare dagligvarer: ingredienser hoerer ikke hjemme under Andre varer. */
+    return okter.filter(function(o){ return o && (o.omrade || 'mat') === 'mat'; })
+                .sort(function(a,b){ return (b.opprettet || 0) - (a.opprettet || 0); });
+  }catch(e){ return null; }
+}
+
+/* Returnerer {oktId} eller {nyttNavn}, eller null om man ombestemte seg. */
+function velgHandletur(okter){
+  return new Promise(function(ok){
+    const bak = document.createElement('div');
+    bak.className = 'neam-bak';
+    const foreslatt = 'Uke ' + isoWeekOf(new Date()).week;
+
+    let rader = okter.map(function(o, i){
+      return '<label class="neam-tabell-rad">'
+           +   '<input type="radio" name="velgokt" value="' + o.id + '"'
+           +     (i === 0 ? ' checked' : '') + '>'
+           +   '<span class="neam-tabell-tekst"><span class="neam-tabell-navn">'
+           +     String(o.navn || 'Uten navn').replace(/[<>&]/g, '') + '</span></span>'
+           + '</label>';
+    }).join('');
+
+    bak.innerHTML =
+        '<div class="neam-panel" style="height:auto;max-height:80dvh;">'
+      +   '<div class="neam-topp"><span class="neam-topp-tekst">'
+      +     '<span class="neam-navn">Hvilken handletur?</span>'
+      +   '</span></div>'
+      +   '<div class="neam-samtale" style="padding:0;">'
+      +     '<div class="neam-tabell" style="border:none;border-radius:0;">'
+      +       rader
+      +       '<label class="neam-tabell-rad">'
+      +         '<input type="radio" name="velgokt" value="__ny"' + (okter.length ? '' : ' checked') + '>'
+      +         '<span class="neam-tabell-tekst">'
+      +           '<span class="neam-tabell-navn">Ny handletur</span>'
+      +           '<input class="neam-felt" id="ny-okt-navn" style="margin-top:6px" '
+      +             'value="' + foreslatt + '">'
+      +         '</span>'
+      +       '</label>'
+      +     '</div>'
+      +   '</div>'
+      +   '<div class="neam-tabell-knapper">'
+      +     '<button type="button" class="neam-tabell-knapp nei">Avbryt</button>'
+      +     '<button type="button" class="neam-tabell-knapp ja">Send</button>'
+      +   '</div>'
+      + '</div>';
+    document.body.appendChild(bak);
+
+    /* Skriver man i navnefeltet, er det tydelig at man vil ha en ny tur. */
+    const navnFelt = bak.querySelector('#ny-okt-navn');
+    navnFelt.onfocus = function(){
+      bak.querySelector('input[value="__ny"]').checked = true;
+    };
+
+    function lukk(svar){ bak.remove(); ok(svar); }
+    bak.querySelector('.nei').onclick = function(){ lukk(null); };
+    bak.querySelector('.ja').onclick = function(){
+      const valgt = bak.querySelector('input[name=velgokt]:checked');
+      if(!valgt) return lukk(null);
+      if(valgt.value === '__ny'){
+        const navn = navnFelt.value.trim();
+        return lukk({ nyttNavn: navn || foreslatt });
+      }
+      lukk({ oktId: valgt.value });
+    };
+    bak.onclick = function(ev){ if(ev.target === bak) lukk(null); };
+  });
+}
+
+/* Ett trykk: velg handletur, gjennomgang, overfoering, og over i handlelista. */
 async function overfoerTilHandlelista(pakke, filnavn, hva){
+  const okter = await hentHandleturer();
+  if(okter){
+    const valg = await velgHandletur(okter);
+    if(!valg) return;                       /* ombestemte seg - ingenting sendes */
+    pakke.tilOkt = valg;
+  }
   showToast('Går gjennom varene …');
   pakke.godkjent = true;
   await kortGjennomgang(pakke);

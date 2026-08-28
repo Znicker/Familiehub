@@ -365,10 +365,12 @@ async function neamKall(meldinger, system, verktoy){
    ============================================================ */
 
 let neamTabellSvar = null;   /* resolve for tabellen som staar oppe */
+let neamTabellEl  = null;   /* selve elementet, saa det kan settes tilbake */
 
 function neamTabellAvbryt(){
   const f = neamTabellSvar;
   neamTabellSvar = null;
+  neamTabellEl = null;
   if(f) f(null);
 }
 
@@ -436,9 +438,11 @@ function neamVisTabell(spek){
   return new Promise(function(ok){
     neamTabellAvbryt();
     neamTabellSvar = ok;
+    neamTabellEl = ramme;
     function svar(v){
       if(!neamTabellSvar) return;
       neamTabellSvar = null;
+      neamTabellEl = null;
       ramme.remove();
       ok(v);
     }
@@ -696,6 +700,13 @@ function neamTegn(){
   });
 
   if(neamVenter) neamBoble(boks, 'bot tenker', 'Neam tenker …');
+
+  /* Tabellen er ikke en melding og ligger derfor ikke i neamPoster - men
+     den henger i den samme boksen, som toemmes her. Blir den tegnet bort
+     mens den venter paa svar, blir loefta staaende for alltid og panelet
+     laast. Den settes derfor tilbake etter hver tegning. */
+  if(neamTabellEl) boks.appendChild(neamTabellEl);
+
   boks.scrollTop = boks.scrollHeight;
 }
 

@@ -908,7 +908,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=7"></script>
+<script src="/felles-neam.js?v=8"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -2077,7 +2077,11 @@ async function taImotGodkjente(){
     taInnKatalog(p.varekatalog);
   });
 
-  if(varer.length) await leggIListen(varer);
+  /* Alle pakkene i én omgang gaar til den turen den foerste ba om. To
+     pakker med hver sin tur er sjeldent nok til at det ikke er verdt en
+     runde til gjennom lista. */
+  const tilOkt = klare.map(p => p.tilOkt).find(Boolean) || null;
+  if(varer.length) await leggIListen(varer, tilOkt);
   /* Navnene, ikke bare tallet: gjennomgangen skal kunne si hva som kom inn. */
   const navn = varer.map(v => v.name).filter(Boolean);
 
@@ -2376,7 +2380,7 @@ async function bekreftListe(){
 
   impListe = null;
   closeModal('sum-modal');
-  await leggIListen(varer);
+  await leggIListen(varer, d.tilOkt || null);
 
   const id = innboksValgtId;
   innboksValgtId = null;
@@ -2568,8 +2572,30 @@ function hentIngredienser(){
 }
 
 // Varene går rett inn i uka, med standardbutikken. Butikk endres per vare etterpå.
-async function leggIListen(varer){
-  const okt = sikreAktivOkt();
+/* tilOkt kommer fra pakka: Matlaging spurte hvilken handletur varene
+   skulle til, og svaret foelger med hit. Uten den gaar det som foer, til
+   den aapne turen. */
+function oktForPakke(tilOkt){
+  if(tilOkt && tilOkt.oktId){
+    const funnet = data.okter.find(o => o && o.id === tilOkt.oktId);
+    if(funnet) return funnet;
+    /* Turen kan ha blitt slettet mens pakka laa i innboksen. Da lager vi
+       den heller paa nytt enn aa slenge varene inn et sted brukeren ikke
+       valgte. */
+  }
+  if(tilOkt && (tilOkt.nyttNavn || tilOkt.oktId)){
+    const navn = String(tilOkt.nyttNavn || '').trim();
+    const finnes = navn && data.okter.find(o => o && (o.omrade || 'mat') === 'mat'
+                            && String(o.navn || '').trim().toLowerCase() === navn.toLowerCase());
+    const okt = finnes || opprettOkt(navn, 'mat');
+    viewOktId.mat = okt.id;
+    return okt;
+  }
+  return sikreAktivOkt();
+}
+
+async function leggIListen(varer, tilOkt){
+  const okt = oktForPakke(tilOkt);
   const butikk = standardButikk();
   varer.filter(Boolean).forEach(v => {
     const cat = (v.cat || '').trim();
@@ -2582,6 +2608,7 @@ async function leggIListen(varer){
     if(v.leggTilPaa){
       const maal = String(v.leggTilPaa).trim().toLowerCase();
       const finnes = data.items.find(x => x && x.omrade === 'mat' && !x.done
+                                       && x.oktId === okt.id
                                        && String(x.name || '').trim().toLowerCase() === maal);
       if(finnes){
         const samlet = slaaMengderOmMulig(finnes.qty, v.qty);
@@ -6382,6 +6409,13 @@ window.neamVerktoy = async function(){
           handletur:{ type:'string' }
         },
         required: ['endringer']
+      },
+      /* Sikkerhetsnett: svikter tabellen - tom liste, eller en feil i
+         byggingen - faller kallet tilbake paa den vanlige bekreftelsen i
+         stedet for aa kjoere i stillhet. */
+      neamSkriver: true,
+      neamBeskriv: function(arg){
+        return 'Neam vil gjøre ' + ((arg.endringer || []).length) + ' endringer på lista.';
       },
       neamTabell: function(arg){
         return {
