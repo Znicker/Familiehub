@@ -9,6 +9,9 @@
      Maa lastes FOER <style> under, saa sida kan overstyre. -->
 <link rel="stylesheet" href="/felles-skall.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
+<!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
+     kan lastes av en ramme i stedet for av hver side en dag. -->
+<link rel="stylesheet" href="/felles-neam.css?v=1">
 <!-- ?v=1: bump tallet naar felles-skall.css endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -2252,6 +2255,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
+<script src="/felles-neam.js?v=1"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB-basert erstatning for window.storage.
@@ -2575,6 +2579,36 @@ function updateTopbarHeightVar(){
   const tb = $('topbar');
   if(tb) document.documentElement.style.setProperty('--topbar-h', (tb.offsetHeight + 2) + 'px');
 }
+
+/* ---- Kontrakten mot Neam ----
+   Svarer paa "hvor er jeg og hva ser jeg paa". felles-neam.js sender
+   hele objektet med som JSON i hver melding.
+
+   ASYNKRON MED VILJE - se den samme kommentaren i handleliste. Skal
+   panelet en dag ligge i en ramme, gaar spoersmaalet over en
+   dokumentgrense og kan ikke svares synkront.
+
+   Bare den aapne oppskriften navngis. Hele boka i hver melding er
+   baade dyrt og unoedvendig; skal Neam soeke i den, blir det et
+   verktoeykall. */
+window.neamKontekst = async function(){
+  const el = document.querySelector('.view.active');
+  const id = el ? el.id : 'view-home';
+  const r  = currentRecipeId ? (recipeCache[currentRecipeId] || null) : null;
+
+  return {
+    sted: 'Matlaging',
+    visning: {
+      'view-home'  : 'Oppskriftsboka',
+      'view-add'   : 'Skjema for oppskrift',
+      'view-detail': 'En åpen oppskrift',
+      'view-plan'  : 'Ukemenyen'
+    }[id] || id,
+    aapenOppskrift: (id === 'view-detail' && r) ? (r.title || 'Uten navn') : null,
+    antallOppskrifter: recipes.length,
+    ukeIPlanen: planWeek ? (planWeek.year + '-W' + String(planWeek.week).padStart(2, '0')) : null
+  };
+};
 window.addEventListener('resize', updateTopbarHeightVar);
 /* Redigerer man en eksisterende oppskrift, hoerer veien ut tilbake til
    den oppskriften - ikke til forsiden. Ny oppskrift har ingen aa gaa

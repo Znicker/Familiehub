@@ -12,6 +12,9 @@
 <link rel="stylesheet" href="/felles-rot.css?v=1">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
+<!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
+     kan lastes av en ramme i stedet for av hver side en dag. -->
+<link rel="stylesheet" href="/felles-neam.css?v=1">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -1527,6 +1530,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-graph.js?v=1"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
+<script src="/felles-neam.js?v=1"></script>
 <script>
 /* ============================================================
    Konfigurasjon — Azure app-registrering
@@ -4619,6 +4623,34 @@ function renderListe(){
 
   rullTilDag(wrap, anker);
 }
+
+/* ---- Kontrakten mot Neam ----
+   Svarer paa "hvor er jeg og hva ser jeg paa". felles-neam.js sender
+   hele objektet med som JSON i hver melding.
+
+   ASYNKRON MED VILJE - se den samme kommentaren i handleliste. Skal
+   panelet en dag ligge i en ramme, gaar spoersmaalet over en
+   dokumentgrense og kan ikke svares synkront.
+
+   Ingen avtaletitler sendes med, bare hvor mange det er paa den valgte
+   dagen. Titlene er det mest private i hele huben, og de skal gaa til
+   Neam naar noen faktisk spoer om dem - gjennom et verktoeykall - ikke
+   som bagasje paa hvert eneste spoersmaal.
+
+   tittel() gjenbrukes: den formulerer alt den samme perioden som staar
+   i topplinja, og da ser Neam noeyaktig det brukeren ser. */
+window.neamKontekst = async function(){
+  const navn = { month:'Måned', week:'Uke', day:'Dag' };
+  return {
+    sted: 'Kalender',
+    visning: S.vis === 'liste' ? 'Liste' : (navn[S.modus] || S.modus),
+    periode: tittel(),
+    valgtDag: key(S.sel),
+    avtalerValgtDag: eventsOn(S.sel).length,
+    kalenderePaa: S.calendars.filter(function(c){ return c.on; })
+                             .map(function(c){ return c.name; })
+  };
+};
 
 function tittel(){
   /* Lista ruller framover fra dagen man staar paa */
