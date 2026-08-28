@@ -6045,9 +6045,15 @@ window.neamBakgrunn = async function(){
     'saa gaa aldri ut fra at et navn betyr en bestemt uke.',
     '',
     'VARER krysses av under handelen, de slettes ikke. En avkrysset vare er',
-    'kjoept, ikke borte. Mengde er fritekst - «2», «500 g», «1 liter» - og',
-    'staar den tom, er det fordi ingen har sagt noe. Ikke finn paa en mengde',
-    'brukeren ikke har oppgitt. Uten enhet betyr et tall antall stykk.',
+    'kjoept, ikke borte. Skal noe rettes paa en vare som alt staar der -',
+    'mengde, navn, type - saa endre den. Fjern-og-legg-til-paa-nytt gir en ny',
+    'rad, og notatet og resten som laa paa den gamle forsvinner.',
+    '',
+    'MENGDE er to ting: maalet («500 g», «1,5 l») og hvor mange av det («2 x»).',
+    'Hold dem fra hverandre - ikke skriv «2 x 1,5 l» som én tekst. Maal som',
+    'ikke lar seg regne paa, som «1 stor pose», er helt greie. Staar mengden',
+    'tom, er det fordi ingen har sagt noe; ikke finn paa en. Et tall uten',
+    'enhet betyr antall stykk.',
     '',
     'VARETYPE er butikkategorien, og den bestemmer rekkefoelgen varene staar i',
     'mens man handler - meieri for seg, frukt for seg. Er du usikker, la den',
@@ -6130,7 +6136,10 @@ window.neamVerktoy = async function(){
               type: 'object',
               properties: {
                 vare:   { type:'string', description:'Varenavnet, som man ville skrevet det på en lapp.' },
-                mengde: { type:'string', description:'Fritekst: «2», «500 g», «1 liter». Utelat om brukeren ikke sa noe.' },
+                mengde: { type:'string', description:'Selve målet: «500 g», «1,5 l», «1 stor pose». '
+                                                   + 'Utelat om brukeren ikke sa noe.' },
+                antall: { type:'string', description:'Hvor mange av mengden - «2» i «2 x 1,5 l». '
+                                                   + 'Bruk dette i stedet for å skrive ganging inn i mengde.' },
                 type:   { type:'string', enum: VARETYPER,
                           description:'Utelat om du ikke er sikker - da gjettes den.' }
               },
@@ -6179,9 +6188,73 @@ window.neamVerktoy = async function(){
         const liste = (arg.varer || []).map(function(v){ return '· ' + v; }).join('\n');
         return 'Fjerne fra ' + neamOktNavn(arg) + ':\n\n' + liste;
       }
+    },
+    {
+      name: 'endre_vare',
+      description: 'Endrer en vare som allerede står på lista - mengde, navn, varetype, '
+                 + 'butikk, eller om den er kjøpt. Bare feltene du sender blir rørt; '
+                 + 'resten står. BRUK DENNE i stedet for å fjerne og legge til på nytt: '
+                 + 'da beholder varen notatet sitt og plassen sin. Finner den flere rader '
+                 + 'med samme navn, gjør den ingenting og sier fra - da er det en '
+                 + 'dobbeltføring som må ryddes først.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          vare:     { type:'string', description:'Navnet på varen slik den står nå.' },
+          nyttNavn: { type:'string', description:'Nytt navn. Utelat for å beholde det.' },
+          mengde:   { type:'string', description:'Nytt mål: «500 g», «1,5 l», «1 stor pose». '
+                                               + 'Tom streng fjerner mengden.' },
+          antall:   { type:'string', description:'Hvor mange av mengden - «2» i «2 x 1,5 l».' },
+          type:     { type:'string', enum: VARETYPER, description:'Ny varetype.' },
+          butikk:   { type:'string', description:'Ny butikk. Tom streng fjerner den.' },
+          kjopt:    { type:'boolean', description:'true krysser av varen som kjøpt, false tar den av igjen.' },
+          omrade:   { type:'string', enum:['mat','annet'],
+                      description:'Standard er det brukeren har oppe.' },
+          handletur:{ type:'string', description:'Navnet på en annen handletur enn den åpne.' }
+        },
+        required: ['vare']
+      },
+      neamSkriver: true,
+      neamBeskriv: function(arg){
+        const v = neamFinnVare(arg);
+        const foer = v ? (v.name + (v.qty ? ' – ' + v.qty : '')) : arg.vare;
+        const etter = [];
+        if (arg.nyttNavn) etter.push('navn: ' + arg.nyttNavn);
+        if (arg.mengde !== undefined || arg.antall !== undefined){
+          const p = { qty:'', count:'', amt:'', unit:'' };
+          neamSettMengde(p, arg.mengde, arg.antall);
+          etter.push('mengde: ' + (p.qty || '(ingen)'));
+        }
+        if (arg.type)   etter.push('type: ' + arg.type);
+        if (arg.butikk !== undefined) etter.push('butikk: ' + (arg.butikk || '(ingen)'));
+        if (arg.kjopt !== undefined)  etter.push(arg.kjopt ? 'krysses av som kjøpt' : 'tas av igjen');
+        return 'Endre på ' + neamOktNavn(arg) + ':\n\n' + foer + '\n→ '
+             + (etter.join(', ') || 'ingenting');
+      }
     }
   ];
 };
+
+/* Slaar opp én rad paa navn. Brukes baade av bekreftelsesteksten - som
+   maa vise hva som staar der FOER - og av endringen selv.
+   Null naar den ikke finnes eller naar flere rader heter det samme;
+   kallstedene skiller de to fra hverandre. */
+function neamFinnVare(arg){
+  let okt;
+  try{ okt = neamFinnOkt(arg, false); }catch(e){ return null; }
+  if (!okt) return null;
+  const traff = neamRader(arg, okt);
+  return traff.length === 1 ? traff[0] : null;
+}
+
+function neamRader(arg, okt){
+  const sok = String((arg && arg.vare) || '').trim().toLowerCase();
+  if (!sok) return [];
+  const omr = oktOmrade(okt);
+  return data.items.filter(v => v && v.oktId === okt.id
+    && (v.omrade || 'mat') === omr
+    && String(v.name || '').trim().toLowerCase() === sok);
+}
 
 /* Omraadet et verktoeykall gjelder. Uten `omrade` er det den fanen
    brukeren faktisk staar paa - IKKE Dagligvarer.
@@ -6297,9 +6370,32 @@ window.neamUtfor = async function(navn, arg){
 
   if (navn === 'legg_til_varer') return await neamLeggTilVarer(arg);
   if (navn === 'fjern_varer')    return await neamFjernVarer(arg);
+  if (navn === 'endre_vare')     return await neamEndreVare(arg);
 
   throw new Error('Ukjent verktøy: ' + navn);
 };
+
+/* Setter mengden paa en rad slik skjemaet gjoer det: count er
+   multiplikatoren («2 x»), amt+unit er selve maalet, og qty er teksten
+   de to bygger. Alle fire maa settes sammen - lista leser count for aa
+   tegne «x2», og amtUnit for linja under.
+
+   Neam skrev tidligere «2 x 1,5 l» som én tekst, og da fant parseMengde
+   ingenting: raden fikk mengden bare som fritekst, uten tall og enhet
+   bak. Med `antall` som eget felt blir den samme mengden lagret slik
+   skjemaet ville lagret den. */
+function neamSettMengde(v, mengde, antall){
+  const c = String(antall == null ? '' : antall).trim();
+  const fri = normaliserMengde(String(mengde == null ? '' : mengde).trim());
+  const p = parseMengde(fri);
+  v.count = c;
+  v.amt  = p ? String(p.tall) : '';
+  v.unit = p ? normEnhet(p.enhet) : '';
+  /* Lar seg mengden ikke lese som tall og enhet - «1 stor pose» - blir
+     friteksten staaende som den er. Bedre en mengde ingen kan regne paa
+     enn ingen mengde. */
+  v.qty = (c || p) ? byggMengdeTekst(c, v.amt, v.unit) : fri;
+}
 
 /* Tvillingen til leggIListen(), som gjoer det samme for import fra
    Oppskriftsboka. De to er med vilje holdt fra hverandre naa:
@@ -6333,27 +6429,25 @@ async function neamLeggTilVarer(arg){
 
     const oppgitt = String(v.type || '').trim();
     const cat = VARETYPER.includes(oppgitt) ? oppgitt : foreslaattType(navn);
-    const qty = normaliserMengde(String(v.mengde || '').trim());
-    const p = parseMengde(qty);
 
-    data.items.push({
+    const rad = {
       id: nyId('i'),
       name: navn,
       oktId: okt.id,
       store: butikk, cat: cat, by: '',
       notes: '',
-      qty: qty,
-      amt: p ? String(p.tall) : '',
-      unit: p ? normEnhet(p.enhet) : '',
+      qty: '', count: '', amt: '', unit: '',
       basis: false, omrade: omr, done: false
-    });
+    };
+    neamSettMengde(rad, v.mengde, v.antall);
+    data.items.push(rad);
 
     /* Katalogen er bare for Dagligvarer - samme grense som saveItem. */
     if (omr === 'mat'){
       katalogLagre(navn, cat, false);
       if (butikk) data.butikkvalg[navn.toLowerCase()] = butikk;
     }
-    lagt.push({ vare: navn, mengde: qty, type: cat });
+    lagt.push({ vare: navn, mengde: rad.qty, type: cat });
   });
 
   await medLaas(async () => {
@@ -6372,6 +6466,58 @@ async function neamLeggTilVarer(arg){
     omrade: omr === 'annet' ? 'Andre varer' : 'Dagligvarer',
     lagtTil: lagt,
     stoFraFor: hoppet
+  };
+}
+
+/* Endrer én rad. Speiler lagreEndring() i skjemaet, med samme
+   ettervirkninger: katalogen laerer den nye varetypen, butikkvalget
+   foelger navnet, og duplikater flettes til slutt.
+
+   Flere rader med samme navn gir en feil i stedet for en endring. Det
+   er dobbeltfoeringen som er problemet da, ikke mengden, og et verktoey
+   som stille velger én av to rader gjoer halve jobben uten aa si det. */
+async function neamEndreVare(arg){
+  const okt = neamFinnOkt(arg, false);
+  if (!okt) return { handletur:null, beskjed:'Ingen handletur er åpen i dette området.' };
+
+  const traff = neamRader(arg, okt);
+  if (!traff.length) throw new Error('Fant ingen vare som heter «' + arg.vare + '» på ' + oktNavn(okt) + '.');
+  if (traff.length > 1){
+    throw new Error('Det står ' + traff.length + ' rader med «' + arg.vare + '» på '
+                  + oktNavn(okt) + '. Rydd dobbeltføringen først - fjern dem og legg inn én.');
+  }
+
+  const v = traff[0];
+  const erMat = (v.omrade || 'mat') === 'mat';
+  const foer = { navn: v.name, mengde: v.qty, type: v.cat, butikk: v.store, kjopt: !!v.done };
+
+  if (arg.nyttNavn && String(arg.nyttNavn).trim()) v.name = String(arg.nyttNavn).trim();
+  if (arg.mengde !== undefined || arg.antall !== undefined) neamSettMengde(v, arg.mengde, arg.antall);
+  if (arg.type && VARETYPER.includes(arg.type) && erMat) v.cat = arg.type;
+  if (arg.butikk !== undefined) v.store = String(arg.butikk || '').trim();
+  if (arg.kjopt !== undefined) v.done = !!arg.kjopt;
+
+  if (erMat) katalogLagre(v.name, v.cat, !!v.basis);
+  const noekkel = v.name.trim().toLowerCase();
+  if (v.store) data.butikkvalg[noekkel] = v.store;
+  else delete data.butikkvalg[noekkel];
+
+  /* Som i skjemaet: gir det nye navnet en rad som alt finnes, blir de én. */
+  flettDuplikater();
+
+  await medLaas(async () => {
+    if (erMat) await lagreKatalog();
+    await save();
+  });
+
+  renderOktLabel();
+  render();
+  oppdaterRyddMerke();
+
+  return {
+    handletur: oktNavn(okt),
+    foer: foer,
+    etter: { navn: v.name, mengde: v.qty, type: v.cat, butikk: v.store, kjopt: !!v.done }
   };
 }
 
