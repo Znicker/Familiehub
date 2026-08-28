@@ -56,6 +56,11 @@
    Se kommentaren over funksjonen.
    ------------------------------------------------------------
 
+   NETTSOEK er alltid paa. Det kjoeres av API-et selv, ikke av oss,
+   saa det trenger ingen kontrakt og ingen godkjenning - et soek
+   endrer ingenting. Systemteksten ber ham holde seg til dataene
+   sine der de raekker.
+
    REGELEN: lesing gaar rett gjennom, skriving stopper og spoer.
    Spoer du hva som staar paa lista, skal ikke Neam be om lov til
    aa se etter. Skal han endre noe, ser du hva som kommer til aa
@@ -252,6 +257,12 @@ function neamSystem(k, harVerktoy, bakgrunn){
          'her ennaa. Ikke lat som om noe er utfoert.\n\n';
   }
 
+  s += 'Du kan soeke paa nettet. Bruk det sparsomt, og bare naar svaret ' +
+       'hverken staar i dataene du har faatt eller er noe du vet fra foer - ' +
+       'typisk noe du ikke kjenner igjen, eller noe som endrer seg. Slaa ALDRI ' +
+       'opp husets egne ting paa nettet: hva som staar paa lista, hva familien ' +
+       'pleier aa kjoepe eller hva noe heter hos dem, finnes bare her.\n\n';
+
   s += 'Ikke gjett paa hva som staar i listene eller kalenderen.';
 
   /* Bakgrunnen foerst, saa konteksten: det som alltid er sant staar
@@ -283,11 +294,20 @@ async function neamEttForsok(meldinger, system, verktoy){
   };
   /* Vaare egne felter foelger ikke med ut - API-et avviser ukjente
      noekler i en verktoeydefinisjon. */
-  if(verktoy.length){
-    kropp.tools = verktoy.map(function(v){
-      return { name:v.name, description:v.description, input_schema:v.input_schema };
-    });
-  }
+  const ut = verktoy.map(function(v){
+    return { name:v.name, description:v.description, input_schema:v.input_schema };
+  });
+
+  /* Nettsoek kjoeres av API-et selv, ikke av oss: svaret kommer tilbake i
+     samme runde som server_tool_use og web_search_tool_result, og
+     stop_reason blir 'end_turn'. Loekka vaar merker det ikke - den ser
+     bare etter 'tool_use', som er vaare egne verktoey.
+
+     max_uses er et tak paa hvor mange soek han faar gjoere per melding.
+     Hvert soek er sekunder, og et panel som staar og leter i et halvt
+     minutt er ikke til hjelp. */
+  ut.push({ type:'web_search_20250305', name:'web_search', max_uses:3 });
+  kropp.tools = ut;
 
   let r;
   try{
@@ -688,6 +708,14 @@ function neamTegn(){
     (m.content || []).forEach(function(b){
       if(b.type === 'text' && String(b.text || '').trim()){
         neamBoble(boks, 'bot', b.text);
+      }else if(b.type === 'server_tool_use'){
+        /* Nettsoeket vises som en linje, som vaare egne verktoey - men med
+           soekeordet, siden det er det eneste som sier hva han lette etter. */
+        const el = document.createElement('div');
+        el.className = 'neam-verktoy nett';
+        const q = (b.input && b.input.query) ? String(b.input.query) : '';
+        el.textContent = q ? ('søk på nettet: ' + q) : 'søk på nettet';
+        boks.appendChild(el);
       }else if(b.type === 'tool_use'){
         /* Verktoeykallet vises som en linje, ikke som en boble: det er
            noe som skjedde, ikke noe som ble sagt. Resultatet vises ikke -

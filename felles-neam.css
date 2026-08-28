@@ -130,6 +130,10 @@
   letter-spacing:.03em; text-transform:uppercase; font-weight:700;
   padding:1px 2px;
 }
+/* Nettsoek er noe annet enn et kall inn i huset - det henter noe
+   utenfra. Egen farge, saa forskjellen er synlig uten aa leses. */
+.neam-verktoy.nett{ text-transform:none; letter-spacing:0; font-weight:600; }
+.neam-verktoy.nett::before{ background:var(--handling-tvers); }
 .neam-verktoy::before{
   content:''; width:6px; height:6px; border-radius:50%;
   background:var(--aksent); flex-shrink:0;
