@@ -331,9 +331,10 @@ function neamSystem(k, harVerktoy, bakgrunn){
 async function neamEttForsok(meldinger, system, verktoy){
   const kropp = {
     model: neamModell().id,
-    /* 4000, ikke 2000: en full oppryddingstabell er mange verktoeyfelter,
-       og blir svaret kuttet midt i et kall, faller hele runden bort. */
-    max_tokens: 4000,
+    /* 8000. Vi vet at taket gaar gjennom - maalt mot /api/claude - og at
+       han faktisk skriver seg forbi 4000 etter ett listeoppslag. Hva han
+       skriver saa mye av, vet vi ikke ennaa; loggen under sier det. */
+    max_tokens: 8000,
     /* NB: ikke sett temperature - modellen avviser den. */
     system: system,
     messages: meldinger
@@ -870,8 +871,25 @@ async function neamTur(){
           return b.type === 'text' && String(b.text || '').trim();
         });
         if(!harTekst){
+          /* Legg fram hva han faktisk holdt paa med da det tok slutt.
+             Uten dette er en avkutting bare «for langt», og da gjetter man
+             paa aarsaken i stedet for aa lese den. */
+          try{
+            console.warn('Neam ble kuttet av. stop_reason=' + svar.stop_reason,
+              '\nut-tokens:', svar.usage && svar.usage.output_tokens,
+              '\ninn-tokens:', svar.usage && svar.usage.input_tokens,
+              '\nblokker:', (svar.content || []).map(function(b){
+                const lengde = b.type === 'text' ? String(b.text || '').length
+                             : JSON.stringify(b.input || b).length;
+                return b.type + (b.name ? '/' + b.name : '') + ' (' + lengde + ' tegn)';
+              }).join(', '),
+              '\nhele svaret:', svar);
+          }catch(e){}
+
+          const sistTekst = (svar.content || []).filter(function(b){ return b.type === 'text'; }).pop();
           neamPoster.push({ feil: svar.stop_reason === 'max_tokens'
-            ? 'Neam skrev for mye på én gang og ble kuttet av. Be om mindre av gangen.'
+            ? 'Neam skrev for mye på én gang og ble kuttet av. Se konsollen for hva han holdt på med.'
+              + (sistTekst ? '\n\nSå langt kom han:\n' + String(sistTekst.text).slice(0, 400) : '')
             : 'Neam svarte uten tekst (' + (svar.stop_reason || 'ukjent grunn') + ').' });
         }
         break;
