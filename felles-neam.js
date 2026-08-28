@@ -60,7 +60,11 @@
 
    ANDRE VEIEN kan sida starte en samtale selv:
 
-     await neamStart('...', {friskt:true, modell:'sonnet'});
+     await neamStart('...', {friskt:true, modell:'sonnet',
+                             verktoy:['finn_opprydding','slaa_sammen']});
+
+   `verktoy` begrenser hvilke verktoey oppgaven faar se, og gjelder
+   bare den ene turen.
 
    Se kommentaren over funksjonen.
    ------------------------------------------------------------
@@ -113,6 +117,18 @@ const NEAM_MODELL_LAGER = 'neam_modell';
 
    Nullstilles av «Ny samtale» og av friskt:true: da er oppgaven over. */
 let neamPaatvunget = null;
+
+/* Verktoeyene en OPPGAVE skal ha, satt av neamStart({verktoy:[...]}).
+
+   Gjelder bare turen oppgaven starter, og nullstilles naar den er over.
+   Grunnen: en gjennomgang skal legge alt fram paa én skjerm, men saa lenge
+   fjern_varer og endre_vare ligger i lista, tar modellen dem én om gangen -
+   og da kommer det en dialog per vare. Det er ikke noe man skriver seg ut
+   av i en instruks; verktoeyet maa ikke vaere der.
+
+   Etterpaa, naar brukeren skriver selv, er hele lista tilbake: da ER det
+   én bestemt endring han ber om. */
+let neamTurVerktoy = null;
 
 function neamModellId(navn){
   const s = String(navn || '').toLowerCase();
@@ -276,7 +292,12 @@ async function neamBakgrunn(){
 
 async function neamVerktoyliste(){
   const svar = await neamSpor('neamVerktoy');
-  return Array.isArray(svar) ? svar : [];
+  const alle = Array.isArray(svar) ? svar : [];
+  if(!neamTurVerktoy) return alle;
+  const bare = alle.filter(function(v){ return neamTurVerktoy.indexOf(v.name) !== -1; });
+  /* Traff filteret ingenting, er navnene feil - da er hele lista bedre enn
+     ingen verktoey i det hele tatt. */
+  return bare.length ? bare : alle;
 }
 
 function neamStedTekst(k){
@@ -1022,6 +1043,9 @@ async function neamTur(){
     /* I finally, ikke etter loekka: ryker noe uventet, skal panelet
        fortsatt kunne brukes. */
     neamVenter = false;
+    /* Begrensningen gjaldt denne turen. Skriver brukeren selv etterpaa, skal
+       han ha alt igjen. */
+    neamTurVerktoy = null;
     const send = document.getElementById('neamSend');
     if(send) send.disabled = false;
     neamLagre();
@@ -1066,6 +1090,8 @@ async function neamStart(beskjed, valg){
   neamTegnModell();
   document.getElementById('neamBak').hidden = false;
   neamSkrivSted(await neamSted());
+
+  neamTurVerktoy = Array.isArray(v.verktoy) && v.verktoy.length ? v.verktoy : null;
 
   neamPoster.push({ api:{ role:'user', content:tekst }, auto:true });
   await neamTur();

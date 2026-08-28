@@ -958,7 +958,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=19"></script>
+<script src="/felles-neam.js?v=20"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -2494,8 +2494,18 @@ async function neamGjennomgang(navn){
     /* Gjennomgangen ber om Sonnet uansett hva knappen staar paa: den skal
        lese hele lista, se hva som hoerer sammen og foreslaa summer. Har
        noen satt Haiku for aa prate raskt, skal ikke den innstillingen
-       foelge med inn i en oppgave som krever mer. */
-    { friskt:true, modell:'sonnet' });
+       foelge med inn i en oppgave som krever mer.
+
+       Og bare fire verktoey. fjern_varer og endre_vare er med vilje IKKE
+       med: saa lenge de ligger i lista, tar modellen dem én vare av gangen,
+       og da kommer det en dialog per vare. Det er ikke noe man skriver seg
+       ut av i en instruks. Uten dem finnes det bare én vei til aa fjerne
+       eller endre noe her, og den gaar gjennom skjermen.
+
+       Begrensningen gjelder bare denne turen. Skriver du selv etterpaa, har
+       han alt igjen - da er det én bestemt ting du ber om. */
+    { friskt:true, modell:'sonnet',
+      verktoy:['finn_opprydding','slaa_sammen','sett_varetype','foresla_opprydding'] });
 }
 
 // Ukemenyen i Oppskriftsboka er lagret per kalenderuke. Handleturene har
@@ -6387,6 +6397,8 @@ window.neamVerktoy = async function(){
     {
       name: 'fjern_varer',
       description: 'Fjerner varer fra den åpne handleturen. Send alle i ett kall - '
+                 + 'BARE når brukeren har bedt om akkurat dette. Har du flere ting du '
+                 + 'vil rydde i på én gang, hører de hjemme i foresla_opprydding. '
                  + 'brukeren skal godkjenne én gang. Brukes også når en vare skal '
                  + 'flyttes til det andre området eller til en annen handletur: fjern '
                  + 'her, legg til der. Varer som ikke finnes blir rapportert tilbake, '
@@ -6413,7 +6425,11 @@ window.neamVerktoy = async function(){
     },
     {
       name: 'endre_vare',
-      description: 'Endrer en vare som allerede står på lista - mengde, navn, varetype, '
+      description: 'Endrer én vare som allerede står på lista - mengde, navn, varetype, '
+                 + 'butikk, eller om den er kjøpt. Bare når brukeren har bedt om akkurat '
+                 + 'denne ene endringen; flere ting samtidig hører hjemme i '
+                 + 'foresla_opprydding. '
+                 + 'Fortsettelse: '
                  + 'butikk, eller om den er kjøpt. Bare feltene du sender blir rørt; '
                  + 'resten står. BRUK DENNE i stedet for å fjerne og legge til på nytt: '
                  + 'da beholder varen notatet sitt og plassen sin. Finner den flere rader '
