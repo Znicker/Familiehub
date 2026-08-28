@@ -235,7 +235,12 @@ function neamSystem(k, harVerktoy, bakgrunn){
          'blir lagt fram for brukeren foer de kjoerer; avslaar brukeren, godtar ' +
          'du det og foreslaar noe annet.\n\n' +
          'Du har ingen andre veier inn i systemet enn verktoeyene. Finnes det ' +
-         'ikke et som passer, si det - ikke lat som om noe er gjort.\n\n';
+         'ikke et som passer, si det - ikke lat som om noe er gjort.\n\n' +
+         'Kall hvert verktoey saa faa ganger som mulig. Merker du at du er i ' +
+         'ferd med aa kalle det samme verktoeyet én gang per rad eller per vare, ' +
+         'saa stopp: da mangler svaret du trenger i dataene du alt har faatt, ' +
+         'og det er noe brukeren maa vite om. Si hva du manglet i stedet for aa ' +
+         'gaa rundt det.\n\n';
   }else{
     s += 'Du har ingen verktoey paa denne sida. Du kan bare snakke. Blir du bedt ' +
          'om aa gjoere noe, si hva du ville gjort og at det ikke er koblet paa ' +
@@ -608,8 +613,29 @@ async function neamTur(){
       }
 
       const kall = (svar.content || []).filter(function(b){ return b.type === 'tool_use'; });
-      const resultater = [];
-      for(const b of kall) resultater.push(await neamKjor(b, defer));
+
+      /* Ber Neam om tjue oppslag i én melding, tok det tjue ganger saa lang
+         tid som ett - de gikk etter hverandre, enda de bare leser fra minnet
+         og ikke venter paa noe.
+
+         Lesing gaar derfor samtidig. Skriving gjoer det ikke: hver skriving
+         har sin egen bekreftelse, og to dialoger oppaa hverandre er ingen
+         dialog. De kjoeres etter hverandre, i den rekkefoelgen Neam ba om
+         dem, saa brukeren ser én ting av gangen. */
+      const resultater = new Array(kall.length);
+      const skriver = kall.map(function(b){
+        const d = defer.find(function(x){ return x.name === b.name; });
+        return !!(d && d.neamSkriver);
+      });
+
+      await Promise.all(kall.map(function(b, i){
+        if(skriver[i]) return null;
+        return neamKjor(b, defer).then(function(r){ resultater[i] = r; });
+      }));
+
+      for(let i = 0; i < kall.length; i++){
+        if(skriver[i]) resultater[i] = await neamKjor(kall[i], defer);
+      }
 
       neamPoster.push({ api:{ role:'user', content:resultater } });
       neamLagre();
