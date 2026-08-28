@@ -6105,13 +6105,54 @@ window.neamVerktoy = async function(){
         const liste = (arg.varer || []).map(function(v){
           return '· ' + v.vare + (v.mengde ? ' (' + v.mengde + ')' : '');
         }).join('\n');
-        const omr = arg.omrade === 'annet' ? 'Andre varer' : 'Dagligvarer';
-        const okt = aktivOkt(arg.omrade === 'annet' ? 'annet' : 'mat');
-        return 'Legge til på ' + (okt ? oktNavn(okt) : omr) + ':\n\n' + liste;
+        return 'Legge til på ' + neamOktNavn(arg) + ':\n\n' + liste;
+      }
+    },
+    {
+      name: 'fjern_varer',
+      description: 'Fjerner varer fra den åpne handleturen. Send alle i ett kall - '
+                 + 'brukeren skal godkjenne én gang. Brukes også når en vare skal '
+                 + 'flyttes til det andre området: fjern her, legg til der. Varer som '
+                 + 'ikke finnes blir rapportert tilbake, ikke behandlet som en feil.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          varer: { type:'array', items:{ type:'string' },
+                   description:'Varenavnene slik de står på lista.' },
+          omrade: { type:'string', enum:['mat','annet'],
+                    description:'mat = Dagligvarer, annet = Andre varer. '
+                              + 'Standard er det brukeren har oppe.' }
+        },
+        required: ['varer']
+      },
+      neamSkriver: true,
+      neamBeskriv: function(arg){
+        const liste = (arg.varer || []).map(function(v){ return '· ' + v; }).join('\n');
+        return 'Fjerne fra ' + neamOktNavn(arg) + ':\n\n' + liste;
       }
     }
   ];
 };
+
+/* Omraadet et verktoeykall gjelder. Uten `omrade` er det den fanen
+   brukeren faktisk staar paa - IKKE Dagligvarer.
+
+   Dette var feil i foerste versjon: koden falt tilbake paa 'mat' mens
+   beskrivelsen lovet «det brukeren har oppe». Neam leste beskrivelsen,
+   utelot feltet fordi han sto i Andre varer, og skruene havnet blant
+   dagligvarene. Én linje, men den slags feil er verre enn den ser ut:
+   verktoeyet gjorde ikke det det sa det gjorde, og da hjelper det ikke
+   hvor godt modellen resonnerer. */
+function neamOmrade(arg){
+  const v = arg && arg.omrade;
+  return (v === 'annet' || v === 'mat') ? v : aktivOmrade();
+}
+
+function neamOktNavn(arg){
+  const omr = neamOmrade(arg);
+  const okt = aktivOkt(omr);
+  return okt ? oktNavn(okt) : (omr === 'annet' ? 'Andre varer' : 'Dagligvarer');
+}
 
 /* Taket paa 200 er et tak paa svaret til Neam, ikke paa lista. En
    handletur som er lengre enn det er uansett ikke noe han bør faa
@@ -6176,6 +6217,7 @@ window.neamUtfor = async function(navn, arg){
   }
 
   if (navn === 'legg_til_varer') return await neamLeggTilVarer(arg);
+  if (navn === 'fjern_varer')    return await neamFjernVarer(arg);
 
   throw new Error('Ukjent verktøy: ' + navn);
 };
@@ -6192,7 +6234,7 @@ async function neamLeggTilVarer(arg){
   const varer = Array.isArray(arg.varer) ? arg.varer.filter(v => v && String(v.vare || '').trim()) : [];
   if (!varer.length) throw new Error('Ingen varer å legge til.');
 
-  const omr = arg.omrade === 'annet' ? 'annet' : 'mat';
+  const omr = neamOmrade(arg);
   const okt = sikreAktivOkt(omr);
   const butikk = omr === 'mat' ? standardButikk() : '';
 
@@ -6251,6 +6293,50 @@ async function neamLeggTilVarer(arg){
     omrade: omr === 'annet' ? 'Andre varer' : 'Dagligvarer',
     lagtTil: lagt,
     stoFraFor: hoppet
+  };
+}
+
+/* Fjerner rader fra den aapne handleturen. Bare derfra: en vare med
+   samme navn kan staa paa flere handleturer, og et verktoey som rydder
+   bredere enn brukeren tror er ikke til aa stole paa.
+
+   Treffer et navn flere rader, ryker alle - de er duplikater av samme
+   vare, og bekreftelsen sa navnet, ikke antall rader. Tallet gaar med
+   tilbake saa Neam kan si det. */
+async function neamFjernVarer(arg){
+  const navn = Array.isArray(arg.varer)
+    ? arg.varer.map(v => String(v || '').trim()).filter(Boolean) : [];
+  if (!navn.length) throw new Error('Ingen varer å fjerne.');
+
+  const omr = neamOmrade(arg);
+  const okt = aktivOkt(omr);
+  if (!okt) return { handletur:null, beskjed:'Ingen handletur er åpen i dette området.' };
+
+  const fjernet = [];
+  const fantIkke = [];
+
+  navn.forEach(n => {
+    const sok = n.toLowerCase();
+    const traff = data.items.filter(v => v && v.oktId === okt.id
+      && (v.omrade || 'mat') === omr
+      && String(v.name || '').trim().toLowerCase() === sok);
+    if (!traff.length){ fantIkke.push(n); return; }
+    const ider = new Set(traff.map(v => v.id));
+    data.items = data.items.filter(v => !ider.has(v.id));
+    fjernet.push({ vare: traff[0].name, rader: traff.length });
+  });
+
+  if (fjernet.length) await medLaas(async () => await save());
+
+  renderOktLabel();
+  render();
+  oppdaterRyddMerke();
+
+  return {
+    handletur: oktNavn(okt),
+    omrade: omr === 'annet' ? 'Andre varer' : 'Dagligvarer',
+    fjernet: fjernet,
+    fantIkke: fantIkke
   };
 }
 
