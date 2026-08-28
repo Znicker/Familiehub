@@ -6070,6 +6070,45 @@ window.neamVerktoy = async function(){
         properties: { sok: { type:'string', description:'Del av et varenavn.' } },
         required: ['sok']
       }
+    },
+    {
+      name: 'legg_til_varer',
+      description: 'Legger én eller flere varer på den åpne handleturen. Send ALLE varene '
+                 + 'i ett kall - brukeren skal godkjenne hele lista én gang, ikke én vare '
+                 + 'av gangen. La varetypen stå tom hvis du ikke er sikker; huset gjetter '
+                 + 'den selv ut fra navnet og fra hva varen har fått før. Varer som '
+                 + 'allerede står ukjøpt på lista blir hoppet over, ikke lagt til to ganger.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          varer: {
+            type: 'array',
+            description: 'Varene som skal legges til.',
+            items: {
+              type: 'object',
+              properties: {
+                vare:   { type:'string', description:'Varenavnet, som man ville skrevet det på en lapp.' },
+                mengde: { type:'string', description:'Fritekst: «2», «500 g», «1 liter». Utelat om brukeren ikke sa noe.' },
+                type:   { type:'string', enum: VARETYPER,
+                          description:'Utelat om du ikke er sikker - da gjettes den.' }
+              },
+              required: ['vare']
+            }
+          },
+          omrade: { type:'string', enum:['mat','annet'],
+                    description:'mat = Dagligvarer, annet = Andre varer. Standard er det brukeren har oppe.' }
+        },
+        required: ['varer']
+      },
+      neamSkriver: true,
+      neamBeskriv: function(arg){
+        const liste = (arg.varer || []).map(function(v){
+          return '· ' + v.vare + (v.mengde ? ' (' + v.mengde + ')' : '');
+        }).join('\n');
+        const omr = arg.omrade === 'annet' ? 'Andre varer' : 'Dagligvarer';
+        const okt = aktivOkt(arg.omrade === 'annet' ? 'annet' : 'mat');
+        return 'Legge til på ' + (okt ? oktNavn(okt) : omr) + ':\n\n' + liste;
+      }
     }
   ];
 };
@@ -6136,8 +6175,84 @@ window.neamUtfor = async function(navn, arg){
     return { sok: arg.sok, antall: treff.length, treff };
   }
 
+  if (navn === 'legg_til_varer') return await neamLeggTilVarer(arg);
+
   throw new Error('Ukjent verktøy: ' + navn);
 };
+
+/* Tvillingen til leggIListen(), som gjoer det samme for import fra
+   Oppskriftsboka. De to er med vilje holdt fra hverandre naa:
+   leggIListen er laast til Dagligvarer, slaar sammen mengder etter
+   gjennomgangen i innboksen, og avslutter med goHome() - som ville
+   kastet brukeren ut av visningen mens Neam-panelet staar aapent.
+
+   Feltlista i pushen MAA holdes lik i begge. Naar datalaget trekkes ut
+   av sida, er dette det foerste stedet som skal peke dit. */
+async function neamLeggTilVarer(arg){
+  const varer = Array.isArray(arg.varer) ? arg.varer.filter(v => v && String(v.vare || '').trim()) : [];
+  if (!varer.length) throw new Error('Ingen varer å legge til.');
+
+  const omr = arg.omrade === 'annet' ? 'annet' : 'mat';
+  const okt = sikreAktivOkt(omr);
+  const butikk = omr === 'mat' ? standardButikk() : '';
+
+  const lagt = [];
+  const hoppet = [];
+
+  varer.forEach(v => {
+    const navn = String(v.vare).trim();
+
+    /* Staar varen der alt og er ukjoept, blir det ikke en rad til. Neam
+       faar beskjed og kan si det - stille duplikater er verre enn et
+       svar som sier at det ikke trengtes. */
+    const finnes = data.items.find(x => x && x.oktId === okt.id
+      && (x.omrade || 'mat') === omr && !x.done
+      && String(x.name || '').trim().toLowerCase() === navn.toLowerCase());
+    if (finnes){ hoppet.push(navn); return; }
+
+    const oppgitt = String(v.type || '').trim();
+    const cat = VARETYPER.includes(oppgitt) ? oppgitt : foreslaattType(navn);
+    const qty = normaliserMengde(String(v.mengde || '').trim());
+    const p = parseMengde(qty);
+
+    data.items.push({
+      id: nyId('i'),
+      name: navn,
+      oktId: okt.id,
+      store: butikk, cat: cat, by: '',
+      notes: '',
+      qty: qty,
+      amt: p ? String(p.tall) : '',
+      unit: p ? normEnhet(p.enhet) : '',
+      basis: false, omrade: omr, done: false
+    });
+
+    /* Katalogen er bare for Dagligvarer - samme grense som saveItem. */
+    if (omr === 'mat'){
+      katalogLagre(navn, cat, false);
+      if (butikk) data.butikkvalg[navn.toLowerCase()] = butikk;
+    }
+    lagt.push({ vare: navn, mengde: qty, type: cat });
+  });
+
+  await medLaas(async () => {
+    if (omr === 'mat') await lagreKatalog();
+    await save();
+  });
+
+  /* Tegner om uten aa navigere: panelet staar aapent, og brukeren skal
+     bli staaende der han er. */
+  renderOktLabel();
+  render();
+  oppdaterRyddMerke();
+
+  return {
+    handletur: oktNavn(okt),
+    omrade: omr === 'annet' ? 'Andre varer' : 'Dagligvarer',
+    lagtTil: lagt,
+    stoFraFor: hoppet
+  };
+}
 
 // Avgrenset til forsiden, ellers nullstilles fanene i rydde-visningen
 // og omradevelgeren i skjemaet, som bruker samme klasser
