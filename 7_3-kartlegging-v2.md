@@ -173,11 +173,8 @@ Kom til i denne økta, og hører hjemme i regnestykket:
    (`?v=2`), dashboard + kalender. PDF-forhåndsvisningen ble samtidig byttet
    fra innebygd iframe til et klikkbart kort – se designsystemet.
 6. **Navnekollisjonene i index og kalender.** Den store. GJENSTÅR.
-7. **Graph-laget.** Egen økt, 29 kallsteder. GJENSTÅR. NB: kalender har
-   allerede fått `enc()` på alle id-er og `avtaleSti(calId, eventId)` som
-   ruter alle avtaleoperasjoner via kalenderen – dashboard har `enc()` fra
-   før, men ikke `avtaleSti`. Sammenslåingen av `graph()`-signaturene står
-   igjen.
+7. ~~**Graph-laget.**~~ – **GJORT.** `felles-graph.js` (`?v=1`), kalender +
+   dashboard.
 
 Endringen fra første kartlegging er at filviseren har byttet plass med
 app-skallet, og at designgjennomgangen står først i stedet for å ligge ved
@@ -322,7 +319,44 @@ Gjenstår: Access-bruker for `kitchen@neam.no`.
 Rollemodellen på sikt hører til `hub.html`: sys bestemmer hvilke fliser og
 funksjoner hver identitet ser, lagret i KV som kalendertilgangen alt er.
 
-## 8. Delingsfella – oppdaget 28. august 2026
+## 8. Graph-laget – gjort 28. august 2026
+
+`felles-graph.js`, lastet av kalender og dashboard før sidenes eget skript.
+
+**Signaturen.** De to versjonene hadde ulik form, ikke ulik oppgave:
+`graph(sti, valg)` mot `graph(path, method, payload)`. Dashboards form vant –
+et valg-objekt tåler at det kommer en tredje ting en dag uten at signaturen
+må endres igjen. Fem kallsteder i kalenderen ble skrevet om; resten er
+enkle GET-kall som ser like ut i begge former.
+
+**En ekte feil ble rettet på veien.** Dashboard prøvde om igjen på *alle*
+metoder ved 429/503/504, ikke bare GET. Et nytt forsøk på en POST som
+egentlig gikk gjennom lager avtalen to ganger. Kalenderens sperre
+(`kanProveIgjen`) er nå felles.
+
+**Motsatt vei vant dashboard:** et tomt svar som ikke er `ok` kaster nå en
+feil med status. Kalenderen returnerte `null` og lot feilen forsvinne i
+stillhet.
+
+**Fila inneholder:** `GRAPH`, `TZ`, `enc`, `graph()`, `avtaleSti()`,
+`normEpost`, `htmlTilTekst`, `rgbAv`, `dus`, `PALETTE`, `FASTE_FARGER`,
+`fargeOverstyring`, `palettFor`, `kalenderFarge`. De fire følgesvennene var
+identiske bortsett fra mellomrom; fargefunksjonene ble duplisert samme dag
+og er ryddet med det samme.
+
+**Blir liggende i sidene, med vilje:** `hentFarger`/`lagreFarger` (kalender
+kan også skrive og har `FARGE_ADMIN`; dashboard bare leser), `dusFast`
+(bare kalender), og token-funksjonen. Kalenderens `validToken` er døpt om
+til `gyldigToken`, som er navnet dashboard og index alt brukte – fellesfila
+kaller det, sidene definerer det.
+
+**Latent, ikke rørt:** `FASTE_FARGER` har nøkkelen `Familie`, men kalenderen
+heter `Familien`. Den treffer altså aldri, og faller på `palettFor`. Ett ord
+å rette, men det endrer en farge og hører til en design-økt.
+
+---
+
+## 9. Delingsfella – oppdaget 28. august 2026
 
 **En kalender som først deles med visningsrett og senere endres til «Kan
 redigere», forblir skrivebeskyttet hos mottakeren.** Rettigheten ser riktig
@@ -355,7 +389,7 @@ Microsoft-familiegruppa (ingen dokumentasjon støtter at det kreves).
 
 ---
 
-## 9. Navnebyttet – 28. august 2026
+## 10. Navnebyttet – 28. august 2026
 
 «Familie Hub» er ute. Systemet heter **Neam** – husassistenten er stemmen,
 roboten er maskotten, og navnet favner alt.
@@ -381,6 +415,31 @@ et internt håndtak, ikke en merkevare:
   importen validerer den ikke, så gevinsten er null
 
 Skal `fh:` bort en dag, er det en migrering, ikke en tekstendring.
+
+**Gjort samtidig, fordi det var gratis:** `merke-familie.png` heter nå
+`merke-neam.png`, og formatnavnene i eksportfilene er `neam-handleliste-1`
+og `neam-varekatalog-1`. Importen validerer aldri feltet, så gamle
+sikkerhetskopier går uendret inn.
+
+### Til 7.5: de to migreringene
+
+Ligger her fordi `hub.html` uansett skal ta over datalaget – gjøres de da,
+gjøres de én gang i stedet for to.
+
+**`DB_NAME` fra `familiehub` til `neam`.** IndexedDB per enhet. Et rått
+navnebytte gir hver enhet en tom database. Riktig framgangsmåte: åpne den
+gamle, kopiere alt over, verifisere, og først deretter slutte å lese fra
+den. Overgangskoden må bli stående til alle fem enhetene har vært innom –
+regn i måneder, ikke dager.
+
+**`fh:`-prefikset i KV til `neam:`.** Samme jobb på serversiden: liste alle
+nøkler, skrive dem på nytt under nytt prefiks, verifisere, slette de gamle.
+Enklere enn IndexedDB fordi det finnes ett sted og ikke fem, men det er
+fortsatt en migrering med tapsrisiko.
+
+Argumentet for å ikke utsette i det uendelige: datamengden under det gamle
+navnet vokser. Argumentet for å vente til 7.5: jobben er den samme uansett
+når, og datalaget skal uansett røres da.
 
 ---
 

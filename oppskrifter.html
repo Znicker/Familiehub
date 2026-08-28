@@ -7504,7 +7504,7 @@ async function byggHandleliste(){
   }));
   const basis = currentIngRows.filter(r => r.basis).map(r => r.name);
   return {
-    format: 'familiehub-handleliste-1',
+    format: 'neam-handleliste-1',
     kilde: 'Oppskriftsboka',
     laget: new Date().toISOString(),
     uke: planWeek.week,
@@ -7554,7 +7554,7 @@ async function sendTilHandleliste(){
   });
 
   const pakke = {
-    format: 'familiehub-handleliste-1',
+    format: 'neam-handleliste-1',
     kilde: 'Oppskriftsboka',
     laget: new Date().toISOString(),
     fraOppskrift: r.title || '',

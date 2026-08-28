@@ -927,6 +927,7 @@ select.hu-felt{
 </div>
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
+<script src="/felles-graph.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
 <script>
 /* ============================================================
@@ -945,7 +946,6 @@ function settSted(navn, harSted){
 }
 
 const STED = { navn:'Arendal', lat:58.4614, lon:8.7724 };
-const TZ   = 'Europe/Oslo';
 
 /* Samme Azure-app og token som kalenderen — de deler fh_cal_auth. */
 const CFG = {
@@ -955,29 +955,13 @@ const CFG = {
 };
 const REDIRECT  = location.origin + location.pathname;
 const AUTH_BASE = 'https://login.microsoftonline.com/' + CFG.authority + '/oauth2/v2.0';
-const GRAPH     = 'https://graph.microsoft.com/v1.0';
 
 /* Samme faste farger som kalenderen, med KV-overstyring. */
-const PALETTE = ['#2C3E50','#B4443A','#3E7C5A','#8A6BB1','#C08A2E','#4A7FA8','#A05A7A','#5A6C7D'];
-const FASTE_FARGER = {
-  'Familie':'#2C3E50', 'Magne':'#4A7FA8', 'Nina':'#B4443A',
-  'Emma':'#8A6BB1', 'Andrea':'#C65B7C'
-};
-let fargeOverstyring = {};
 /* Reservefargen naar ingen har valgt én. Utledes av navnet, ikke av
    plassen i kalenderlista: den plassen er forskjellig i hver postkasse -
    sys har flere kalendere og i annen rekkefoelge enn kitchen - og samme
    kalender fikk derfor ulik farge hos ulike folk. Navnet er likt overalt.
    Enkel deterministisk sum; den skal bare vaere stabil, ikke jevn. */
-function palettFor(navn){
-  const s = String(navn || '');
-  let sum = 0;
-  for(let i = 0; i < s.length; i++) sum = (sum * 31 + s.charCodeAt(i)) >>> 0;
-  return PALETTE[sum % PALETTE.length];
-}
-function kalenderFarge(navn){
-  return fargeOverstyring[navn] || FASTE_FARGER[navn] || palettFor(navn);
-}
 
 const DAGER = ['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'];
 const MND = ['januar','februar','mars','april','mai','juni',
@@ -1122,47 +1106,6 @@ function visPort(paa){
    Microsoft Graph
    ============================================================ */
 /* valg: {method, body}. Uten valg er dette et vanlig GET, som foer. */
-async function graph(sti, valg){
-  const t = await gyldigToken();
-  if(!t) throw new Error('Ikke innlogget');
-  const opt = {
-    method: (valg && valg.method) || 'GET',
-    headers:{
-      Authorization:'Bearer ' + t,
-      Prefer:'outlook.timezone="' + TZ + '"'
-    }
-  };
-  if(valg && valg.body){
-    opt.headers['Content-Type'] = 'application/json';
-    opt.body = JSON.stringify(valg.body);
-  }
-  /* Taaler struping — samme grunn som i kalenderen. */
-  let forsoek = 0, r;
-  while(true){
-    r = await fetch(GRAPH + sti, opt);
-    if(forsoek >= 3) break;
-    if(r.status !== 429 && r.status !== 503 && r.status !== 504) break;
-    const vent = parseInt(r.headers.get('Retry-After') || '', 10);
-    const ms = (isFinite(vent) && vent > 0) ? Math.min(vent*1000, 8000) : 500 * Math.pow(2, forsoek);
-    await new Promise(function(ok){ setTimeout(ok, ms); });
-    forsoek++;
-  }
-  const txt = await r.text();
-  if(!txt){
-    if(r.ok) return null;
-    const stum = new Error('Microsoft svarte ' + r.status);
-    stum.status = r.status;
-    throw stum;
-  }
-  let d;
-  try{ d = JSON.parse(txt); }catch(e){ throw new Error('Uventet svar fra Microsoft'); }
-  if(!r.ok){
-    const feil = new Error((d.error && d.error.message) || 'Graph-feil');
-    feil.status = r.status;
-    throw feil;
-  }
-  return d;
-}
 
 /* ============================================================
    Felles farger fra Cloudflare KV
@@ -1179,16 +1122,6 @@ async function graph(sti, valg){
    veggskjermen uten vei inn. */
 const DASH_TILGANG = ['kitchen@neam.no', 'sys@neam.no'];
 
-function normEpost(s){
-  s = String(s || '').toLowerCase().trim();
-  const ext = s.indexOf('#ext#');
-  if(ext !== -1){
-    s = s.slice(0, ext);
-    const i = s.lastIndexOf('_');
-    if(i !== -1) s = s.slice(0, i) + '@' + s.slice(i + 1);
-  }
-  return s;
-}
 
 async function harTilgang(){
   let epost = '';
@@ -1263,28 +1196,6 @@ function kl(d){
 /* Notatfeltet fra Graph kommer som HTML naar avtalen er laget i Outlook.
    Vi viser ren tekst: DOMParser kjoerer ingen skript og vi setter aldri
    HTML-en inn i siden. bodyPreview kan ikke brukes — den kuttes ved ~255 tegn. */
-function htmlTilTekst(innhold, type){
-  const s = String(innhold || '');
-  if(!s) return '';
-  if(String(type).toLowerCase() !== 'html') return s.trim();
-  try{
-    const doc = new DOMParser().parseFromString(s, 'text/html');
-    doc.querySelectorAll('br').forEach(function(b){ b.replaceWith('\n'); });
-    doc.querySelectorAll('p,div,li,tr,h1,h2,h3,h4,h5,h6').forEach(function(b){ b.append('\n'); });
-    return (doc.body.textContent || '')
-      .replace(/\u00a0/g, ' ')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }catch(e){
-    /* Reserve om DOMParser ikke er tilgjengelig: gjoer blokkslutt til
-       linjeskift foer taggene fjernes, ellers klistres avsnitt sammen. */
-    return s.replace(/<\/(p|div|li|tr|h[1-6])>/gi, '\n')
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<[^>]*>/g, '')
-            .replace(/\n{3,}/g, '\n\n')
-            .trim();
-  }
-}
 
 /* Hvilken dag planen viser, talt fra dagen skjermen staar paa. */
 let dagOffset = 0;
@@ -1521,7 +1432,6 @@ function lukkDetalj(){
    opplastingsoekt, og den sier vi heller fra om enn aa halvveis stoette.
    ============================================================ */
 const VEDLEGG_MAKS = 3 * 1024 * 1024;
-const enc = encodeURIComponent;
 
 /* Stien til én avtale.
    /me/events/{id} betyr "avtalen i MIN postkasse". Det holdt saa lenge
@@ -1531,11 +1441,6 @@ const enc = encodeURIComponent;
    store". Vi gaar derfor gjennom kalenderen avtalen ligger i, som er
    samme vei vi leser den ut. Riktig for sys ogsaa, saa det er én sti for
    alle. Identisk med kalender.html. */
-function avtaleSti(kalId, eventId){
-  return kalId
-    ? '/me/calendars/' + enc(kalId) + '/events/' + enc(eventId)
-    : '/me/events/' + enc(eventId);
-}
 
 function storrelse(b){
   const n = Number(b) || 0;
@@ -2436,18 +2341,6 @@ let huskeSkjema = null;          /* 'dag' | 'uke' | null */
 
 /* Kalenderfargen som gjennomsiktig fyll bak hele foeringen. Teksten blir
    staaende moerk mot en lys tone av personens egen farge. */
-function rgbAv(hex){
-  const h = String(hex || '').replace('#', '').trim();
-  const full = h.length === 3 ? h[0]+h[0]+h[1]+h[1]+h[2]+h[2] : h;
-  if(!/^[0-9a-fA-F]{6}$/.test(full)) return {r:44, g:62, b:80};
-  return { r: parseInt(full.slice(0,2),16),
-           g: parseInt(full.slice(2,4),16),
-           b: parseInt(full.slice(4,6),16) };
-}
-function dus(hex, a){
-  const c = rgbAv(hex);
-  return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')';
-}
 /* Samme bokstavmerke som i kalenderappen: forbokstaven i kalendernavnet,
    i full farge. Fargefyllet bak foeringen er dust, saa merket er det som
    gjoer hvem det gjelder lesbart paa avstand. */

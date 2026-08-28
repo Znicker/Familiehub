@@ -668,7 +668,7 @@ input,select,textarea{font-size:16px}
 
     <div class="field">
       <label for="import-text">Eller lim inn her - JSON, eller én vare per linje</label>
-      <textarea id="import-text" style="min-height:110px; font-family:'IBM Plex Mono',monospace; font-size:16px;" placeholder='{"format":"familiehub-handleliste-1","varer":[…]}'></textarea>
+      <textarea id="import-text" style="min-height:110px; font-family:'IBM Plex Mono',monospace; font-size:16px;" placeholder='{"format":"neam-handleliste-1","varer":[…]}'></textarea>
     </div>
 
     <button type="button" class="btn-quiet" id="import-tekst" style="display:none;" onclick="importSomTekst()"></button>
@@ -695,7 +695,7 @@ input,select,textarea{font-size:16px}
 
     <div class="field">
       <label for="kat-text">Eller lim inn her</label>
-      <textarea id="kat-text" style="min-height:90px; font-family:'IBM Plex Mono',monospace; font-size:16px;" placeholder='{"format":"familiehub-varekatalog-1","katalog":{…}}'></textarea>
+      <textarea id="kat-text" style="min-height:90px; font-family:'IBM Plex Mono',monospace; font-size:16px;" placeholder='{"format":"neam-varekatalog-1","katalog":{…}}'></textarea>
     </div>
 
     <div class="modal-actions">
@@ -5122,7 +5122,7 @@ function openKatalog(){
 
 function eksporterKatalog(){
   const ut = {
-    format: 'familiehub-varekatalog-1',
+    format: 'neam-varekatalog-1',
     kilde: 'Handle',
     laget: new Date().toISOString(),
     katalog: katalog.katalog,
