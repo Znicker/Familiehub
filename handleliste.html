@@ -2056,7 +2056,9 @@ async function fjernFraInnboks(id){
    omregning her - den er alt gjort. */
 async function taImotGodkjente(){
   const klare = innboks.filter(p => p && p.godkjent);
-  if(!klare.length) return 0;
+  /* Tom liste, ikke 0: funksjonen lover navnene paa det som kom inn, og
+     kallstedet leser .length paa svaret. */
+  if(!klare.length) return [];
 
   const varer = [];
   klare.forEach(p => {
@@ -2076,6 +2078,8 @@ async function taImotGodkjente(){
   });
 
   if(varer.length) await leggIListen(varer);
+  /* Navnene, ikke bare tallet: gjennomgangen skal kunne si hva som kom inn. */
+  const navn = varer.map(v => v.name).filter(Boolean);
 
   /* Fjernes foerst naar varene er inne. Ryker skrivingen mot KV, blir
      pakkene liggende og kommer inn ved neste innlasting - en dublett er
@@ -2088,7 +2092,7 @@ async function taImotGodkjente(){
     tegnInnboksMerke();
   }catch(e){}
 
-  return varer.length;
+  return navn;
 }
 
 function openImport(){
@@ -2388,15 +2392,32 @@ async function bekreftListe(){
      friskt:true - gjennomgangen skal ikke arve et halvferdig resonnement
      fra noe helt annet man snakket om tidligere i oekta. */
   const navn = varer.map(v => v.name).filter(Boolean);
-  if (typeof neamStart === 'function' && navn.length){
-    await neamStart(
-      'Nettopp lagt over fra Oppskriftsboka: ' + navn.join(', ') + '. '
-    + 'Les hele handlelista og se etter dobbeltføringer, mengder som ser rare ut '
-    + '(blandede enheter, tall uten enhet der det trengs), og varer uten varetype. '
-    + 'Ta det én vare av gangen: si hva du har funnet, foreslå én retting, '
-    + 'og vent på svar før du går videre. Finner du ingenting, si det kort.',
-      { friskt:true });
-  }
+  if (navn.length) await neamGjennomgang(navn);
+}
+
+/* Gjennomgangen etter at varer er kommet inn fra Matlaging.
+
+   To veier inn, og begge skal se like ut:
+   - taImotGodkjente() ved oppstart - pakker Matlaging har godkjent,
+     som er den vanlige veien
+   - bekreftListe() - pakka man tar imot for haand fra innboksen
+
+   friskt:true - gjennomgangen skal ikke arve et halvferdig resonnement
+   fra noe helt annet man snakket om tidligere i oekta.
+
+   Sto det noe fra foer, blir det med i lesingen: en dobbeltfoering
+   mellom en gammel og en ny vare er nettopp den slags Neam skal finne. */
+async function neamGjennomgang(navn){
+  if (typeof neamStart !== 'function' || !navn || !navn.length) return;
+  await neamStart(
+    'Varene fra Matlaging er lagt inn: ' + navn.join(', ') + '. '
+  + 'Les hele handlelista - også det som sto der fra før - og se etter '
+  + 'dobbeltføringer, mengder som ser rare ut (blandede enheter, mål som ikke '
+  + 'lar seg regne på der det burde gå), og varer uten varetype. '
+  + 'Si først kort hva du fant. Ta det så én vare av gangen: foreslå én retting '
+  + 'og vent på svar før du går videre til neste. Finner du ingenting å rette, '
+  + 'si det med én setning.',
+    { friskt:true });
 }
 
 // Ukemenyen i Oppskriftsboka er lagret per kalenderuke. Handleturene har
@@ -6886,9 +6907,13 @@ document.addEventListener('visibilitychange', () => {
 init()
   .then(hentInnboks)
   .then(taImotGodkjente)
-  .then(antall => {
-    if(!antall) return;
-    visMelding(antall + (antall === 1 ? ' vare' : ' varer') + ' lagt inn fra Matlaging.');
+  .then(navn => {
+    if(!navn || !navn.length) return;
+    /* Neam aapner selv og gaar gjennom det som kom inn. Da trengs ikke
+       varselet i tillegg - panelet sier det samme, og tydeligere.
+       Reserven staar igjen for det tilfellet at fellesfila ikke er lastet. */
+    if(typeof neamStart === 'function') return neamGjennomgang(navn);
+    visMelding(navn.length + (navn.length === 1 ? ' vare' : ' varer') + ' lagt inn fra Matlaging.');
   });
 </script>
 
