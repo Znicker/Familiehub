@@ -21,25 +21,41 @@
   --t-ikon:28px;
 
   /* ---------- Flater ---------- */
-  --bg-1:#F5F5F5;
-  --bg-2:#FAFAFA;
+  /* VARMET 29. august 2026 for aa staa til steampunk-bakgrunnen.
+     Bakgrunnsbildet er beige; en ren hvit flate oppaa den leses som
+     kald og litt skitten - kortet blir kjoeligere enn underlaget, og
+     oeyet tar det som at noe er feil. Verdiene under er de gamle
+     skjoevet mot beige med samme valoer, ikke moerkere.
+
+     ANGRE: sett disse fem tilbake, saa er alt som foer.
+       --bg-1:#F5F5F5  --bg-2:#FAFAFA  --paper:#FFFFFF
+       --paper-soft:#F0F0F0  --boks-mild:#EDF3F8  --boks-kant:#DCE6EF
+       --line:#E4E8EC  --shadow:0 2px 14px rgba(0,0,0,.06)
+       --side-bakgrunn:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%) */
+  --bg-1:#F6F4F0;
+  --bg-2:#FBFAF7;
   --bg-solid:#FFFFFF;
-  --paper:#FFFFFF;        /* kort - hvit tilhoerer kortene */
-  --paper-soft:#F0F0F0;
-  /* Sidebakgrunnen. Egen variabel, ikke --bg-1/--bg-2: de to er
-     flatetoner brukt paa topplinje, rutenett og celler, og skal
-     ikke foelge bakgrunnen naar den endres. */
-  --side-bakgrunn:linear-gradient(160deg,#F5F5F5 0%,#ECEFF1 100%);
-  /* Mild flate for grupperingsbokser. Egen variabel, ikke
-     --aksent-lys: den betyr "valgt", og en boks skal ikke se ut
-     som et valg. */
-  --boks-mild:#EDF3F8;
-  --boks-kant:#DCE6EF;
+  /* Kort. Kontrasten er sjekket: 10,4 mot --ink og 5,15 mot
+     --ink-soft, altsaa godt over WCAG-grensen paa 4,5 for begge. */
+  --paper:#FBF9F5;
+  --paper-soft:#F1EEE8;
+  /* Sidebakgrunnen. Bildet ligger over gradienten, ikke i stedet for
+     den: mangler fila, eller er den ikke lastet ennaa, staar gradienten
+     igjen og sida ser fortsatt ferdig ut. Egen variabel, ikke
+     --bg-1/--bg-2: de to er flatetoner brukt paa topplinje, rutenett og
+     celler, og skal ikke foelge bakgrunnen naar den endres. */
+  --side-bakgrunn:url('/bilder/bakgrunn.webp') center center / cover no-repeat fixed,
+                  linear-gradient(160deg,#F6F1E7 0%,#EDE6D9 100%);
+  /* Mild flate for grupperingsbokser. Var kjoelig blaa (#EDF3F8) og
+     ble kald inne i et varmt kort. Egen variabel, ikke --aksent-lys:
+     den betyr "valgt", og en boks skal ikke se ut som et valg. */
+  --boks-mild:#F1EDE5;
+  --boks-kant:#E2DCD0;
 
   /* ---------- Tekst og kanter ---------- */
   --ink:#2C3E50;
   --ink-soft:#5A6C7D;
-  --line:#E4E8EC;
+  --line:#E6E1D8;
 
   /* ---------- Fem betydninger ----------
      Fylt flate = denne skaper eller endrer noe. Aksent = valgt,
@@ -62,7 +78,11 @@
 
   /* ---------- Form ---------- */
   --radius:18px;
-  --shadow:0 2px 14px rgba(0,0,0,.06);
+  /* Tonet mot --ink, ikke ren svart. En noeytral skygge mot en beige
+     flate leser som graa og litt doed, og den var satt svak fordi
+     underlaget var rent - mot tekstur mistet kortene festet. Litt
+     kraftigere og litt varmere. */
+  --shadow:0 2px 14px rgba(44,62,80,.10);
 }
 
 /* iPad: kjoekkenbenken og veggen. Leses paa avstand, alt et hakk opp. */
