@@ -151,3 +151,155 @@ async function husregisterTekst(){
        + 'det du ellers ville antatt.\n\n'
        + deler.join('\n\n');
 }
+
+/* ============================================================
+   Matlaging - lesing utenfra
+   ------------------------------------------------------------
+   Oppskriftsboka skriver noklene sine gjennom en fullKey() som
+   setter `p:` foran (privat) eller `s:` (delt). Prefikset er et
+   internt handtak i den appen, og at det maa staa her er en
+   lekkasje fra dens indre. Skrevet ned med vilje: det er ett av
+   argumentene for datalag-refaktoriseringen i del 14, ikke noe
+   som skal se pent ut.
+
+   Verdiene i KV er JSON-STRENGER, ikke objekter - window.storage
+   i oppskrifter stringifyer for lagring. Derfor parses de her.
+
+   MERK: varekatalogen leses IKKE herfra. Handleliste har sin egen
+   under `vare-katalog` (uten prefiks), Matlaging sin under
+   `p:vare-katalog`. Det er to kataloger som holdes i takt manuelt
+   med «Last ned katalogen» og «Slaa sammen» - ikke én delt. Skal
+   de bli én, er det en beslutning, ikke en leserfunksjon.
+   ============================================================ */
+
+const OPPSKRIFT_INDEKS = 'p:recipe-index';
+const OPPSKRIFT_NOKKEL = 'p:recipe:';
+const UKEPLAN_NOKKEL   = 'p:meal-plan';
+
+async function lesJson(nokkel){
+  let d = null;
+  try{ d = await dataLes(nokkel); }catch(e){
+    console.warn('Fikk ikke lest ' + nokkel + ':', e);
+    return null;
+  }
+  if(typeof d === 'string'){ try{ d = JSON.parse(d); }catch(e){ return null; } }
+  return d;
+}
+
+/* Oppskriftslista uten miniatyrbildene.
+
+   `thumb` er et base64-bilde per oppskrift. Med femti oppskrifter er
+   indeksen flere megabyte, og alt av det ville gaatt rett inn i
+   samtalen hvis lista ble sendt som den er. Ingen skal kunne kalle
+   dette og ved et uhell fylle konteksten med bilder.
+
+   Bufret i 60 sekunder. Bildene strippes HER, altsaa etter at hele
+   indeksen er lastet ned - kostnaden er nettverket, ikke konteksten,
+   og tre soek etter hverandre lastet den tre ganger. Kort levetid og
+   ikke evig: en oppskrift lagt inn i en annen fane skal dukke opp
+   uten at sida lastes paa nytt. */
+let indeksBuffer = null;
+let indeksTid = 0;
+
+async function lesOppskriftsindeks(){
+  if(indeksBuffer && (Date.now() - indeksTid) < 60000) return indeksBuffer;
+  const d = await lesJson(OPPSKRIFT_INDEKS);
+  if(!Array.isArray(d)) return [];
+  indeksBuffer = d.map(function(r){
+    return {
+      id: r.id,
+      tittel: r.title || 'Uten navn',
+      tid: r.time || '',
+      kategorier: r.categories || [],
+      terningkast: r.rating || null
+    };
+  });
+  indeksTid = Date.now();
+  return indeksBuffer;
+}
+
+/* Fritekstsoek i indeksen. Ingen fuzzy-logikk: smaa bokstaver og
+   delstreng paa tittel og kategori. Treffer det ikke, er det bedre
+   at Neam faar tom liste og spoer, enn at han faar noe som ligner. */
+async function finnOppskrifter(sok){
+  const alle = await lesOppskriftsindeks();
+  const q = String(sok || '').toLowerCase().trim();
+  if(!q) return alle;
+  return alle.filter(function(r){
+    if(String(r.tittel).toLowerCase().indexOf(q) !== -1) return true;
+    return (r.kategorier || []).some(function(k){
+      return String(k).toLowerCase().indexOf(q) !== -1;
+    });
+  });
+}
+
+/* Én oppskrift, uten bilder.
+
+   Samme grunn som over, men verre: en enkelt oppskrift kan vaere
+   4,5 MB fordi rettbildet og hvert stegbilde ligger som base64 inne
+   i objektet. Feltene fjernes her og ikke hos kallstedet - et filter
+   man maa huske aa bruke er et filter som glemmes. */
+async function lesOppskrift(id){
+  if(!id) return null;
+  const r = await lesJson(OPPSKRIFT_NOKKEL + id);
+  if(!r || typeof r !== 'object') return null;
+  return {
+    id: r.id,
+    tittel: r.title || 'Uten navn',
+    porsjoner: r.baseServings || null,
+    tid: r.time || '',
+    kategorier: r.categories || [],
+    ingredienser: (r.ingredients || []).map(function(i){
+      return {
+        navn: i.name,
+        /* amount er tall, amountText er det som ikke lot seg regne paa
+           («en klype», «1/2»). Bare én av dem er satt. */
+        mengde: (i.amount != null) ? i.amount : (i.amountText || ''),
+        enhet: i.unit || '',
+        allergener: i.allergens || [],
+        seksjon: i.section || ''
+      };
+    }),
+    steg: (r.steps || []).map(function(s){ return s.text; }).filter(Boolean),
+    tips: (r.tips || []).map(function(t){ return (t && t.text) || t; }).filter(Boolean)
+  };
+}
+
+/* ISO-uke. Gjentatt fra oppskrifter.html med vilje: aatte linjer ren
+   regning uten sideeffekter, og aa hente dem derfra ville bundet
+   fellesfila til at den ene sida er lastet. */
+function isoUkeAv(dato){
+  const d = new Date(Date.UTC(dato.getFullYear(), dato.getMonth(), dato.getDate()));
+  const dagNr = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dagNr);
+  const aarStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return { aar: d.getUTCFullYear(), uke: Math.ceil(((d - aarStart) / 86400000 + 1) / 7) };
+}
+
+function ukeNokkel(u){
+  return u.aar + '-W' + String(u.uke).padStart(2, '0');
+}
+
+const UKEDAGER = ['', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag',
+                  'lørdag', 'søndag'];
+
+/* Ukeplanen for én uke. Uten argument: inneværende uke.
+   Svaret er dager med navn, ikke tall - «torsdag» leses av alle,
+   «4» maa slaas opp. */
+async function lesUkeplan(nokkel){
+  const alle = await lesJson(UKEPLAN_NOKKEL);
+  const n = nokkel || ukeNokkel(isoUkeAv(new Date()));
+  const uke = (alle && typeof alle === 'object' && alle[n]) || {};
+  const dager = [];
+  for(let i = 1; i <= 7; i++){
+    const retter = uke[i] || uke[String(i)] || [];
+    if(!retter.length) continue;
+    dager.push({
+      dag: UKEDAGER[i],
+      retter: retter.map(function(r){
+        return { id: r.id, tittel: r.title || 'Uten navn', porsjoner: r.servings || null };
+      })
+    });
+  }
+  return { uke: n, dager: dager };
+}
