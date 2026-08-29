@@ -1034,6 +1034,7 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
+<script src="/felles-data.js?v=1"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-neam.js?v=24"></script>
@@ -6450,7 +6451,7 @@ window.neamKontekst = async function(){
    sant akkurat naa. Endrer datamodellen seg, er det denne teksten som
    maa foelge med - ikke verktoeybeskrivelsene. */
 window.neamBakgrunn = async function(){
-  return [
+  const om = [
     'HANDLELISTA har to atskilte omraader: Dagligvarer (mat) og Andre varer',
     '(alt annet - jernvare, apotek, klaer). De deler ingenting. Hver vare hoerer',
     'til ett av dem, og hvert omraade har sine egne handleturer og sin egen',
@@ -6508,7 +6509,21 @@ window.neamBakgrunn = async function(){
     'Snakk om dette som en handleliste, ikke som en database. Brukeren sier',
     '«lista» og «uka», ikke «poster» og «omraader».'
   ].join('\n');
+
+  /* Husregisteret legges bakerst, ikke foran: det som gjelder HUSET er
+     ikke mer grunnleggende enn hvordan appen henger sammen, men det er
+     det som avgjoer enkeltsakene - om vann skal foreslaas, om salt maa
+     spoerres om, hva som er en basisvare. Feiler lesingen kommer det
+     tom tekst tilbake, og bakgrunnen staar som foer. */
+  const hus = await husregisterTekst();
+  return hus ? (om + '\n\n' + hus) : om;
 };
+
+/* Husregisteret hentes med en gang, ikke naar panelet aapnes.
+   neamSpor gir opp etter to sekunder, og gaar den fristen ut, faller
+   HELE bakgrunnen bort - ikke bare registeret. Ett kall i bakgrunnen
+   ved lasting gjoer at svaret ligger buffret naar det trengs. */
+(function(){ lesHusregister().catch(function(){}); })();
 
 /* ---- Verktoeyene Neam har paa denne sida ----
    Bare lesing foreloepig. Skriving kommer som egne verktoey med

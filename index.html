@@ -14,6 +14,11 @@
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=10">
+<!-- Datalaget baerer husregisteret og lastes foer sidens eget skript.
+     felles-skjema.js gir avbryt-regelen paa husskjemaet og krever
+     felles-dialog.js, som ligger nederst - derfor staar begge to der,
+     ikke her. -->
+<script src="/felles-data.js?v=1"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -196,6 +201,38 @@ body{
   padding:6px 14px;color:var(--ink-soft);cursor:pointer;
 }
 .planlagt-knapp:active{background:var(--bg-1)}
+
+/* ---------- Husregisteret ---------- */
+.hus-ingress{
+  font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5;
+  margin-bottom:18px;max-width:60ch;
+}
+.hus-felt{ margin-bottom:16px; }
+.hus-felt label{
+  display:block;font-size:var(--t-meta);font-weight:600;color:var(--ink);
+  margin-bottom:2px;
+}
+.hus-felt .hjelp{
+  display:block;font-size:var(--t-etikett);color:var(--ink-soft);
+  margin-bottom:6px;line-height:1.4;
+}
+/* 16px er et gulv, ikke en smakssak: under det zoomer iOS inn naar
+   feltet faar fokus. Samme regel som .field input i skallet. */
+.hus-felt textarea{
+  width:100%;min-height:74px;resize:vertical;
+  padding:11px 12px;border-radius:10px;
+  border:1.5px solid var(--line);background:#FFFFFF;color:var(--ink);
+  font-family:'Archivo',sans-serif;font-size:16px;line-height:1.5;
+  -webkit-user-select:text;user-select:text;
+}
+.hus-felt textarea:focus{ outline:none;border-color:var(--aksent); }
+/* Knappene staar paa rad og deler bredden. .btn-ghost baerer
+   width:100% fra felles-knapper.css, saa flex:1 holder dem like. */
+.hus-knapper{ display:flex;gap:10px;margin-top:4px; }
+.hus-knapper .btn{ flex:1; }
+@media(max-width:560px){
+  .hus-knapper{ flex-direction:column-reverse; }
+}
 .app-badge{
   margin-top:6px;font-family:'IBM Plex Mono',monospace;
   font-size:var(--t-etikett);letter-spacing:.08em;color:var(--ink-soft);
@@ -360,6 +397,33 @@ input,select,textarea{font-size:16px}
           <span class="app-icon"><img src="/bilder/flis-bilder.png" alt="" width="256" height="256"></span>
           <span class="app-name">Bilder</span>
           <span class="app-badge">Kommer</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Husregisteret. Bor paa index fordi det ikke tilhoerer noen app -
+         det er huset, ikke handlelista. Lukket som standard: index er en
+         landingsside, og et skjema med fem tekstbokser aapent hele tiden
+         ville gjort den til noe annet. Sammendragslinja til hoeyre er der
+         for at et tomt register ikke skal vaere usynlig. -->
+    <section class="panel panel-hus">
+      <div class="panel-head">
+        <span class="panel-title">Huset</span>
+        <span class="panel-note" id="husNote">…</span>
+        <button type="button" class="planlagt-knapp" id="husKnapp"
+                onclick="vekslHus()" aria-expanded="false"
+                aria-controls="husSkjema">Rediger</button>
+      </div>
+
+      <div id="husSkjema" hidden>
+        <p class="hus-ingress">
+          Det Neam skal vite om huset uansett hvilken side han står på.
+          Skriv i vanlige setninger — det er en språkmodell som leser det.
+        </p>
+        <div id="husFelter"></div>
+        <div class="hus-knapper">
+          <button type="button" class="btn btn-ghost" onclick="lukkHus()">Avbryt</button>
+          <button type="button" class="btn btn-ny" id="husLagre" onclick="lagreHus()">Lagre</button>
         </div>
       </div>
     </section>
@@ -710,6 +774,146 @@ function vekslePlanlagte(){
   knapp.setAttribute('aria-expanded', skjult ? 'false' : 'true');
 }
 
+/* ============================================================
+   Husregisteret
+   ------------------------------------------------------------
+   Skjemaet bor her fordi registeret ikke tilhoerer noen app.
+   Lesing, skriving og selve teksten Neam faar ligger i
+   felles-data.js - denne blokka er bare flate.
+   ============================================================ */
+
+function husTegn(reg){
+  const boks = document.getElementById('husFelter');
+  if(!boks) return;
+  boks.innerHTML = '';
+  HUS_BOLKER.forEach(function(b){
+    const rad = document.createElement('div');
+    rad.className = 'hus-felt';
+
+    const merkelapp = document.createElement('label');
+    merkelapp.setAttribute('for', 'hus-' + b.id);
+    merkelapp.textContent = b.ledetekst;
+
+    const hjelp = document.createElement('small');
+    hjelp.className = 'hjelp';
+    hjelp.textContent = b.forklaring;
+
+    const felt = document.createElement('textarea');
+    felt.id = 'hus-' + b.id;
+    felt.rows = 3;
+    felt.value = String((reg && reg[b.id]) || '');
+
+    rad.appendChild(merkelapp);
+    rad.appendChild(hjelp);
+    rad.appendChild(felt);
+    boks.appendChild(rad);
+  });
+}
+
+/* Sammendraget staar der ogsaa naar panelet er lukket. Et tomt
+   register som ikke sier fra at det er tomt, blir aldri fylt ut. */
+function husSammendrag(reg){
+  const el = document.getElementById('husNote');
+  if(!el) return;
+  const fylt = HUS_BOLKER.filter(function(b){
+    return String((reg && reg[b.id]) || '').trim();
+  }).length;
+  el.textContent = fylt ? (fylt + ' av ' + HUS_BOLKER.length + ' utfylt')
+                        : 'ikke satt opp';
+}
+
+async function vekslHus(){
+  const skjema = document.getElementById('husSkjema');
+  if(!skjema) return;
+  if(!skjema.hidden){ await lukkHus(); return; }
+
+  const knapp = document.getElementById('husKnapp');
+  knapp.disabled = true;
+  let reg = {};
+  try{ reg = await lesHusregister(true); }
+  catch(e){ /* lesHusregister svelger selv - dette er bare en vakt */ }
+  knapp.disabled = false;
+
+  husTegn(reg);
+  skjema.hidden = false;
+  knapp.textContent = 'Lukk';
+  knapp.setAttribute('aria-expanded', 'true');
+  /* Avtrykket tas ETTER at feltene er fylt, ellers ser avbryt-regelen
+     utfyllingen som en endring brukeren har gjort. */
+  huskSkjema('husSkjema');
+}
+
+function husLukkNa(){
+  const skjema = document.getElementById('husSkjema');
+  const knapp = document.getElementById('husKnapp');
+  if(skjema) skjema.hidden = true;
+  if(knapp){
+    knapp.textContent = 'Rediger';
+    knapp.setAttribute('aria-expanded', 'false');
+  }
+}
+
+/* Avbryt spoer bare naar noe faktisk er skrevet siden panelet ble
+   aapnet - avbryt-regelen. */
+async function lukkHus(){
+  await avbrytSkjema('husSkjema', husLukkNa);
+}
+
+async function lagreHus(){
+  const knapp = document.getElementById('husLagre');
+  if(!knapp || knapp.disabled) return;
+  const reg = {};
+  HUS_BOLKER.forEach(function(b){
+    const felt = document.getElementById('hus-' + b.id);
+    reg[b.id] = felt ? felt.value : '';
+  });
+
+  knapp.disabled = true;
+  const foer = knapp.textContent;
+  knapp.textContent = 'Lagrer …';
+  try{
+    const lagret = await skrivHusregister(reg);
+    husSammendrag(lagret);
+    /* Avtrykket settes paa nytt, ellers spoer Avbryt om noe som alt
+       er lagret. */
+    huskSkjema('husSkjema');
+    husLukkNa();
+  }catch(e){
+    console.warn('Fikk ikke lagret husregisteret:', e);
+    varsle('Fikk ikke lagret husregisteret. Prøv igjen om litt.');
+  }
+  knapp.disabled = false;
+  knapp.textContent = foer;
+}
+
+/* Oppstartssjekk. En vakt som `if(!el) return;` hopper stille over hele
+   jobben naar et element mangler, og feilsoekingen gaar da i feil
+   retning i flere runder. Fem linjer, gratis. */
+['husSkjema','husFelter','husNote','husKnapp','husLagre'].forEach(function(id){
+  if(!document.getElementById(id)) console.warn('Mangler:', id);
+});
+
+/* Sammendraget skal staa der med en gang, ikke foerst naar noen
+   trykker Rediger. */
+(async function(){
+  try{ husSammendrag(await lesHusregister()); }
+  catch(e){ husSammendrag({}); }
+})();
+
+/* ---- Det Neam vet naar han staar her ----
+   Index har ingen verktoey ennaa, saa dette former bare samtalen.
+   Registeret foelger med fordi det gjelder overalt. */
+window.neamBakgrunn = async function(){
+  const hus = await husregisterTekst();
+  const om =
+    'FORSIDEN er inngangen til Neam - en meny over appene, ikke en app selv. '
+  + 'Herfra finnes Kjøkken dash, Matlaging, Handleliste og Kalender. '
+  + 'Husregisteret redigeres her, i panelet «Huset».\n\n'
+  + 'Du har ingen verktøy på denne siden. Skal noe gjøres i en app, si hvilken '
+  + 'app det hører hjemme i, så går brukeren dit.';
+  return hus ? (om + '\n\n' + hus) : om;
+};
+
 function settToppNavn(fulltNavn){
   const el = document.getElementById('innlogget-navn');
   const fornavn = String(fulltNavn || '').trim().split(/\s+/)[0] || '';
@@ -730,6 +934,7 @@ function settToppNavn(fulltNavn){
      applista litt dobbelt opp mot flisene - men grepet skal vaere likt
      overalt, og senere er dette veien til aa snakke med Neam herfra. -->
 <script src="/felles-dialog.js?v=1"></script>
+<script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-neam.js?v=24"></script>
 </body>
 </html>
