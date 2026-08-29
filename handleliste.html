@@ -332,6 +332,73 @@
   .field-hint{ font-size:var(--t-etikett); color:var(--aksent-moerk); margin:4px 0 0; font-weight:600; }
   .field-note{ font-size:var(--t-etikett); color:var(--ink-soft); margin:4px 0 0; }
 
+  /* ---- Neams importtabell ----
+     Kolonner, ikke kort: poenget er aa kunne lese nedover én kolonne og se
+     at mengdene henger sammen. Paa smal skjerm ruller den sidelengs i
+     stedet for aa brekke - en tabell som brekker er ikke lenger en tabell. */
+  .imp-ramme{
+    margin:0 -20px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  }
+  .imp-tabell{ border-collapse:collapse; width:100%; min-width:660px; }
+  .imp-tabell th{
+    position:sticky; top:0; z-index:1;
+    background:var(--boks-mild); color:var(--ink-soft);
+    font-size:var(--t-etikett); font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; text-align:left; white-space:nowrap;
+    padding:9px 10px; border-bottom:1px solid var(--boks-kant);
+  }
+  .imp-tabell th:first-child, .imp-tabell td:first-child{ padding-left:20px; }
+  .imp-tabell th:last-child,  .imp-tabell td:last-child{ padding-right:20px; }
+  .imp-tabell td{
+    padding:7px 10px; border-bottom:1px solid var(--line);
+    vertical-align:middle;
+  }
+  .imp-tabell tr:last-child td{ border-bottom:none; }
+  /* Strøket rad blir staaende og dus - man skal se hva man tok bort. */
+  .imp-rad.ute td{ opacity:.38; }
+  .imp-rad.ute .imp-felt{ text-decoration:line-through; }
+
+  .imp-felt{
+    width:100%; min-width:0; padding:7px 9px; border:1.5px solid var(--line);
+    border-radius:8px; background:#fff; color:var(--ink);
+    font-family:'Archivo',sans-serif; font-size:16px;
+  }
+  .imp-felt:focus{ outline:none; border-color:var(--aksent); }
+  .imp-navn{ font-weight:700; }
+  .k-vare{ width:30%; min-width:170px; }
+  .k-mengde{ width:96px; }  .k-enhet{ width:92px; }  .k-antall{ width:76px; }
+  .k-type{ width:150px; }   .k-kilde{ min-width:180px; }
+  /* Kildene er lesestoff, ikke felt: de sier hvor mengden kom fra, og
+     summen over er det som gjelder. */
+  .imp-kilde{
+    display:inline-block; background:var(--bg-2); border:1px solid var(--line);
+    border-radius:999px; padding:2px 9px; margin:2px 4px 2px 0;
+    font-size:var(--t-etikett); color:var(--ink-soft); white-space:nowrap;
+  }
+  .imp-ut{
+    border:none; background:none; color:var(--ink-soft); cursor:pointer;
+    font-size:20px; line-height:1; padding:4px 6px; border-radius:6px;
+  }
+  .imp-ut:active{ background:var(--paper-soft); }
+  .imp-rad.ute .imp-ut{ color:var(--aksent); opacity:1; }
+
+  /* ---- Basisvarene under tabellen ---- */
+  .imp-bolk{ margin-top:20px; }
+  .imp-bolk h3{
+    font-size:var(--t-etikett); font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px;
+  }
+  .imp-utelatt{ font-size:var(--t-meta); color:var(--ink-soft); line-height:1.5; }
+  .imp-tvil{
+    display:flex; align-items:center; gap:10px; padding:9px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .imp-tvil:last-child{ border-bottom:none; }
+  .imp-tvil input{ width:20px; height:20px; flex-shrink:0; }
+  .imp-tvil-navn{ font-size:var(--t-brod); color:var(--ink); }
+  .imp-tvil-hvorfor{ font-size:var(--t-etikett); color:var(--ink-soft); }
+
   /* ---- Neams forslagsvisning ---- */
   .forslag-rad{
     display:flex; align-items:flex-start; gap:12px;
@@ -671,6 +738,44 @@ input,select,textarea{font-size:16px}
   </section>
 
   <!-- RYDD -->
+  <!-- Overfoeringen fra Matlaging. Neam foreslaar hva som skal inn, du
+       godkjenner, og foerst da skrives noe til lista. Kategorien du lar
+       staa skrives tilbake i varekatalogen, saa malen laerer. -->
+  <section class="view" id="view-import">
+    <div class="card-panel punched" style="margin-top:20px;">
+      <h2>Klar til å legges inn</h2>
+      <p class="field-note" id="imp-undertittel" style="margin:4px 0 14px;"></p>
+
+      <div class="imp-ramme">
+        <table class="imp-tabell">
+          <thead><tr>
+            <th class="k-vare">Vare</th>
+            <th class="k-mengde">Mengde</th>
+            <th class="k-enhet">Enhet</th>
+            <th class="k-antall">Antall</th>
+            <th class="k-type">Varetype</th>
+            <th class="k-kilde">Fra</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="imp-rader"></tbody>
+        </table>
+      </div>
+
+      <div class="imp-bolk" id="imp-utelatt-bolk" hidden>
+        <h3>Utelatt</h3>
+        <p class="imp-utelatt" id="imp-utelatt"></p>
+      </div>
+
+      <div class="imp-bolk" id="imp-tvil-bolk" hidden>
+        <h3>Usikker – ta med?</h3>
+        <div id="imp-tvil"></div>
+      </div>
+
+      <button class="btn-blaa btn-blokk" id="imp-godkjenn">Legg inn</button>
+      <button class="btn-ghost btn-blokk" id="imp-avbryt">Avbryt</button>
+    </div>
+  </section>
+
   <!-- Neams gjennomgang. Egen visning, ikke en tabell i panelet: en
        gjennomgang er en arbeidsflate, og den hoerer hjemme i sida med
        sidens farger og bredde. Panelet trekker seg unna mens den staar. -->
@@ -2104,11 +2209,16 @@ async function fjernFraInnboks(id){
    Varene fra en godkjent pakke er ferdig formet: navnet er varenavnet,
    mengden ligger i fritekst, og typen er satt. Ingen sammenslaaing eller
    omregning her - den er alt gjort. */
+/* Pakkene som venter paa godkjenning. Settes av taImotGodkjente og
+   toemmes naar varene faktisk er inne - ikke foer. */
+let ventendePakker = [];
+
 async function taImotGodkjente(){
   const klare = innboks.filter(p => p && p.godkjent);
-  /* Tom liste, ikke 0: funksjonen lover navnene paa det som kom inn, og
-     kallstedet leser .length paa svaret. */
-  if(!klare.length) return [];
+  /* Samme form som ved suksess. Funksjonen lover {venter, navn}, og
+     kallstedet leser begge - en tom liste her ville gitt undefined paa
+     .navn og gaatt stille gjennom hver eneste innlasting. */
+  if(!klare.length) return { venter:false, navn:[] };
 
   const varer = [];
   klare.forEach(p => {
@@ -2139,6 +2249,17 @@ async function taImotGodkjente(){
      pakker med hver sin tur er sjeldent nok til at det ikke er verdt en
      runde til gjennom lista. */
   const tilOkt = klare.map(p => p.tilOkt).find(Boolean) || null;
+
+  /* Er Neam der, skriver vi ingenting naa. Han foreslaar, du godkjenner,
+     og foerst da legges varene inn - se neamLeggInnImport(). Pakka blir
+     liggende i innboksen til det er gjort, saa en lukket fane midt i gir
+     en uendret liste, ikke en halv. */
+  if(varer.length && typeof neamStart === 'function'){
+    ventendePakker = klare.slice();
+    ventendeTilOkt = tilOkt;
+    return { venter:true, navn: varer.map(v => v.name).filter(Boolean) };
+  }
+
   if(varer.length) await leggIListen(varer, tilOkt);
   /* Navnene, ikke bare tallet: gjennomgangen skal kunne si hva som kom inn. */
   const navn = varer.map(v => v.name).filter(Boolean);
@@ -2154,7 +2275,89 @@ async function taImotGodkjente(){
     tegnInnboksMerke();
   }catch(e){}
 
-  return navn;
+  return { venter:false, navn };
+}
+
+let ventendeTilOkt = null;
+
+/* Rundstykkene fra pakka, slik de kom - ingenting slaatt sammen.
+   Dette er det Neam faktisk skal vurdere. */
+function neamLesNyPakke(){
+  if(!ventendePakker.length) return { beskjed:'Ingen ny pakke venter.' };
+
+  const varer = [];
+  const basis = [];
+  ventendePakker.forEach(p => {
+    (p.varer || []).forEach(v => {
+      const navn = String(v.vare || '').trim();
+      if(!navn) return;
+      varer.push({
+        vare: navn,
+        type: v.type || '',
+        mengder: (v.mengder || []).map(m => ({
+          mengde: (m && m.mengde != null) ? String(m.mengde) : '',
+          enhet: (m && m.enhet) || ''
+        })),
+        fritekst: v.fritekst || [],
+        fraRetter: v.fraRetter || [],
+        basisvare: !!v.basis
+      });
+    });
+    (p.basisvarer || []).forEach(n => { if(n) basis.push(String(n).trim()); });
+  });
+
+  return {
+    fra: ventendePakker.map(p => innboksNavn(p)),
+    handletur: ventendeTilOkt ? (ventendeTilOkt.nyttNavn || 'valgt handletur')
+                              : oktNavn(sikreAktivOkt('mat')),
+    varer,
+    /* Oppskriftsbokas egne basisvarer - ting den regner med at huset har. */
+    merketSomBasis: [...new Set(basis)]
+  };
+}
+
+/* Skriver det brukeren godkjente, og rydder innboksen etterpaa.
+   Varetypen han lot staa lagres i varekatalogen: det er DEN som gjoer at
+   neste import kommer inn riktig av seg selv. */
+async function neamLeggInnImport(arg){
+  const godkjente = Array.isArray(arg.godkjente) ? arg.godkjente : [];
+  const medLikevel = Array.isArray(arg.medLikevel) ? arg.medLikevel : [];
+  if(!godkjente.length && !medLikevel.length){
+    return { lagtInn:0, beskjed:'Brukeren godkjente ingenting. Ingenting ble lagt inn.' };
+  }
+
+  const varer = godkjente.map(r => ({
+    name: String(r.vare || '').trim(),
+    qty: byggMengdeTekst(r.antall, r.mengde, r.enhet),
+    cat: VARETYPER.includes(r.type) ? r.type : '',
+    basis: false
+  })).filter(v => v.name);
+
+  medLikevel.forEach(n => {
+    const navn = String(n || '').trim();
+    if(navn) varer.push({ name:navn, qty:'', cat:foreslaattType(navn), basis:true });
+  });
+
+  await leggIListen(varer, ventendeTilOkt);
+
+  /* Foerst naar varene er inne. Ryker skrivingen, blir pakkene liggende og
+     kommer opp igjen ved neste innlasting. */
+  const tatt = new Set(ventendePakker.map(p => p.id));
+  try{
+    const liste = await lesInnboks();
+    await skrivInnboks(liste.filter(p => !tatt.has(p.id)));
+    innboks = innboks.filter(p => !tatt.has(p.id));
+    tegnInnboksMerke();
+    tegnInnboksListe();
+  }catch(e){}
+  ventendePakker = [];
+  ventendeTilOkt = null;
+
+  return {
+    lagtInn: varer.length,
+    varer: varer.map(v => v.name),
+    merknad: 'Varetypene er lagret i varekatalogen, så de kommer av seg selv neste gang.'
+  };
 }
 
 function openImport(){
@@ -2469,6 +2672,21 @@ async function bekreftListe(){
 
    Sto det noe fra foer, blir det med i lesingen: en dobbeltfoering
    mellom en gammel og en ny vare er nettopp den slags Neam skal finne. */
+/* Overfoeringen fra Matlaging. Neam faar bare de to verktoeyene som
+   hoerer til: pakka og tabellen. Uten den begrensningen tar modellen
+   varene én om gangen med legg_til_varer, og da er hele poenget borte. */
+async function neamImportOppgave(navn){
+  if (typeof neamStart !== 'function') return;
+  await neamStart(
+    'Det har kommet ' + navn.length + ' ingredienser fra Matlaging som skal på handlelista. '
+  + 'Les pakka med les_ny_pakke, avgjør hva som er samme vare og skal bli én rad, '
+  + 'gi hver rad et kort varenavn, samlet mengde og en varetype, og legg det fram '
+  + 'med foresla_import. Ta bort det åpenbare - vann fra springen, salt, pepper, olje - '
+  + 'og si i fjernet hva du tok bort. Er du i tvil om noe, legg det i usikre. '
+  + 'Ikke skriv noe før tabellen; den viser hva du har tenkt.',
+    { friskt:true, modell:'sonnet', verktoy:['les_ny_pakke','foresla_import'] });
+}
+
 async function neamGjennomgang(navn){
   if (typeof neamStart !== 'function' || !navn || !navn.length) return;
   await neamStart(
@@ -6179,6 +6397,9 @@ function showView(navn){
   if (navn !== 'forslag' && forslagSvar){
     const f = forslagSvar; forslagSvar = null; f(null);
   }
+  if (navn !== 'import' && impSvar){
+    const f = impSvar; impSvar = null; f(null);
+  }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + navn).classList.add('active');
   const hjem = navn === 'home';
@@ -6496,6 +6717,68 @@ window.neamVerktoy = async function(){
          en gal varetype er begge deler. */
     },
     {
+      name: 'les_ny_pakke',
+      description: 'Leser den nye pakka fra Matlaging slik den kom - hver ingrediens med '
+                 + 'sine mengder, enheter og hvilken rett den kom fra, pluss hva '
+                 + 'Oppskriftsboka har merket som basisvarer. Dette er RÅVAREN til '
+                 + 'foresla_import: her er ingenting slått sammen ennå.',
+      input_schema: { type:'object', properties:{}, required:[] }
+    },
+    {
+      name: 'foresla_import',
+      description: 'Legger fram hva som skal inn på handlelista, som en tabell brukeren '
+                 + 'godkjenner. Ingenting skrives før han trykker Legg inn.\n'
+                 + 'Du bestemmer: hvilke ingredienser som er samme vare og skal bli én rad, '
+                 + 'hva raden skal hete (kort varenavn slik man skriver det på en lapp - '
+                 + '«Salt», ikke «salt til kjøtt»), samlet mengde og enhet, og varetype. '
+                 + 'Regn om til samme enhet der det går. Går det ikke - én boks og 150 g - '
+                 + 'sett den mengden du mener er riktig å handle, og la kildene vise resten.\n'
+                 + 'Varetype skal alltid settes. Den du velger her lagres i husets '
+                 + 'varekatalog, så neste gang kommer varen inn med riktig type av seg selv.\n'
+                 + 'Basisvarer: det åpenbare - vann fra springen, salt, pepper, olje - tar du '
+                 + 'bort selv og lister i fjernet. Det du er i tvil om legger du i usikre '
+                 + 'med én kort grunn, så velger brukeren. Ikke spør om det åpenbare.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          varer: {
+            type:'array',
+            description:'Én rad per vare som skal på lista.',
+            items:{
+              type:'object',
+              properties:{
+                vare:   { type:'string', description:'Kort varenavn.' },
+                mengde: { type:'string', description:'Tallet, f.eks. «3,5». Tomt om ingen mengde.' },
+                enhet:  { type:'string', description:'«ts», «g», «pose». Tomt for stykk.' },
+                antall: { type:'string', description:'Hvor mange av mengden. Som regel tomt.' },
+                type:   { type:'string', enum:VARETYPER },
+                kilder: {
+                  type:'array',
+                  description:'Hvor mengden kom fra, én per rett.',
+                  items:{ type:'object', properties:{
+                    mengde:{type:'string'}, enhet:{type:'string'}, rett:{type:'string'} } }
+                }
+              },
+              required:['vare','type']
+            }
+          },
+          basisvarer: {
+            type:'object',
+            properties:{
+              fjernet: { type:'array', items:{type:'string'},
+                         description:'Tatt bort av deg. Nevnes bare.' },
+              usikre:  { type:'array',
+                         items:{ type:'object', properties:{
+                           vare:{type:'string'}, hvorfor:{type:'string'} }, required:['vare'] },
+                         description:'Brukeren velger om de skal med.' }
+            }
+          }
+        },
+        required: ['varer']
+      },
+      neamSkjerm: neamImportSkjerm
+    },
+    {
       name: 'finn_opprydding',
       description: 'Går gjennom handleturen og sier hva som er verdt å rydde i, sortert i '
                  + 'faste bolker. START HER ved en gjennomgang - ikke les hele lista og '
@@ -6593,6 +6876,170 @@ window.neamVerktoy = async function(){
     }
   ];
 };
+
+/* ============================================================
+   Importtabellen
+   ------------------------------------------------------------
+   Neam foreslaar hva som skal inn, du godkjenner, og foerst da
+   skrives noe. Ingenting roeres foer «Legg inn» - og pakka blir
+   liggende i innboksen til varene faktisk er inne, saa en lukket
+   fane midt i gir en uendret liste, ikke en halv.
+
+   Kolonnene: navnet Neam foreslaar, den samlede mengden delt i
+   tall og enhet, antall, varetypen, og til slutt hvor mengden kom
+   fra. Den siste er lesestoff - den er der for at du skal se at
+   summen stemmer med rettene den kom fra.
+   ============================================================ */
+let impSvar = null;
+
+function neamImportSkjerm(arg){
+  const rader = Array.isArray(arg.varer) ? arg.varer : [];
+  if (!rader.length) return Promise.resolve(null);
+
+  document.getElementById('imp-undertittel').textContent =
+    rader.length + (rader.length === 1 ? ' vare' : ' varer') + ' til ' + neamOktNavn(arg)
+    + '. Rett det du vil, stryk det du ikke trenger.';
+
+  const kropp = document.getElementById('imp-rader');
+  kropp.textContent = '';
+
+  rader.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.className = 'imp-rad';
+    tr.dataset.i = String(i);
+
+    const felt = (klasse, verdi, ekstra) => {
+      const td = document.createElement('td');
+      const inp = document.createElement('input');
+      inp.className = 'imp-felt' + (ekstra ? ' ' + ekstra : '');
+      inp.dataset.felt = klasse;
+      inp.value = verdi == null ? '' : String(verdi);
+      td.appendChild(inp);
+      tr.appendChild(td);
+    };
+
+    felt('vare',   r.vare,   'imp-navn');
+    felt('mengde', r.mengde);
+    felt('enhet',  r.enhet);
+    felt('antall', r.antall);
+
+    /* Varetypen er et nedtrekk, ikke et felt: den maa vaere én av husets
+       egne, ellers havner varen i Annet naar den lagres. */
+    const tdType = document.createElement('td');
+    const velg = document.createElement('select');
+    velg.className = 'imp-felt';
+    velg.dataset.felt = 'type';
+    const tom = document.createElement('option');
+    tom.value = ''; tom.textContent = '–';
+    velg.appendChild(tom);
+    VARETYPER.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t; o.textContent = t;
+      if (t === r.type) o.selected = true;
+      velg.appendChild(o);
+    });
+    tdType.appendChild(velg);
+    tr.appendChild(tdType);
+
+    const tdKilde = document.createElement('td');
+    (r.kilder || []).forEach(k => {
+      const chip = document.createElement('span');
+      chip.className = 'imp-kilde';
+      const m = [k.mengde, k.enhet].filter(Boolean).join(' ');
+      chip.textContent = m ? (m + ' · ' + (k.rett || '')) : (k.rett || '');
+      tdKilde.appendChild(chip);
+    });
+    tr.appendChild(tdKilde);
+
+    const tdUt = document.createElement('td');
+    const ut = document.createElement('button');
+    ut.type = 'button';
+    ut.className = 'imp-ut';
+    ut.title = 'Ta bort raden';
+    ut.textContent = '×';
+    ut.onclick = () => {
+      const ute = tr.classList.toggle('ute');
+      ut.textContent = ute ? '↺' : '×';
+      ut.title = ute ? 'Ta den med likevel' : 'Ta bort raden';
+    };
+    tdUt.appendChild(ut);
+    tr.appendChild(tdUt);
+
+    kropp.appendChild(tr);
+  });
+
+  /* Det Neam tok bort selv nevnes bare - det er en opplysning, ikke et
+     valg. Er han uenig med seg selv, hoerer det hjemme i tvil-bolken. */
+  const utelatt = (arg.basisvarer && arg.basisvarer.fjernet) || [];
+  const utBolk = document.getElementById('imp-utelatt-bolk');
+  utBolk.hidden = !utelatt.length;
+  if (utelatt.length){
+    document.getElementById('imp-utelatt').textContent =
+      'Tatt bort som noe dere har fra før: ' + utelatt.join(', ') + '.';
+  }
+
+  const tvil = (arg.basisvarer && arg.basisvarer.usikre) || [];
+  const tvilBolk = document.getElementById('imp-tvil-bolk');
+  tvilBolk.hidden = !tvil.length;
+  const tvilBoks = document.getElementById('imp-tvil');
+  tvilBoks.textContent = '';
+  tvil.forEach((t, i) => {
+    const rad = document.createElement('label');
+    rad.className = 'imp-tvil';
+    const av = document.createElement('input');
+    av.type = 'checkbox';
+    av.dataset.i = String(i);
+    rad.appendChild(av);
+    const tekst = document.createElement('span');
+    const navn = document.createElement('span');
+    navn.className = 'imp-tvil-navn';
+    navn.textContent = t.vare || t;
+    tekst.appendChild(navn);
+    if (t.hvorfor){
+      const hv = document.createElement('span');
+      hv.className = 'imp-tvil-hvorfor';
+      hv.textContent = ' – ' + t.hvorfor;
+      tekst.appendChild(hv);
+    }
+    rad.appendChild(tekst);
+    tvilBoks.appendChild(rad);
+  });
+
+  showView('import');
+
+  return new Promise(ok => {
+    impSvar = svar => { impSvar = null; ok(svar); };
+
+    document.getElementById('imp-avbryt').onclick = () => {
+      if (impSvar) impSvar(null);
+      goHome();
+    };
+
+    document.getElementById('imp-godkjenn').onclick = () => {
+      const godkjente = [];
+      kropp.querySelectorAll('tr.imp-rad').forEach(tr => {
+        if (tr.classList.contains('ute')) return;
+        const les = f => {
+          const el = tr.querySelector('[data-felt="' + f + '"]');
+          return el ? String(el.value || '').trim() : '';
+        };
+        const vare = les('vare');
+        if (!vare) return;
+        godkjente.push({ vare, mengde:les('mengde'), enhet:les('enhet'),
+                         antall:les('antall'), type:les('type') });
+      });
+      const medLikevel = [];
+      tvilBoks.querySelectorAll('input[type=checkbox]').forEach(el => {
+        if (el.checked){
+          const t = tvil[Number(el.dataset.i)];
+          medLikevel.push(typeof t === 'string' ? t : t.vare);
+        }
+      });
+      if (impSvar) impSvar({ godkjente, medLikevel });
+      goHome();
+    };
+  });
+}
 
 /* Neams gjennomgang som egen visning.
 
@@ -6891,6 +7338,8 @@ window.neamUtfor = async function(navn, arg){
   if (navn === 'fjern_varer')    return await neamFjernVarer(arg);
   if (navn === 'endre_vare')     return await neamEndreVare(arg);
   if (navn === 'sett_varetype')  return await neamSettVaretype(arg);
+  if (navn === 'les_ny_pakke')   return neamLesNyPakke();
+  if (navn === 'foresla_import') return await neamLeggInnImport(arg);
   if (navn === 'finn_opprydding') return neamFinnOpprydding(arg);
   if (navn === 'slaa_sammen')    return await neamSlaaSammen(arg);
   if (navn === 'foresla_opprydding') return await neamOpprydding(arg);
@@ -7626,8 +8075,12 @@ document.addEventListener('visibilitychange', () => {
 init()
   .then(hentInnboks)
   .then(taImotGodkjente)
-  .then(navn => {
-    if(!navn || !navn.length) return;
+  .then(res => {
+    const navn = (res && res.navn) || [];
+    if(!navn.length) return;
+    /* Venter pakka paa godkjenning, er det importtabellen som skal opp -
+       ikke oppryddingen, som er for en liste som alt er skrevet. */
+    if(res.venter) return neamImportOppgave(navn);
     /* Neam aapner selv og gaar gjennom det som kom inn. Da trengs ikke
        varselet i tillegg - panelet sier det samme, og tydeligere.
        Reserven staar igjen for det tilfellet at fellesfila ikke er lastet. */
