@@ -714,20 +714,38 @@ const NEAM_APPER = [
   { sti:'/dashboard.html',   navn:'Kjøkken',     ikon:'/bilder/merke-kjokken-dash.png' }
 ];
 
+/* Stien til sida, normalisert.
+
+   Cloudflare Pages serverer rene URL-er: /handleliste.html leveres som
+   /handleliste. location.pathname er derfor UTEN .html i praksis, mens
+   lenkene vaare skriver den. Uten normalisering bommer alle oppslag paa
+   sti - baade sidemerket og «utelat sida du staar paa» i applista - og
+   de bommer stille, med en reserve som ser plausibel ut.
+
+   Taaler begge former, saa den virker like godt lokalt og bak Pages. */
+function neamSti(sti){
+  let p = String(sti != null ? sti : location.pathname || '/').toLowerCase();
+  p = p.replace(/\.html$/, '');
+  p = p.replace(/\/index$/, '/');
+  if(p.length > 1) p = p.replace(/\/$/, '');
+  return p || '/';
+}
+
 /* Sidenes egne merker. Hoeyre haandtak baerer merket til sida du staar
    paa - venstre baerer Neam. Det er hele skillet i ett bilde: venstre er
-   «ut og Neam», hoeyre er «her og naa». */
+   «ut og Neam», hoeyre er «her og naa».
+
+   Noeklet paa normalisert sti - se neamSti(). */
 const NEAM_SIDEMERKE = {
-  '/handleliste.html': { navn:'Handleliste', ikon:'/bilder/merke-handleliste.png'  },
-  '/oppskrifter.html': { navn:'Matlaging',   ikon:'/bilder/merke-matlaging.png'    },
-  '/kalender.html'   : { navn:'Kalender',    ikon:'/bilder/merke-kalender.png'     },
-  '/dashboard.html'  : { navn:'Kjøkken dash',ikon:'/bilder/merke-kjokken-dash.png' },
-  '/'                : { navn:'Neam',        ikon:'/bilder/merke-neam.png'         },
-  '/index.html'      : { navn:'Neam',        ikon:'/bilder/merke-neam.png'         }
+  '/handleliste': { navn:'Handleliste',  ikon:'/bilder/merke-handleliste.png'  },
+  '/oppskrifter': { navn:'Matlaging',    ikon:'/bilder/merke-matlaging.png'    },
+  '/kalender'   : { navn:'Kalender',     ikon:'/bilder/merke-kalender.png'     },
+  '/dashboard'  : { navn:'Kjøkken dash', ikon:'/bilder/merke-kjokken-dash.png' },
+  '/'           : { navn:'Neam',         ikon:'/bilder/merke-neam.png'         }
 };
 
 function neamSideMerke(){
-  return NEAM_SIDEMERKE[location.pathname]
+  return NEAM_SIDEMERKE[neamSti()]
       || { navn:'Denne siden', ikon:NEAM_MERKE };
 }
 
@@ -899,9 +917,9 @@ function neamVisApper(){
   const boks = document.getElementById('neamApper');
   if(!boks) return;
   if(!boks.hidden){ boks.hidden = true; return; }
-  const her = location.pathname;
+  const her = neamSti();
   boks.innerHTML = NEAM_APPER
-    .filter(function(a){ return a.sti !== her; })
+    .filter(function(a){ return neamSti(a.sti) !== her; })
     .map(function(a){
       return '<a class="neam-app-lenke" href="' + a.sti + '">'
            +   '<span class="neam-app-ikon"><img src="' + a.ikon + '" alt=""></span>'
