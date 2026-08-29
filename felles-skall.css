@@ -128,10 +128,10 @@ main{ max-width:520px; margin:0 auto; padding:0 20px; }
 }
 
 /* ---------- Smaating ---------- */
-.btn-ghost{
-  background:none; color:var(--ink); border:1.5px solid var(--line);
-  width:100%;
-}
+/* .btn-ghost laa her til 29. august 2026. Den er flyttet uendret til
+   felles-knapper.css, saa alle seks betydningsklassene ligger samme
+   sted - en avbryt-knapp hoerer sammen med de fem den er alternativ
+   til, ikke med topplinja og fanene. */
 .mono{ font-family:'IBM Plex Mono', monospace; }
 /* Unionen av de to: oppskrifter satte de to foerste, handleliste den siste. */
 button{ font-family:inherit; cursor:pointer; touch-action:manipulation; }

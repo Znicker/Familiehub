@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Handleliste – Neam</title>
 <link rel="stylesheet" href="/felles-rot.css?v=1">
+<link rel="stylesheet" href="/felles-knapper.css?v=1">
 <!-- Felles app-skall: sidemoensteret oppskrifter og handleliste deler.
      Maa lastes FOER <style> under, saa sida kan overstyre. -->
-<link rel="stylesheet" href="/felles-skall.css?v=1">
+<link rel="stylesheet" href="/felles-skall.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
@@ -280,37 +281,9 @@
   }
   .new-fab:active{ transform:scale(0.95); }
 
-  /* ---------- Buttons & fields ---------- */
-  .btn{
-    display:inline-flex; align-items:center; justify-content:center; gap:8px;
-    padding:13px 18px; border-radius:999px; border:none;
-    font-size:var(--t-brod); font-weight:700; text-transform:uppercase; letter-spacing:0.02em;
-    font-family:'Archivo', sans-serif;
-  }
-  /* Knappene heter det de betyr, ikke det de er store som:
-     groent lagrer eller legger til, roedt sletter, oker endrer, noeytral
-     avbryter, lilla gaar paa tvers av apper, blaatt er alt annet.
-     Formen ligger for seg i .btn-blokk, saa en knapp kan skifte betydning
-     uten aa skifte stoerrelse. Sammenblandingen var grunnen til at samme
-     klassenavn ble groent her og blaatt i oppskrifter. */
-  .btn-blokk{ width:100%; margin-top:14px; }
-
-  .btn-ny{ background:var(--handling-ny); color:#fff; }
-  .btn-ny:active:not(:disabled){ background:var(--handling-ny-moerk); }
-  .btn-slett{ background:var(--danger); color:#fff; }
-  .btn-slett:active:not(:disabled){ background:var(--danger-moerk); }
-  /* Bekreftelsesknappen i dialogene. Klassen het .btn-success, som sa
-     "vellykket" mens fargen sa "endre". Navnet foelger fargen naa. */
-  .btn-endre{ background:var(--handling-endre); color:#fff; }
-  .btn-endre:active:not(:disabled){ background:var(--handling-endre-moerk); }
-  /* Gaar paa tvers av apper: leser inn fra Oppskriftsboka, laster ned eller
-     slaar sammen varekatalogen som deles med den. */
-  .btn-tvers{ background:var(--handling-tvers); color:#fff; }
-  .btn-tvers:active:not(:disabled){ background:var(--handling-tvers-moerk); }
-  .btn-blaa{ background:var(--aksent); color:#fff; }
-  .btn-blaa:active:not(:disabled){ background:var(--aksent-moerk); }
-
-  .btn-ny:disabled,.btn-blaa:disabled,.btn-slett:disabled,.btn-endre:disabled{ background:#C3CBD4; }
+  /* ---------- Buttons & fields ----------
+     .btn, .btn-blokk og de seks betydningsklassene ligger i
+     felles-knapper.css. */
 
   /* ---------- Ny vare ----------
      Tastaturet spiser den nederste halvparten av skjermen. Skjemaet maa

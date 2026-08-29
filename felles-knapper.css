@@ -1,0 +1,95 @@
+/* ============================================================
+   Neam - felles knapper
+   ------------------------------------------------------------
+   Knappene heter det de BETYR, ikke det de er store som:
+   groent lagrer eller legger til, oker endrer noe som finnes,
+   roedt sletter, noeytralt avbryter, lilla gaar paa tvers av
+   apper, blaatt er alt annet. Formen ligger for seg i
+   .btn-blokk, saa en knapp kan skifte betydning uten aa skifte
+   stoerrelse.
+
+   Trukket ut 29. august 2026 (7.3, sjette flytting). Reglene sto
+   allerede tegn for tegn like i oppskrifter og handleliste -
+   dette er en flytting, ikke en omskriving. Grunnen til at den
+   maatte gjoeres foer noe nytt: sammenblandingen av form og
+   farge var det som gjorde at .btn-primary betydde groent i den
+   ene fila og blaatt i den andre. En tredje kopi ville hatt
+   samme skjebne.
+
+   HVEM LASTER DEN: oppskrifter, handleliste og index. IKKE
+   kalender og dashboard. Kalender har sin egen .btn - base med
+   kant og papirflate, med .ghost/.solid/.fare over - altsaa de
+   samme betydningene under andre navn. To .btn-definisjoner der
+   den ene stilltiende skygger for den andre er noeyaktig fella
+   over. Kalenderens navn doepes om den dagen noen tar den
+   jobben; da flyttes den hit, ikke foer.
+
+   Lastes rett etter felles-rot.css, altsaa FOER felles-skall.css
+   og foer sidens egen <style>. Da kan en side fortsatt overstyre
+   en knapp lokalt.
+   ============================================================ */
+
+/* Unionen av de to: font-family og cursor kom fra oppskrifter,
+   touch-action fra handleliste - via button{} i felles-skall.css.
+   De to staar her i sin helhet fordi index ikke laster skallet og
+   ikke har noen button{}-regel i det hele tatt. */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:13px 18px; border-radius:999px; border:none;
+  font-size:var(--t-brod); font-weight:700; text-transform:uppercase;
+  letter-spacing:0.02em; font-family:'Archivo', sans-serif;
+  cursor:pointer; touch-action:manipulation;
+}
+
+/* ---------- Form ---------- */
+/* Full bredde. Sto identisk i begge filene. margin-top overstyres
+   inline paa de fleste kallstedene - den er en arv, ikke en regel. */
+.btn-blokk{ width:100%; margin-top:14px; }
+
+/* .btn-pille blir liggende i oppskrifter: maal og marger der er
+   tilpasset venstrespalten paa den sida, og bare den bruker den. */
+
+/* ---------- De seks betydningene ---------- */
+.btn-ny{ background:var(--handling-ny); color:#fff; }
+.btn-ny:active:not(:disabled){ background:var(--handling-ny-moerk); }
+
+/* Okeren maa holde avstand til --danger: en roedoransje ville sett
+   lik ut ved siden av Slett i samme meny. */
+.btn-endre{ background:var(--handling-endre); color:#fff; }
+.btn-endre:active:not(:disabled){ background:var(--handling-endre-moerk); }
+
+.btn-slett{ background:var(--danger); color:#fff; }
+.btn-slett:active:not(:disabled){ background:var(--danger-moerk); }
+
+/* Gaar paa tvers av apper - de andre gjoer noe HER, denne flytter
+   noe DIT. */
+.btn-tvers{ background:var(--handling-tvers); color:#fff; }
+.btn-tvers:active:not(:disabled){ background:var(--handling-tvers-moerk); }
+
+/* Blaatt er ikke en betydning, men fravaeret av en: det som blir
+   igjen naar de fire andre ikke passer. */
+.btn-blaa{ background:var(--aksent); color:#fff; }
+.btn-blaa:active:not(:disabled){ background:var(--aksent-moerk); }
+
+/* Avbryt er alltid noeytral - roedt betyr slett, og en farge kan
+   ikke bety to ting i samme app. Flyttet hit fra felles-skall.css
+   uendret, saa alle seks betydningene ligger samme sted.
+   width:100% er form i en betydningsklasse, altsaa en vorte - men
+   de to sidene regner med den i dag, og aa fjerne den her ville
+   vaert en utseendeendring smuglet inn i en flytting. */
+.btn-ghost{
+  background:none; color:var(--ink); border:1.5px solid var(--line);
+  width:100%;
+}
+
+/* ---------- Av ---------- */
+/* Handlelistas verdi. Oppskrifter laa paa #B7C2D4 - den var et hakk
+   moerkere og trakk mer blikk enn en avslaatt knapp skal. Den har
+   ikke noe navn i :root fordi den ikke brukes noe annet sted; faar
+   den det, hoerer den hjemme der.
+
+   Bare betydningsklassene staar oppfoert, ikke .btn selv: en
+   .btn:disabled ville slaatt .btn-ghost paa spesifisitet og malt
+   en deaktivert Avbryt graa i stedet for gjennomsiktig. */
+.btn-ny:disabled, .btn-endre:disabled, .btn-slett:disabled,
+.btn-tvers:disabled, .btn-blaa:disabled{ background:#C3CBD4; }
