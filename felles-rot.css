@@ -43,14 +43,17 @@
      flatetoner brukt paa topplinje, rutenett og celler, og skal ikke
      foelge bakgrunnen naar den endres.
 
-     BARE GRADIENTEN her. Selve bildet ligger i et fastposisjonert lag
-     (body::before nederst i fila) og ikke som background-attachment:
-     fixed. Grunnen er en gammel iOS-feil: Safari maaler en fast
-     bakgrunn mot DOKUMENTETS hoeyde, ikke vinduets, saa `cover` blaaser
-     bildet opp til et lite utsnitt av det tomme midtpartiet - altsaa
-     ingen synlig bakgrunn i det hele tatt. Verifisert paa iPad.
-     Gradienten blir staaende under bildet som reserve. */
-  --side-bakgrunn:linear-gradient(160deg,#F6F1E7 0%,#EDE6D9 100%);
+     GJENNOMSIKTIG, og det er med vilje. De fem sidene skriver
+     `background:var(--side-bakgrunn)` paa body. Var den en gradient,
+     la den seg som en ugjennomsiktig flate OVER bildelaget under, og
+     bakgrunnen ble usynlig - maalt, ikke gjettet: laget hadde riktig
+     posisjon, stoerrelse og bilde-URL, men ingenting kom fram.
+
+     Reserven er flyttet til html (nederst i fila), som ligger under
+     alt. Lagene er dermed: html-gradient nederst, bildelaget over den,
+     innholdet oeverst. Sidene kan fortsatt overstyre variabelen lokalt
+     hvis én flate trenger noe eget. */
+  --side-bakgrunn:transparent;
   /* Bildet, per retning. Byttes nederst i fila. */
   --side-bilde:url('/bilder/bakgrunn.webp');
   /* Mild flate for grupperingsbokser. Var kjoelig blaa (#EDF3F8) og
@@ -94,17 +97,25 @@
 
 /* ------------------------------------------------------------
    Bakgrunnsbildet
-   ------------------------------------------------------------
-   Et fastposisjonert lag bak alt innhold, ikke background-attachment.
-   Effekten er den samme - ramma staar stille mens innholdet ruller -
-   men uten iOS-feilen som gjorde bakgrunnen usynlig paa iPad.
+   ------------------------------------------------------------ */
+
+/* Reserven, nederst av alt. Ligger paa html og ikke paa body, saa
+   bildelaget under her har noe aa ligge oppaa uten aa bli dekket.
+   Synes bare der bildet ikke naar - og hele bildet hvis fila mangler,
+   saa sida aldri staar naken. */
+html{ background:linear-gradient(160deg,#F6F1E7 0%,#EDE6D9 100%); }
+
+/* Bildet: et fastposisjonert lag bak alt innhold, ikke
+   background-attachment:fixed. Effekten er den samme - ramma staar
+   stille mens innholdet ruller - men uten iOS-feilen der Safari maaler
+   en fast bakgrunn mot DOKUMENTETS hoeyde og blaaser `cover` opp til et
+   utsnitt av det tomme midtpartiet.
 
    `pointer-events:none` er ikke pynt: laget dekker hele vinduet, og
    uten den ville det spist hvert eneste trykk paa sida.
 
-   Bruker ::before paa body og ikke et element i HTML-en, saa ingen av
-   de fem sidene trenger ny markup.
-   ------------------------------------------------------------ */
+   ::before paa body, ikke et element i HTML-en, saa ingen av de fem
+   sidene trenger ny markup. */
 body::before{
   content:'';
   position:fixed; inset:0; z-index:-1;
