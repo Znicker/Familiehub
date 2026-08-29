@@ -89,12 +89,20 @@
    bildene som paa forsiden, saa en app kjennes igjen paa ikonet og ikke
    maa leses. */
 .neam-apper{
-  position:absolute; pointer-events:auto;
-  left:50%; transform:translateX(-50%);
-  bottom:150px;
+  position:fixed; pointer-events:auto;
+  /* Festet til skjermen, ikke til femmeren: sentrert over et haandtak i
+     venstre hjoerne rant venstre ende utenfor kanten paa smal skjerm i
+     staaende modus. Naa starter lista der femmeren staar og faar vokse
+     hoeyre-over, med en luftlomme til hoeyre kant som tak. */
+  left:14px; right:14px; bottom:186px;
   background:var(--paper); border-radius:16px;
   box-shadow:0 10px 30px rgba(44,62,80,.3);
   padding:12px 10px; display:flex; gap:4px;
+  justify-content:flex-start; flex-wrap:wrap;
+}
+/* Er det plass, trenger den ikke strekke seg over hele bredden. */
+@media(min-width:460px){
+  .neam-apper{ right:auto; max-width:none; }
 }
 .neam-apper[hidden]{ display:none; }
 .neam-app-lenke{
