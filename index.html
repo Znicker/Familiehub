@@ -25,7 +25,11 @@
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
   :root{
-    --shadow-lift:0 14px 30px rgba(44,62,80,.16);
+    /* Loeftet naar en flis peker seg ut. Argumentet til drop-shadow(),
+       ikke til box-shadow: flisene har ingen boks lenger, saa skyggen maa
+       foelge merkelappens eget omriss. En box-shadow ville tegnet en
+       firkant rundt en rund klistremerkeform. */
+    --shadow-lift:0 12px 20px rgba(44,62,80,.24);
   }
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -72,9 +76,6 @@ body{
   text-transform:uppercase;letter-spacing:.08em;margin-top:6px;
 }
 
-/* ---------- Rutenett ---------- */
-/* Index er landingssiden: klokke, overskrift og appene. Ingenting mer. */
-.grid{display:grid;grid-template-columns:1fr;gap:22px;align-items:start}
 
 /* ---------- Telefon ----------
    .top er en flex-rad der .brand hadde flex-shrink:0 og aldri ga etter,
@@ -87,15 +88,13 @@ body{
   /* Vaerknappen legger seg paa egen linje under merket og klokka. */
   .app-name{letter-spacing:.02em}
   .app-icon{margin-bottom:9px}
-  .app{padding:16px 8px 14px}
-  .panel{padding:16px;border-radius:16px}
-  .grid{gap:16px}
 }
 
-.panel{
-  background:var(--paper);border-radius:var(--radius);padding:22px;
-  box-shadow:var(--shadow);
-}
+/* .panel og .panel-note laa her til 29. august 2026. Husregisteret var
+   det siste som sto i et kort paa forsiden, og da det flyttet ut til sin
+   egen visning ble det ingen paneler igjen - appene ligger rett paa
+   bakgrunnen. .panel-head og .panel-title staar fordi overskriftsraden
+   over merkene fortsatt bruker dem. */
 .panel-head{
   display:flex;align-items:baseline;gap:10px;margin-bottom:16px;
 }
@@ -103,11 +102,6 @@ body{
   font-size:var(--t-meta);font-weight:700;text-transform:uppercase;
   letter-spacing:.1em;color:var(--ink);
 }
-.panel-note{
-  margin-left:auto;font-family:'IBM Plex Mono',monospace;
-  font-size:var(--t-etikett);color:var(--ink-soft);opacity:.75;
-}
-
 /* ---------- Snarveier ---------- */
 /* Tre kolonner og tre rader = ni fliser synlig. Resten naas ved aa rulle
    inne i panelet, saa den tiende ikke blir staaende og kikke opp nederst
@@ -122,28 +116,31 @@ body{
 /* Maa staa ETTER 1000px-regelen for aa vinne. Den gamle toklonners-regelen
    laa foer den og ble overstyrt, saa telefonen fikk tre smale fliser. */
 @media(max-width:700px){ .apps{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px} }
-.panel-apper{position:relative}
+/* Appene ligger uten kort. Overskriftsraden staar da rett paa
+   bakgrunnsbildet og trenger litt innrykk for aa flukte med merkene,
+   som har 4px luft rundt seg. */
+.apper-seksjon{position:relative;margin-bottom:4px}
+.apper-seksjon .panel-head{padding:0 4px}
 .app{min-width:0}
 
 .app{
   /* Kvadrat: hoeyden foelger bredden. Var 186px fast, som ga en hoey smal
      boks naar kolonnen krympet - og da maatte navnet brekkes i tre. */
+  /* INGEN FLATE, INGEN KANT. Merkelappene er tegnet som klistremerker med
+     eget omriss og egen skygge, og en boks rundt dem avbryter formen de
+     alt har - to rammer utenpaa hverandre. De ligger derfor rett paa
+     bakgrunnsbildet, som klistremerker paa en flate. Dette avgjorde
+     samtidig fargespoersmaalet: flisflata kunne ikke varmes uten aa
+     avsloere at PNG-ene har ugjennomsiktige hjoerner, og naar det ikke er
+     noen flate igjen, finnes ikke problemet. */
   aspect-ratio:1;justify-content:center;min-height:0;
-  text-decoration:none;color:inherit;background:var(--bg-2);
-  /* --boks-kant, ikke --line: flisen er en flate man trykker paa, ikke en
-     skillestrek. Etter varmingen ligger --bg-2 og --paper saa taett at
-     kanten baerer hele skillet mellom flis og kort alene.
-     MERK: selve FLATA staar med vilje. Merkelappene er ugjennomsiktige
-     PNG-er med kald grabakgrunn (#F7F7F7 maalt i robot.png), og en varmere
-     flis ville lagt en varm ramme rundt en kald bildeflate. Flata tas naar
-     ikonene har gjennomsiktige hjoerner. */
-  border:1px solid var(--boks-kant);border-radius:16px;
-  padding:22px 14px 18px;text-align:center;
+  text-decoration:none;color:inherit;
+  padding:4px;text-align:center;
   display:flex;flex-direction:column;align-items:center;
-  transition:transform .18s ease,box-shadow .18s ease;
+  transition:transform .18s ease,filter .18s ease;
 }
 .app:active{transform:scale(.97)}
-@media(hover:hover){.app:hover{transform:translateY(-4px);box-shadow:var(--shadow-lift)}}
+@media(hover:hover){.app:hover{transform:translateY(-4px);filter:drop-shadow(var(--shadow-lift))}}
 .app-icon{
   width:54%;max-width:110px;aspect-ratio:1;height:auto;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
@@ -157,7 +154,7 @@ body{
    MERK: denne blokka MAA staa etter .app og .app-icon over. Laa den foer,
    ble den stille overstyrt av dem - lik spesifisitet, siste regel vinner. */
 @media(max-height:600px){
-  .app{aspect-ratio:auto;padding:14px 10px 12px}
+  .app{aspect-ratio:auto}
   .app-icon{width:auto;height:54px;max-width:none}
 }
 
@@ -168,13 +165,11 @@ body{
    border-radius:50% + overflow:hidden.
    MERK: .app.merke (0,2,0) slaar .app inne i mediesporringene over, saa
    dette maa gjentas i en egen mediesporring for lav skjermhoeyde. */
-.app.merke{padding:10px}
 .app.merke .app-icon{
   width:100%;max-width:none;margin-bottom:0;
   border-radius:0;overflow:visible;
 }
 @media(max-height:600px){
-  .app.merke{padding:8px}
   .app.merke .app-icon{width:auto;height:74px;max-width:100%}
 }
 .app-name{
@@ -205,7 +200,49 @@ body{
 }
 .planlagt-knapp:active{background:var(--bg-1)}
 
-/* ---------- Husregisteret ---------- */
+/* ---------- Huset som egen visning ----------
+   Registeret laa i et sammenklappet panel paa forsiden. Fem tekstbokser
+   som skal fylles i hele setninger fikk da bredden til et panel og
+   hoeyden til en sammenklapping - to ting som trekker mot kort tekst,
+   akkurat der lang tekst er poenget. Det har naa hele skjermen.
+
+   Visning, ikke egen fil: registeret leses alt overalt gjennom
+   felles-data.js og trenger ingen egen rute, og en sjette HTML-fil ville
+   vaert ny <head>, nye skripttagger og et nytt femmeroppsett for ett
+   skjema. Samme grep som #port, som alt ligger her. */
+#huset{
+  min-height:100vh; min-height:100dvh;
+}
+/* Som #port: en display-regel over ville overstyrt [hidden] stille. */
+#huset[hidden]{ display:none; }
+.hus-topp{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding-bottom:20px; border-bottom:1px solid var(--line); margin-bottom:24px;
+}
+.hus-tittel{
+  font-size:var(--t-stor); font-weight:700; text-transform:uppercase;
+  letter-spacing:.06em; line-height:1.2;
+}
+/* Sammendraget staar her, ikke paa forsiden: det svarer paa «hvor mye er
+   igjen», og det spoersmaalet stilles naar man er inne, ikke naar man gaar
+   forbi. */
+.hus-status{
+  font-family:'IBM Plex Mono',monospace; font-size:var(--t-etikett);
+  color:var(--ink-soft); letter-spacing:.06em; text-transform:uppercase;
+}
+.hus-tilbake{
+  margin-left:auto; font-family:'IBM Plex Mono',monospace;
+  font-size:var(--t-etikett); text-transform:uppercase; letter-spacing:.08em;
+  background:none; border:1px solid var(--line); border-radius:999px;
+  padding:8px 16px; color:var(--ink-soft); cursor:pointer;
+}
+.hus-tilbake:active{ background:var(--bg-1); }
+/* Kortet er smalere enn skallet. Ei tekstlinje paa 1180px leses ikke -
+   oeyet mister igjen starten paa neste linje. */
+.hus-kort{
+  background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:26px 26px 22px; max-width:760px; margin:0 auto;
+}
 .hus-ingress{
   font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5;
   margin-bottom:18px;max-width:60ch;
@@ -222,7 +259,9 @@ body{
 /* 16px er et gulv, ikke en smakssak: under det zoomer iOS inn naar
    feltet faar fokus. Samme regel som .field input i skallet. */
 .hus-felt textarea{
-  width:100%;min-height:74px;resize:vertical;
+  /* 110px, ikke 74: feltet er en oppfordring om hvor mye som skal
+     skrives, og et lavt felt ber om ett stikkord. */
+  width:100%;min-height:110px;resize:vertical;
   padding:11px 12px;border-radius:10px;
   border:1.5px solid var(--line);background:#FFFFFF;color:var(--ink);
   font-family:'Archivo',sans-serif;font-size:16px;line-height:1.5;
@@ -342,9 +381,7 @@ input,select,textarea{font-size:16px}
     </div>
   </div>
 
-  <div class="grid">
-
-    <section class="panel panel-apper">
+  <section class="apper-seksjon">
       <div class="panel-head">
         <span class="panel-title">Appene</span>
         <button type="button" class="planlagt-knapp" id="planlagtKnapp"
@@ -395,36 +432,7 @@ input,select,textarea{font-size:16px}
           <span class="app-badge">Kommer</span>
         </div>
       </div>
-    </section>
-
-    <!-- Husregisteret. Bor paa index fordi det ikke tilhoerer noen app -
-         det er huset, ikke handlelista. Lukket som standard: index er en
-         landingsside, og et skjema med fem tekstbokser aapent hele tiden
-         ville gjort den til noe annet. Sammendragslinja til hoeyre er der
-         for at et tomt register ikke skal vaere usynlig. -->
-    <section class="panel panel-hus">
-      <div class="panel-head">
-        <span class="panel-title">Huset</span>
-        <span class="panel-note" id="husNote">…</span>
-        <button type="button" class="planlagt-knapp" id="husKnapp"
-                onclick="vekslHus()" aria-expanded="false"
-                aria-controls="husSkjema">Rediger</button>
-      </div>
-
-      <div id="husSkjema" hidden>
-        <p class="hus-ingress">
-          Det Neam skal vite om huset uansett hvilken side han står på.
-          Skriv i vanlige setninger — det er en språkmodell som leser det.
-        </p>
-        <div id="husFelter"></div>
-        <div class="hus-knapper">
-          <button type="button" class="btn btn-ghost" onclick="lukkHus()">Avbryt</button>
-          <button type="button" class="btn btn-ny" id="husLagre" onclick="lagreHus()">Lagre</button>
-        </div>
-      </div>
-    </section>
-
-  </div>
+  </section>
 
   <footer>
     <span id="hvem"></span>
@@ -432,6 +440,28 @@ input,select,textarea{font-size:16px}
     <button class="ut" onclick="loggUt()">Logg ut</button>
   </footer>
 
+</div>
+
+<!-- Huset. Egen visning, ikke egen fil - se kommentaren i CSS-en.
+     Naas fra hoeyrefemmeren og fra index.html?huset. -->
+<div id="huset" hidden>
+  <div class="hus-topp">
+    <span class="hus-tittel">Huset</span>
+    <span class="hus-status" id="husNote">…</span>
+    <button type="button" class="hus-tilbake" onclick="lukkHus()">Tilbake</button>
+  </div>
+
+  <div class="hus-kort" id="husSkjema">
+    <p class="hus-ingress">
+      Det Neam skal vite om huset uansett hvilken side han står på.
+      Skriv i vanlige setninger — det er en språkmodell som leser det.
+    </p>
+    <div id="husFelter"></div>
+    <div class="hus-knapper">
+      <button type="button" class="btn btn-ghost" onclick="lukkHus()">Avbryt</button>
+      <button type="button" class="btn btn-ny" id="husLagre" onclick="lagreHus()">Lagre</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -689,6 +719,11 @@ function start(){
   startet = true;
   tegnKlokke();
   setInterval(tegnKlokke, 10000);
+  /* Herfra, ikke fra en egen oppstart nederst: Huset skal aapnes FOERST
+     naar porten er passert. start() kalles av slippInn(), og de tre
+     skriptblokkene er ferdig lastet lenge foer det - oppstart() venter paa
+     et Graph-kall. */
+  if(typeof husFraUrl === 'function') husFraUrl();
 }
 
 /* hent på nytt når skjermen vekkes */
@@ -798,41 +833,90 @@ function husSammendrag(reg){
                         : 'ikke satt opp';
 }
 
-async function vekslHus(){
-  const skjema = document.getElementById('husSkjema');
-  if(!skjema) return;
-  if(!skjema.hidden){ await lukkHus(); return; }
+/* Aapner visningen. Feltene fylles foer den vises, ikke etter: et skjema
+   som staar tomt et halvsekund og saa fyller seg selv ser ut som om noe
+   ble skrevet inn av seg selv. */
+async function aapneHus(){
+  const hus   = document.getElementById('huset');
+  const skall = document.getElementById('shell');
+  if(!hus || !hus.hidden) return;
 
-  const knapp = document.getElementById('husKnapp');
-  knapp.disabled = true;
   let reg = {};
   try{ reg = await lesHusregister(true); }
   catch(e){ /* lesHusregister svelger selv - dette er bare en vakt */ }
-  knapp.disabled = false;
 
   husTegn(reg);
-  skjema.hidden = false;
-  knapp.textContent = 'Lukk';
-  knapp.setAttribute('aria-expanded', 'true');
+  husSammendrag(reg);
+  if(skall) skall.hidden = true;
+  hus.hidden = false;
+  window.scrollTo(0, 0);
+
   /* Avtrykket tas ETTER at feltene er fylt, ellers ser avbryt-regelen
      utfyllingen som en endring brukeren har gjort. */
   huskSkjema('husSkjema');
-}
 
-function husLukkNa(){
-  const skjema = document.getElementById('husSkjema');
-  const knapp = document.getElementById('husKnapp');
-  if(skjema) skjema.hidden = true;
-  if(knapp){
-    knapp.textContent = 'Rediger';
-    knapp.setAttribute('aria-expanded', 'false');
+  /* Egen historikkoppfoering, saa tilbakeknappen gaar til forsiden og ikke
+     ut av Neam. Samme moenster som visningene i oppskrifter og
+     handleliste. */
+  if(!(history.state && history.state.huset)){
+    history.pushState({huset:1}, '', '?huset');
+    husPushet = true;
   }
 }
 
-/* Avbryt spoer bare naar noe faktisk er skrevet siden panelet ble
+/* Sant bare naar VI la inn oppfoeringen. Kom man rett inn paa
+   index.html?huset, finnes det ingenting bak - og et history.back() der
+   ville tatt brukeren UT av Neam i stedet for til forsiden. */
+let husPushet = false;
+
+/* Skjuler uten aa spoerre og uten aa roere historikken. Brukes baade av
+   lukkHus() og av popstate, som har ryddet historikken selv. */
+function husLukkNa(){
+  const hus   = document.getElementById('huset');
+  const skall = document.getElementById('shell');
+  if(hus)   hus.hidden = true;
+  if(skall) skall.hidden = false;
+}
+
+/* Avbryt spoer bare naar noe faktisk er skrevet siden visningen ble
    aapnet - avbryt-regelen. */
 async function lukkHus(){
-  await avbrytSkjema('husSkjema', husLukkNa);
+  await avbrytSkjema('husSkjema', function(){
+    if(husPushet){
+      husPushet = false;
+      /* back() utloeser popstate, som gjoer selve skjulingen. */
+      history.back();
+    }else{
+      husLukkNa();
+      history.replaceState({}, '', location.pathname);
+    }
+  });
+}
+
+/* Nettleserens tilbakeknapp kan ikke stoppes for en bekreftelse, saa den
+   lukker uten aa spoerre. Det er en bevisst luke i avbryt-regelen: alt
+   annet er verre - enten en dialog som kommer etter at sida alt har
+   gaatt, eller en historikk som ikke virker. */
+window.addEventListener('popstate', function(){
+  const hus = document.getElementById('huset');
+  if(!hus) return;
+  if(!hus.hidden){
+    husPushet = false;
+    husLukkNa();
+  }else if(history.state && history.state.huset){
+    /* Fram-knappen. Oppfoeringen finnes alt, saa aapneHus() pusher ikke. */
+    aapneHus();
+  }
+});
+
+/* index.html?huset gaar rett inn. Kalles fra start(), altsaa etter porten. */
+function husFraUrl(){
+  if(!new URLSearchParams(location.search).has('huset')) return;
+  /* Merk oppfoeringen som finnes fra foer i stedet for aa legge til en ny.
+     Uten dette ville ?huset staatt to ganger i historikken, og foerste
+     tilbaketrykk hadde lukket visningen uten aa endre adressen. */
+  history.replaceState({huset:1}, '', location.pathname + '?huset');
+  aapneHus();
 }
 
 async function lagreHus(){
@@ -853,7 +937,9 @@ async function lagreHus(){
     /* Avtrykket settes paa nytt, ellers spoer Avbryt om noe som alt
        er lagret. */
     huskSkjema('husSkjema');
-    husLukkNa();
+    /* Visningen blir staaende. Aa kastes ut til forsiden i det man lagrer
+       gjoer det umulig aa fylle ut to bolker etter hverandre, og lagring
+       er ikke det samme som «ferdig». */
   }catch(e){
     console.warn('Fikk ikke lagret husregisteret:', e);
     varsle('Fikk ikke lagret husregisteret. Prøv igjen om litt.');
@@ -865,7 +951,7 @@ async function lagreHus(){
 /* Oppstartssjekk. En vakt som `if(!el) return;` hopper stille over hele
    jobben naar et element mangler, og feilsoekingen gaar da i feil
    retning i flere runder. Fem linjer, gratis. */
-['husSkjema','husFelter','husNote','husKnapp','husLagre'].forEach(function(id){
+['huset','husSkjema','husFelter','husNote','husLagre'].forEach(function(id){
   if(!document.getElementById(id)) console.warn('Mangler:', id);
 });
 
@@ -888,6 +974,31 @@ window.neamBakgrunn = async function(){
   + 'FORSIDEN EIER INGENTING ANNET. Du kan lese hele huset herfra, men skal '
   + 'noe endres, hører det hjemme i en app - si hvilken, så går brukeren dit.';
   return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
+};
+
+/* ---- Sidas egne handlinger: hoeyrefemmeren ----
+   Forsiden eier huset, og det er den ene handlingen som hoerer hjemme
+   her. De tre andre plassene staar ledige inntil videre - de tegnes
+   dempet og sier fra at de er tomme, som paa de andre sidene.
+
+   Settet hentes ved hver aapning, saa knappen betyr det den skal der du
+   staar: «Huset» fra forsiden, «Lukk huset» naar du alt er inne. */
+window.neamSideHandlinger = function(){
+  const hus = document.getElementById('huset');
+  const inne = hus && !hus.hidden;
+  return [
+    { plass:'ov',
+      navn: inne ? 'Lukk huset' : 'Huset',
+      ikon: inne
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+          + 'stroke-linecap="round" stroke-linejoin="round">'
+          + '<path d="M18 6 6 18M6 6l12 12"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+          + 'stroke-linecap="round" stroke-linejoin="round">'
+          + '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>'
+          + '<path d="M10 21v-6h4v6"/></svg>',
+      gjor: function(){ if(inne) lukkHus(); else aapneHus(); } }
+  ];
 };
 
 /* ---- Husets leseverktoey ----
