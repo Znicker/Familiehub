@@ -45,7 +45,17 @@ body{
   padding:28px 28px calc(28px + env(safe-area-inset-bottom));
   -webkit-user-select:none;user-select:none;
 }
-.shell{max-width:1180px;margin:0 auto}
+/* Het .shell / #shell til 29. august 2026. Navnet var greit da den var
+   alt som fantes paa sida, men «skall» betyr alt tre ting i prosjektet:
+   felles-skall.css (app-moensteret med topplinje og faner, som index ikke
+   engang laster), kalenderens egen .shell, og hub.html-ramma som kommer i
+   7.5 og skal eie identitet og navigasjon.
+
+   Denne er ingen av dem. Den er én av tre visninger paa forsiden, ved
+   siden av #port og #huset, og navnet sier naa hva den faktisk er: det du
+   ser naar porten er passert. Én av de aatte navnekollisjonene mot
+   kalender i kartlegging del 1 er dermed borte. */
+#innside{max-width:1180px;margin:0 auto}
 
 /* ---------- Topplinje ---------- */
 /* Tre spor med 1fr paa hver side holder merket i midten av linja uansett
@@ -525,7 +535,7 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
-<div class="shell" id="shell" hidden>
+<div id="innside" hidden>
 
   <div class="top">
     <div class="brand">
@@ -749,7 +759,7 @@ function slippInn(){
   const p = document.getElementById('port');
   p.hidden = true;
   p.style.display = 'none';
-  const s = document.getElementById('shell');
+  const s = document.getElementById('innside');
   s.hidden = false;
   s.style.display = '';
   if(A.me){
@@ -994,7 +1004,7 @@ function husSammendrag(reg){
    ble skrevet inn av seg selv. */
 async function aapneHus(){
   const hus   = document.getElementById('huset');
-  const skall = document.getElementById('shell');
+  const skall = document.getElementById('innside');
   if(!hus || !hus.hidden) return;
 
   let reg = {};
@@ -1030,7 +1040,7 @@ let husPushet = false;
    lukkHus() og av popstate, som har ryddet historikken selv. */
 function husLukkNa(){
   const hus   = document.getElementById('huset');
-  const skall = document.getElementById('shell');
+  const skall = document.getElementById('innside');
   if(hus)   hus.hidden = true;
   if(skall) skall.hidden = false;
   husHandtak(false);
