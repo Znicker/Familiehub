@@ -350,14 +350,11 @@ body{
    ?v-nummer i fem HTML-filer. Den flyttes naar neste side gaas gjennom -
    da bumpes versjonen én gang for alle. */
 .neam-femmer .neam-terning.doed{ display:none; }
-/* Inne i Huset er det bare én ting man vil: ut igjen. Da staar krysset
-   der merket sto, og haandtaket lukker med ett trykk i stedet for aa
-   aapne en femmer med ett valg i. */
-.neam-handtak.lukk{
-  background:var(--paper); box-shadow:0 4px 14px rgba(44,62,80,.28);
-  border-radius:50%; align-items:center; color:var(--ink-soft);
-}
-.neam-handtak.lukk svg{ width:24px; height:24px; }
+/* Inne i Huset er det bare én ting man vil: ut igjen. Da staar
+   Avbryt-merket der Innstillinger sto, og haandtaket lukker med ett trykk
+   i stedet for aa aapne en femmer med ett valg i.
+   Samme stil som .eget - det er samme knapp med et annet merke, ikke en
+   annen slags knapp. */
 
 /* ---------- Huset som egen visning ----------
    Registeret laa i et sammenklappet panel paa forsiden. Fem tekstbokser
@@ -1145,8 +1142,9 @@ window.neamBakgrunn = async function(){
    filnavnet endret seg, og nettleseren serverte da den gamle versjonen fra
    cache - samme felle som brente versjonsnumrene for fellesfilene. Bumpes
    naar bildet endres. */
-const MERKE_INNSTILLINGER = '/bilder/merke-innstillinger.png?v=2';
-const MERKE_HUSREGISTER   = '/bilder/merke-husregister.png?v=2';
+const MERKE_INNSTILLINGER = '/bilder/merke-innstillinger.png?v=3';
+const MERKE_HUSREGISTER   = '/bilder/merke-husregister.png?v=3';
+const MERKE_AVBRYT        = '/bilder/merke-avbryt.png?v=3';
 
 function husHandtak(inne){
   const h = document.getElementById('neamSideHandtak');
@@ -1160,14 +1158,11 @@ function husHandtak(inne){
   }
 
   if(!h) return;
-  h.classList.toggle('lukk', !!inne);
-  h.classList.toggle('eget', !inne);
+  h.classList.add('eget');
   if(inne){
-    h.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                + 'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
-                + '<path d="M18 6 6 18M6 6l12 12"/></svg>';
+    h.innerHTML = '<img src="' + MERKE_AVBRYT + '" alt="">';
     h.onclick = lukkHus;
-    h.title = 'Lukk huset';
+    h.title = 'Avbryt';
     h.setAttribute('aria-label', 'Lukk huset');
   }else{
     h.innerHTML = '<img src="' + MERKE_INNSTILLINGER + '" alt="">';
