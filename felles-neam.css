@@ -313,6 +313,37 @@
 .neam-send:disabled{ background:var(--line); cursor:default; }
 .neam-send:not(:disabled):active{ transform:scale(.94); }
 
+/* ---------- Sidefemmeren - hoeyre hjoerne ----------
+   Speilvendt av venstre, og med sidas eget merke paa haandtaket.
+   Skillet som gjelder: venstre er «ut og Neam», hoeyre er «her og naa».
+
+   Posisjonsklassene beholder betydningen sin - .ov er oppe venstre
+   ogsaa her - men maales fra hoeyre kant, saa terningbildet speiles
+   og hjoernet er det samme. */
+.neam-handtak.side{ left:auto; right:20px; }
+.neam-femmer.side{ left:auto; right:20px; }
+.neam-femmer.side .neam-terning{ left:auto; right:51px; }
+.neam-femmer.side .neam-terning.midt{ left:auto; right:47px; }
+.neam-femmer.side.oppe .neam-terning.midt{ right:47px; }
+.neam-femmer.side.oppe .neam-terning.ov{ right:94px; bottom:94px; }
+.neam-femmer.side.oppe .neam-terning.oh{ right:8px;  bottom:94px; }
+.neam-femmer.side.oppe .neam-terning.nv{ right:94px; bottom:8px;  }
+.neam-femmer.side.oppe .neam-terning.nh{ right:8px;  bottom:8px;  }
+/* .nv er dempet paa venstre side fordi den er veien ut. Her er den en
+   plass som alle andre, saa dempingen maa tilbakestilles. */
+.neam-femmer.side .neam-terning.nv{
+  background:var(--paper); color:var(--ink);
+  box-shadow:0 4px 14px rgba(44,62,80,.28);
+}
+/* En plass ingen har meldt inn staar der, dempet. Den skjules ikke:
+   fem faste posisjoner man laerer utenat er hele poenget, og en femmer
+   med tre knapper paa én side og fem paa en annen laerer haanden
+   ingenting. Aerligere aa vise at plassen finnes og er tom. */
+.neam-femmer .neam-terning.doed{
+  background:var(--bg-2); color:var(--line);
+  box-shadow:0 2px 6px rgba(44,62,80,.12);
+}
+
 /* ---------- Smal skjerm ---------- */
 /* Panelet blir et ark fra bunnen. Haandtaket staar der det staar -
    det er under panelet uansett. */
