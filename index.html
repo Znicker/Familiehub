@@ -11,6 +11,8 @@
 <link rel="apple-touch-icon" href="/bilder/neam-robot.png">
 <title>Neam</title>
 <link rel="stylesheet" href="/felles-rot.css?v=1">
+<link rel="stylesheet" href="/felles-dialog.css?v=1">
+<link rel="stylesheet" href="/felles-neam.css?v=10">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -721,5 +723,12 @@ function settToppNavn(fulltNavn){
   if(lagret) settToppNavn(lagret);
 })();
 </script>
+
+<!-- Neam: samme femmer som paa de andre sidene. Dialog-fila foerst,
+     den baerer varsle() som lys-knappen bruker. Paa forsiden er hjem og
+     applista litt dobbelt opp mot flisene - men grepet skal vaere likt
+     overalt, og senere er dette veien til aa snakke med Neam herfra. -->
+<script src="/felles-dialog.js?v=1"></script>
+<script src="/felles-neam.js?v=24"></script>
 </body>
 </html>
