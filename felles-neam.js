@@ -614,15 +614,30 @@ async function neamKjor(blokk, defer){
     const varGjemt = gjemt ? gjemt.hidden : true;
     if(gjemt) gjemt.hidden = true;
     let svar = null;
+    let sprakk = null;
     try{
       svar = await def.neamSkjerm(blokk.input || {});
     }catch(e){
-      console.warn('neamSkjerm(' + blokk.name + ') feilet:', e);
+      sprakk = e;
+      console.warn('neamSkjerm(' + blokk.name + ') feilet:', e,
+                   '\nargumentene den fikk:', blokk.input);
       svar = null;
     }finally{
       if(gjemt) gjemt.hidden = varGjemt;
       neamTegn();
     }
+
+    /* Kom skjermen tilbake med én gang uten aa vise noe, er det en feil hos
+       oss - ikke et valg brukeren tok. Da skal det staa i panelet, ikke
+       forsvinne som «brukeren gjorde ingenting». */
+    if(sprakk){
+      neamPoster.push({ feil:'Skjermen for «' + blokk.name + '» kunne ikke åpnes: '
+                           + ((sprakk && sprakk.message) || 'ukjent feil')
+                           + '. Se konsollen.' });
+      return { type:'tool_result', tool_use_id:blokk.id, is_error:true,
+               content:'Skjermen kunne ikke åpnes: ' + ((sprakk && sprakk.message) || 'ukjent feil') };
+    }
+
     if(svar === null || svar === undefined){
       return { type:'tool_result', tool_use_id:blokk.id,
                content:'Brukeren lukket skjermen uten å gjøre noe. Ikke gjenta forslaget - spør om noe annet.' };

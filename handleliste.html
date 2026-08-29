@@ -1063,7 +1063,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=20"></script>
+<script src="/felles-neam.js?v=21"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -6894,7 +6894,12 @@ let impSvar = null;
 
 function neamImportSkjerm(arg){
   const rader = Array.isArray(arg.varer) ? arg.varer : [];
-  if (!rader.length) return Promise.resolve(null);
+  /* Tom liste er ikke et valg brukeren tok - det er at Neam sendte
+     ingenting. Da skal det sies, ikke bli borte i «gjorde ingenting». */
+  if (!rader.length){
+    console.warn('foresla_import kom uten varer. Argumentene:', arg);
+    throw new Error('Ingen varer i forslaget');
+  }
 
   document.getElementById('imp-undertittel').textContent =
     rader.length + (rader.length === 1 ? ' vare' : ' varer') + ' til ' + neamOktNavn(arg)
