@@ -43,7 +43,15 @@
      den: mangler fila, eller er den ikke lastet ennaa, staar gradienten
      igjen og sida ser fortsatt ferdig ut. Egen variabel, ikke
      --bg-1/--bg-2: de to er flatetoner brukt paa topplinje, rutenett og
-     celler, og skal ikke foelge bakgrunnen naar den endres. */
+     celler, og skal ikke foelge bakgrunnen naar den endres.
+
+     TO FILER, én per retning - se @media nederst i fila. Motivet er en
+     ramme og ikke et motiv, saa den staaende er den samme fila dreid 90
+     grader: roerene bytter fra sidekantene til topp og bunn, og
+     tannhjulene blir liggende i andre hjoerner. Det virker fordi
+     ingenting i bildet har en opp-ned. Med bare den liggende ville
+     `cover` paa telefon i staaende beskaaret vekk begge sidekantene -
+     altsaa halve komposisjonen. */
   --side-bakgrunn:url('/bilder/bakgrunn.webp') center center / cover no-repeat fixed,
                   linear-gradient(160deg,#F6F1E7 0%,#EDE6D9 100%);
   /* Mild flate for grupperingsbokser. Var kjoelig blaa (#EDF3F8) og
@@ -84,6 +92,31 @@
      kraftigere og litt varmere. */
   --shadow:0 2px 14px rgba(44,62,80,.10);
 }
+
+/* ------------------------------------------------------------
+   Bakgrunnen per retning
+   ------------------------------------------------------------
+   Staaende faar den dreide fila. `orientation` er riktig maal her -
+   det er sideforholdet paa vinduet det gjelder, ikke stoerrelsen, saa
+   dette er unntaket fra regelen om at LANDSKAP-betingelsen skal ha
+   hoeydekrav. Et smalt PC-vindu skal ha den staaende av samme grunn
+   som en telefon.
+   ------------------------------------------------------------ */
+@media (orientation: portrait){
+  :root{
+    --side-bakgrunn:url('/bilder/bakgrunn-staaende.webp') center center / cover no-repeat fixed,
+                    linear-gradient(160deg,#F6F1E7 0%,#EDE6D9 100%);
+  }
+}
+
+/* `fixed` er det som gjoer at ramma staar stille mens innholdet ruller -
+   uten den vandrer roerene oppover og bildet slutter aa vaere en ramme.
+   Men iOS Safari tegner faste bakgrunner om ved hver rullebevegelse, og
+   paa lange lister merkes det. Er det treigt paa telefon, er DETTE
+   knappen aa vri paa foerst: bytt `fixed` til `scroll` i begge blokkene
+   over og se om det loesner. */
+
+/* ------------------------------------------------------------ */
 
 /* iPad: kjoekkenbenken og veggen. Leses paa avstand, alt et hakk opp. */
 @media(min-width:700px){
