@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Neam">
-<meta name="theme-color" content="#F5F5F5">
+<meta name="theme-color" content="#F6F1E7">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <link rel="apple-touch-icon" href="/bilder/neam-robot.png">
 <title>Neam</title>
@@ -28,17 +28,16 @@
     --shadow-lift:0 14px 30px rgba(44,62,80,.16);
   }
 
-/* iPad: leses paa avstand, alt et hakk opp */
-
-/* PC: naert oeye, taaler tett informasjon - tilbake til mobilskalaen,
-   men klokka blir staaende stor. */
-
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;min-height:100%}
 body{
   font-family:'Archivo',sans-serif;color:var(--ink);
+  /* background-attachment:fixed er fjernet 29. august 2026. Bakgrunnen
+     er et fast lag (body::before i felles-rot.css), og --side-bakgrunn er
+     gjennomsiktig - det er ingenting igjen her aa feste. Regelen var en
+     rest fra gradienten, og den peker mot noeyaktig den iOS-fella som
+     gjorde at bildelaget maatte lages. */
   background:var(--side-bakgrunn);
-  background-attachment:fixed;
   padding:28px 28px calc(28px + env(safe-area-inset-bottom));
   -webkit-user-select:none;user-select:none;
 }
@@ -76,7 +75,6 @@ body{
 /* ---------- Rutenett ---------- */
 /* Index er landingssiden: klokke, overskrift og appene. Ingenting mer. */
 .grid{display:grid;grid-template-columns:1fr;gap:22px;align-items:start}
-@media(max-width:900px){.grid{grid-template-columns:1fr}}
 
 /* ---------- Telefon ----------
    .top er en flex-rad der .brand hadde flex-shrink:0 og aldri ga etter,
@@ -95,7 +93,7 @@ body{
 }
 
 .panel{
-  background:var(--paper);border-radius:18px;padding:22px;
+  background:var(--paper);border-radius:var(--radius);padding:22px;
   box-shadow:var(--shadow);
 }
 .panel-head{
@@ -127,14 +125,19 @@ body{
 .panel-apper{position:relative}
 .app{min-width:0}
 
-/* Vaeret i toppraden */
-
 .app{
   /* Kvadrat: hoeyden foelger bredden. Var 186px fast, som ga en hoey smal
      boks naar kolonnen krympet - og da maatte navnet brekkes i tre. */
   aspect-ratio:1;justify-content:center;min-height:0;
   text-decoration:none;color:inherit;background:var(--bg-2);
-  border:1px solid var(--line);border-radius:16px;
+  /* --boks-kant, ikke --line: flisen er en flate man trykker paa, ikke en
+     skillestrek. Etter varmingen ligger --bg-2 og --paper saa taett at
+     kanten baerer hele skillet mellom flis og kort alene.
+     MERK: selve FLATA staar med vilje. Merkelappene er ugjennomsiktige
+     PNG-er med kald grabakgrunn (#F7F7F7 maalt i robot.png), og en varmere
+     flis ville lagt en varm ramme rundt en kald bildeflate. Flata tas naar
+     ikonene har gjennomsiktige hjoerner. */
+  border:1px solid var(--boks-kant);border-radius:16px;
   padding:22px 14px 18px;text-align:center;
   display:flex;flex-direction:column;align-items:center;
   transition:transform .18s ease,box-shadow .18s ease;
@@ -239,13 +242,6 @@ body{
   text-transform:uppercase;
 }
 
-/* ---------- Vær ---------- */
-
-.msg{font-size:var(--t-brod);color:var(--ink-soft);padding:8px 0;line-height:1.5}
-.msg.err{color:#B4443A}
-
-/* ---------- Bunn ---------- */
-
 /* ---------- Innloggingsport ---------- */
 #port{
   min-height:100vh;min-height:100dvh;
@@ -282,7 +278,7 @@ body{
   display:block;margin-top:24px;font-family:'IBM Plex Mono',monospace;
   font-size:var(--t-etikett);color:var(--ink-soft);line-height:1.7;
 }
-#port small.feil{color:#B4443A}
+#port small.feil{color:var(--danger)}
 .ut{
   font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);
   background:none;border:1px solid var(--line);border-radius:999px;
@@ -576,7 +572,6 @@ function slippInn(){
     /* Samme kilde som bunnteksten — den er riktig hver gang.
        Lagres slik at oppskrifter og handleliste kan bruke den ogsaa,
        siden de ikke selv snakker med Microsoft Graph. */
-    if(typeof settToppNavn === 'function') settToppNavn(fullt);
     if(typeof vurderDashFlis === 'function') vurderDashFlis().catch(function(){});
     try{ if(fullt) localStorage.setItem('fh_navn', fullt); }catch(_){}
   }
@@ -671,8 +666,6 @@ function loggUt2(melding){
 </script>
 
 <script>
-/* ====== Innstillinger ====== */
-
 /* ====== Klokke ====== */
 const DAGER = ['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'];
 const MND = ['januar','februar','mars','april','mai','juni',
@@ -689,23 +682,6 @@ function tegnKlokke(){
 }
 /* startes av start() etter innlogging */
 
-/* ====== Værkoder (WMO) ====== */
-const WMO = {
-  0:['☀️','Klarvær'], 1:['🌤️','Stort sett klart'], 2:['⛅','Delvis skyet'], 3:['☁️','Skyet'],
-  45:['🌫️','Tåke'], 48:['🌫️','Rimtåke'],
-  51:['🌦️','Lett yr'], 53:['🌦️','Yr'], 55:['🌧️','Kraftig yr'],
-  56:['🌧️','Underkjølt yr'], 57:['🌧️','Underkjølt yr'],
-  61:['🌦️','Lett regn'], 63:['🌧️','Regn'], 65:['🌧️','Kraftig regn'],
-  66:['🌧️','Underkjølt regn'], 67:['🌧️','Underkjølt regn'],
-  71:['🌨️','Lett snø'], 73:['🌨️','Snø'], 75:['❄️','Kraftig snø'], 77:['🌨️','Snøkorn'],
-  80:['🌦️','Regnbyger'], 81:['🌧️','Regnbyger'], 82:['⛈️','Kraftige byger'],
-  85:['🌨️','Snøbyger'], 86:['❄️','Kraftige snøbyger'],
-  95:['⛈️','Torden'], 96:['⛈️','Torden med hagl'], 99:['⛈️','Kraftig torden']
-};
-const kode = c => WMO[c] || ['🌡️','—'];
-const rund = v => Math.round(v);
-
-/* ====== Vær ====== */
 /* ====== Startes når innloggingen er bekreftet ====== */
 let startet = false;
 function start(){
@@ -926,19 +902,15 @@ window.neamUtfor = async function(navn, arg){
   throw new Error('Ukjent verktøy: ' + navn);
 };
 
-function settToppNavn(fulltNavn){
-  const el = document.getElementById('innlogget-navn');
-  const fornavn = String(fulltNavn || '').trim().split(/\s+/)[0] || '';
-  if(el) el.textContent = fornavn;
-}
+/* settToppNavn() sto her til 29. august 2026. Den skrev fornavnet til
+   #innlogget-navn - et element som forsvant da merkelappen fikk navnet
+   inn i selve bildet. Funksjonen kjoerte altsaa uten virkning, og den
+   samme oppstarts-IIFE-en leste fh_navn fra localStorage bare for aa gi
+   den videre.
 
-/* Vis et eventuelt lagret navn med en gang, saa det ikke blinker tomt
-   mens Graph-kallet paagaar. Overskrives naar det ekte svaret kommer. */
-(function(){
-  let lagret = null;
-  try{ lagret = localStorage.getItem('fh_navn'); }catch(_){}
-  if(lagret) settToppNavn(lagret);
-})();
+   SKRIVINGEN av fh_navn i slippInn() staar igjen, og maa staa: oppskrifter
+   og handleliste har ingen Microsoft-innlogging og henter navnet derfra.
+   Innlogget bruker vises i bunnlinja (#hvem). */
 </script>
 
 <!-- Neam: samme femmer som paa de andre sidene. Dialog-fila foerst,
