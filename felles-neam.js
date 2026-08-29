@@ -702,6 +702,63 @@ async function neamKjor(blokk, defer){
 }
 
 /* ============================================================
+   Femmeren - logikk
+   ============================================================ */
+
+/* Appene i huset. Nøklet paa sti, saa knappen for sida man alt
+   staar paa kan utelates - en lenke til seg selv er stoey. */
+const NEAM_APPER = [
+  { sti:'/handleliste.html', navn:'Handleliste' },
+  { sti:'/oppskrifter.html', navn:'Matlaging'   },
+  { sti:'/kalender.html',    navn:'Kalender'    },
+  { sti:'/dashboard.html',   navn:'Kjøkken'     }
+];
+
+function neamFemmer(){
+  const f = document.getElementById('neamFemmer');
+  const h = document.getElementById('neamHandtak');
+  if(!f || !h) return;
+  h.hidden = true;
+  f.hidden = false;
+  /* Neste ramme, saa overgangen faktisk spilles - et element som faar
+     klassen i samme ramme som det vises hopper rett til sluttbildet. */
+  requestAnimationFrame(function(){ f.classList.add('oppe'); });
+  document.addEventListener('pointerdown', neamFemmerUtenfor, true);
+}
+
+function neamFemmerNed(){
+  const f = document.getElementById('neamFemmer');
+  const h = document.getElementById('neamHandtak');
+  if(!f || !h) return;
+  f.classList.remove('oppe');
+  const apper = document.getElementById('neamApper');
+  if(apper) apper.hidden = true;
+  document.removeEventListener('pointerdown', neamFemmerUtenfor, true);
+  /* Vent til knappene har trukket seg sammen foer laget gjemmes. */
+  setTimeout(function(){ f.hidden = true; h.hidden = false; }, 190);
+}
+
+/* Trykk utenfor legger ned - femmeren skal aldri bli staaende og
+   dekke et hjoerne av en side man er ferdig med den paa. */
+function neamFemmerUtenfor(ev){
+  const f = document.getElementById('neamFemmer');
+  if(f && !f.contains(ev.target)) neamFemmerNed();
+}
+
+function neamVisApper(){
+  const boks = document.getElementById('neamApper');
+  if(!boks) return;
+  if(!boks.hidden){ boks.hidden = true; return; }
+  const her = location.pathname;
+  boks.innerHTML = NEAM_APPER
+    .filter(function(a){ return a.sti !== her; })
+    .map(function(a){
+      return '<a class="neam-app-lenke" href="' + a.sti + '">' + a.navn + '</a>';
+    }).join('');
+  boks.hidden = false;
+}
+
+/* ============================================================
    Panelet
    ============================================================ */
 
@@ -716,8 +773,57 @@ function neamBygg(){
   handtak.title = 'Neam';
   handtak.setAttribute('aria-label', 'Snakk med Neam');
   handtak.innerHTML = '<img src="' + NEAM_MERKE + '" alt="">';
-  handtak.onclick = neamAapne;
+  handtak.onclick = neamFemmer;
   document.body.appendChild(handtak);
+
+  /* ============================================================
+     Femmeren
+     ------------------------------------------------------------
+     Ett trykk paa merket loefter det opp fra hjoernet og aapner
+     fire knapper rundt - som fem paa en terning. Retningene har
+     faste betydninger, like paa alle sidene:
+
+        oppe venstre   hjem (index)
+        oppe hoeyre    de andre appene
+        midten         samtalen
+        nede hoeyre    lys og Homey
+        nede venstre   legg ned femmeren
+
+     Fast geometri, ikke utregnet: hjoernet er alltid det samme,
+     og fem posisjoner man kan laere utenat er hele poenget med
+     terningbildet. */
+  const femmer = document.createElement('div');
+  femmer.className = 'neam-femmer';
+  femmer.id = 'neamFemmer';
+  femmer.hidden = true;
+
+  const knapp = function(id, hjorne, tekst, ikon){
+    return '<button type="button" class="neam-terning ' + hjorne + '" id="' + id + '"'
+         + ' aria-label="' + tekst + '" title="' + tekst + '">' + ikon + '</button>';
+  };
+  femmer.innerHTML =
+      knapp('neamTHjem',  'ov', 'Til forsiden',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+      + 'stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/>'
+      + '<path d="M5 9.5V21h14V9.5"/></svg>')
+    + knapp('neamTApper', 'oh', 'Andre apper',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+      + 'stroke-linecap="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/>'
+      + '<rect x="14" y="4" width="6" height="6" rx="1.5"/>'
+      + '<rect x="4" y="14" width="6" height="6" rx="1.5"/>'
+      + '<rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>')
+    + knapp('neamTLys',   'nh', 'Lys og Homey',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+      + 'stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.9.7 1.5 1.7 1.5 2.8V17h4v-.3c0-1.1.6-2.1 1.5-2.8A6 6 0 0 0 12 3z"/></svg>')
+    + knapp('neamTNed',   'nv', 'Legg ned',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '
+      + 'stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>')
+    + '<button type="button" class="neam-terning midt" id="neamTMidt" '
+    +   'aria-label="Snakk med Neam" title="Snakk med Neam">'
+    +   '<img src="' + NEAM_MERKE + '" alt=""></button>'
+    + '<div class="neam-apper" id="neamApper" hidden></div>';
+  document.body.appendChild(femmer);
 
   const bak = document.createElement('div');
   bak.className = 'neam-bak';
@@ -753,6 +859,17 @@ function neamBygg(){
   document.getElementById('neamLukk').onclick = neamLukk;
   document.getElementById('neamSend').onclick = neamSend;
   document.getElementById('neamNy').onclick   = neamNySamtale;
+  document.getElementById('neamTMidt').onclick = function(){ neamFemmerNed(); neamAapne(); };
+  document.getElementById('neamTNed').onclick  = neamFemmerNed;
+  document.getElementById('neamTHjem').onclick = function(){ location.href = '/'; };
+  document.getElementById('neamTApper').onclick = neamVisApper;
+  document.getElementById('neamTLys').onclick  = function(){
+    /* Homey er ikke koblet til ennaa. Sida kan tilby sin egen styring ved
+       aa definere neamLys() - da tar den over. Ellers sies det som det er,
+       i stedet for en knapp som later som. */
+    if(typeof window.neamLys === 'function'){ neamFemmerNed(); window.neamLys(); }
+    else if(typeof varsle === 'function') varsle('Lysstyring kommer - Homey er ikke koblet til ennå.');
+  };
   document.getElementById('neamModell').onclick = function(){
     /* Ikke midt i en tur: modellen som svarer skal vaere den som ble
        spurt. Byttet gjelder fra neste melding. */

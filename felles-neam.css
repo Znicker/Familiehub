@@ -39,6 +39,66 @@
 .neam-handtak img{ width:100%; height:auto; display:block; flex:none; }
 .neam-handtak:active{ transform:scale(.94); }
 
+/* ---------- Femmeren ----------
+   Fem paa en terning, forankret i samme hjoerne som haandtaket.
+   Midten staar der merket loefter seg til; de fire rundt kommer
+   fra midten og ut. Fast geometri - fem posisjoner man laerer
+   utenat er hele poenget med terningbildet. */
+.neam-femmer{
+  position:fixed; z-index:91;
+  left:20px; bottom:calc(24px + env(safe-area-inset-bottom));
+  width:150px; height:150px;
+  pointer-events:none;         /* bare knappene tar trykk */
+}
+.neam-femmer[hidden]{ display:none; }
+.neam-terning{
+  position:absolute; pointer-events:auto;
+  width:48px; height:48px; border-radius:50%;
+  border:none; padding:0; cursor:pointer;
+  background:var(--paper); color:var(--ink);
+  box-shadow:0 4px 14px rgba(44,62,80,.28);
+  display:flex; align-items:center; justify-content:center;
+  /* Alle starter i midten og glir ut - det er formeringen. */
+  left:51px; bottom:51px;
+  opacity:0; transform:scale(.5);
+  transition:left .18s ease, bottom .18s ease, opacity .15s ease, transform .18s ease;
+}
+.neam-terning svg{ width:22px; height:22px; }
+.neam-terning:active{ transform:scale(.92); }
+.neam-terning.midt{
+  width:56px; height:56px; overflow:hidden; padding:0;
+  align-items:flex-start;      /* samme beskjaering som haandtaket */
+  left:47px; bottom:47px;
+  opacity:0; transform:scale(.7);
+}
+.neam-terning.midt img{ width:100%; height:auto; display:block; flex:none; }
+
+.neam-femmer.oppe .neam-terning{ opacity:1; transform:scale(1); }
+.neam-femmer.oppe .neam-terning.midt{ left:47px; bottom:47px; }
+.neam-femmer.oppe .neam-terning.ov{ left:8px;   bottom:94px; }
+.neam-femmer.oppe .neam-terning.oh{ left:94px;  bottom:94px; }
+.neam-femmer.oppe .neam-terning.nv{ left:8px;   bottom:8px;  }
+.neam-femmer.oppe .neam-terning.nh{ left:94px;  bottom:8px;  }
+
+/* Nede-venstre er veien ut, og skal se ut som det: dempet, ikke
+   sidestilt med handlingene. */
+.neam-terning.nv{ background:var(--bg-2); color:var(--ink-soft); box-shadow:0 2px 8px rgba(44,62,80,.18); }
+
+/* Applista - et lite ark over femmeren, forankret ved oppe-hoeyre. */
+.neam-apper{
+  position:absolute; pointer-events:auto;
+  left:94px; bottom:150px; min-width:150px;
+  background:var(--paper); border-radius:14px;
+  box-shadow:0 10px 30px rgba(44,62,80,.3);
+  padding:6px; display:flex; flex-direction:column;
+}
+.neam-apper[hidden]{ display:none; }
+.neam-app-lenke{
+  padding:11px 14px; border-radius:9px; text-decoration:none;
+  color:var(--ink); font-size:var(--t-meta); font-weight:600;
+}
+.neam-app-lenke:active{ background:var(--bg-2); }
+
 /* ---------- Panelet ---------- */
 /* Reiser seg fra haandtaket, ikke fra midten: det skal leses som at
    knappen ble stoerre, ikke som en ny skjerm. */
