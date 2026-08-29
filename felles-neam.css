@@ -84,20 +84,35 @@
    sidestilt med handlingene. */
 .neam-terning.nv{ background:var(--bg-2); color:var(--ink-soft); box-shadow:0 2px 8px rgba(44,62,80,.18); }
 
-/* Applista - et lite ark over femmeren, forankret ved oppe-hoeyre. */
+/* Applista - et lite ark over femmeren, forankret ved oppe-hoeyre.
+   Appene ligger paa rad, hver med sitt merke og navnet under - de samme
+   bildene som paa forsiden, saa en app kjennes igjen paa ikonet og ikke
+   maa leses. */
 .neam-apper{
   position:absolute; pointer-events:auto;
-  left:94px; bottom:150px; min-width:150px;
-  background:var(--paper); border-radius:14px;
+  left:50%; transform:translateX(-50%);
+  bottom:150px;
+  background:var(--paper); border-radius:16px;
   box-shadow:0 10px 30px rgba(44,62,80,.3);
-  padding:6px; display:flex; flex-direction:column;
+  padding:12px 10px; display:flex; gap:4px;
 }
 .neam-apper[hidden]{ display:none; }
 .neam-app-lenke{
-  padding:11px 14px; border-radius:9px; text-decoration:none;
-  color:var(--ink); font-size:var(--t-meta); font-weight:600;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  width:74px; padding:6px 2px; border-radius:12px;
+  text-decoration:none; color:var(--ink);
 }
 .neam-app-lenke:active{ background:var(--bg-2); }
+.neam-app-ikon{
+  width:48px; height:48px; border-radius:12px; overflow:hidden;
+  display:flex; align-items:flex-start; justify-content:center;
+  background:var(--paper);
+}
+.neam-app-ikon img{ width:100%; height:auto; display:block; }
+.neam-app-navn{
+  font-size:var(--t-etikett); font-weight:600; color:var(--ink);
+  text-align:center; line-height:1.2;
+}
 
 /* ---------- Panelet ---------- */
 /* Reiser seg fra haandtaket, ikke fra midten: det skal leses som at

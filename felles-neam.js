@@ -708,10 +708,10 @@ async function neamKjor(blokk, defer){
 /* Appene i huset. Nøklet paa sti, saa knappen for sida man alt
    staar paa kan utelates - en lenke til seg selv er stoey. */
 const NEAM_APPER = [
-  { sti:'/handleliste.html', navn:'Handleliste' },
-  { sti:'/oppskrifter.html', navn:'Matlaging'   },
-  { sti:'/kalender.html',    navn:'Kalender'    },
-  { sti:'/dashboard.html',   navn:'Kjøkken'     }
+  { sti:'/handleliste.html', navn:'Handleliste', ikon:'/bilder/merke-handleliste.png' },
+  { sti:'/oppskrifter.html', navn:'Matlaging',   ikon:'/bilder/merke-matlaging.png'   },
+  { sti:'/kalender.html',    navn:'Kalender',    ikon:'/bilder/merke-kalender.png'    },
+  { sti:'/dashboard.html',   navn:'Kjøkken',     ikon:'/bilder/merke-kjokken-dash.png' }
 ];
 
 function neamFemmer(){
@@ -753,7 +753,10 @@ function neamVisApper(){
   boks.innerHTML = NEAM_APPER
     .filter(function(a){ return a.sti !== her; })
     .map(function(a){
-      return '<a class="neam-app-lenke" href="' + a.sti + '">' + a.navn + '</a>';
+      return '<a class="neam-app-lenke" href="' + a.sti + '">'
+           +   '<span class="neam-app-ikon"><img src="' + a.ikon + '" alt=""></span>'
+           +   '<span class="neam-app-navn">' + a.navn + '</span>'
+           + '</a>';
     }).join('');
   boks.hidden = false;
 }
