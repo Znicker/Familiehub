@@ -201,10 +201,13 @@ body{
 .planlagt-knapp:active{background:var(--bg-1)}
 
 /* ---------- Hoeyrehaandtaket paa forsiden ----------
-   Forsidens merke er husregisteret, ikke roboten. Uten dette baerer baade
-   venstre og hoeyre hjoerne det SAMME robotmerket her - og skillet
-   «venstre er ut og Neam, hoeyre er her og naa» kollapser paa den ene sida
-   der de moetes.
+   Haandtaket er INNSTILLINGER - det er hvilestillingen, det man ser naar
+   ingenting er trykket. Husregisteret ligger inne i femmeren, oppe til
+   venstre, og naas naar man aapner den.
+
+   Uten dette baerer baade venstre og hoeyre hjoerne det SAMME robotmerket
+   paa forsiden, og skillet «venstre er ut og Neam, hoeyre er her og naa»
+   kollapser paa den ene sida der de moetes.
 
    Overstyres lokalt, ikke i felles-neam.js: en endring der maatte fulgt av
    et nytt ?v-nummer i alle fem HTML-filene, og forsidens merke er
@@ -213,11 +216,35 @@ body{
    Uten flate og uten sirkelklipp, som flisene: merket har eget omriss og
    et baand som stikker ut nederst, og en sirkel med overflow:hidden kapper
    baandet. Skyggen foelger da omrisset og ikke en usynlig boks. */
-.neam-handtak.hus{
+.neam-handtak.eget{
   background:none; box-shadow:none; overflow:visible; border-radius:0;
   align-items:center;
 }
-.neam-handtak.hus img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
+.neam-handtak.eget img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
+/* Midten i femmeren er det samme merket som haandtaket - den ER haandtaket
+   loeftet opp. Sirkelklippet slaas av av samme grunn som over. */
+.neam-femmer.side .neam-terning.midt.eget{
+  background:none; box-shadow:none; overflow:visible;
+  align-items:center; padding:0;
+}
+.neam-femmer.side .neam-terning.midt.eget img{
+  filter:drop-shadow(0 3px 9px rgba(44,62,80,.32));
+}
+/* Et merke i en terning. Fyller nesten hele, saa det er merket man ser og
+   ikke flata under. */
+.neam-terning img.merke{ width:44px; height:44px; display:block; }
+
+/* Tomme plasser skjules i stedet for aa staa dempet.
+   Dette snur regelen som staar i felles-neam.js: der er de doede plassene
+   tegnet med vilje, saa de fem posisjonene alltid er de samme og kan
+   laeres utenat. Men paa en side med ÉN handling ble det én knapp og tre
+   graa flekker, og de tre flekkene leste som noe i stykker.
+
+   LOKALT I INDEX, ikke i felles-neam.css: regelen gjelder alle fem sidene
+   og hoerer hjemme der, men fila deles av alle og en endring krever nytt
+   ?v-nummer i fem HTML-filer. Den flyttes naar neste side gaas gjennom -
+   da bumpes versjonen én gang for alle. */
+.neam-femmer .neam-terning.doed{ display:none; }
 /* Inne i Huset er det bare én ting man vil: ut igjen. Da staar krysset
    der merket sto, og haandtaket lukker med ett trykk i stedet for aa
    aapne en femmer med ett valg i. */
@@ -1009,13 +1036,23 @@ window.neamBakgrunn = async function(){
    Bygges av felles-neam.js nederst i body, altsaa etter denne blokka.
    DOMContentLoaded fyrer etter alle synkrone skript, saa haandtaket
    finnes garantert naar vi tar over det. */
-const HUS_MERKE = '/bilder/merke-husregister.png';
+const MERKE_INNSTILLINGER = '/bilder/merke-innstillinger.png';
+const MERKE_HUSREGISTER   = '/bilder/merke-husregister.png';
 
 function husHandtak(inne){
   const h = document.getElementById('neamSideHandtak');
+  const m = document.getElementById('neamSideMidt');
+
+  /* Midten i femmeren baerer samme merke som haandtaket - den er
+     haandtaket loeftet opp, ikke et nytt sted. */
+  if(m){
+    m.classList.add('eget');
+    m.innerHTML = '<img src="' + MERKE_INNSTILLINGER + '" alt="">';
+  }
+
   if(!h) return;
   h.classList.toggle('lukk', !!inne);
-  h.classList.toggle('hus', !inne);
+  h.classList.toggle('eget', !inne);
   if(inne){
     h.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
                 + 'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
@@ -1024,10 +1061,10 @@ function husHandtak(inne){
     h.title = 'Lukk huset';
     h.setAttribute('aria-label', 'Lukk huset');
   }else{
-    h.innerHTML = '<img src="' + HUS_MERKE + '" alt="">';
+    h.innerHTML = '<img src="' + MERKE_INNSTILLINGER + '" alt="">';
     h.onclick = neamSideFemmer;
-    h.title = 'Huset';
-    h.setAttribute('aria-label', 'Huset - handlinger');
+    h.title = 'Innstillinger';
+    h.setAttribute('aria-label', 'Innstillinger - handlinger');
   }
 }
 document.addEventListener('DOMContentLoaded', function(){ husHandtak(false); });
@@ -1042,10 +1079,7 @@ document.addEventListener('DOMContentLoaded', function(){ husHandtak(false); });
 window.neamSideHandlinger = function(){
   return [
     { plass:'ov', navn:'Husregisteret',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
-         + 'stroke-linecap="round" stroke-linejoin="round">'
-         + '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>'
-         + '<path d="M10 21v-6h4v6"/></svg>',
+      ikon:'<img class="merke" src="' + MERKE_HUSREGISTER + '" alt="">',
       gjor: aapneHus }
   ];
 };
