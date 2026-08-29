@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=5">
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=12">
+<link rel="stylesheet" href="/felles-neam.css?v=13">
 <!-- Datalaget baerer husregisteret og lastes foer sidens eget skript.
      felles-skjema.js gir avbryt-regelen paa husskjemaet og krever
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
@@ -231,140 +231,11 @@ body{
   align-items:center;
 }
 .neam-handtak.eget img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
-/* Midten i femmeren er det samme merket som haandtaket - den ER haandtaket
-   loeftet opp. Sirkelklippet slaas av av samme grunn som over. */
-.neam-femmer.side .neam-terning.midt.eget{
-  background:none; box-shadow:none; overflow:visible;
-  align-items:center; padding:0;
-}
-.neam-femmer.side .neam-terning.midt.eget img{
-  filter:drop-shadow(0 3px 9px rgba(44,62,80,.32));
-}
-/* Et merke i en terning staar uten flate, som haandtaket og som flisene.
-   Selektoren er id-en, ikke en klasse: sidehandlingene melder inn bare
-   ikon-HTML, ikke klasser paa selve knappen - men plassene har faste id-er.
-
-   Merket fyller knappen helt. Sto det paa 44px i en 56px midtknapp, ble de
-   to merkene ulikt store ved siden av hverandre, og det var det som saa
-   feil ut uten aa vaere det. */
-.neam-femmer.side .neam-terning#neamS_ov,
-.neam-femmer.side .neam-terning#neamS_oh,
-.neam-femmer.side .neam-terning#neamS_nv,
-.neam-femmer.side .neam-terning#neamS_nh{
-  background:none; box-shadow:none; overflow:visible;
-  align-items:center; padding:0;
-}
-.neam-terning img.merke{
-  width:100%; height:auto; display:block;
-  filter:drop-shadow(0 3px 9px rgba(44,62,80,.32));
-}
-
-/* ---------- Femmergeometrien ----------
-   Femmeren er tegnet i faste piksler i felles-neam.css (150/48/56, kant 8),
-   maalt for telefon i haanden. Paa kjoekken-iPaden leses den paa avstand og
-   paa PC med mus - begge taaler, og trenger, mer.
-
-   Tallene er derfor loeftet ut i variabler her, saa de tre stoerrelsene er
-   ÉN verdi hver og ikke ni tall som maa stemme overens. Ytterposisjonen er
-   regnet ut, ikke skrevet: boks minus knapp minus kant.
-
-   Ikke transform:scale() paa femmeren, selv om det hadde vaert én linje:
-   applista (.neam-apper) ligger inni og er position:fixed, og et fixed
-   element inne i et transformert element posisjoneres mot FORELDEREN og
-   ikke mot vinduet. Lista ville hoppet ut av skjermen.
-
-   LOKALT I INDEX inntil videre, som doed-regelen over - flyttes til
-   felles-neam.css naar neste side gaas gjennom. */
-:root{
-  --f-boks:150px; --f-knapp:48px; --f-midt:56px;
-  --f-kant:8px; --f-handtak:54px; --f-ikon:22px;
-}
-/* iPad, 40 % opp. Hoeydekrav ogsaa: 700px treffer en telefon i landskap,
-   og der er det bredden som er romslig, ikke skjermen. */
-@media(min-width:700px) and (min-height:600px){
-  :root{
-    --f-boks:210px; --f-knapp:67px; --f-midt:78px;
-    --f-kant:11px; --f-handtak:76px; --f-ikon:31px;
-  }
-}
-/* PC, dobbelt. */
-@media(min-width:1300px) and (min-height:600px){
-  :root{
-    --f-boks:300px; --f-knapp:96px; --f-midt:112px;
-    --f-kant:16px; --f-handtak:108px; --f-ikon:44px;
-  }
-}
-
-.neam-handtak{ width:var(--f-handtak); height:var(--f-handtak); }
-.neam-femmer{ width:var(--f-boks); height:var(--f-boks); }
-.neam-terning{
-  width:var(--f-knapp); height:var(--f-knapp);
-  left:calc((var(--f-boks) - var(--f-knapp)) / 2);
-  bottom:calc((var(--f-boks) - var(--f-knapp)) / 2);
-}
-.neam-terning.midt,
-.neam-femmer.oppe .neam-terning.midt{
-  width:var(--f-midt); height:var(--f-midt);
-  left:calc((var(--f-boks) - var(--f-midt)) / 2);
-  bottom:calc((var(--f-boks) - var(--f-midt)) / 2);
-}
-.neam-terning svg{ width:var(--f-ikon); height:var(--f-ikon); }
-.neam-femmer.oppe .neam-terning.ov{
-  left:var(--f-kant);
-  bottom:calc(var(--f-boks) - var(--f-knapp) - var(--f-kant));
-}
-.neam-femmer.oppe .neam-terning.oh{
-  left:calc(var(--f-boks) - var(--f-knapp) - var(--f-kant));
-  bottom:calc(var(--f-boks) - var(--f-knapp) - var(--f-kant));
-}
-.neam-femmer.oppe .neam-terning.nv{ left:var(--f-kant); bottom:var(--f-kant); }
-.neam-femmer.oppe .neam-terning.nh{
-  left:calc(var(--f-boks) - var(--f-knapp) - var(--f-kant));
-  bottom:var(--f-kant);
-}
-/* Applista laa paa 186px = boksen pluss 36. */
-.neam-apper{ bottom:calc(var(--f-boks) + 36px); }
-
-/* Hoeyre side: speilvendt, samme regnestykke maalt fra hoeyre kant. */
-.neam-femmer.side .neam-terning{
-  left:auto; right:calc((var(--f-boks) - var(--f-knapp)) / 2);
-}
-.neam-femmer.side .neam-terning.midt,
-.neam-femmer.side.oppe .neam-terning.midt{
-  left:auto; right:calc((var(--f-boks) - var(--f-midt)) / 2);
-}
-.neam-femmer.side.oppe .neam-terning.ov{
-  right:calc(var(--f-boks) - var(--f-knapp) - var(--f-kant));
-  bottom:calc(var(--f-boks) - var(--f-knapp) - var(--f-kant));
-}
-.neam-femmer.side.oppe .neam-terning.oh{
-  right:var(--f-kant);
-  bottom:calc(var(--f-boks) - var(--f-knapp) - var(--f-kant));
-}
-.neam-femmer.side.oppe .neam-terning.nv{
-  right:calc(var(--f-boks) - var(--f-knapp) - var(--f-kant));
-  bottom:var(--f-kant);
-}
-.neam-femmer.side.oppe .neam-terning.nh{
-  right:var(--f-kant); bottom:var(--f-kant);
-}
-
-/* Tomme plasser skjules i stedet for aa staa dempet.
-   Dette snur regelen som staar i felles-neam.js: der er de doede plassene
-   tegnet med vilje, saa de fem posisjonene alltid er de samme og kan
-   laeres utenat. Men paa en side med ÉN handling ble det én knapp og tre
-   graa flekker, og de tre flekkene leste som noe i stykker.
-
-   LOKALT I INDEX, ikke i felles-neam.css: regelen gjelder alle fem sidene
-   og hoerer hjemme der, men fila deles av alle og en endring krever nytt
-   ?v-nummer i fem HTML-filer. Den flyttes naar neste side gaas gjennom -
-   da bumpes versjonen én gang for alle. */
-.neam-femmer .neam-terning.doed{ display:none; }
-/* Inne i Huset er det bare én ting man vil: ut igjen. Da staar
-   Avbryt-merket der Innstillinger sto, og haandtaket lukker med ett trykk
-   i stedet for aa aapne en femmer med ett valg i.
-   Samme stil som .eget - det er samme knapp med et annet merke, ikke en
-   annen slags knapp. */
+/* Femmergeometrien, doed-regelen og flatefjerningen paa merkeknappene
+   laa her til 30. august 2026. Alt tre er flyttet til felles-neam.css i
+   samme slengen som femmeren ble en firer - de gjaldt alle fem sidene,
+   og laa lokalt bare fordi fellesfila ikke kunne bumpes uten aa roere
+   fem HTML-filer. Naa er den bumpet uansett. */
 
 /* ---------- Huset som egen visning ----------
    Registeret laa i et sammenklappet panel paa forsiden. Fem tekstbokser
@@ -1157,16 +1028,9 @@ const MERKE_HUSREGISTER   = '/bilder/merke-husregister.png?v=3';
 const MERKE_AVBRYT        = '/bilder/merke-avbryt.png?v=3';
 
 function husHandtak(inne){
+  /* Midtknappen er borte med fireren - haandtaket ER den, og blir
+     staaende naar menyen aapnes. */
   const h = document.getElementById('neamSideHandtak');
-  const m = document.getElementById('neamSideMidt');
-
-  /* Midten i femmeren baerer samme merke som haandtaket - den er
-     haandtaket loeftet opp, ikke et nytt sted. */
-  if(m){
-    m.classList.add('eget');
-    m.innerHTML = '<img src="' + MERKE_INNSTILLINGER + '" alt="">';
-  }
-
   if(!h) return;
   h.classList.add('eget');
   if(inne){
@@ -1176,7 +1040,7 @@ function husHandtak(inne){
     h.setAttribute('aria-label', 'Lukk huset');
   }else{
     h.innerHTML = '<img src="' + MERKE_INNSTILLINGER + '" alt="">';
-    h.onclick = neamSideFemmer;
+    h.onclick = neamSideFirer;
     h.title = 'Innstillinger';
     h.setAttribute('aria-label', 'Innstillinger - handlinger');
   }
@@ -1192,8 +1056,8 @@ document.addEventListener('DOMContentLoaded', function(){ husHandtak(false); });
    staar: «Huset» fra forsiden, «Lukk huset» naar du alt er inne. */
 window.neamSideHandlinger = function(){
   return [
-    { plass:'ov', navn:'Husregisteret',
-      ikon:'<img class="merke" src="' + MERKE_HUSREGISTER + '" alt="">',
+    { plass:'opp', navn:'Husregisteret', merke:true,
+      ikon:'<img src="' + MERKE_HUSREGISTER + '" alt="">',
       gjor: aapneHus }
   ];
 };
@@ -1227,6 +1091,6 @@ window.neamUtfor = async function(navn, arg){
      overalt, og senere er dette veien til aa snakke med Neam herfra. -->
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=27"></script>
+<script src="/felles-neam.js?v=28"></script>
 </body>
 </html>

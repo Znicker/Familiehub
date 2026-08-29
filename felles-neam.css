@@ -26,75 +26,134 @@
 /* Samme beskjaering som .home-hero-icon: merket er tegnet tett, saa
    bildets bredde ER sirkelens diameter og bildet stilles til toppen.
    Padding null - ellers stikker den hvite sirkelen fram rundt. */
+/* Geometrien i tall. Ett sett variabler per skjermstoerrelse, saa de
+   ni maalene er ÉN verdi hver og ikke ni tall som maa stemme overens.
+   Laa i index.html en kveld i august; flyttet hit da fireren ble bygget,
+   siden alle fem sidene deler den.
+
+   --f-aapen er FAST og lesbar, ikke «dobbelt av haandtaket». Doblet man,
+   ble knappen 216px paa PC og tok over skjermen; her vokser den kraftig
+   paa telefon, litt paa iPad og knapt paa PC - fordi den ikke trenger
+   det. Rundt 112-128px er der baandteksten paa merkene begynner aa
+   kunne leses, og det er hele grunnen til at den vokser. */
+:root{
+  --f-handtak:54px; --f-aapen:112px; --f-luft:12px; --f-ikon:42px;
+  --f-marg-x:20px; --f-marg-y:24px;
+}
+@media(min-width:700px) and (min-height:600px){
+  :root{
+    --f-handtak:76px; --f-aapen:120px; --f-luft:14px; --f-ikon:46px;
+    --f-marg-x:28px; --f-marg-y:34px;
+  }
+}
+@media(min-width:1300px) and (min-height:600px){
+  :root{
+    --f-handtak:108px; --f-aapen:128px; --f-luft:16px; --f-ikon:50px;
+    --f-marg-x:40px; --f-marg-y:48px;
+  }
+}
+
+/* Haandtaket BLIR STAAENDE naar menyen aapnes, og vokser i stedet.
+   Foer forsvant det og en midtknapp dukket opp i stedet - det man
+   nettopp trykket paa var borte i samme oeyeblikk som menyen kom, og
+   det leses som en ny skjerm og ikke som at knappen aapnet seg.
+
+   Fordi det blir staaende, lukker det seg selv ved nytt trykk. Da
+   trengs verken en «legg ned»-knapp eller et lukkekryss i midten, og
+   de to plassene de tok gaar til noe som faktisk gjoer noe. */
 .neam-handtak{
-  position:fixed; z-index:90;
-  left:20px; bottom:calc(24px + env(safe-area-inset-bottom));
-  width:54px; height:54px; border-radius:50%;
+  position:fixed; z-index:91;      /* over knappene, ikke under */
+  left:var(--f-marg-x);
+  bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom));
+  width:var(--f-handtak); height:var(--f-handtak); border-radius:50%;
   border:none; padding:0; overflow:hidden;
   background:var(--paper); box-shadow:0 4px 14px rgba(44,62,80,.28);
   display:flex; align-items:flex-start; justify-content:center;
   cursor:pointer;
+  transition:width .18s ease, height .18s ease;
 }
 .neam-handtak[hidden]{ display:none; }
 .neam-handtak img{ width:100%; height:auto; display:block; flex:none; }
 .neam-handtak:active{ transform:scale(.94); }
+.neam-handtak.oppe{ width:var(--f-aapen); height:var(--f-aapen); }
 
-/* ---------- Femmeren ----------
-   Fem paa en terning, forankret i samme hjoerne som haandtaket.
-   Midten staar der merket loefter seg til; de fire rundt kommer
-   fra midten og ut. Fast geometri - fem posisjoner man laerer
-   utenat er hele poenget med terningbildet. */
-.neam-femmer{
-  position:fixed; z-index:91;
-  left:20px; bottom:calc(24px + env(safe-area-inset-bottom));
-  width:150px; height:150px;
+/* ---------- Fireren ----------
+   Tre knapper rundt haandtaket, som fire prikker paa en terning der
+   haandtaket selv er den fjerde. Retningene er faste og betyr det samme
+   paa alle sidene:
+
+      opp     rett over haandtaket
+      skraa   diagonalt
+      ved     ved siden av
+
+   Maalt fra det hjoernet haandtaket staar i, saa hoeyre side er
+   speilvendt uten at betydningene bytter plass.
+
+   Var en femmer til 30. august 2026: fem plasser der to gikk til aa
+   navigere i menyen selv - lukking i midten og «legg ned» nede. Naar
+   haandtaket blir staaende og lukker, er begge overfloedige, og fire
+   plasser der alle fire gjoer noe slaar fem der to ikke gjoer det. */
+.neam-firer{
+  position:fixed; z-index:90;
+  left:var(--f-marg-x);
+  bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom));
+  width:calc(2 * var(--f-aapen) + var(--f-luft));
+  height:calc(2 * var(--f-aapen) + var(--f-luft));
   pointer-events:none;         /* bare knappene tar trykk */
 }
-.neam-femmer[hidden]{ display:none; }
-.neam-terning{
+.neam-firer[hidden]{ display:none; }
+
+.neam-knapp{
   position:absolute; pointer-events:auto;
-  width:48px; height:48px; border-radius:50%;
+  width:var(--f-aapen); height:var(--f-aapen); border-radius:50%;
   border:none; padding:0; cursor:pointer;
   background:var(--paper); color:var(--ink);
   box-shadow:0 4px 14px rgba(44,62,80,.28);
   display:flex; align-items:center; justify-content:center;
-  /* Alle starter i midten og glir ut - det er formeringen. */
-  left:51px; bottom:51px;
+  overflow:hidden;
+  /* Alle starter i hjoernet, under haandtaket, og glir ut derfra. */
+  left:0; bottom:0;
   opacity:0; transform:scale(.5);
   transition:left .18s ease, bottom .18s ease, opacity .15s ease, transform .18s ease;
 }
-.neam-terning svg{ width:22px; height:22px; }
-.neam-terning:active{ transform:scale(.92); }
-.neam-terning.midt{
-  width:56px; height:56px; overflow:hidden; padding:0;
-  align-items:flex-start;      /* samme beskjaering som haandtaket */
-  left:47px; bottom:47px;
-  opacity:0; transform:scale(.7);
+.neam-knapp svg{ width:var(--f-ikon); height:var(--f-ikon); }
+.neam-knapp img{ width:100%; height:auto; display:block; }
+.neam-knapp:active{ transform:scale(.94); }
+
+.neam-firer.oppe .neam-knapp{ opacity:1; transform:scale(1); }
+.neam-firer.oppe .ved  { left:calc(var(--f-aapen) + var(--f-luft)); bottom:0; }
+.neam-firer.oppe .opp  { left:0; bottom:calc(var(--f-aapen) + var(--f-luft)); }
+.neam-firer.oppe .skraa{
+  left:calc(var(--f-aapen) + var(--f-luft));
+  bottom:calc(var(--f-aapen) + var(--f-luft));
 }
-.neam-terning.midt img{ width:100%; height:auto; display:block; flex:none; }
 
-.neam-femmer.oppe .neam-terning{ opacity:1; transform:scale(1); }
-.neam-femmer.oppe .neam-terning.midt{ left:47px; bottom:47px; }
-.neam-femmer.oppe .neam-terning.ov{ left:8px;   bottom:94px; }
-.neam-femmer.oppe .neam-terning.oh{ left:94px;  bottom:94px; }
-.neam-femmer.oppe .neam-terning.nv{ left:8px;   bottom:8px;  }
-.neam-femmer.oppe .neam-terning.nh{ left:94px;  bottom:8px;  }
+/* En plass ingen har meldt inn skjules. Til 30. august sto den dempet,
+   med den begrunnelsen at faste posisjoner skal kunne laeres utenat -
+   men paa en side med én handling ble det én knapp og to graa flekker,
+   og flekkene leste som noe i stykker. Melder en side ingenting inn,
+   skjules hele haandtaket i stedet for aa aapne en tom meny. */
+.neam-knapp.doed{ display:none; }
 
-/* Nede-venstre er veien ut, og skal se ut som det: dempet, ikke
-   sidestilt med handlingene. */
-.neam-terning.nv{ background:var(--bg-2); color:var(--ink-soft); box-shadow:0 2px 8px rgba(44,62,80,.18); }
+/* Merker uten flate: et merke har eget omriss og et baand som stikker
+   ut, og en papirsirkel under det blir en ring rundt formen. */
+.neam-knapp.merke{
+  background:none; box-shadow:none; overflow:visible;
+}
+.neam-knapp.merke img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
 
-/* Applista - et lite ark over femmeren, forankret ved oppe-hoeyre.
+/* Applista - et lite ark over fireren, forankret i samme hjoerne.
    Appene ligger paa rad, hver med sitt merke og navnet under - de samme
    bildene som paa forsiden, saa en app kjennes igjen paa ikonet og ikke
    maa leses. */
 .neam-apper{
   position:fixed; pointer-events:auto;
-  /* Festet til skjermen, ikke til femmeren: sentrert over et haandtak i
+  /* Festet til skjermen, ikke til fireren: sentrert over et haandtak i
      venstre hjoerne rant venstre ende utenfor kanten paa smal skjerm i
-     staaende modus. Naa starter lista der femmeren staar og faar vokse
+     staaende modus. Naa starter lista der fireren staar og faar vokse
      hoeyre-over, med en luftlomme til hoeyre kant som tak. */
-  left:14px; right:14px; bottom:186px;
+  left:14px; right:14px;
+  bottom:calc(var(--f-marg-y) + 2 * var(--f-aapen) + var(--f-luft) + 12px);
   background:var(--paper); border-radius:16px;
   box-shadow:0 10px 30px rgba(44,62,80,.3);
   padding:12px 10px; display:flex; gap:4px;
@@ -313,35 +372,21 @@
 .neam-send:disabled{ background:var(--line); cursor:default; }
 .neam-send:not(:disabled):active{ transform:scale(.94); }
 
-/* ---------- Sidefemmeren - hoeyre hjoerne ----------
+/* ---------- Sidefireren - hoeyre hjoerne ----------
    Speilvendt av venstre, og med sidas eget merke paa haandtaket.
    Skillet som gjelder: venstre er «ut og Neam», hoeyre er «her og naa».
 
-   Posisjonsklassene beholder betydningen sin - .ov er oppe venstre
-   ogsaa her - men maales fra hoeyre kant, saa terningbildet speiles
+   Posisjonsklassene beholder betydningen sin - .opp er rett over
+   haandtaket ogsaa her - men maales fra hoeyre kant, saa bildet speiles
    og hjoernet er det samme. */
-.neam-handtak.side{ left:auto; right:20px; }
-.neam-femmer.side{ left:auto; right:20px; }
-.neam-femmer.side .neam-terning{ left:auto; right:51px; }
-.neam-femmer.side .neam-terning.midt{ left:auto; right:47px; }
-.neam-femmer.side.oppe .neam-terning.midt{ right:47px; }
-.neam-femmer.side.oppe .neam-terning.ov{ right:94px; bottom:94px; }
-.neam-femmer.side.oppe .neam-terning.oh{ right:8px;  bottom:94px; }
-.neam-femmer.side.oppe .neam-terning.nv{ right:94px; bottom:8px;  }
-.neam-femmer.side.oppe .neam-terning.nh{ right:8px;  bottom:8px;  }
-/* .nv er dempet paa venstre side fordi den er veien ut. Her er den en
-   plass som alle andre, saa dempingen maa tilbakestilles. */
-.neam-femmer.side .neam-terning.nv{
-  background:var(--paper); color:var(--ink);
-  box-shadow:0 4px 14px rgba(44,62,80,.28);
-}
-/* En plass ingen har meldt inn staar der, dempet. Den skjules ikke:
-   fem faste posisjoner man laerer utenat er hele poenget, og en femmer
-   med tre knapper paa én side og fem paa en annen laerer haanden
-   ingenting. Aerligere aa vise at plassen finnes og er tom. */
-.neam-femmer .neam-terning.doed{
-  background:var(--bg-2); color:var(--line);
-  box-shadow:0 2px 6px rgba(44,62,80,.12);
+.neam-handtak.side{ left:auto; right:var(--f-marg-x); }
+.neam-firer.side{ left:auto; right:var(--f-marg-x); }
+.neam-firer.side .neam-knapp{ left:auto; right:0; }
+.neam-firer.side.oppe .ved  { right:calc(var(--f-aapen) + var(--f-luft)); bottom:0; }
+.neam-firer.side.oppe .opp  { right:0; bottom:calc(var(--f-aapen) + var(--f-luft)); }
+.neam-firer.side.oppe .skraa{
+  right:calc(var(--f-aapen) + var(--f-luft));
+  bottom:calc(var(--f-aapen) + var(--f-luft));
 }
 
 /* ---------- Smal skjerm ---------- */
