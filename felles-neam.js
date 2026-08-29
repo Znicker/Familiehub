@@ -986,6 +986,26 @@ async function neamTur(){
            'tool_use', saa loekka avsluttes, men det finnes ingen tekst aa
            vise. Da sier vi det i stedet for aa la brukeren staa og se paa
            en tom skjerm. */
+        /* Ble svaret kuttet paa max_tokens, skal det ALLTID sies - ogsaa naar
+           det rakk aa skrive litt tekst foerst. Foer sjekket vi bare om det
+           fantes tekst, og et svar som besto av en setning pluss et halvt
+           verktoeykall gikk derfor stille ut: setningen ble vist, kallet
+           forsvant, og panelet saa ut som om det ga opp. */
+        if(svar.stop_reason === 'max_tokens'){
+          try{
+            console.warn('Neam ble kuttet av.', '\nut-tokens:',
+              svar.usage && svar.usage.output_tokens, '\nblokker:',
+              (svar.content || []).map(function(b){
+                const lengde = b.type === 'text' ? String(b.text || '').length
+                             : JSON.stringify(b.input || b).length;
+                return b.type + (b.name ? '/' + b.name : '') + ' (' + lengde + ' tegn)';
+              }).join(', '), '\nhele svaret:', svar);
+          }catch(e){}
+          neamPoster.push({ feil:'Neam ble avbrutt midt i - svaret ble for langt. '
+                              + 'Be om mindre av gangen, eller prøv på nytt.' });
+          break;
+        }
+
         const harTekst = (svar.content || []).some(function(b){
           return b.type === 'text' && String(b.text || '').trim();
         });

@@ -1063,7 +1063,7 @@ input,select,textarea{font-size:16px}
 
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=21"></script>
+<script src="/felles-neam.js?v=22"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -2213,8 +2213,23 @@ async function fjernFraInnboks(id){
    toemmes naar varene faktisk er inne - ikke foer. */
 let ventendePakker = [];
 
+/* To like pakker i innboksen er samme sending gjort to ganger - typisk
+   fordi den foerste aldri ble tatt inn. Uten dette faar Neam hver
+   ingrediens i dobbelt sett, og et forslag over hundre rader sprenger
+   svaret hans midt i et verktoeykall. */
+function utenDubletter(pakker){
+  const sett = new Set();
+  return pakker.filter(p => {
+    const noekkel = (p.fraOppskrift || p.uke || '') + '|'
+      + (p.varer || []).map(v => String(v.vare || '').trim().toLowerCase()).sort().join(',');
+    if (sett.has(noekkel)) return false;
+    sett.add(noekkel);
+    return true;
+  });
+}
+
 async function taImotGodkjente(){
-  const klare = innboks.filter(p => p && p.godkjent);
+  const klare = utenDubletter(innboks.filter(p => p && p.godkjent));
   /* Samme form som ved suksess. Funksjonen lover {venter, navn}, og
      kallstedet leser begge - en tom liste her ville gitt undefined paa
      .navn og gaatt stille gjennom hver eneste innlasting. */
@@ -2342,7 +2357,9 @@ async function neamLeggInnImport(arg){
 
   /* Foerst naar varene er inne. Ryker skrivingen, blir pakkene liggende og
      kommer opp igjen ved neste innlasting. */
-  const tatt = new Set(ventendePakker.map(p => p.id));
+  /* Alle godkjente pakker ryddes ut, ogsaa dublettene vi hoppet over -
+     de er samme sending, og de skal ikke bli liggende og komme igjen. */
+  const tatt = new Set(innboks.filter(p => p && p.godkjent).map(p => p.id));
   try{
     const liste = await lesInnboks();
     await skrivInnboks(liste.filter(p => !tatt.has(p.id)));
