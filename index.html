@@ -200,6 +200,33 @@ body{
 }
 .planlagt-knapp:active{background:var(--bg-1)}
 
+/* ---------- Hoeyrehaandtaket paa forsiden ----------
+   Forsidens merke er husregisteret, ikke roboten. Uten dette baerer baade
+   venstre og hoeyre hjoerne det SAMME robotmerket her - og skillet
+   «venstre er ut og Neam, hoeyre er her og naa» kollapser paa den ene sida
+   der de moetes.
+
+   Overstyres lokalt, ikke i felles-neam.js: en endring der maatte fulgt av
+   et nytt ?v-nummer i alle fem HTML-filene, og forsidens merke er
+   forsidens sak. Flyttes til skallet den dagen hub.html tar over.
+
+   Uten flate og uten sirkelklipp, som flisene: merket har eget omriss og
+   et baand som stikker ut nederst, og en sirkel med overflow:hidden kapper
+   baandet. Skyggen foelger da omrisset og ikke en usynlig boks. */
+.neam-handtak.hus{
+  background:none; box-shadow:none; overflow:visible; border-radius:0;
+  align-items:center;
+}
+.neam-handtak.hus img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
+/* Inne i Huset er det bare én ting man vil: ut igjen. Da staar krysset
+   der merket sto, og haandtaket lukker med ett trykk i stedet for aa
+   aapne en femmer med ett valg i. */
+.neam-handtak.lukk{
+  background:var(--paper); box-shadow:0 4px 14px rgba(44,62,80,.28);
+  border-radius:50%; align-items:center; color:var(--ink-soft);
+}
+.neam-handtak.lukk svg{ width:24px; height:24px; }
+
 /* ---------- Huset som egen visning ----------
    Registeret laa i et sammenklappet panel paa forsiden. Fem tekstbokser
    som skal fylles i hele setninger fikk da bredden til et panel og
@@ -849,6 +876,7 @@ async function aapneHus(){
   husSammendrag(reg);
   if(skall) skall.hidden = true;
   hus.hidden = false;
+  husHandtak(true);
   window.scrollTo(0, 0);
 
   /* Avtrykket tas ETTER at feltene er fylt, ellers ser avbryt-regelen
@@ -876,6 +904,7 @@ function husLukkNa(){
   const skall = document.getElementById('shell');
   if(hus)   hus.hidden = true;
   if(skall) skall.hidden = false;
+  husHandtak(false);
 }
 
 /* Avbryt spoer bare naar noe faktisk er skrevet siden visningen ble
@@ -976,6 +1005,33 @@ window.neamBakgrunn = async function(){
   return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
 };
 
+/* ---- Hoeyrehaandtaket ----
+   Bygges av felles-neam.js nederst i body, altsaa etter denne blokka.
+   DOMContentLoaded fyrer etter alle synkrone skript, saa haandtaket
+   finnes garantert naar vi tar over det. */
+const HUS_MERKE = '/bilder/merke-husregister.png';
+
+function husHandtak(inne){
+  const h = document.getElementById('neamSideHandtak');
+  if(!h) return;
+  h.classList.toggle('lukk', !!inne);
+  h.classList.toggle('hus', !inne);
+  if(inne){
+    h.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                + 'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
+                + '<path d="M18 6 6 18M6 6l12 12"/></svg>';
+    h.onclick = lukkHus;
+    h.title = 'Lukk huset';
+    h.setAttribute('aria-label', 'Lukk huset');
+  }else{
+    h.innerHTML = '<img src="' + HUS_MERKE + '" alt="">';
+    h.onclick = neamSideFemmer;
+    h.title = 'Huset';
+    h.setAttribute('aria-label', 'Huset - handlinger');
+  }
+}
+document.addEventListener('DOMContentLoaded', function(){ husHandtak(false); });
+
 /* ---- Sidas egne handlinger: hoeyrefemmeren ----
    Forsiden eier huset, og det er den ene handlingen som hoerer hjemme
    her. De tre andre plassene staar ledige inntil videre - de tegnes
@@ -984,20 +1040,13 @@ window.neamBakgrunn = async function(){
    Settet hentes ved hver aapning, saa knappen betyr det den skal der du
    staar: «Huset» fra forsiden, «Lukk huset» naar du alt er inne. */
 window.neamSideHandlinger = function(){
-  const hus = document.getElementById('huset');
-  const inne = hus && !hus.hidden;
   return [
-    { plass:'ov',
-      navn: inne ? 'Lukk huset' : 'Huset',
-      ikon: inne
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
-          + 'stroke-linecap="round" stroke-linejoin="round">'
-          + '<path d="M18 6 6 18M6 6l12 12"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
-          + 'stroke-linecap="round" stroke-linejoin="round">'
-          + '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>'
-          + '<path d="M10 21v-6h4v6"/></svg>',
-      gjor: function(){ if(inne) lukkHus(); else aapneHus(); } }
+    { plass:'ov', navn:'Husregisteret',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+         + 'stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>'
+         + '<path d="M10 21v-6h4v6"/></svg>',
+      gjor: aapneHus }
   ];
 };
 
