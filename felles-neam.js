@@ -714,6 +714,114 @@ const NEAM_APPER = [
   { sti:'/dashboard.html',   navn:'Kjøkken',     ikon:'/bilder/merke-kjokken-dash.png' }
 ];
 
+/* Sidenes egne merker. Hoeyre haandtak baerer merket til sida du staar
+   paa - venstre baerer Neam. Det er hele skillet i ett bilde: venstre er
+   «ut og Neam», hoeyre er «her og naa». */
+const NEAM_SIDEMERKE = {
+  '/handleliste.html': { navn:'Handleliste', ikon:'/bilder/merke-handleliste.png'  },
+  '/oppskrifter.html': { navn:'Matlaging',   ikon:'/bilder/merke-matlaging.png'    },
+  '/kalender.html'   : { navn:'Kalender',    ikon:'/bilder/merke-kalender.png'     },
+  '/dashboard.html'  : { navn:'Kjøkken dash',ikon:'/bilder/merke-kjokken-dash.png' },
+  '/'                : { navn:'Neam',        ikon:'/bilder/merke-neam.png'         },
+  '/index.html'      : { navn:'Neam',        ikon:'/bilder/merke-neam.png'         }
+};
+
+function neamSideMerke(){
+  return NEAM_SIDEMERKE[location.pathname]
+      || { navn:'Denne siden', ikon:NEAM_MERKE };
+}
+
+/* ============================================================
+   Sidefemmeren - hoeyre hjoerne
+   ------------------------------------------------------------
+   Samme grep som venstre, speilvendt, men et annet innhold:
+   her ligger handlingene som hoerer til SIDA du staar paa.
+
+   Sidene melder inn sine egne ved aa definere:
+
+     window.neamSideHandlinger = function(){
+       return [
+         { plass:'ov', navn:'Ny vare',  ikon:'<svg…>', gjor:function(){…} },
+         { plass:'nh', navn:'Sorter',   ikon:'<svg…>', gjor:sorterMeny }
+       ];
+     };
+
+   Plassene er 'ov', 'oh', 'nv', 'nh'. Midten er merket selv og
+   legger femmeren ned - den er ikke til utdeling, slik midten paa
+   venstre side alltid er samtalen.
+
+   En plass ingen har meldt inn tegnes DOED: den staar der, dempet,
+   og sier «kommer» ved trykk. Det er med vilje. Fem faste plasser
+   som alltid er de samme er hele poenget med terningbildet, og en
+   femmer som har tre knapper paa én side og fem paa en annen laerer
+   haanden ingenting. Da er det aerligere aa vise at plassen finnes
+   og er tom, enn aa flytte de andre inntil hverandre.
+   ============================================================ */
+
+const NEAM_SIDEPLASSER = ['ov', 'oh', 'nv', 'nh'];
+
+/* Fylles ved bygging og ved hver aapning - en side kan endre hvilke
+   handlinger som gjelder mens man staar der. */
+let neamSideValg = {};
+
+function neamSideFemmer(){
+  const f = document.getElementById('neamSideFemmer');
+  const h = document.getElementById('neamSideHandtak');
+  if(!f || !h) return;
+
+  /* Hentes ved hver aapning, ikke bare én gang: hva som er mulig
+     avhenger av visningen man staar i. */
+  neamSideValg = {};
+  try{
+    if(typeof window.neamSideHandlinger === 'function'){
+      (window.neamSideHandlinger() || []).forEach(function(v){
+        if(v && NEAM_SIDEPLASSER.indexOf(v.plass) !== -1) neamSideValg[v.plass] = v;
+      });
+    }
+  }catch(e){ console.warn('neamSideHandlinger feilet:', e); }
+
+  NEAM_SIDEPLASSER.forEach(function(p){
+    const k = document.getElementById('neamS_' + p);
+    if(!k) return;
+    const v = neamSideValg[p];
+    k.classList.toggle('doed', !v);
+    k.innerHTML = (v && v.ikon) || NEAM_SIDE_TOM;
+    const navn = v ? v.navn : 'Ledig plass';
+    k.setAttribute('aria-label', navn);
+    k.title = navn;
+  });
+
+  h.hidden = true;
+  f.hidden = false;
+  requestAnimationFrame(function(){ f.classList.add('oppe'); });
+  document.addEventListener('pointerdown', neamSideUtenfor, true);
+}
+
+function neamSideFemmerNed(){
+  const f = document.getElementById('neamSideFemmer');
+  const h = document.getElementById('neamSideHandtak');
+  if(!f || !h) return;
+  f.classList.remove('oppe');
+  document.removeEventListener('pointerdown', neamSideUtenfor, true);
+  setTimeout(function(){ f.hidden = true; h.hidden = false; }, 190);
+}
+
+function neamSideUtenfor(ev){
+  const f = document.getElementById('neamSideFemmer');
+  if(f && !f.contains(ev.target)){
+    /* Foerste trykk utenfor er bare en escape - se neamSvelgNesteTrykk. */
+    ev.stopPropagation();
+    neamSvelgNesteTrykk();
+    neamSideFemmerNed();
+  }
+}
+
+/* Prikken som staar paa en plass ingen har tatt. Bevisst ikke et
+   spoersmaalstegn eller et pluss - den lover ingenting. */
+const NEAM_SIDE_TOM =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+  + 'stroke-linecap="round"><circle cx="12" cy="12" r="2.5"/></svg>';
+
 function neamFemmer(){
   const f = document.getElementById('neamFemmer');
   const h = document.getElementById('neamHandtak');
@@ -738,11 +846,53 @@ function neamFemmerNed(){
   setTimeout(function(){ f.hidden = true; h.hidden = false; }, 190);
 }
 
+/* Foerste trykk utenfor er BARE en escape.
+
+   Uten dette gaar det samme trykket videre til det som ligger under:
+   man legger ned femmeren og aapner samtidig noe man ikke siktet paa,
+   eller huker av en vare fordi femmeren tilfeldigvis laa over lista.
+   Femmeren dekker et hjoerne av en side full av trykkflater, saa det
+   skjer ofte nok til aa vaere en feil.
+
+   Vi stopper forplantningen, men kaller IKKE preventDefault paa
+   pointerdown - det ville stoppet rulling ogsaa, og en side man ikke
+   kan bla i mens et hjoerne staar aapent er verre enn problemet.
+   Draget faar gaa; det er trykket som svelges, og det gjoeres paa
+   klikket etterpaa. */
+function neamSvelgNesteTrykk(){
+  const typer = ['pointerup', 'mousedown', 'mouseup', 'click', 'touchend'];
+  let ferdig = false;
+
+  const slutt = function(){
+    if(ferdig) return;
+    ferdig = true;
+    typer.forEach(function(t){ document.removeEventListener(t, svelg, true); });
+  };
+
+  const svelg = function(ev){
+    ev.stopPropagation();
+    /* Bare paa klikket. preventDefault paa de tidlige hindrer draget. */
+    if(ev.type === 'click'){
+      if(ev.cancelable) ev.preventDefault();
+      slutt();
+    }
+  };
+
+  typer.forEach(function(t){ document.addEventListener(t, svelg, true); });
+  /* Kom det aldri noe klikk - brukeren dro i stedet for aa trykke - skal
+     ikke lyttene bli liggende og spise et trykk som kommer senere. */
+  setTimeout(slutt, 700);
+}
+
 /* Trykk utenfor legger ned - femmeren skal aldri bli staaende og
    dekke et hjoerne av en side man er ferdig med den paa. */
 function neamFemmerUtenfor(ev){
   const f = document.getElementById('neamFemmer');
-  if(f && !f.contains(ev.target)) neamFemmerNed();
+  if(f && !f.contains(ev.target)){
+    ev.stopPropagation();
+    neamSvelgNesteTrykk();
+    neamFemmerNed();
+  }
 }
 
 function neamVisApper(){
@@ -827,6 +977,53 @@ function neamBygg(){
     +   '<img src="' + NEAM_MERKE + '" alt=""></button>'
     + '<div class="neam-apper" id="neamApper" hidden></div>';
   document.body.appendChild(femmer);
+
+  /* ---- Hoeyre hjoerne: sidas egne handlinger ----
+     Speilvendt av venstre. Merket er sidas eget, saa hvilken app du
+     staar i kan leses av hjoernet uten at noe staar skrevet. */
+  const sm = neamSideMerke();
+
+  const sHandtak = document.createElement('button');
+  sHandtak.type = 'button';
+  sHandtak.className = 'neam-handtak side';
+  sHandtak.id = 'neamSideHandtak';
+  sHandtak.title = sm.navn;
+  sHandtak.setAttribute('aria-label', sm.navn + ' - handlinger');
+  sHandtak.innerHTML = '<img src="' + sm.ikon + '" alt="">';
+  sHandtak.onclick = neamSideFemmer;
+  document.body.appendChild(sHandtak);
+
+  const sFemmer = document.createElement('div');
+  sFemmer.className = 'neam-femmer side';
+  sFemmer.id = 'neamSideFemmer';
+  sFemmer.hidden = true;
+  sFemmer.innerHTML =
+      NEAM_SIDEPLASSER.map(function(p){
+        return '<button type="button" class="neam-terning doed ' + p + '" '
+             + 'id="neamS_' + p + '"></button>';
+      }).join('')
+    + '<button type="button" class="neam-terning midt" id="neamSideMidt" '
+    +   'aria-label="Lukk" title="Lukk">'
+    +   '<img src="' + sm.ikon + '" alt=""></button>';
+  document.body.appendChild(sFemmer);
+
+  NEAM_SIDEPLASSER.forEach(function(p){
+    document.getElementById('neamS_' + p).onclick = function(){
+      const v = neamSideValg[p];
+      if(!v){
+        /* En doed plass skal si at den er tom, ikke gjoere ingenting.
+           En knapp som ikke svarer leses som en feil. */
+        if(typeof varsle === 'function'){
+          varsle('Denne plassen er ledig ennå. Handlingene for '
+               + neamSideMerke().navn.toLowerCase() + ' kommer.');
+        }
+        return;
+      }
+      neamSideFemmerNed();
+      try{ v.gjor(); }catch(e){ console.warn('Sidehandling feilet:', e); }
+    };
+  });
+  document.getElementById('neamSideMidt').onclick = neamSideFemmerNed;
 
   const bak = document.createElement('div');
   bak.className = 'neam-bak';
