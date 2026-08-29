@@ -18,7 +18,7 @@
      felles-skjema.js gir avbryt-regelen paa husskjemaet og krever
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
      ikke her. -->
-<script src="/felles-data.js?v=2"></script>
+<script src="/felles-data.js?v=3"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -901,17 +901,29 @@ async function lagreHus(){
 })();
 
 /* ---- Det Neam vet naar han staar her ----
-   Index har ingen verktoey ennaa, saa dette former bare samtalen.
-   Registeret foelger med fordi det gjelder overalt. */
+   Forsiden eier bare husregisteret. Leseverktoeyene er de samme som
+   paa de fire andre sidene - «les overalt, skriv der du staar». */
 window.neamBakgrunn = async function(){
   const hus = await husregisterTekst();
   const om =
     'FORSIDEN er inngangen til Neam - en meny over appene, ikke en app selv. '
   + 'Herfra finnes Kjøkken dash, Matlaging, Handleliste og Kalender. '
   + 'Husregisteret redigeres her, i panelet «Huset».\n\n'
-  + 'Du har ingen verktøy på denne siden. Skal noe gjøres i en app, si hvilken '
-  + 'app det hører hjemme i, så går brukeren dit.';
-  return hus ? (om + '\n\n' + hus) : om;
+  + 'FORSIDEN EIER INGENTING ANNET. Du kan lese hele huset herfra, men skal '
+  + 'noe endres, hører det hjemme i en app - si hvilken, så går brukeren dit.';
+  return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
+};
+
+/* ---- Husets leseverktoey ----
+   Ligger i felles-data.js og er identiske paa alle fem sidene. */
+window.neamVerktoy = async function(){
+  return HUS_VERKTOY.slice();
+};
+
+window.neamUtfor = async function(navn, arg){
+  const hus = await husUtfor(navn, arg);
+  if(hus) return hus.svar;
+  throw new Error('Ukjent verktøy: ' + navn);
 };
 
 function settToppNavn(fulltNavn){

@@ -2235,6 +2235,7 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
+<script src="/felles-data.js?v=3"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-neam.js?v=24"></script>
@@ -2590,6 +2591,38 @@ window.neamKontekst = async function(){
     antallOppskrifter: recipes.length,
     ukeIPlanen: planWeek ? (planWeek.year + '-W' + String(planWeek.week).padStart(2, '0')) : null
   };
+};
+
+window.neamBakgrunn = async function(){
+  const om =
+      'MATLAGING er oppskriftsboka og ukemenyen. Her ligger oppskriftene med '
+    + 'ingredienser, framgangsm\u00e5te, tips, terningkast og n\u00e6ringsinnhold, og her '
+    + 'planlegges middagene uke for uke.\n\n'
+    + 'INGREDIENSMENGDER er oppskriftsmengder for det antall porsjoner som st\u00e5r '
+    + 'oppgitt. De er ikke handlemengder - «3 dl fl\u00f8te» blir «1 beger fl\u00f8te» p\u00e5 '
+    + 'handlelista.\n\n'
+    + 'INGREDIENSER SENDES TIL HANDLELISTA herfra, samlet for en middag. Det er '
+    + 'brukeren som starter den overf\u00f8ringen; du kan ikke gj\u00f8re det selv.';
+  const hus = await husregisterTekst();
+  return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
+};
+
+/* ---- Husets leseverktoey ----
+   De fire leserne ligger i felles-data.js og er identiske paa alle
+   fem sidene. «Les overalt, skriv der du staar»: sida her eier ikke
+   disse dataene og skriver dem aldri, men Neam skal kunne se dem
+   uansett hvor han staar.
+
+   HUS_VERKTOY staar sist i lista naar sida ogsaa har egne, saa et
+   sidenavn vinner ved en navnekollisjon. */
+window.neamVerktoy = async function(){
+  return HUS_VERKTOY.slice();
+};
+
+window.neamUtfor = async function(navn, arg){
+  const hus = await husUtfor(navn, arg);
+  if(hus) return hus.svar;
+  throw new Error('Ukjent verkt\u00f8y: ' + navn);
 };
 window.addEventListener('resize', updateTopbarHeightVar);
 /* Redigerer man en eksisterende oppskrift, hoerer veien ut tilbake til

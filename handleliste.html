@@ -1034,7 +1034,7 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
-<script src="/felles-data.js?v=2"></script>
+<script src="/felles-data.js?v=3"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-neam.js?v=24"></script>
@@ -6509,16 +6509,11 @@ window.neamBakgrunn = async function(){
     'Snakk om dette som en handleliste, ikke som en database. Brukeren sier',
     '«lista» og «uka», ikke «poster» og «omraader».',
     '',
-    'DU KAN OGSAA SE INN I MATLAGING herfra, men bare lese. finn_oppskrift',
-    'soeker i oppskriftsboka, les_oppskrift gir ingrediensene til én, og',
-    'les_ukeplanen gir middagene som er planlagt. Skal noe ENDRES i',
-    'Matlaging, maa brukeren gaa dit - si hvilken app det hoerer hjemme i.',
-    '',
     'MENGDENE I EN OPPSKRIFT er oppskriftsmengder for det antall porsjoner',
     'som staar oppgitt, ikke handlemengder. «3 dl floete» blir «1 beger',
     'floete» paa lista. Regn om foer du foreslaar noe, og husk at huset',
     'kan ha varen fra foer.'
-  ].join('\n');
+  ].join('\n') + '\n\n' + HUS_BAKGRUNN;
 
   /* Husregisteret legges bakerst, ikke foran: det som gjelder HUSET er
      ikke mer grunnleggende enn hvordan appen henger sammen, men det er
@@ -6890,59 +6885,7 @@ window.neamVerktoy = async function(){
       neamSkjerm: neamForslagSkjerm
     },
 
-    /* ---- Lesing paa tvers: Matlaging ----
-       Ren lesing, ingen skriving. Neam staar paa handlelista, men
-       spoersmaalene handler stadig om mat: «hva skal vi ha paa
-       torsdag», «trenger jeg melk til poelsegratengen». Uten disse
-       maatte han svare at han ikke vet, eller gjette.
-
-       Delt i to med vilje - finn foerst, les etterpaa. Ett verktoey
-       som ga alle oppskriftene med ingredienser ville sendt hele
-       boka inn i samtalen for aa svare paa ett spoersmaal. Samme
-       laerdom som de 21 katalogsoekene, bare motsatt vei. */
-    {
-      name: 'finn_oppskrift',
-      description: 'Søker i Oppskriftsboka etter tittel eller kategori og gir en liste '
-                 + 'med treff: tittel, id, tid og kategorier. Ingen ingredienser - '
-                 + 'bruk les_oppskrift på id-en for det. Uten søkeord gis hele lista.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          sok: { type:'string',
-                 description:'Ord fra tittelen eller en kategori. Delstreng holder.' }
-        },
-        required: []
-      }
-    },
-    {
-      name: 'les_oppskrift',
-      description: 'Henter én oppskrift med ingredienser, mengder, allergener og '
-                 + 'framgangsmåte. Krever id fra finn_oppskrift eller les_ukeplanen. '
-                 + 'Bruk dette når noen spør hva som trengs til en bestemt rett. '
-                 + 'Mengdene er OPPSKRIFTSMENGDER for det antall porsjoner som står '
-                 + 'oppgitt - regn om til handlemengde før du foreslår noe på lista.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          id: { type:'string', description:'Oppskriftens id.' }
-        },
-        required: ['id']
-      }
-    },
-    {
-      name: 'les_ukeplanen',
-      description: 'Middagene som er planlagt en uke, dag for dag, med id til hver '
-                 + 'rett. Uten argument gis inneværende uke. Bruk dette når noen '
-                 + 'spør hva som skal spises, eller hva som må handles inn til uka.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          uke: { type:'string',
-                 description:'Uke på formen 2026-W36. Utelat for inneværende uke.' }
-        },
-        required: []
-      }
-    }
+    ...HUS_VERKTOY
   ];
 };
 
@@ -7418,38 +7361,11 @@ window.neamUtfor = async function(navn, arg){
   if (navn === 'slaa_sammen')    return await neamSlaaSammen(arg);
   if (navn === 'foresla_opprydding') return await neamOpprydding(arg);
 
-  /* ---- Lesing paa tvers: Matlaging ----
-     Rett mot KV via felles-data.js. Handleliste eier ikke disse dataene
-     og skriver dem aldri - den ser dem. Bildene er strippet i leseren,
-     ikke her: en oppskrift med rettbilde og stegbilder er megabyter med
-     base64, og et filter kallstedet maa huske aa bruke er et filter som
-     glemmes. */
-  if (navn === 'finn_oppskrift'){
-    const treff = await finnOppskrifter(arg.sok);
-    return {
-      sok: arg.sok || null,
-      antall: treff.length,
-      /* Samme grense og samme grunn som sok_varekatalog: en full liste
-         uten soekeord spiste svarbudsjettet. */
-      treff: treff.slice(0, 40),
-      avkortet: treff.length > 40
-    };
-  }
-
-  if (navn === 'les_oppskrift'){
-    const r = await lesOppskrift(arg.id);
-    if (!r) throw new Error('Fant ingen oppskrift med id «' + arg.id + '». '
-                          + 'Bruk finn_oppskrift for å få riktig id.');
-    return r;
-  }
-
-  if (navn === 'les_ukeplanen'){
-    const p = await lesUkeplan(arg.uke);
-    if (!p.dager.length){
-      return { uke: p.uke, dager: [], beskjed: 'Ingen middager er lagt inn denne uka.' };
-    }
-    return p;
-  }
+  /* Husets leseverktoey - de samme paa alle fem sidene. Ligger i
+     felles-data.js, ikke her, saa formuleringen og avkortingen er lik
+     uansett hvor Neam staar. */
+  const hus = await husUtfor(navn, arg);
+  if (hus) return hus.svar;
 
   throw new Error('Ukjent verktøy: ' + navn);
 };

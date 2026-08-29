@@ -929,6 +929,7 @@ select.hu-felt{
 </div>
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
+<script src="/felles-data.js?v=3"></script>
 <script src="/felles-graph.js?v=1"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
@@ -2853,6 +2854,47 @@ function tilbakeTilStandard(){
   visTilIdag();
   if(flyttet) tegnPlanPaaNytt();
 }
+/* ============================================================
+   Neam paa veggskjermen
+   ------------------------------------------------------------
+   Kjoekken dash er en informasjonsskjerm og eier ingen data den
+   selv kan endre gjennom Neam - avtalene ligger i Graph, resten
+   leses. Leseverktoeyene er derfor de samme fire som paa de
+   andre sidene, uten noe eget i tillegg.
+   ============================================================ */
+
+window.neamKontekst = async function(){
+  return {
+    sted: 'Kjøkken dash',
+    visning: viserIdag() ? 'I dag' : 'I morgen'
+  };
+};
+
+window.neamBakgrunn = async function(){
+  const om =
+      'KJØKKEN DASH er skjermen som henger på veggen i kjøkkenet. Den viser '
+    + 'dagens avtaler, været, dagens middag og klokka. Den leses på avstand, '
+    + 'ofte mens noen lager mat, og ingen logger seg ut av den.\n\n'
+    + 'DØGNET SKIFTER KLOKKA 20. Etter det viser skjermen morgendagen, og '
+    + 'etiketten sier «I morgen».\n\n'
+    + 'DU HAR INGEN KALENDERVERKTØY ENNÅ. Blir du spurt om hva som skjer en '
+    + 'dag, si at du ikke kan lese avtalene ennå - ikke gjett.';
+  const hus = await husregisterTekst();
+  return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
+};
+
+/* ---- Husets leseverktoey ----
+   Ligger i felles-data.js og er identiske paa alle fem sidene. */
+window.neamVerktoy = async function(){
+  return HUS_VERKTOY.slice();
+};
+
+window.neamUtfor = async function(navn, arg){
+  const hus = await husUtfor(navn, arg);
+  if(hus) return hus.svar;
+  throw new Error('Ukjent verktøy: ' + navn);
+};
+
 function nullstillHvile(){
   clearTimeout(hvileTimer);
   hvileTimer = setTimeout(function(){

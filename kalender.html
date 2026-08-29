@@ -1528,6 +1528,7 @@ input,select,textarea{font-size:16px}
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
 <script src="/felles-graph.js?v=1"></script>
+<script src="/felles-data.js?v=3"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
 <script src="/felles-neam.js?v=24"></script>
@@ -4650,6 +4651,38 @@ window.neamKontekst = async function(){
     kalenderePaa: S.calendars.filter(function(c){ return c.on; })
                              .map(function(c){ return c.name; })
   };
+};
+
+window.neamBakgrunn = async function(){
+  const om =
+      'KALENDER viser husstandens avtaler. Hver person har sin egen kalender - '
+    + 'Magne, Nina, Emma og Andrea - og i tillegg finnes Familien for det som '
+    + 'gjelder alle. En avtale h\u00f8rer til \u00e9n kalender, og fargen og initialen '
+    + 'f\u00f8lger av hvilken.\n\n'
+    + 'DU HAR INGEN KALENDERVERKT\u00d8Y ENN\u00c5. Du ser hvilken periode brukeren st\u00e5r '
+    + 'p\u00e5, men ikke selve avtalene. Blir du spurt om hva som skjer en dag, si at '
+    + 'du ikke kan lese avtalene enn\u00e5 - ikke gjett, og ikke finn p\u00e5 en '
+    + 'forklaring p\u00e5 hvorfor.';
+  const hus = await husregisterTekst();
+  return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
+};
+
+/* ---- Husets leseverktoey ----
+   De fire leserne ligger i felles-data.js og er identiske paa alle
+   fem sidene. «Les overalt, skriv der du staar»: sida her eier ikke
+   disse dataene og skriver dem aldri, men Neam skal kunne se dem
+   uansett hvor han staar.
+
+   HUS_VERKTOY staar sist i lista naar sida ogsaa har egne, saa et
+   sidenavn vinner ved en navnekollisjon. */
+window.neamVerktoy = async function(){
+  return HUS_VERKTOY.slice();
+};
+
+window.neamUtfor = async function(navn, arg){
+  const hus = await husUtfor(navn, arg);
+  if(hus) return hus.svar;
+  throw new Error('Ukjent verkt\u00f8y: ' + navn);
 };
 
 function tittel(){
