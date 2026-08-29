@@ -39,21 +39,20 @@
      --ink-soft, altsaa godt over WCAG-grensen paa 4,5 for begge. */
   --paper:#FBF9F5;
   --paper-soft:#F1EEE8;
-  /* Sidebakgrunnen. Bildet ligger over gradienten, ikke i stedet for
-     den: mangler fila, eller er den ikke lastet ennaa, staar gradienten
-     igjen og sida ser fortsatt ferdig ut. Egen variabel, ikke
-     --bg-1/--bg-2: de to er flatetoner brukt paa topplinje, rutenett og
-     celler, og skal ikke foelge bakgrunnen naar den endres.
+  /* Sidebakgrunnen. Egen variabel, ikke --bg-1/--bg-2: de to er
+     flatetoner brukt paa topplinje, rutenett og celler, og skal ikke
+     foelge bakgrunnen naar den endres.
 
-     TO FILER, én per retning - se @media nederst i fila. Motivet er en
-     ramme og ikke et motiv, saa den staaende er den samme fila dreid 90
-     grader: roerene bytter fra sidekantene til topp og bunn, og
-     tannhjulene blir liggende i andre hjoerner. Det virker fordi
-     ingenting i bildet har en opp-ned. Med bare den liggende ville
-     `cover` paa telefon i staaende beskaaret vekk begge sidekantene -
-     altsaa halve komposisjonen. */
-  --side-bakgrunn:url('/bilder/bakgrunn.webp') center center / cover no-repeat fixed,
-                  linear-gradient(160deg,#F6F1E7 0%,#EDE6D9 100%);
+     BARE GRADIENTEN her. Selve bildet ligger i et fastposisjonert lag
+     (body::before nederst i fila) og ikke som background-attachment:
+     fixed. Grunnen er en gammel iOS-feil: Safari maaler en fast
+     bakgrunn mot DOKUMENTETS hoeyde, ikke vinduets, saa `cover` blaaser
+     bildet opp til et lite utsnitt av det tomme midtpartiet - altsaa
+     ingen synlig bakgrunn i det hele tatt. Verifisert paa iPad.
+     Gradienten blir staaende under bildet som reserve. */
+  --side-bakgrunn:linear-gradient(160deg,#F6F1E7 0%,#EDE6D9 100%);
+  /* Bildet, per retning. Byttes nederst i fila. */
+  --side-bilde:url('/bilder/bakgrunn.webp');
   /* Mild flate for grupperingsbokser. Var kjoelig blaa (#EDF3F8) og
      ble kald inne i et varmt kort. Egen variabel, ikke --aksent-lys:
      den betyr "valgt", og en boks skal ikke se ut som et valg. */
@@ -94,27 +93,35 @@
 }
 
 /* ------------------------------------------------------------
-   Bakgrunnen per retning
+   Bakgrunnsbildet
    ------------------------------------------------------------
-   Staaende faar den dreide fila. `orientation` er riktig maal her -
-   det er sideforholdet paa vinduet det gjelder, ikke stoerrelsen, saa
-   dette er unntaket fra regelen om at LANDSKAP-betingelsen skal ha
-   hoeydekrav. Et smalt PC-vindu skal ha den staaende av samme grunn
-   som en telefon.
+   Et fastposisjonert lag bak alt innhold, ikke background-attachment.
+   Effekten er den samme - ramma staar stille mens innholdet ruller -
+   men uten iOS-feilen som gjorde bakgrunnen usynlig paa iPad.
+
+   `pointer-events:none` er ikke pynt: laget dekker hele vinduet, og
+   uten den ville det spist hvert eneste trykk paa sida.
+
+   Bruker ::before paa body og ikke et element i HTML-en, saa ingen av
+   de fem sidene trenger ny markup.
    ------------------------------------------------------------ */
-@media (orientation: portrait){
-  :root{
-    --side-bakgrunn:url('/bilder/bakgrunn-staaende.webp') center center / cover no-repeat fixed,
-                    linear-gradient(160deg,#F6F1E7 0%,#EDE6D9 100%);
-  }
+body::before{
+  content:'';
+  position:fixed; inset:0; z-index:-1;
+  background:var(--side-bilde) center center / cover no-repeat;
+  pointer-events:none;
 }
 
-/* `fixed` er det som gjoer at ramma staar stille mens innholdet ruller -
-   uten den vandrer roerene oppover og bildet slutter aa vaere en ramme.
-   Men iOS Safari tegner faste bakgrunner om ved hver rullebevegelse, og
-   paa lange lister merkes det. Er det treigt paa telefon, er DETTE
-   knappen aa vri paa foerst: bytt `fixed` til `scroll` i begge blokkene
-   over og se om det loesner. */
+/* Staaende faar den dreide fila. `orientation` er riktig maal her - det
+   er sideforholdet paa vinduet det gjelder, ikke stoerrelsen, saa dette
+   er unntaket fra regelen om at LANDSKAP-betingelsen skal ha
+   hoeydekrav. Et smalt PC-vindu skal ha den staaende av samme grunn som
+   en telefon.
+
+   Motivene er komponert hver for seg, ikke det samme bildet dreid. */
+@media (orientation: portrait){
+  :root{ --side-bilde:url('/bilder/bakgrunn-staaende.webp'); }
+}
 
 /* ------------------------------------------------------------ */
 
