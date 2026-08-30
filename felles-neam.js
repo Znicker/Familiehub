@@ -882,6 +882,7 @@ function neamSideFirerNed(){
   neamDuseNed();
   const stabel = document.getElementById('neamSideStabel');
   if(stabel) stabel.hidden = true;
+  f.classList.remove('gren-opp', 'gren-skraa', 'gren-ved');
   document.removeEventListener('pointerdown', neamSideUtenfor, true);
   setTimeout(function(){ f.hidden = true; }, 190);
 }
@@ -935,7 +936,7 @@ function neamFirerNed(){
   if(apper) apper.hidden = true;
   const enheter = document.getElementById('neamEnheter');
   if(enheter) enheter.hidden = true;
-  f.classList.remove('gren-opp', 'gren-skraa');
+  f.classList.remove('gren-opp', 'gren-skraa', 'gren-ved');
   document.removeEventListener('pointerdown', neamFirerUtenfor, true);
   /* Vent til knappene har trukket seg sammen foer laget gjemmes. */
   setTimeout(function(){ f.hidden = true; }, 190);
@@ -1025,7 +1026,7 @@ function neamFirerUtenfor(ev){
 function neamSideStabel(plass, liste){
   const boks = document.getElementById('neamSideStabel');
   if(!boks) return;
-  if(!boks.hidden){ boks.hidden = true; return; }
+  if(!boks.hidden){ boks.hidden = true; neamSideGren(''); return; }
   if(!liste || !liste.length) return;
 
   /* «opp» staar i oeverste rad og har tak over seg - da vokser valgene
@@ -1050,6 +1051,7 @@ function neamSideStabel(plass, liste){
     };
   });
   boks.hidden = false;
+  neamSideGren(plass);
 
   /* Hvem som havnet paa en rad over kan bare avgjoeres etter at raden er
      tegnet - det avhenger av skjermbredden. Nederste rad er den med
@@ -1062,14 +1064,16 @@ function neamSideStabel(plass, liste){
   }
 }
 
-/* Merker hvilken gren som er valgt, saa roeret til den andre kan falle
-   bort. Tom streng betyr ingen - da staar begge aapne. */
-function neamGren(plass){
-  const f = document.getElementById('neamFirer');
+/* Merker hvilken gren som er valgt, saa roerene til de andre kan falle
+   bort. Tom streng betyr ingen - da staar alle tre aapne. */
+function neamGrenPaa(id, plass){
+  const f = document.getElementById(id);
   if(!f) return;
-  f.classList.remove('gren-opp', 'gren-skraa');
+  f.classList.remove('gren-opp', 'gren-skraa', 'gren-ved');
   if(plass) f.classList.add('gren-' + plass);
 }
+function neamGren(plass){     neamGrenPaa('neamFirer', plass); }
+function neamSideGren(plass){ neamGrenPaa('neamSideFirer', plass); }
 
 function neamVisEnheter(){
   const boks = document.getElementById('neamEnheter');

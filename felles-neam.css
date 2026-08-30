@@ -119,50 +119,69 @@
 .neam-enhet, .neam-app-lenke, .neam-knapp{ position:relative; z-index:1; }
 
 /* ---- Grenene i fireren ----
-   Roer fra haandtaket ut til de to knappene som AAPNER noe. «ved» gaar
-   bare til en annen side og faar ingen gren - et roer skal bety at noe
-   henger sammen, ikke at to knapper ligger ved siden av hverandre.
+   Roer fra haandtaket ut til ALLE tre knappene, ikke bare de som aapner
+   noe. Uten det staar de gjenvaerende knappene loese, og roeret sier mer
+   om hva slags knapp det er enn om hvor man kan gaa - det er bedre at det
+   sier «disse hoerer sammen med haandtaket».
 
-   Stammen gaar loddrett fra haandtaket opp til «opp». Grenen til «skraa»
-   tar av derfra og gaar vannrett. Begge ligger bak knappene og synes bare
-   i mellomrommene, som roerstrekk mellom bokser.
+   «opp» staar rett over og faar loddrett roer. «ved» staar ved siden av og
+   faar vannrett. «skraa» staar diagonalt, og faar et diagonalt roer: en
+   L-formet omvei ville lagt seg bak de to andre knappene og bare vist seg
+   i biter.
 
    Roerene henger paa knappene selv, ikke paa fireren: da flytter de seg
    med knappene naar geometrien endres, og det er ett sted aa regne. */
-/* Bare i VENSTRE firer. Hoeyre har sidas egne handlinger, og der aapner
-   «opp» som regel en visning og ikke en undermeny - et roer dit ville sagt
-   at noe henger sammen som ikke gjoer det. Hoeyre faar sine roer fra
-   stabelen i stedet, der de faktisk foerer et sted. */
-.neam-firer:not(.side) .neam-knapp.opp::after,
-.neam-firer:not(.side) .neam-knapp.skraa::after{
+.neam-knapp.opp::after,
+.neam-knapp.ved::after,
+.neam-knapp.skraa::after{
   content:''; position:absolute; z-index:-1;
-  background:var(--ror-loddrett); box-shadow:var(--ror-skygge);
+  box-shadow:var(--ror-skygge);
   opacity:0; transition:opacity .15s ease .1s;
 }
-.neam-firer.oppe:not(.side) .neam-knapp.opp::after,
-.neam-firer.oppe:not(.side) .neam-knapp.skraa::after{ opacity:1; }
+.neam-firer.oppe .neam-knapp.opp::after,
+.neam-firer.oppe .neam-knapp.ved::after,
+.neam-firer.oppe .neam-knapp.skraa::after{ opacity:1; }
 
-/* Stammen: ned fra «opp» til haandtaket. */
-.neam-firer:not(.side) .neam-knapp.opp::after{
+/* Loddrett: ned fra «opp» til haandtaket. */
+.neam-knapp.opp::after{
+  background:var(--ror-loddrett);
   width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
   top:50%; height:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
 }
-/* Grenen: fra «skraa» bort til «opp». I venstre firer staar «opp» ved
-   hjoernet og «skraa» ute, saa grenen gaar INNOVER - mot hjoernet. Den
-   pekte utover foerst, og forsvant da ut av skjermen i stedet for aa
-   treffe noe. */
-.neam-firer:not(.side) .neam-knapp.skraa::after{
+
+/* Vannrett: fra «ved» innover til haandtaket. */
+.neam-knapp.ved::after{
   background:var(--ror-vann);
   height:var(--ror-tykk); top:calc(50% - var(--ror-tykk) / 2);
   right:50%; width:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
 }
+.neam-firer.side .neam-knapp.ved::after{ right:auto; left:50%; }
 
-/* Naar én gren er valgt, faller den andre bort - som en ventil som
-   stenges. Uten det staar begge roerene aapne mens bare det ene fører
-   noe sted, og da slutter roeret aa si hvor man er. */
-.neam-firer.gren-opp   .neam-knapp.skraa::after,
-.neam-firer.gren-skraa .neam-knapp.skraa::after{ transition-delay:0s; }
-.neam-firer.gren-opp   .neam-knapp.skraa::after{ opacity:0; }
+/* Diagonalt: fra «skraa» tvers over til haandtaket. Lengden er
+   hypotenusen i kvadratet knappene staar i - 1,4142 ganger avstanden
+   mellom to knappesentre - og roeret dreies 45 grader om sitt eget
+   feste i knappens senter. */
+.neam-knapp.skraa::after{
+  background:var(--ror-vann);
+  height:var(--ror-tykk); top:calc(50% - var(--ror-tykk) / 2);
+  left:50%;
+  width:calc(1.4142 * (var(--f-aapen) + var(--f-luft)));
+  transform-origin:0 50%;
+  transform:rotate(135deg);      /* ned mot venstre: haandtaket */
+}
+.neam-firer.side .neam-knapp.skraa::after{
+  transform:rotate(45deg);       /* speilvendt: ned mot hoeyre */
+}
+
+/* Naar én gren er valgt, faller de andre bort - som ventiler som stenges.
+   Uten det staar alle roerene aapne mens bare det ene foerer noe sted, og
+   da slutter roeret aa si hvor man er. */
+.neam-firer[class*="gren-"] .neam-knapp::after{
+  opacity:0; transition-delay:0s;
+}
+.neam-firer.gren-opp   .neam-knapp.opp::after,
+.neam-firer.gren-ved   .neam-knapp.ved::after,
+.neam-firer.gren-skraa .neam-knapp.skraa::after{ opacity:1; }
 
 /* ---------- Stabelen ----------
    En kolonne som vokser OPPOVER fra en av knappene i fireren. Enhetene
@@ -242,27 +261,29 @@
   box-shadow:var(--ror-skygge);
   bottom:calc(var(--f-aapen) / 2 + var(--bro) - var(--ror-tykk) / 2);
   left:calc(var(--f-aapen) / 2);
-  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
+  right:calc(-1 * (1.5 * var(--f-aapen) + 2 * var(--f-luft)));
 }
 /* Speilvendt: moderknappen staar til HOEYRE for stabelen her, saa broen
    stikker ut paa hoeyre side og stopper ved siste knapps senter til
    venstre. Den sto motsatt foerst og rant ut av skjermkanten. */
 .neam-stabel.side.rad::before{
   left:calc(var(--f-aapen) / 2);
-  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
+  right:calc(-1 * (1.5 * var(--f-aapen) + 2 * var(--f-luft)));
 }
-/* Stigningen: opp fra moderknappens senter til broen. Ligger utenfor
-   stabelen, over der System staar. */
+/* Stigningen: opp fra HAANDTAKETS senter til broen, ikke fra
+   moderknappens. Streken skal kunne foelges hele veien tilbake til
+   hjoernet man trykket paa - stopper den ved System, ser undervalgene ut
+   til aa henge i en knapp som selv ikke henger i noe. */
 .neam-stabel.rad::after{
   content:''; position:absolute; z-index:0;
   width:var(--ror-tykk); background:var(--ror-loddrett);
   box-shadow:var(--ror-skygge);
   bottom:calc(var(--f-aapen) / 2); height:var(--bro);
-  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft) + var(--ror-tykk) / 2));
+  right:calc(-1 * (1.5 * var(--f-aapen) + 2 * var(--f-luft) + var(--ror-tykk) / 2));
 }
 .neam-stabel.rad:not(.side)::after{
   right:auto;
-  left:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft) + var(--ror-tykk) / 2));
+  left:calc(-1 * (1.5 * var(--f-aapen) + 2 * var(--f-luft) + var(--ror-tykk) / 2));
 }
 /* Nedstikkene: fra broen ned i hver knapp i NEDERSTE rad. */
 .neam-stabel.rad .neam-enhet::before{
