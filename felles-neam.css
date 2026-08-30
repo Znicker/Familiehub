@@ -86,6 +86,28 @@
 .neam-handtak:active{ transform:scale(.94); }
 .neam-handtak.oppe{ width:var(--f-aapen); height:var(--f-aapen); }
 
+/* ---------- Duselaget ----------
+   Bakgrunnen dempes naar et av hjoernene aapnes. Knappene er runde merker
+   uten flate under seg, og de laa rett paa et teksturert bakgrunnsbilde
+   fullt av tannhjul og kretskort - da maa oeyet skille merke fra moenster
+   selv, og det er den jobben denne flata gjoer.
+
+   Under knappene (90) og applista, over alt innhold. Gjelder begge
+   hjoernene: det er samme system, og at det ene skulle dempe og det andre
+   ikke ville lest som to ulike slags menyer.
+
+   Trykk paa flata lukker gjennom den vanlige utenfor-lytteren, saa den
+   trenger ingen egen klikkhaandtering - men den maa ta imot trykk, ellers
+   gaar de rett gjennom til sida under. */
+.neam-duse{
+  position:fixed; inset:0; z-index:89;
+  background:rgba(44,62,80,.35);
+  -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+  opacity:0; transition:opacity .18s ease;
+}
+.neam-duse[hidden]{ display:none; }
+.neam-duse.oppe{ opacity:1; }
+
 /* ---------- Fireren ----------
    Tre knapper rundt haandtaket, som fire prikker paa en terning der
    haandtaket selv er den fjerde. Retningene er faste og betyr det samme
@@ -174,7 +196,11 @@
 .neam-apper{
   position:fixed; z-index:90; pointer-events:none;
   left:var(--f-marg-x); right:var(--f-marg-x);
-  bottom:calc(var(--f-marg-y) + 2 * var(--f-aapen) + 2 * var(--f-luft));
+  /* Fireren slutter paa marg + 2 knapper + luft. Lufta OVER den er egen og
+     stoerre: merkene har baade drop-shadow og et baand som stikker ut, saa
+     ti piksler mellom to rader knapper leses som at de ligger oppaa
+     hverandre selv naar boksene ikke roerer hverandre. */
+  bottom:calc(var(--f-marg-y) + 2 * var(--f-aapen) + var(--f-luft) + 26px);
   display:flex; gap:var(--f-luft);
   justify-content:flex-start; flex-wrap:wrap-reverse;
 }

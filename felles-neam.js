@@ -789,6 +789,27 @@ const NEAM_SIDEPLASSER = ['opp', 'skraa', 'ved'];
    handlinger som gjelder mens man staar der. */
 let neamSideValg = {};
 
+/* Duselaget. Felles for begge hjoernene - se kommentaren i CSS-en.
+   Bygges av neamBygg(). */
+function neamDuseOpp(){
+  const d = document.getElementById('neamDuse');
+  if(!d) return;
+  d.hidden = false;
+  /* Neste ramme, ellers hopper overgangen rett til sluttbildet. */
+  requestAnimationFrame(function(){ d.classList.add('oppe'); });
+}
+
+function neamDuseNed(){
+  const d = document.getElementById('neamDuse');
+  if(!d) return;
+  d.classList.remove('oppe');
+  setTimeout(function(){
+    /* Rakk det andre hjoernet aa aapne seg i mellomtiden, skal flata bli
+       staaende - ellers blinker den bort naar man bytter side. */
+    if(!d.classList.contains('oppe')) d.hidden = true;
+  }, 190);
+}
+
 /* Sant naar sida i det hele tatt har meldt inn noe. Avgjoer om
    haandtaket vises - se kommentaren over. */
 function neamSideHarNoe(){
@@ -833,6 +854,7 @@ function neamSideFirer(){
     k.title = navn;
   });
 
+  neamDuseOpp();
   /* Haandtaket blir staaende og vokser. */
   h.classList.add('oppe');
   f.hidden = false;
@@ -846,6 +868,7 @@ function neamSideFirerNed(){
   if(!f || !h) return;
   f.classList.remove('oppe');
   h.classList.remove('oppe');
+  neamDuseNed();
   document.removeEventListener('pointerdown', neamSideUtenfor, true);
   setTimeout(function(){ f.hidden = true; }, 190);
 }
@@ -880,6 +903,7 @@ function neamFirer(){
      man ikke samtidig treffer noe under. Hoeyre haandtak lukker derimot
      ved andre trykk: der finnes ingen «seg selv» aa aapne. */
   if(f.classList.contains('oppe')){ neamFirerNed(); neamAapne(); return; }
+  neamDuseOpp();
   h.classList.add('oppe');
   f.hidden = false;
   /* Neste ramme, saa overgangen faktisk spilles - et element som faar
@@ -894,6 +918,7 @@ function neamFirerNed(){
   if(!f || !h) return;
   f.classList.remove('oppe');
   h.classList.remove('oppe');
+  neamDuseNed();
   const apper = document.getElementById('neamApper');
   if(apper) apper.hidden = true;
   document.removeEventListener('pointerdown', neamFirerUtenfor, true);
@@ -1006,6 +1031,13 @@ function neamBygg(){
      staaende, gjoer det begge jobbene, og plassene gaar til noe som
      faktisk gjoer noe. «Hjem» flyttet samtidig inn i applista, se
      NEAM_APPER. */
+  /* Foerst i DOM-en av knappelaget, saa den ligger under alt den demper. */
+  const duse = document.createElement('div');
+  duse.className = 'neam-duse';
+  duse.id = 'neamDuse';
+  duse.hidden = true;
+  document.body.appendChild(duse);
+
   const firer = document.createElement('div');
   firer.className = 'neam-firer';
   firer.id = 'neamFirer';
