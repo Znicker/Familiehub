@@ -279,29 +279,29 @@
   box-shadow:var(--ror-skygge);
   bottom:calc(var(--f-aapen) / 2 + var(--bro) - var(--ror-tykk) / 2);
   left:calc(var(--f-aapen) / 2);
-  right:calc(-1 * (1.5 * var(--f-aapen) + 2 * var(--f-luft)));
+  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
 }
 /* Speilvendt: moderknappen staar til HOEYRE for stabelen her, saa broen
    stikker ut paa hoeyre side og stopper ved siste knapps senter til
    venstre. Den sto motsatt foerst og rant ut av skjermkanten. */
 .neam-stabel.side.rad::before{
   left:calc(var(--f-aapen) / 2);
-  right:calc(-1 * (1.5 * var(--f-aapen) + 2 * var(--f-luft)));
+  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
 }
-/* Stigningen: opp fra HAANDTAKETS senter til broen, ikke fra
-   moderknappens. Streken skal kunne foelges hele veien tilbake til
-   hjoernet man trykket paa - stopper den ved System, ser undervalgene ut
-   til aa henge i en knapp som selv ikke henger i noe. */
+/* Stigningen: opp fra MODERKNAPPENS senter til broen. Den gikk en stund
+   helt bort til haandtaket, men da laa det to roer i samme strekning -
+   moderknappen henger alt i haandtaket gjennom sin egen gren, og broen
+   skal bare vise hva moderknappen aapner. */
 .neam-stabel.rad::after{
   content:''; position:absolute; z-index:0;
   width:var(--ror-tykk); background:var(--ror-loddrett);
   box-shadow:var(--ror-skygge);
   bottom:calc(var(--f-aapen) / 2); height:var(--bro);
-  right:calc(-1 * (1.5 * var(--f-aapen) + 2 * var(--f-luft) + var(--ror-tykk) / 2));
+  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft) + var(--ror-tykk) / 2));
 }
 .neam-stabel.rad:not(.side)::after{
   right:auto;
-  left:calc(-1 * (1.5 * var(--f-aapen) + 2 * var(--f-luft) + var(--ror-tykk) / 2));
+  left:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft) + var(--ror-tykk) / 2));
 }
 /* Nedstikkene: fra broen ned i hver knapp i NEDERSTE rad. */
 .neam-stabel.rad .neam-enhet::before{
@@ -509,30 +509,41 @@
   justify-content:flex-start; flex-wrap:wrap-reverse;
 }
 .neam-apper[hidden]{ display:none; }
-/* Applista henger under «skraa». To roer: et vannrett samlerroer som
-   loeper gjennom hele raden og forgrener seg til alle appene, og en
-   loddrett stamme ned fra det til «skraa»-knappens senter.
+/* Applista henger under «skraa». Samlerroeret gaar UNDER merkene, ikke
+   gjennom sentrene deres: merkene er runde og ligger med luft imellom, og
+   et roer paa senterlinja viste seg bare som fire loese biter i gapene.
+   Under raden loeper det ubrutt, og hvert merke henger i det med et kort
+   oppstikk - da ser man én ledning med fire avstikkere.
 
-   Uten samlerroeret hang bare den ene appen sammen med menyen, og de tre
-   andre sto som loese sirkler ved siden av. */
+   --app-ror er hvor langt under listas underkant roeret ligger: midt i
+   mellomrommet ned mot fireren, som er 16px. */
+.neam-apper{ --app-ror:8px; }
 .neam-apper::before{
   content:''; position:absolute; z-index:0;
   height:var(--ror-tykk); background:var(--ror-vann);
   box-shadow:var(--ror-skygge);
-  top:calc(50% - var(--ror-tykk) / 2);
+  bottom:calc(-1 * var(--app-ror) - var(--ror-tykk) / 2);
   left:calc(var(--f-aapen) / 2); right:calc(var(--f-aapen) / 2);
 }
+/* Stammen videre ned til «skraa»-knappens senter. */
 .neam-apper::after{
   content:''; position:absolute; z-index:0;
   width:var(--ror-tykk); background:var(--ror-loddrett);
   box-shadow:var(--ror-skygge);
   left:calc(1.5 * var(--f-aapen) + var(--f-luft) - var(--ror-tykk) / 2);
-  top:50%;
   bottom:calc(-1 * (var(--f-aapen) / 2 + 16px));
+  height:calc(var(--f-aapen) / 2 + 16px - var(--app-ror));
 }
 .neam-apper.side::after{
   left:auto;
   right:calc(1.5 * var(--f-aapen) + var(--f-luft) - var(--ror-tykk) / 2);
+}
+/* Oppstikket fra samlerroeret opp i hvert merke. */
+.neam-app-lenke::after{
+  content:''; position:absolute; z-index:-1;
+  width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
+  background:var(--ror-loddrett); box-shadow:var(--ror-skygge);
+  top:50%; height:calc(50% + var(--app-ror));
 }
 /* Speilvendt naar den hoerer til hoeyre hjoerne - i dag gjoer den ikke
    det, men regelen staar saa fireren kan flyttes uten aa etterlate
