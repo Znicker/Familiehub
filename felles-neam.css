@@ -52,18 +52,18 @@
   /* Lufta er ogsaa hvor mye av roeret som SYNES: knappene dekker resten.
      10px ga et glimt; 16 gir et roerstrekk. Knappen krymper tilsvarende
      paa telefon fordi den regnes ut av det som blir til overs. */
-  --f-luft:16px; --f-ikon:28px;
+  --f-luft:20px; --f-ikon:28px;
   --f-marg-x:20px; --f-marg-y:24px;
 }
 @media(min-width:700px) and (min-height:600px){
   :root{
-    --f-handtak:76px; --f-aapen:120px; --f-luft:20px; --f-ikon:46px;
+    --f-handtak:76px; --f-aapen:120px; --f-luft:24px; --f-ikon:46px;
     --f-marg-x:28px; --f-marg-y:34px;
   }
 }
 @media(min-width:1300px) and (min-height:600px){
   :root{
-    --f-handtak:108px; --f-aapen:128px; --f-luft:22px; --f-ikon:50px;
+    --f-handtak:108px; --f-aapen:128px; --f-luft:26px; --f-ikon:50px;
     --f-marg-x:40px; --f-marg-y:48px;
   }
 }
@@ -93,58 +93,49 @@
 .neam-handtak.oppe{ width:var(--f-aapen); height:var(--f-aapen); }
 
 /* ---------- Roerene ----------
-   Et messingroer fra knappen man trykket til knappene som kom fram. Uten
-   det er undervalgene bare noen flere sirkler i et hjoerne; med det er de
-   noe som henger sammen med noe, og man ser hvor i menyen man staar.
+   Roerene er BILDER, ikke gradienter - klippet ut av delarket tegnet
+   etter forelegget. Ett ark, saa alle delene deler metall, lys og
+   diameter; alt er skalert til samme roerdiameter (26 px i fil, 13 paa
+   skjerm), og teksturen er det som CSS-gradienter aldri kom i naerheten
+   av.
 
-   Gradienten paa TVERS av roeret gir sylinderformen. Verdiene er MAALT ut
-   av messingroeret i forelegget, ikke gjettet: fjorten stopp, og lyset
-   ligger paa 48 % og ikke midt paa. Det er den lille skjevheten som gjoer
-   at en sylinder ser dreid ut og ikke som en flat stripe med lys i
-   midten. Lyset kommer ovenfra, samme retning som paa merkene, saa roer
-   og merke leses som samme materiale.
+   Rette roer er FLISER av det glatte roeret. Bend, T-stykker og krager er
+   hele deler som legges OVER roerene i skjoetene: delene er ugjennom-
+   siktige og har samme diameter, saa overlappen blir soemloes og ingen
+   ende maa treffe paa pikselen.
 
-   KRAGENE er de to baandene naer hver ende - klemmene som holder roeret.
-   De ligger som egne bakgrunnslag oppaa sylinderen, saa hele roeret er én
-   verdi og kan settes med `background: var(--ror-loddrett)`. I forelegget
-   er kragen 1,4 ganger bredere enn roeret; her er den like bred, fordi et
-   bakgrunnslag ikke kan stikke utenfor sitt eget element. Moerk-lys-moerk
-   paa tvers gir likevel lesningen «klemme» uten den bredden.
+   Retningsnavnene sier hvor aapningene peker: bend-nv aapner NED og
+   VENSTRE (hjoernet oppe-hoeyre), t-ned har gjennomgaaende roer med
+   stammen ned. Bendene kan IKKE roteres i CSS - lyset ligger ovenfra i
+   selve bildet, og et rotert bend faar lyset fra feil kant. Derfor egne
+   filer per retning.
 
-   Roeret ligger UNDER knappene og er derfor bare synlig i mellomrommene,
-   som et roerstrekk mellom bokser. Knappene har ugjennomsiktig flate og
-   dekker resten selv - derfor er bendene aldri synlige: hvert hjoerne
-   ligger i et knappesenter. Broen er unntaket, og der er hjoernene mykt
-   avrundet i stedet for aa vaere skarpe. */
+   Maaltall (css-px = halve filens): bend 31x32, nedarm-senter 9 (nh) /
+   21.5 (nv) fra venstre, sidearm-senter 9 fra topp. t-ned 44x29,
+   gjennomroer-senter 9 fra topp, stamme-senter 22 fra venstre. t-opp
+   46x25, gjennomroer-senter 16 fra topp, stamme-senter 23. */
 :root{
-  --ror-tykk:11px;
-
-  /* Sylinderen, paa tvers. To retninger fordi et loddrett og et vannrett
-     roer maa ha lyset langs seg, ikke over. */
-  --sylinder-v:#402409 0%, #2C1904 8%, #643F18 16%, #7B511F 24%,
-               #966027 32%, #C49047 40%, #ECC58A 48%, #AB7635 56%,
-               #7E4F1C 64%, #684014 72%, #41280B 80%, #291804 88%,
-               #462E0E 96%, #402409 100%;
-
-  /* Klemma: moerk kant, lys rygg, moerk kant. Sju piksler bred. */
-  --krage-ned:linear-gradient(to bottom,
-      rgba(30,18,4,.9) 0 2px, rgba(236,197,138,.75) 2px 5px,
-      rgba(30,18,4,.9) 5px 7px, transparent 7px);
-  --krage-hoyre:linear-gradient(to right,
-      rgba(30,18,4,.9) 0 2px, rgba(236,197,138,.75) 2px 5px,
-      rgba(30,18,4,.9) 5px 7px, transparent 7px);
-
-  --ror-loddrett:
-      var(--krage-ned) center top 6px / 100% 7px no-repeat,
-      var(--krage-ned) center bottom 6px / 100% 7px no-repeat,
-      linear-gradient(to right, var(--sylinder-v));
-  --ror-vann:
-      var(--krage-hoyre) left 6px center / 7px 100% no-repeat,
-      var(--krage-hoyre) right 6px center / 7px 100% no-repeat,
-      linear-gradient(to bottom, var(--sylinder-v));
-
+  --ror-tykk:13px;
+  --ror-vann:url('/bilder/deler/ror-glatt.png?v=1');
+  --ror-lodd:url('/bilder/deler/ror-glatt-v.png?v=1');
   --ror-skygge:0 2px 5px rgba(44,62,80,.34);
 }
+/* Grunnstil for en roerdel tegnet av JS. */
+.rdel{ position:absolute; z-index:0; pointer-events:none; }
+.rdel.flis-h{ background-image:var(--ror-vann); background-size:auto 100%;
+  background-repeat:repeat-x; height:var(--ror-tykk);
+  box-shadow:var(--ror-skygge); }
+.rdel.flis-v{ background-image:var(--ror-lodd); background-size:100% auto;
+  background-repeat:repeat-y; width:var(--ror-tykk);
+  box-shadow:var(--ror-skygge); }
+/* Hele deler: fast stoerrelse, over roerene de skjoeter. */
+.rdel.hel{ z-index:1; background-size:100% 100%; background-repeat:no-repeat; }
+.rdel.bend-nv{ width:31px; height:32px; background-image:url('/bilder/deler/bend-nv.png?v=1'); }
+.rdel.bend-nh{ width:31px; height:32px; background-image:url('/bilder/deler/bend-nh.png?v=1'); }
+.rdel.t-ned  { width:44px; height:29px; background-image:url('/bilder/deler/t-ned.png?v=1'); }
+.rdel.t-opp  { width:46px; height:25px; background-image:url('/bilder/deler/t-opp.png?v=1'); }
+.rdel.krage-v{ width:22px; height:13px; background-image:url('/bilder/deler/krage.png?v=1'); }
+.rdel.krage-h{ width:13px; height:22px; background-image:url('/bilder/deler/krage-h.png?v=1'); }
 
 /* Knappene maa ligge over roeret.
 
@@ -185,14 +176,16 @@
 
 /* Loddrett: ned fra «opp» til haandtaket. */
 .neam-knapp.opp::after{
-  background:var(--ror-loddrett);
+  background-image:var(--ror-lodd);
+  background-size:100% auto; background-repeat:repeat-y;
   width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
   top:50%; height:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
 }
 
 /* Vannrett: fra «ved» innover til haandtaket. */
 .neam-knapp.ved::after{
-  background:var(--ror-vann);
+  background-image:var(--ror-vann);
+  background-size:auto 100%; background-repeat:repeat-x;
   height:var(--ror-tykk); top:calc(50% - var(--ror-tykk) / 2);
   right:50%; width:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
 }
@@ -203,7 +196,8 @@
    mellom to knappesentre - og roeret dreies 45 grader om sitt eget
    feste i knappens senter. */
 .neam-knapp.skraa::after{
-  background:var(--ror-vann);
+  background-image:var(--ror-vann);
+  background-size:auto 100%; background-repeat:repeat-x;
   height:var(--ror-tykk); top:calc(50% - var(--ror-tykk) / 2);
   left:50%;
   width:calc(1.4142 * (var(--f-aapen) + var(--f-luft)));
@@ -252,7 +246,8 @@
    toppes ved den oeverste knappens senter. */
 .neam-stabel:not(.rad)::before{
   content:''; position:absolute; z-index:0;
-  width:var(--ror-tykk); background:var(--ror-loddrett);
+  width:var(--ror-tykk); background-image:var(--ror-lodd);
+  background-size:100% auto; background-repeat:repeat-y;
   box-shadow:var(--ror-skygge);
   left:calc(50% - var(--ror-tykk) / 2);
   top:calc(var(--f-aapen) / 2);
@@ -301,52 +296,11 @@
    gjoer. */
 .neam-stabel.rad{ --bro:calc(var(--f-aapen) / 2 + var(--f-luft) + 12px); }
 
-/* Broen: vannrett, over knappene, fra stigningen til siste nedstikk.
-   Forankret til NEDERSTE rads senter, ikke til halve stabelen: blir det
-   flere rader, skal broen bli liggende der moderknappen er.
-
-   Endene er avrundet med halve roertykkelsen. Broens hjoerner er de eneste
-   bendene i hele systemet som ikke ligger skjult bak en knapp, og et
-   skarpt hjoerne der avsloerer at det er to rektangler og ikke ett roer. */
-.neam-stabel.rad::before{
-  content:''; position:absolute; z-index:0;
-  border-radius:calc(var(--ror-tykk) / 2);
-  height:var(--ror-tykk); background:var(--ror-vann);
-  box-shadow:var(--ror-skygge);
-  bottom:calc(var(--f-aapen) / 2 + var(--bro) - var(--ror-tykk) / 2);
-  left:calc(var(--f-aapen) / 2);
-  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
-}
-/* Speilvendt: moderknappen staar til HOEYRE for stabelen her, saa broen
-   stikker ut paa hoeyre side og stopper ved siste knapps senter til
-   venstre. Den sto motsatt foerst og rant ut av skjermkanten. */
-.neam-stabel.side.rad::before{
-  left:calc(var(--f-aapen) / 2);
-  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
-}
-/* Stigningen: opp fra MODERKNAPPENS senter til broen. Den gikk en stund
-   helt bort til haandtaket, men da laa det to roer i samme strekning -
-   moderknappen henger alt i haandtaket gjennom sin egen gren, og broen
-   skal bare vise hva moderknappen aapner. */
-.neam-stabel.rad::after{
-  content:''; position:absolute; z-index:0;
-  border-radius:calc(var(--ror-tykk) / 2);
-  width:var(--ror-tykk); background:var(--ror-loddrett);
-  box-shadow:var(--ror-skygge);
-  bottom:calc(var(--f-aapen) / 2); height:var(--bro);
-  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft) + var(--ror-tykk) / 2));
-}
-.neam-stabel.rad:not(.side)::after{
-  right:auto;
-  left:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft) + var(--ror-tykk) / 2));
-}
-/* Nedstikkene: fra broen ned i hver knapp i NEDERSTE rad. */
-.neam-stabel.rad .neam-enhet::before{
-  content:''; position:absolute; z-index:-1;
-  width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
-  background:var(--ror-loddrett); box-shadow:var(--ror-skygge);
-  bottom:50%; height:var(--bro);
-}
+/* Broen, stigningen, nedstikkene og T-punktene tegnes av JS som
+   .rdel-elementer - se neamRorRad() i felles-neam.js. Pseudo-elementene
+   som laa her klarte rette strekk, men skjoetene (bend og T) er hele
+   bildedeler som maa plasseres ut fra hvor mange knapper raden fikk, og
+   det vet bare JS. */
 
 /* ---- Flere rader ----
    Er raden full, begynner en ny OVER den - wrap-reverse, saa den nye
@@ -362,7 +316,8 @@
 .neam-stabel.rad .neam-enhet.over::after{
   content:''; position:absolute; z-index:-1;
   width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
-  background:var(--ror-loddrett); box-shadow:var(--ror-skygge);
+  background-image:var(--ror-lodd);
+  background-size:100% auto; background-repeat:repeat-y; box-shadow:var(--ror-skygge);
   top:50%; height:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
 }
 
@@ -554,41 +509,10 @@
 
    --app-ror er hvor langt under listas underkant roeret ligger: midt i
    mellomrommet ned mot fireren, som er 16px. */
+/* Samlerroeret, oppstikkene, T-punktene og endekragene tegnes av JS som
+   .rdel-elementer - se neamVisApper(). --app-ror er avstanden fra listas
+   underkant ned til roerets senterlinje. */
 .neam-apper{ --app-ror:8px; }
-.neam-apper::before{
-  content:''; position:absolute; z-index:0;
-  height:var(--ror-tykk); background:var(--ror-vann);
-  box-shadow:var(--ror-skygge);
-  bottom:calc(-1 * var(--app-ror) - var(--ror-tykk) / 2);
-  left:calc(var(--f-aapen) / 2); right:calc(var(--f-aapen) / 2);
-}
-/* Stammen videre ned til «skraa»-knappens senter. */
-.neam-apper::after{
-  content:''; position:absolute; z-index:0;
-  width:var(--ror-tykk); background:var(--ror-loddrett);
-  box-shadow:var(--ror-skygge);
-  left:calc(1.5 * var(--f-aapen) + var(--f-luft) - var(--ror-tykk) / 2);
-  bottom:calc(-1 * (var(--f-aapen) / 2 + 16px));
-  height:calc(var(--f-aapen) / 2 + 16px - var(--app-ror));
-}
-.neam-apper.side::after{
-  left:auto;
-  right:calc(1.5 * var(--f-aapen) + var(--f-luft) - var(--ror-tykk) / 2);
-}
-/* Oppstikket fra samlerroeret opp i hvert merke. */
-.neam-app-lenke::after{
-  content:''; position:absolute; z-index:-1;
-  width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
-  background:var(--ror-loddrett); box-shadow:var(--ror-skygge);
-  top:50%; height:calc(50% + var(--app-ror));
-}
-/* Speilvendt naar den hoerer til hoeyre hjoerne - i dag gjoer den ikke
-   det, men regelen staar saa fireren kan flyttes uten aa etterlate
-   lista i feil hjoerne. */
-.neam-apper.side{
-  justify-content:flex-end;
-  left:auto; right:var(--f-marg-x);
-}
 
 .neam-app-lenke{
   pointer-events:auto; flex:none;

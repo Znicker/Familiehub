@@ -1011,6 +1011,65 @@ function neamFirerUtenfor(ev){
 
    Er det ingenting aa vise, sies det som det er i stedet for aa aapne en
    tom kolonne - samme regel som for en tom sidefirer. */
+/* ============================================================
+   Roerdelene
+   ============================================================
+   Tegner roeret som binder en rad knapper til moderknappen sin: stigning
+   opp fra moderknappen, bend, bro bortover over knappene, T-stykke ned i
+   hver mellomliggende knapp og bend ned i den ytterste.
+
+   Delene er bilder med fast stoerrelse (se .rdel i CSS-en), og maaltallene
+   der er hvor armsentrene ligger i hver del. Alt posisjoneres med calc()
+   paa de samme CSS-variablene som knappene bruker, saa geometrien flytter
+   seg med naar --f-aapen og --f-luft endres.
+
+   `side` speiler: i hoeyre hjoerne staar moderknappen til HOEYRE for
+   raden, i venstre til VENSTRE. `antall` er knappene i NEDERSTE rad -
+   wrappede knapper henger i raden under med sitt eget pseudo-roer.
+
+   Returnerer HTML-strengen; kalleren legger den FOERST i boksen, saa
+   knappene tegnes over roerene. */
+function neamRorRad(antall, side){
+  const A = 'var(--f-aapen)', L = 'var(--f-luft)', T = 'var(--ror-tykk)';
+  const ytre = side ? 'right' : 'left';       /* mot moderknappen */
+  const indre = side ? 'left' : 'right';
+  /* Brosenteret over radbunnen, og moderknappens senter utenfor boksen. */
+  const broB = 'calc(' + A + '/2 + var(--bro))';
+  const mor  = 'calc(-1*(' + L + ' + ' + A + '/2))';
+  const d = [];
+  function del(kl, stil){ d.push('<i class="rdel ' + kl + '" style="' + stil + '"></i>'); }
+
+  /* Stigningen: fra moderknappens senter opp mot bendet. */
+  del('flis-v', ytre + ':calc(' + mor + ' - ' + T + '/2);'
+    + 'bottom:calc(' + A + '/2); height:calc(var(--bro) - 18px);');
+  /* Bendet over moderknappen. Sidearm-senter 9 fra topp -> bunnen staar
+     23 under brosenteret; nedarm-senter 21.5 (nv) / 9 (nh) fra venstre. */
+  del('hel ' + (side ? 'bend-nv' : 'bend-nh'),
+      ytre + ':calc(' + mor + ' - ' + (side ? '9.5px' : '9px') + ');'
+    + 'bottom:calc(' + broB + ' - 23px);');
+  /* Broen: fra ytterste knapps senter til moderknappens senter. Endene
+     ligger under bendene. */
+  del('flis-h', indre + ':calc(' + A + '/2);'
+    + ytre + ':' + mor + ';'
+    + 'bottom:calc(' + broB + ' - ' + T + '/2);');
+  /* Bendet ned i den YTTERSTE knappen (lengst fra moderknappen). */
+  del('hel ' + (side ? 'bend-nh' : 'bend-nv'),
+      indre + ':calc(' + A + '/2 - ' + (side ? '9px' : '9.5px') + ');'
+    + 'bottom:calc(' + broB + ' - 23px);');
+  /* Per knapp: nedstikk fra broen ned i knappen; T-stykke over broen for
+     alle unntatt den ytterste (der bendet er skjoeten). */
+  for(let i = 0; i < antall; i++){
+    const senter = 'calc(' + A + '/2 + ' + i + '*(' + A + ' + ' + L + '))';
+    del('flis-v', ytre + ':calc(' + senter + ' - ' + T + '/2);'
+      + 'bottom:calc(' + A + '/2); height:var(--bro);');
+    if(i < antall - 1){
+      del('hel t-ned', ytre + ':calc(' + senter + ' - 22px);'
+        + 'bottom:calc(' + broB + ' - 20px);');
+    }
+  }
+  return d.join('');
+}
+
 /* Aapner en kolonne over en av plassene i sidefireren. Brukes av en
    sidehandling som ikke gjoer noe selv, men som rommer flere:
 
@@ -1060,7 +1119,17 @@ function neamSideStabel(plass, liste){
   const knapper = Array.prototype.slice.call(boks.querySelectorAll('.neam-enhet'));
   if(knapper.length){
     const nederst = Math.max.apply(null, knapper.map(function(k){ return k.offsetTop; }));
-    knapper.forEach(function(k){ k.classList.toggle('over', k.offsetTop < nederst); });
+    let iNederst = 0;
+    knapper.forEach(function(k){
+      const over = k.offsetTop < nederst;
+      k.classList.toggle('over', over);
+      if(!over) iNederst++;
+    });
+    /* Roerdelene tegnes naa som soesken FOER knappene, for raden vi
+       faktisk fikk. Broen gjelder bare nederste rad. */
+    if(plass === 'ved'){
+      boks.insertAdjacentHTML('afterbegin', neamRorRad(iNederst, true));
+    }
   }
 }
 
@@ -1118,14 +1187,52 @@ function neamVisApper(){
   /* Én knapp per app, i samme stoerrelse som knappene i fireren. Navnet
      staar i aria-label og ikke som tekst under: merkene baerer navnet
      sitt selv, og skjermlesere trenger det likevel. */
-  boks.innerHTML = NEAM_APPER
-    .filter(function(a){ return neamSti(a.sti) !== her; })
-    .map(function(a){
+  const apper = NEAM_APPER.filter(function(a){ return neamSti(a.sti) !== her; });
+  boks.innerHTML = apper.map(function(a){
       return '<a class="neam-app-lenke" href="' + a.sti + '" '
            +   'title="' + a.navn + '" aria-label="' + a.navn + '">'
            +   '<img src="' + a.ikon + '" alt="">'
            + '</a>';
     }).join('');
+
+  /* Roeret under raden: samlerroer med endekrager, oppstikk med T-stykke
+     opp i hvert merke, og stammen med T ned mot «skraa». Alt er deler fra
+     arket - se .rdel i CSS-en. Legges foerst, saa merkene tegnes over. */
+  (function(){
+    const A = 'var(--f-aapen)', L = 'var(--f-luft)', T = 'var(--ror-tykk)';
+    const rorB = 'calc(-1*var(--app-ror) - ' + T + '/2)';     /* roerets bunn */
+    const n = apper.length;
+    if(!n) return;
+    const d = [];
+    function del(kl, stil){ d.push('<i class="rdel ' + kl + '" style="' + stil + '"></i>'); }
+    /* Samlerroeret fra foerste til siste merkesenter. */
+    del('flis-h', 'left:calc(' + A + '/2); right:calc(' + A + '/2);'
+      + 'bottom:' + rorB + ';');
+    for(let i = 0; i < n; i++){
+      const senter = 'calc(' + A + '/2 + ' + i + '*(' + A + ' + ' + L + '))';
+      /* Oppstikk fra roeret opp i merket. */
+      del('flis-v', 'left:calc(' + senter + ' - ' + T + '/2);'
+        + 'bottom:' + rorB + '; height:calc(' + A + '/2 + var(--app-ror));');
+      /* T med stammen opp - gjennomroer-senter 16 fra topp, stamme 23. */
+      if(i > 0 && i < n - 1){
+        del('hel t-opp', 'left:calc(' + senter + ' - 23px);'
+          + 'bottom:calc(' + rorB + ' + ' + T + '/2 - 9px);');
+      }
+    }
+    /* Endekrager paa samlerroeret. */
+    del('hel krage-h', 'left:calc(' + A + '/2 - 6.5px);'
+      + 'bottom:calc(' + rorB + ' - 4.5px);');
+    del('hel krage-h', 'right:calc(' + A + '/2 - 6.5px);'
+      + 'bottom:calc(' + rorB + ' - 4.5px);');
+    /* Stammen ned til «skraa»-knappens senter, med T i avgreiningen. */
+    const skraaX = 'calc(1.5*' + A + ' + ' + L + ')';
+    del('flis-v', 'left:calc(' + skraaX + ' - ' + T + '/2);'
+      + 'bottom:calc(-1*(' + A + '/2 + 16px));'
+      + 'height:calc(' + A + '/2 + 16px - var(--app-ror));');
+    del('hel t-ned', 'left:calc(' + skraaX + ' - 22px);'
+      + 'bottom:calc(' + rorB + ' + ' + T + '/2 - 20px);');
+    boks.insertAdjacentHTML('afterbegin', d.join(''));
+  })();
   boks.hidden = false;
   neamGren('skraa');
 }
