@@ -37,12 +37,16 @@
    det. Rundt 90-128px er der baandteksten paa merkene begynner aa kunne
    leses, og det er hele grunnen til at den vokser.
 
-   TELEFON krympet 20 % 30. august 2026: 112px var greit som knapp, men
-   fire av dem la beslag paa to tredeler av skjermbredden, og aapen
+   TELEFON er krympet to ganger 30. august 2026: 112 -> 90 -> 68. Fire
+   knapper paa 112 la beslag paa to tredeler av skjermbredden, og aapen
    tilstand ble en flate man maatte forbi i stedet for en meny man leste.
-   Hvilestoerrelsen sto uroert - den var aldri problemet. */
+   Hvilestoerrelsen sto uroert begge ganger - den var aldri problemet.
+
+   Prisen er notert: 68px er under grensen der baandteksten paa et merke
+   kan leses, saa paa telefon maa merkene kjennes igjen paa form og farge.
+   Det er ett tall aa skru paa om det viser seg aa vaere feil vei. */
 :root{
-  --f-handtak:54px; --f-aapen:90px; --f-luft:12px; --f-ikon:34px;
+  --f-handtak:54px; --f-aapen:68px; --f-luft:10px; --f-ikon:26px;
   --f-marg-x:20px; --f-marg-y:24px;
 }
 @media(min-width:700px) and (min-height:600px){
@@ -155,44 +159,42 @@
 }
 .neam-knapp.merke img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
 
-/* Applista - et lite ark over fireren, forankret i samme hjoerne.
-   Appene ligger paa rad, hver med sitt merke og navnet under - de samme
-   bildene som paa forsiden, saa en app kjennes igjen paa ikonet og ikke
-   maa leses. */
+/* Applista - frie knapper paa rad over fireren, ikke et ark.
+   Til 30. august 2026 laa appene i en samleboks med smaa ikoner og navn
+   under. Det var et annet slags element enn det man nettopp trykket paa:
+   en meny inni en meny. Naa er hver app en knapp i noeyaktig samme
+   stoerrelse som knappene i fireren, saa laget bare fortsetter oppover.
+
+   Navnet under er borte med boksen - merkene baerer navnet sitt selv, og
+   en tekstlinje under en rund knapp ville vaert det eneste stedet i
+   fireren med skrift utenfor et merke.
+
+   Festet til skjermen, ikke til fireren: sentrert over et haandtak i
+   venstre hjoerne rant venstre ende utenfor kanten paa smal skjerm. */
 .neam-apper{
-  position:fixed; pointer-events:auto;
-  /* Festet til skjermen, ikke til fireren: sentrert over et haandtak i
-     venstre hjoerne rant venstre ende utenfor kanten paa smal skjerm i
-     staaende modus. Naa starter lista der fireren staar og faar vokse
-     hoeyre-over, med en luftlomme til hoeyre kant som tak. */
-  left:14px; right:14px;
-  bottom:calc(var(--f-marg-y) + 2 * var(--f-aapen) + var(--f-luft) + 12px);
-  background:var(--paper); border-radius:16px;
-  box-shadow:0 10px 30px rgba(44,62,80,.3);
-  padding:12px 10px; display:flex; gap:4px;
-  justify-content:flex-start; flex-wrap:wrap;
-}
-/* Er det plass, trenger den ikke strekke seg over hele bredden. */
-@media(min-width:460px){
-  .neam-apper{ right:auto; max-width:none; }
+  position:fixed; z-index:90; pointer-events:none;
+  left:var(--f-marg-x); right:var(--f-marg-x);
+  bottom:calc(var(--f-marg-y) + 2 * var(--f-aapen) + 2 * var(--f-luft));
+  display:flex; gap:var(--f-luft);
+  justify-content:flex-start; flex-wrap:wrap-reverse;
 }
 .neam-apper[hidden]{ display:none; }
+/* Speilvendt naar den hoerer til hoeyre hjoerne - i dag gjoer den ikke
+   det, men regelen staar saa fireren kan flyttes uten aa etterlate
+   lista i feil hjoerne. */
+.neam-apper.side{ justify-content:flex-end; }
+
 .neam-app-lenke{
-  display:flex; flex-direction:column; align-items:center; gap:6px;
-  width:74px; padding:6px 2px; border-radius:12px;
+  pointer-events:auto; flex:none;
+  width:var(--f-aapen); height:var(--f-aapen); border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
   text-decoration:none; color:var(--ink);
+  /* Merkene har eget omriss og baand som stikker ut - ingen flate under,
+     samme vurdering som .neam-knapp.merke. */
+  filter:drop-shadow(0 3px 9px rgba(44,62,80,.32));
 }
-.neam-app-lenke:active{ background:var(--bg-2); }
-.neam-app-ikon{
-  width:48px; height:48px; border-radius:12px; overflow:hidden;
-  display:flex; align-items:flex-start; justify-content:center;
-  background:var(--paper);
-}
-.neam-app-ikon img{ width:100%; height:auto; display:block; }
-.neam-app-navn{
-  font-size:var(--t-etikett); font-weight:600; color:var(--ink);
-  text-align:center; line-height:1.2;
-}
+.neam-app-lenke:active{ transform:scale(.94); }
+.neam-app-lenke img{ width:100%; height:auto; display:block; }
 
 /* ---------- Panelet ---------- */
 /* Reiser seg fra haandtaket, ikke fra midten: det skal leses som at

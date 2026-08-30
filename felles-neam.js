@@ -956,12 +956,15 @@ function neamVisApper(){
   if(!boks) return;
   if(!boks.hidden){ boks.hidden = true; return; }
   const her = neamSti();
+  /* Én knapp per app, i samme stoerrelse som knappene i fireren. Navnet
+     staar i aria-label og ikke som tekst under: merkene baerer navnet
+     sitt selv, og skjermlesere trenger det likevel. */
   boks.innerHTML = NEAM_APPER
     .filter(function(a){ return neamSti(a.sti) !== her; })
     .map(function(a){
-      return '<a class="neam-app-lenke" href="' + a.sti + '">'
-           +   '<span class="neam-app-ikon"><img src="' + a.ikon + '" alt=""></span>'
-           +   '<span class="neam-app-navn">' + a.navn + '</span>'
+      return '<a class="neam-app-lenke" href="' + a.sti + '" '
+           +   'title="' + a.navn + '" aria-label="' + a.navn + '">'
+           +   '<img src="' + a.ikon + '" alt="">'
            + '</a>';
     }).join('');
   boks.hidden = false;
