@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=5">
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=31">
+<link rel="stylesheet" href="/felles-neam.css?v=32">
 <!-- Datalaget baerer husregisteret og lastes foer sidens eget skript.
      felles-skjema.js gir avbryt-regelen paa husskjemaet og krever
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
@@ -77,10 +77,9 @@ body{
 .brand-icon{width:clamp(120px, 17vw, 195px);height:auto;flex-shrink:0}
 .brand-icon img{width:100%;height:auto;display:block}
 .clock{grid-column:3;justify-self:end;text-align:right;line-height:1}
-.clock-time{
-  font-size:var(--t-display);font-weight:700;letter-spacing:-.01em;
-  font-variant-numeric:tabular-nums;
-}
+/* Font-size er alt klapptavla trenger herfra - kortene maaler seg i em.
+   Vekt og tegnavstand haandteres av .fk-reglene i fellesfila. */
+.clock-time{ font-size:var(--t-display); }
 .clock-date{
   font-size:var(--t-brod);color:var(--ink-soft);font-weight:600;
   text-transform:uppercase;letter-spacing:.08em;margin-top:6px;
@@ -733,8 +732,9 @@ const MND = ['januar','februar','mars','april','mai','juni',
    aapner den, trykk igjen lukker. */
 function tegnKlokke(){
   const n = new Date();
-  document.getElementById('clock-time').textContent =
-    String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+  /* Klapptavla bygger og flipper seg selv - se neamFlipKlokke i
+     felles-neam.js. Stoerrelsen arves fra .clock-time sin font-size. */
+  neamFlipKlokke(document.getElementById('clock-time'));
   document.getElementById('clock-date').textContent =
     DAGER[n.getDay()] + ' ' + n.getDate() + '. ' + MND[n.getMonth()];
 }
@@ -1108,6 +1108,6 @@ window.neamUtfor = async function(navn, arg){
      overalt, og senere er dette veien til aa snakke med Neam herfra. -->
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=38"></script>
+<script src="/felles-neam.js?v=39"></script>
 </body>
 </html>

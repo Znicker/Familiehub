@@ -352,6 +352,79 @@
 .neam-enhet.merke{ background:none; box-shadow:none; overflow:visible; }
 .neam-enhet.merke img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
 
+/* ---------- Flip-klokka ----------
+   Ei klapptavle som paa gamle flyplassur: to kort, timer og minutter,
+   der oevre halvdel av kortet vipper ned naar verdien skifter. Fargene er
+   messingens - moerk brunsvart kortflate og sifre i det lyse metallet fra
+   delarket - saa klokka leses som en del av samme maskin som roerene.
+
+   Bygges og drives av neamFlipKlokke() i felles-neam.js. Kortet arver
+   font-size fra elementet det staar i, saa hver side bestemmer
+   stoerrelsen med sin vanlige klokkestil.
+
+   Halvdelene: hver er 50 % hoey med overflow:hidden, og begge inneholder
+   HELE sifferet i full korthoeyde - den nedre forskjoevet en halv kort-
+   hoeyde opp. Da deles sifferet av kanten, ikke av to fonter som maa
+   treffe hverandre.
+
+   Bladene er de to som beveger seg: .fk-blad-o baerer det GAMLE tallets
+   oevre halvdel og vipper ned (rotateX 0 til -90), .fk-blad-n baerer det
+   NYE tallets nedre halvdel og vipper paa plass etterpaa (90 til 0).
+   Statiske .fk-o faar det nye tallet i det flippet starter - den ligger
+   bak bladet og «avdekkes» av vippet, akkurat som paa en ekte tavle. */
+.fk{
+  display:inline-flex; gap:.14em;
+  line-height:1; font-variant-numeric:tabular-nums;
+  perspective:5em;
+}
+.fk-kort{
+  position:relative;
+  width:1.62em; height:1.28em;
+  border-radius:.1em;
+  box-shadow:0 3px 9px rgba(20,12,3,.4), inset 0 0 0 1px rgba(236,197,138,.14);
+}
+.fk-halv{
+  position:absolute; left:0; width:100%; height:50%;
+  overflow:hidden;
+  background:linear-gradient(to bottom, #3A2410, #241503 55%, #1B1002);
+  color:#ECC58A; text-align:center;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+}
+.fk-halv > b{
+  font-weight:700; font-style:normal; display:block;
+  height:1.28em; line-height:1.28;
+  letter-spacing:.02em;
+}
+.fk-o, .fk-blad-o{ top:0; border-radius:.1em .1em 0 0;
+  border-bottom:1px solid rgba(0,0,0,.65); }
+.fk-n, .fk-blad-n{ bottom:0; border-radius:0 0 .1em .1em;
+  background:linear-gradient(to bottom, #2A1A08, #1E1202 60%, #170D02); }
+.fk-n > b, .fk-blad-n > b{ margin-top:-.64em; }
+
+/* Bladene ligger over de statiske halvdelene og vipper om midtlinja. */
+.fk-blad-o, .fk-blad-n{ z-index:2; }
+.fk-blad-o{ transform-origin:bottom; }
+.fk-blad-n{ transform-origin:top; transform:rotateX(90deg); }
+.fk-kort.flipp .fk-blad-o{
+  transition:transform .28s ease-in;
+  transform:rotateX(-90deg);
+}
+.fk-kort.flipp .fk-blad-n{
+  transition:transform .26s ease-out .28s;
+  transform:rotateX(0);
+}
+/* Skyggen som faller over nedre halvdel mens bladet er paa vei ned. */
+.fk-kort.flipp .fk-n::after{
+  content:''; position:absolute; inset:0;
+  background:rgba(0,0,0,.35);
+  animation:fkSkygge .54s ease forwards;
+}
+@keyframes fkSkygge{ from{opacity:1} to{opacity:0} }
+
+@media (prefers-reduced-motion: reduce){
+  .fk-kort.flipp .fk-blad-o, .fk-kort.flipp .fk-blad-n{ transition:none; }
+}
+
 /* ---------- Duselaget ----------
    Bakgrunnen dempes naar et av hjoernene aapnes. Knappene er runde merker
    uten flate under seg, og de laa rett paa et teksturert bakgrunnsbilde
