@@ -386,19 +386,48 @@
 .fk-halv{
   position:absolute; left:0; width:100%; height:50%;
   overflow:hidden;
-  background:linear-gradient(to bottom, #3A2410, #241503 55%, #1B1002);
-  color:#ECC58A; text-align:center;
+  /* Kortflata er TRE, ikke lakk: moerk ved med liggende aarer, og et
+     gradientlag over som gir lyset ovenfra. Treet ligger i samme moerke
+     ende av paletten som messingen, saa kortet hoerer til maskinen. */
+  background:
+    linear-gradient(to bottom, rgba(255,235,200,.10), rgba(0,0,0,0) 45%, rgba(0,0,0,.30)),
+    url('/bilder/tre-mork.png?v=1');
+  background-size:auto, 256px 256px;
+  text-align:center;
   backface-visibility:hidden; -webkit-backface-visibility:hidden;
 }
 .fk-halv > b{
   font-weight:700; font-style:normal; display:block;
   height:1.28em; line-height:1.28;
   letter-spacing:.02em;
+  /* Tallene er sitt EGET trestykke: lys ved med STAAENDE aarer, klippet
+     til glyfene. Staaende mot flatas liggende - da kan de to strukturene
+     aldri gaa i ett, uansett hvor kortet klippes. At tallet henger sammen
+     over midtlinja ordner seg selv: oevre og nedre halvdel baerer hver sin
+     kopi av hele glyfen i samme boks, saa utsnittet blir identisk.
+
+     drop-shadow foelger den klippede formen og gir tallet en moerk kant
+     mot flata - uten den floet lyst tre paa moerkt tre sammen der aarene
+     tilfeldig traff hverandre i tone. */
+  background:url('/bilder/tre-lys.png?v=1') 0 0 / 256px 256px;
+  -webkit-background-clip:text; background-clip:text;
+  color:transparent; -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));
 }
+/* Minuttkortet faar andre utsnitt av begge tresortene enn timekortet -
+   to kort skaaret av samme planke paa noeyaktig samme sted hadde sett
+   stemplet ut. */
+.fk-kort[data-kort="m"] .fk-halv{ background-position:0 0, -97px -61px; }
+.fk-kort[data-kort="m"] .fk-halv > b{ background-position:-53px -118px; }
 .fk-o, .fk-blad-o{ top:0; border-radius:.1em .1em 0 0;
   border-bottom:1px solid rgba(0,0,0,.65); }
 .fk-n, .fk-blad-n{ bottom:0; border-radius:0 0 .1em .1em;
-  background:linear-gradient(to bottom, #2A1A08, #1E1202 60%, #170D02); }
+  /* Nedre halvdel: samme tre, men gradienten snus moerkere - halvdelen
+     vender bort fra lyset. */
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,.18), rgba(0,0,0,.38)),
+    url('/bilder/tre-mork.png?v=1');
+  background-size:auto, 256px 256px; }
 .fk-n > b, .fk-blad-n > b{ margin-top:-.64em; }
 
 /* Bladene ligger over de statiske halvdelene og vipper om midtlinja. */
