@@ -1050,6 +1050,16 @@ function neamSideStabel(plass, liste){
     };
   });
   boks.hidden = false;
+
+  /* Hvem som havnet paa en rad over kan bare avgjoeres etter at raden er
+     tegnet - det avhenger av skjermbredden. Nederste rad er den med
+     stoerst offsetTop; alt annet henger over den og faar roeret sitt
+     pekende nedover i stedet for opp mot broen. */
+  const knapper = Array.prototype.slice.call(boks.querySelectorAll('.neam-enhet'));
+  if(knapper.length){
+    const nederst = Math.max.apply(null, knapper.map(function(k){ return k.offsetTop; }));
+    knapper.forEach(function(k){ k.classList.toggle('over', k.offsetTop < nederst); });
+  }
 }
 
 /* Merker hvilken gren som er valgt, saa roeret til den andre kan falle

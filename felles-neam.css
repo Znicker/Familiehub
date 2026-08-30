@@ -49,18 +49,21 @@
 :root{
   --f-handtak:54px;
   --f-aapen:min(84px, calc((100vw - 2 * var(--f-marg-x) - 3 * var(--f-luft)) / 4));
-  --f-luft:10px; --f-ikon:30px;
+  /* Lufta er ogsaa hvor mye av roeret som SYNES: knappene dekker resten.
+     10px ga et glimt; 16 gir et roerstrekk. Knappen krymper tilsvarende
+     paa telefon fordi den regnes ut av det som blir til overs. */
+  --f-luft:16px; --f-ikon:28px;
   --f-marg-x:20px; --f-marg-y:24px;
 }
 @media(min-width:700px) and (min-height:600px){
   :root{
-    --f-handtak:76px; --f-aapen:120px; --f-luft:14px; --f-ikon:46px;
+    --f-handtak:76px; --f-aapen:120px; --f-luft:20px; --f-ikon:46px;
     --f-marg-x:28px; --f-marg-y:34px;
   }
 }
 @media(min-width:1300px) and (min-height:600px){
   :root{
-    --f-handtak:108px; --f-aapen:128px; --f-luft:16px; --f-ikon:50px;
+    --f-handtak:108px; --f-aapen:128px; --f-luft:22px; --f-ikon:50px;
     --f-marg-x:40px; --f-marg-y:48px;
   }
 }
@@ -126,29 +129,32 @@
 
    Roerene henger paa knappene selv, ikke paa fireren: da flytter de seg
    med knappene naar geometrien endres, og det er ett sted aa regne. */
-.neam-knapp.opp::after,
-.neam-knapp.skraa::after{
+/* Bare i VENSTRE firer. Hoeyre har sidas egne handlinger, og der aapner
+   «opp» som regel en visning og ikke en undermeny - et roer dit ville sagt
+   at noe henger sammen som ikke gjoer det. Hoeyre faar sine roer fra
+   stabelen i stedet, der de faktisk foerer et sted. */
+.neam-firer:not(.side) .neam-knapp.opp::after,
+.neam-firer:not(.side) .neam-knapp.skraa::after{
   content:''; position:absolute; z-index:-1;
   background:var(--ror-loddrett); box-shadow:var(--ror-skygge);
   opacity:0; transition:opacity .15s ease .1s;
 }
-.neam-firer.oppe .neam-knapp.opp::after,
-.neam-firer.oppe .neam-knapp.skraa::after{ opacity:1; }
+.neam-firer.oppe:not(.side) .neam-knapp.opp::after,
+.neam-firer.oppe:not(.side) .neam-knapp.skraa::after{ opacity:1; }
 
 /* Stammen: ned fra «opp» til haandtaket. */
-.neam-knapp.opp::after{
+.neam-firer:not(.side) .neam-knapp.opp::after{
   width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
   top:50%; height:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
 }
-/* Grenen: fra «skraa» bort til «opp». Vannrett, saa den bruker den andre
-   gradienten. */
-.neam-knapp.skraa::after{
+/* Grenen: fra «skraa» bort til «opp». I venstre firer staar «opp» ved
+   hjoernet og «skraa» ute, saa grenen gaar INNOVER - mot hjoernet. Den
+   pekte utover foerst, og forsvant da ut av skjermen i stedet for aa
+   treffe noe. */
+.neam-firer:not(.side) .neam-knapp.skraa::after{
   background:var(--ror-vann);
   height:var(--ror-tykk); top:calc(50% - var(--ror-tykk) / 2);
-  left:50%; width:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
-}
-.neam-firer.side .neam-knapp.skraa::after{
-  left:auto; right:50%;
+  right:50%; width:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
 }
 
 /* Naar én gren er valgt, faller den andre bort - som en ventil som
@@ -227,18 +233,23 @@
    til siste knapp, og stigningen blir kort men tydelig. */
 .neam-stabel.rad{ --bro:calc(var(--f-aapen) / 2 + var(--f-luft) / 2); }
 
-/* Broen: vannrett, over knappene, fra stigningen til siste nedstikk. */
+/* Broen: vannrett, over knappene, fra stigningen til siste nedstikk.
+   Forankret til NEDERSTE rads senter, ikke til halve stabelen: blir det
+   flere rader, skal broen bli liggende der moderknappen er. */
 .neam-stabel.rad::before{
   content:''; position:absolute; z-index:0;
   height:var(--ror-tykk); background:var(--ror-vann);
   box-shadow:var(--ror-skygge);
-  bottom:calc(50% + var(--bro) - var(--ror-tykk) / 2);
+  bottom:calc(var(--f-aapen) / 2 + var(--bro) - var(--ror-tykk) / 2);
   left:calc(var(--f-aapen) / 2);
   right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
 }
+/* Speilvendt: moderknappen staar til HOEYRE for stabelen her, saa broen
+   stikker ut paa hoeyre side og stopper ved siste knapps senter til
+   venstre. Den sto motsatt foerst og rant ut av skjermkanten. */
 .neam-stabel.side.rad::before{
-  left:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
-  right:calc(var(--f-aapen) / 2);
+  left:calc(var(--f-aapen) / 2);
+  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
 }
 /* Stigningen: opp fra moderknappens senter til broen. Ligger utenfor
    stabelen, over der System staar. */
@@ -246,19 +257,37 @@
   content:''; position:absolute; z-index:0;
   width:var(--ror-tykk); background:var(--ror-loddrett);
   box-shadow:var(--ror-skygge);
-  bottom:50%; height:var(--bro);
+  bottom:calc(var(--f-aapen) / 2); height:var(--bro);
   right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft) + var(--ror-tykk) / 2));
 }
 .neam-stabel.rad:not(.side)::after{
   right:auto;
   left:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft) + var(--ror-tykk) / 2));
 }
-/* Nedstikkene: fra broen ned i hver knapp. */
+/* Nedstikkene: fra broen ned i hver knapp i NEDERSTE rad. */
 .neam-stabel.rad .neam-enhet::before{
   content:''; position:absolute; z-index:-1;
   width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
   background:var(--ror-loddrett); box-shadow:var(--ror-skygge);
   bottom:50%; height:var(--bro);
+}
+
+/* ---- Flere rader ----
+   Er raden full, begynner en ny OVER den - wrap-reverse, saa den nye
+   legger seg oppover og ikke ned i fireren. Broen blir liggende ved
+   moderknappen, og knappene i radene over henger ned i den under seg med
+   et kort roer i mellomrommet.
+
+   Hvilke knapper som havnet oeverst kan CSS ikke vite - det avhenger av
+   hvor mange som fikk plass. Klassen settes derfor i JS etter tegning,
+   ved aa maale hvem som ikke staar paa nederste linje. */
+.neam-stabel.rad{ flex-wrap:wrap-reverse; }
+.neam-stabel.rad .neam-enhet.over::before{ content:none; }
+.neam-stabel.rad .neam-enhet.over::after{
+  content:''; position:absolute; z-index:-1;
+  width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
+  background:var(--ror-loddrett); box-shadow:var(--ror-skygge);
+  top:50%; height:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
 }
 
 /* ---- Rad i stedet for kolonne ----
