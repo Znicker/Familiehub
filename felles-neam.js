@@ -880,21 +880,22 @@ function neamSideFirerNed(){
   f.classList.remove('oppe');
   h.classList.remove('oppe');
   neamDuseNed();
+  const stabel = document.getElementById('neamSideStabel');
+  if(stabel) stabel.hidden = true;
   document.removeEventListener('pointerdown', neamSideUtenfor, true);
   setTimeout(function(){ f.hidden = true; }, 190);
 }
 
 function neamSideUtenfor(ev){
-  const f = document.getElementById('neamSideFirer');
-  const h = document.getElementById('neamSideHandtak');
-  /* Haandtaket er ikke inne i fireren lenger, saa det maa telles med -
-     ellers ville et trykk paa det baade lukket her og aapnet i onclick. */
-  if(f && !f.contains(ev.target) && !(h && h.contains(ev.target))){
-    /* Foerste trykk utenfor er bare en escape - se neamSvelgNesteTrykk. */
-    ev.stopPropagation();
-    neamSvelgNesteTrykk();
-    neamSideFirerNed();
-  }
+  /* Haandtaket og undermenyene er soesken av fireren, ikke barn, saa de
+     maa telles med - ellers lukker et trykk paa dem menyen i stedet for
+     aa gjoere det de er der for. */
+  if(neamIStrukturen(ev.target,
+      ['neamSideFirer', 'neamSideHandtak', 'neamSideStabel'])) return;
+  /* Foerste trykk utenfor er bare en escape - se neamSvelgNesteTrykk. */
+  ev.stopPropagation();
+  neamSvelgNesteTrykk();
+  neamSideFirerNed();
 }
 
 /* NEAM_SIDE_TOM sto her til 30. august 2026 - prikken paa en plass ingen
@@ -979,14 +980,27 @@ function neamSvelgNesteTrykk(){
 
 /* Trykk utenfor legger ned - femmeren skal aldri bli staaende og
    dekke et hjoerne av en side man er ferdig med den paa. */
+/* Alt som hoerer til laget, ikke bare selve fireren.
+
+   BUGG rettet 30. august 2026: applista laa inne i .neam-firer den gangen
+   den var et ark. Da den ble frie knapper, ble den et soesken - og
+   utenfor-lytteren regnet dermed hvert trykk paa en app-lenke som et
+   trykk UTENFOR. Den svelget klikket og lukket menyen, saa lenkene saa
+   helt doede ut. Symptomet var «ingenting skjer», og aarsaken var at det
+   skjedde to ting som opphevet hverandre. */
+function neamIStrukturen(mal, ider){
+  return ider.some(function(id){
+    const el = document.getElementById(id);
+    return el && el.contains(mal);
+  });
+}
+
 function neamFirerUtenfor(ev){
-  const f = document.getElementById('neamFirer');
-  const h = document.getElementById('neamHandtak');
-  if(f && !f.contains(ev.target) && !(h && h.contains(ev.target))){
-    ev.stopPropagation();
-    neamSvelgNesteTrykk();
-    neamFirerNed();
-  }
+  if(neamIStrukturen(ev.target,
+      ['neamFirer', 'neamHandtak', 'neamApper', 'neamEnheter'])) return;
+  ev.stopPropagation();
+  neamSvelgNesteTrykk();
+  neamFirerNed();
 }
 
 /* Enhetene. Tom liste i dag - Homey er ikke koblet til. Sida kan tilby
@@ -995,6 +1009,43 @@ function neamFirerUtenfor(ev){
 
    Er det ingenting aa vise, sies det som det er i stedet for aa aapne en
    tom kolonne - samme regel som for en tom sidefirer. */
+/* Aapner en kolonne over en av plassene i sidefireren. Brukes av en
+   sidehandling som ikke gjoer noe selv, men som rommer flere:
+
+     { plass:'ved', navn:'System', ikon:'…', gjor:function(){
+         neamSideStabel('ved', [
+           { navn:'Oppdater', ikon:'<svg…>', gjor:function(){ location.reload(); } },
+           { navn:'Logg ut',  ikon:'<svg…>', gjor:loggUt }
+         ]);
+       } }
+
+   Fireren blir staaende mens stabelen er oppe - den er et lag til, ikke
+   en ny skjerm. */
+function neamSideStabel(plass, liste){
+  const boks = document.getElementById('neamSideStabel');
+  if(!boks) return;
+  if(!boks.hidden){ boks.hidden = true; return; }
+  if(!liste || !liste.length) return;
+
+  boks.className = 'neam-stabel side fra-' + (plass === 'opp' ? 'opp' : 'ved');
+  boks.innerHTML = liste.map(function(v, i){
+    return '<button type="button" class="neam-enhet' + (v.merke ? ' merke' : '') + '" '
+         +   'data-nr="' + i + '" title="' + v.navn + '" aria-label="' + v.navn + '">'
+         +   (v.ikon || '') + '</button>';
+  }).join('');
+  Array.prototype.forEach.call(boks.querySelectorAll('.neam-enhet'), function(k){
+    k.onclick = function(){
+      const v = liste[parseInt(k.dataset.nr, 10)];
+      boks.hidden = true;
+      neamSideFirerNed();
+      if(v && typeof v.gjor === 'function'){
+        try{ v.gjor(); }catch(e){ console.warn('Systemvalg feilet:', e); }
+      }
+    };
+  });
+  boks.hidden = false;
+}
+
 function neamVisEnheter(){
   const boks = document.getElementById('neamEnheter');
   if(!boks) return;
@@ -1132,7 +1183,7 @@ function neamBygg(){
   document.body.appendChild(apperBoks);
 
   const enhetBoks = document.createElement('div');
-  enhetBoks.className = 'neam-enheter';
+  enhetBoks.className = 'neam-stabel fra-opp';
   enhetBoks.id = 'neamEnheter';
   enhetBoks.hidden = true;
   document.body.appendChild(enhetBoks);
@@ -1155,6 +1206,14 @@ function neamBygg(){
   sHandtak.onclick = neamSideFirer;
   sHandtak.hidden = !neamSideHarNoe();
   document.body.appendChild(sHandtak);
+
+  /* Sidas egen stabel. Hvilken plass den henger under settes naar den
+     aapnes - se neamSideStabel(). */
+  const sStabel = document.createElement('div');
+  sStabel.className = 'neam-stabel side fra-ved';
+  sStabel.id = 'neamSideStabel';
+  sStabel.hidden = true;
+  document.body.appendChild(sStabel);
 
   const sFirer = document.createElement('div');
   sFirer.className = 'neam-firer side';

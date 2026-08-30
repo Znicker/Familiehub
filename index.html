@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=5">
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=17">
+<link rel="stylesheet" href="/felles-neam.css?v=18">
 <!-- Datalaget baerer husregisteret og lastes foer sidens eget skript.
      felles-skjema.js gir avbryt-regelen paa husskjemaet og krever
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
@@ -355,11 +355,10 @@ body{
   font-size:var(--t-etikett);color:var(--ink-soft);line-height:1.7;
 }
 #port small.feil{color:var(--danger)}
-.ut{
-  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);
-  background:none;border:1px solid var(--line);border-radius:999px;
-  padding:6px 14px;color:var(--ink-soft);cursor:pointer;
-}
+/* .ut og .refresh laa her til 30. august 2026, sammen med knappene sine i
+   footeren. Oppdater og Logg ut bor naa under System i hoeyre firer:
+   ingen av dem tilhoerer noen app, og footeren var det eneste stedet paa
+   forsiden med knapper etter at panelene forsvant. */
 .bruker{
   font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);
   color:var(--ink-soft);text-align:right;line-height:1.5;
@@ -371,12 +370,6 @@ footer{
   display:flex;align-items:center;gap:14px;
   font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);
 }
-.refresh{
-  margin-left:auto;font-family:inherit;font-size:var(--t-etikett);
-  background:none;border:1px solid var(--line);border-radius:999px;
-  padding:6px 14px;color:var(--ink-soft);cursor:pointer;
-}
-.refresh:active{background:var(--bg-1)}
 
 /* ---------- Laast ramme ----------
    Siden skal ikke kunne dras sidelengs eller zoomes ved uhell.
@@ -473,8 +466,6 @@ input,select,textarea{font-size:16px}
 
   <footer>
     <span id="hvem"></span>
-    <button class="refresh" onclick="location.reload()">Oppdater</button>
-    <button class="ut" onclick="loggUt()">Logg ut</button>
   </footer>
 
 </div>
@@ -1058,7 +1049,33 @@ window.neamSideHandlinger = function(){
   return [
     { plass:'opp', navn:'Husregisteret', merke:true,
       ikon:'<img src="' + MERKE_HUSREGISTER + '" alt="">',
-      gjor: aapneHus }
+      gjor: aapneHus },
+
+    /* System rommer flere ting og gjoer ingenting selv. Oppdater og Logg
+       ut laa i footeren til 30. august 2026; de hoerer hjemme her fordi
+       ingen av dem tilhoerer noen app - de er huset, ikke innholdet.
+       To trykk for aa logge ut er dessuten riktig vekting: paa en iPad
+       flere deler, skal det ikke skje ved et uhell. */
+    { plass:'ved', navn:'System',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<rect x="3" y="4" width="18" height="12" rx="2"/>'
+         + '<path d="M8 20h8M12 16v4"/></svg>',
+      gjor: function(){
+        neamSideStabel('ved', [
+          { navn:'Oppdater',
+            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               + '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg>',
+            gjor: function(){ location.reload(); } },
+          { navn:'Logg ut',
+            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               + '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/>'
+               + '<path d="M10 17l-5-5 5-5M5 12h10"/></svg>',
+            gjor: loggUt }
+        ]);
+      } }
   ];
 };
 
@@ -1091,6 +1108,6 @@ window.neamUtfor = async function(navn, arg){
      overalt, og senere er dette veien til aa snakke med Neam herfra. -->
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=32"></script>
+<script src="/felles-neam.js?v=33"></script>
 </body>
 </html>

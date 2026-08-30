@@ -88,23 +88,43 @@
 .neam-handtak:active{ transform:scale(.94); }
 .neam-handtak.oppe{ width:var(--f-aapen); height:var(--f-aapen); }
 
-/* ---------- Enhetslista ----------
-   Enhetene legger seg VERTIKALT opp fra «opp»-knappen, mens appene legger
-   seg vannrett fra «skraa». Det er derfor de to byttet plass: en kolonne
-   trenger en knapp med tak over seg, og «opp» er den eneste som har det.
+/* ---------- Stabelen ----------
+   En kolonne som vokser OPPOVER fra en av knappene i fireren. Enhetene
+   bruker den fra «opp», systemvalgene fra «ved». Appene legger seg
+   vannrett fra «skraa» og har sin egen regel.
+
+   Det var derfor enheter og Dash byttet plass: en kolonne trenger en
+   knapp med tak over seg, og «opp» er den eneste som har det.
 
    Samme knappestoerrelse som alt annet i laget - laget fortsetter, det
    begynner ikke paa nytt. */
-.neam-enheter{
+.neam-stabel{
   position:fixed; z-index:90; pointer-events:none;
-  left:var(--f-marg-x);
+  display:flex; flex-direction:column-reverse; gap:var(--f-luft);
+}
+.neam-stabel[hidden]{ display:none; }
+
+/* Fra «opp»: rett over den, altsaa over hele fireren. */
+.neam-stabel.fra-opp{
+  left:var(--f-marg-x); align-items:flex-start;
   bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom)
               + 2 * var(--f-aapen) + var(--f-luft) + 16px);
-  display:flex; flex-direction:column-reverse; gap:var(--f-luft);
-  align-items:flex-start;
 }
-.neam-enheter[hidden]{ display:none; }
-.neam-enheter.side{ left:auto; right:var(--f-marg-x); align-items:flex-end; }
+/* Fra «ved»: forskjoevet én knapp inn, og bare én knapp opp - «ved» staar
+   i nederste rad, saa stabelen starter lavere enn den fra «opp». */
+.neam-stabel.fra-ved{
+  left:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
+  align-items:flex-start;
+  bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom)
+              + var(--f-aapen) + 16px);
+}
+/* Hoeyre hjoerne: speilvendt. */
+.neam-stabel.side.fra-opp{ left:auto; right:var(--f-marg-x); align-items:flex-end; }
+.neam-stabel.side.fra-ved{
+  left:auto; align-items:flex-end;
+  right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
+}
+
 .neam-enhet{
   pointer-events:auto; flex:none;
   width:var(--f-aapen); height:var(--f-aapen); border-radius:50%;
@@ -116,6 +136,8 @@
 .neam-enhet svg{ width:var(--f-ikon); height:var(--f-ikon); }
 .neam-enhet img{ width:100%; height:auto; display:block; }
 .neam-enhet:active{ transform:scale(.94); }
+.neam-enhet.merke{ background:none; box-shadow:none; overflow:visible; }
+.neam-enhet.merke img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
 
 /* ---------- Duselaget ----------
    Bakgrunnen dempes naar et av hjoernene aapnes. Knappene er runde merker
@@ -132,8 +154,13 @@
    gaar de rett gjennom til sida under. */
 .neam-duse{
   position:fixed; inset:0; z-index:89;
-  background:rgba(44,62,80,.35);
-  -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+  /* LYS, ikke moerk. En moerk flate over et beige bakgrunnsbilde ga to
+     lag moenster oppaa hverandre - bildets tannhjul skinte gjennom og la
+     seg bak knappene i stedet for aa forsvinne. En lys flate i sidas egen
+     bakgrunnsfarge visker bildet ut, og de moerke messingmerkene staar
+     tydeligere mot den enn mot en moerk. */
+  background:rgba(246,241,231,.78);
+  -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
   opacity:0; transition:opacity .18s ease;
 }
 .neam-duse[hidden]{ display:none; }
