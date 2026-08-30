@@ -97,22 +97,53 @@
    det er undervalgene bare noen flere sirkler i et hjoerne; med det er de
    noe som henger sammen med noe, og man ser hvor i menyen man staar.
 
-   Gradienten paa TVERS av roeret gir sylinderformen: moerk kant, lys
-   stripe litt over midten, moerkere igjen under. Det er samme lyssetting
-   som paa merkene - lys ovenfra - saa roeret leses som samme materiale.
+   Gradienten paa TVERS av roeret gir sylinderformen. Verdiene er MAALT ut
+   av messingroeret i forelegget, ikke gjettet: fjorten stopp, og lyset
+   ligger paa 48 % og ikke midt paa. Det er den lille skjevheten som gjoer
+   at en sylinder ser dreid ut og ikke som en flat stripe med lys i
+   midten. Lyset kommer ovenfra, samme retning som paa merkene, saa roer
+   og merke leses som samme materiale.
+
+   KRAGENE er de to baandene naer hver ende - klemmene som holder roeret.
+   De ligger som egne bakgrunnslag oppaa sylinderen, saa hele roeret er én
+   verdi og kan settes med `background: var(--ror-loddrett)`. I forelegget
+   er kragen 1,4 ganger bredere enn roeret; her er den like bred, fordi et
+   bakgrunnslag ikke kan stikke utenfor sitt eget element. Moerk-lys-moerk
+   paa tvers gir likevel lesningen «klemme» uten den bredden.
 
    Roeret ligger UNDER knappene og er derfor bare synlig i mellomrommene,
    som et roerstrekk mellom bokser. Knappene har ugjennomsiktig flate og
-   dekker resten selv. */
+   dekker resten selv - derfor er bendene aldri synlige: hvert hjoerne
+   ligger i et knappesenter. Broen er unntaket, og der er hjoernene mykt
+   avrundet i stedet for aa vaere skarpe. */
 :root{
   --ror-tykk:11px;
-  --ror-vann:linear-gradient(to bottom,
-      #5E4526 0%, #8A6A3A 14%, #D9B97A 38%, #F0DCAE 50%,
-      #C9A461 64%, #8A6A3A 84%, #5E4526 100%);
-  --ror-loddrett:linear-gradient(to right,
-      #5E4526 0%, #8A6A3A 14%, #D9B97A 38%, #F0DCAE 50%,
-      #C9A461 64%, #8A6A3A 84%, #5E4526 100%);
-  --ror-skygge:0 2px 5px rgba(44,62,80,.28);
+
+  /* Sylinderen, paa tvers. To retninger fordi et loddrett og et vannrett
+     roer maa ha lyset langs seg, ikke over. */
+  --sylinder-v:#402409 0%, #2C1904 8%, #643F18 16%, #7B511F 24%,
+               #966027 32%, #C49047 40%, #ECC58A 48%, #AB7635 56%,
+               #7E4F1C 64%, #684014 72%, #41280B 80%, #291804 88%,
+               #462E0E 96%, #402409 100%;
+
+  /* Klemma: moerk kant, lys rygg, moerk kant. Sju piksler bred. */
+  --krage-ned:linear-gradient(to bottom,
+      rgba(30,18,4,.9) 0 2px, rgba(236,197,138,.75) 2px 5px,
+      rgba(30,18,4,.9) 5px 7px, transparent 7px);
+  --krage-hoyre:linear-gradient(to right,
+      rgba(30,18,4,.9) 0 2px, rgba(236,197,138,.75) 2px 5px,
+      rgba(30,18,4,.9) 5px 7px, transparent 7px);
+
+  --ror-loddrett:
+      var(--krage-ned) center top 6px / 100% 7px no-repeat,
+      var(--krage-ned) center bottom 6px / 100% 7px no-repeat,
+      linear-gradient(to right, var(--sylinder-v));
+  --ror-vann:
+      var(--krage-hoyre) left 6px center / 7px 100% no-repeat,
+      var(--krage-hoyre) right 6px center / 7px 100% no-repeat,
+      linear-gradient(to bottom, var(--sylinder-v));
+
+  --ror-skygge:0 2px 5px rgba(44,62,80,.34);
 }
 
 /* Knappene maa ligge over roeret.
@@ -272,9 +303,14 @@
 
 /* Broen: vannrett, over knappene, fra stigningen til siste nedstikk.
    Forankret til NEDERSTE rads senter, ikke til halve stabelen: blir det
-   flere rader, skal broen bli liggende der moderknappen er. */
+   flere rader, skal broen bli liggende der moderknappen er.
+
+   Endene er avrundet med halve roertykkelsen. Broens hjoerner er de eneste
+   bendene i hele systemet som ikke ligger skjult bak en knapp, og et
+   skarpt hjoerne der avsloerer at det er to rektangler og ikke ett roer. */
 .neam-stabel.rad::before{
   content:''; position:absolute; z-index:0;
+  border-radius:calc(var(--ror-tykk) / 2);
   height:var(--ror-tykk); background:var(--ror-vann);
   box-shadow:var(--ror-skygge);
   bottom:calc(var(--f-aapen) / 2 + var(--bro) - var(--ror-tykk) / 2);
@@ -294,6 +330,7 @@
    skal bare vise hva moderknappen aapner. */
 .neam-stabel.rad::after{
   content:''; position:absolute; z-index:0;
+  border-radius:calc(var(--ror-tykk) / 2);
   width:var(--ror-tykk); background:var(--ror-loddrett);
   box-shadow:var(--ror-skygge);
   bottom:calc(var(--f-aapen) / 2); height:var(--bro);
