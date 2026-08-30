@@ -88,6 +88,32 @@
 .neam-handtak:active{ transform:scale(.94); }
 .neam-handtak.oppe{ width:var(--f-aapen); height:var(--f-aapen); }
 
+/* ---------- Roerene ----------
+   Et messingroer fra knappen man trykket til knappene som kom fram. Uten
+   det er undervalgene bare noen flere sirkler i et hjoerne; med det er de
+   noe som henger sammen med noe, og man ser hvor i menyen man staar.
+
+   Gradienten paa TVERS av roeret gir sylinderformen: moerk kant, lys
+   stripe litt over midten, moerkere igjen under. Det er samme lyssetting
+   som paa merkene - lys ovenfra - saa roeret leses som samme materiale.
+
+   Roeret ligger UNDER knappene og er derfor bare synlig i mellomrommene,
+   som et roerstrekk mellom bokser. Knappene har ugjennomsiktig flate og
+   dekker resten selv. */
+:root{
+  --ror-tykk:11px;
+  --ror-vann:linear-gradient(to bottom,
+      #5E4526 0%, #8A6A3A 14%, #D9B97A 38%, #F0DCAE 50%,
+      #C9A461 64%, #8A6A3A 84%, #5E4526 100%);
+  --ror-loddrett:linear-gradient(to right,
+      #5E4526 0%, #8A6A3A 14%, #D9B97A 38%, #F0DCAE 50%,
+      #C9A461 64%, #8A6A3A 84%, #5E4526 100%);
+  --ror-skygge:0 2px 5px rgba(44,62,80,.28);
+}
+
+/* Knappene maa ligge over roeret. */
+.neam-enhet, .neam-app-lenke{ position:relative; z-index:1; }
+
 /* ---------- Stabelen ----------
    En kolonne som vokser OPPOVER fra en av knappene i fireren. Enhetene
    bruker den fra «opp», systemvalgene fra «ved». Appene legger seg
@@ -103,6 +129,21 @@
   display:flex; flex-direction:column-reverse; gap:var(--f-luft);
 }
 .neam-stabel[hidden]{ display:none; }
+
+/* Loddrett roer ned til moderknappens senter. Samme regnestykke for begge
+   kolonnene: stabelens bunn ligger a/2 + 16 over det senteret, og roeret
+   toppes ved den oeverste knappens senter. */
+.neam-stabel:not(.rad)::before{
+  content:''; position:absolute; z-index:0;
+  width:var(--ror-tykk); background:var(--ror-loddrett);
+  box-shadow:var(--ror-skygge);
+  left:calc(50% - var(--ror-tykk) / 2);
+  top:calc(var(--f-aapen) / 2);
+  bottom:calc(-1 * (var(--f-aapen) / 2 + 16px));
+}
+/* Kolonnene er forankret i sin egen kant, ikke sentrert, saa 50 % er feil
+   naar knappene er smalere enn boksen. Roeret legges paa knappenes akse. */
+.neam-stabel:not(.rad){ width:var(--f-aapen); }
 
 /* Fra «opp»: rett over den, altsaa over hele fireren. */
 .neam-stabel.fra-opp{
@@ -123,6 +164,21 @@
 .neam-stabel.side.fra-ved{
   left:auto; align-items:flex-end;
   right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
+}
+
+/* Vannrett roer innover fra moderknappen. Stabelens ytterkant ligger
+   a/2 + luft fra «ved»-knappens senter. */
+.neam-stabel.rad::before{
+  content:''; position:absolute; z-index:0;
+  height:var(--ror-tykk); background:var(--ror-vann);
+  box-shadow:var(--ror-skygge);
+  top:calc(50% - var(--ror-tykk) / 2);
+  left:calc(var(--f-aapen) / 2);
+  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
+}
+.neam-stabel.side.rad::before{
+  left:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
+  right:calc(var(--f-aapen) / 2);
 }
 
 /* ---- Rad i stedet for kolonne ----
@@ -293,6 +349,21 @@
   justify-content:flex-start; flex-wrap:wrap-reverse;
 }
 .neam-apper[hidden]{ display:none; }
+/* Applista henger under «skraa», som staar i oeverste rad ytterst. Roeret
+   er loddrett: ned fra listas bunn til den knappens senter, som ligger
+   1,5 knapp + luft fra fireens ytterkant. */
+.neam-apper::before{
+  content:''; position:absolute; z-index:0;
+  width:var(--ror-tykk); background:var(--ror-loddrett);
+  box-shadow:var(--ror-skygge);
+  left:calc(1.5 * var(--f-aapen) + var(--f-luft) - var(--ror-tykk) / 2);
+  top:calc(var(--f-aapen) / 2);
+  bottom:calc(-1 * (var(--f-aapen) / 2 + 16px));
+}
+.neam-apper.side::before{
+  left:auto;
+  right:calc(1.5 * var(--f-aapen) + var(--f-luft) - var(--ror-tykk) / 2);
+}
 /* Speilvendt naar den hoerer til hoeyre hjoerne - i dag gjoer den ikke
    det, men regelen staar saa fireren kan flyttes uten aa etterlate
    lista i feil hjoerne. */
