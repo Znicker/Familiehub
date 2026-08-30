@@ -196,11 +196,18 @@
 .neam-apper{
   position:fixed; z-index:90; pointer-events:none;
   left:var(--f-marg-x); right:var(--f-marg-x);
-  /* Fireren slutter paa marg + 2 knapper + luft. Lufta OVER den er egen og
-     stoerre: merkene har baade drop-shadow og et baand som stikker ut, saa
-     ti piksler mellom to rader knapper leses som at de ligger oppaa
-     hverandre selv naar boksene ikke roerer hverandre. */
-  bottom:calc(var(--f-marg-y) + 2 * var(--f-aapen) + var(--f-luft) + 26px);
+  /* env(safe-area-inset-bottom) MAA staa her ogsaa. Fireren har den, og
+     uten den her maales de to fra hvert sitt nullpunkt: paa en iPhone
+     skjoev safe-area fireren 34px opp mens lista sto stille, saa de
+     overlappet med 8px paa telefonen og hadde 26px gap i simulatoren -
+     samme regel, to helt ulike bilder, og det var det som gjorde feilen
+     vanskelig aa se.
+
+     Lufta over fireren er egen og litt stoerre enn --f-luft: merkene har
+     baade drop-shadow og et baand som stikker ut, saa to rader knapper
+     trenger mer enn boksene deres tilsier. */
+  bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom)
+              + 2 * var(--f-aapen) + var(--f-luft) + 16px);
   display:flex; gap:var(--f-luft);
   justify-content:flex-start; flex-wrap:wrap-reverse;
 }
