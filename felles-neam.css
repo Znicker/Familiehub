@@ -116,8 +116,8 @@
    46x25, gjennomroer-senter 16 fra topp, stamme-senter 23. */
 :root{
   --ror-tykk:13px;
-  --ror-vann:url('/bilder/deler/ror-glatt.png?v=1');
-  --ror-lodd:url('/bilder/deler/ror-glatt-v.png?v=1');
+  --ror-vann:url('/bilder/deler/ror-glatt.png?v=2');
+  --ror-lodd:url('/bilder/deler/ror-glatt-v.png?v=2');
   --ror-skygge:0 2px 5px rgba(44,62,80,.34);
 }
 /* Grunnstil for en roerdel tegnet av JS. */
@@ -130,12 +130,12 @@
   box-shadow:var(--ror-skygge); }
 /* Hele deler: fast stoerrelse, over roerene de skjoeter. */
 .rdel.hel{ z-index:1; background-size:100% 100%; background-repeat:no-repeat; }
-.rdel.bend-nv{ width:31px; height:32px; background-image:url('/bilder/deler/bend-nv.png?v=1'); }
-.rdel.bend-nh{ width:31px; height:32px; background-image:url('/bilder/deler/bend-nh.png?v=1'); }
-.rdel.t-ned  { width:44px; height:29px; background-image:url('/bilder/deler/t-ned.png?v=1'); }
-.rdel.t-opp  { width:46px; height:25px; background-image:url('/bilder/deler/t-opp.png?v=1'); }
-.rdel.krage-v{ width:22px; height:13px; background-image:url('/bilder/deler/krage.png?v=1'); }
-.rdel.krage-h{ width:13px; height:22px; background-image:url('/bilder/deler/krage-h.png?v=1'); }
+.rdel.bend-nv{ width:31px; height:32px; background-image:url('/bilder/deler/bend-nv.png?v=2'); }
+.rdel.bend-nh{ width:31px; height:32px; background-image:url('/bilder/deler/bend-nh.png?v=2'); }
+.rdel.t-ned  { width:44px; height:29px; background-image:url('/bilder/deler/t-ned.png?v=2'); }
+.rdel.t-opp  { width:46px; height:25px; background-image:url('/bilder/deler/t-opp.png?v=2'); }
+.rdel.krage-v{ width:22px; height:13px; background-image:url('/bilder/deler/krage.png?v=2'); }
+.rdel.krage-h{ width:13px; height:22px; background-image:url('/bilder/deler/krage-h.png?v=2'); }
 
 /* Knappene maa ligge over roeret.
 
