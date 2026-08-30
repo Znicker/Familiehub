@@ -34,10 +34,15 @@
    --f-aapen er FAST og lesbar, ikke «dobbelt av haandtaket». Doblet man,
    ble knappen 216px paa PC og tok over skjermen; her vokser den kraftig
    paa telefon, litt paa iPad og knapt paa PC - fordi den ikke trenger
-   det. Rundt 112-128px er der baandteksten paa merkene begynner aa
-   kunne leses, og det er hele grunnen til at den vokser. */
+   det. Rundt 90-128px er der baandteksten paa merkene begynner aa kunne
+   leses, og det er hele grunnen til at den vokser.
+
+   TELEFON krympet 20 % 30. august 2026: 112px var greit som knapp, men
+   fire av dem la beslag paa to tredeler av skjermbredden, og aapen
+   tilstand ble en flate man maatte forbi i stedet for en meny man leste.
+   Hvilestoerrelsen sto uroert - den var aldri problemet. */
 :root{
-  --f-handtak:54px; --f-aapen:112px; --f-luft:12px; --f-ikon:42px;
+  --f-handtak:54px; --f-aapen:90px; --f-luft:12px; --f-ikon:34px;
   --f-marg-x:20px; --f-marg-y:24px;
 }
 @media(min-width:700px) and (min-height:600px){
@@ -116,8 +121,16 @@
   opacity:0; transform:scale(.5);
   transition:left .18s ease, bottom .18s ease, opacity .15s ease, transform .18s ease;
 }
-.neam-knapp svg{ width:var(--f-ikon); height:var(--f-ikon); }
 .neam-knapp img{ width:100%; height:auto; display:block; }
+/* Strektegningen staar i en rund papirskive; et merke fyller hele knappen
+   og har sin egen skive tegnet inn. --f-ikon er derfor satt slik at de to
+   dekker omtrent like mye flate: merkets sirkel er ca. 82 % av bildets
+   bredde (baandet stikker ut til sidene), og et ikon paa ca. 40 % av
+   knappen leses like tungt i en tom sirkel som et merke gjoer i sin egen.
+
+   Poenget er at ett bytte fra <svg> til <img class=..> ikke flytter noe:
+   knappen er like stor, og det som staar i den veier like mye. */
+.neam-knapp svg{ width:var(--f-ikon); height:var(--f-ikon); }
 .neam-knapp:active{ transform:scale(.94); }
 
 .neam-firer.oppe .neam-knapp{ opacity:1; transform:scale(1); }
