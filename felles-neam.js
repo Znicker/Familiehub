@@ -707,6 +707,11 @@ async function neamKjor(blokk, defer){
 
 /* Appene i huset. Nøklet paa sti, saa knappen for sida man alt
    staar paa kan utelates - en lenke til seg selv er stoey. */
+/* Hvor «Til Dash» gaar. Egen konstant fordi den skal bli individuell per
+   innlogget bruker - da er det denne verdien som utledes, og ingenting
+   annet i fireren trenger aa vite om det. */
+const NEAM_DASH = '/dashboard.html';
+
 const NEAM_APPER = [
   /* Forsiden staar i lista fra 30. august 2026. Fireren har tre plasser
      der femmeren hadde fire, og «hjem» var den som taalte flyttingen:
@@ -867,8 +872,14 @@ function neamFirer(){
   if(!f || !h) return;
   /* Aldri to aapne samtidig - se neamSideFirer(). */
   neamSideFirerNed();
-  /* Haandtaket blir staaende, saa nytt trykk paa det lukker. */
-  if(f.classList.contains('oppe')){ neamFirerNed(); return; }
+  /* Andre trykk paa haandtaket aapner samtalen. Haandtaket ER Neam, saa
+     aa trykke to ganger paa Neam er den korteste veien til ham - og da
+     slipper samtalen aa ta en av de tre plassene.
+
+     Lukking skjer ved trykk utenfor, som lukker og svelger trykket saa
+     man ikke samtidig treffer noe under. Hoeyre haandtak lukker derimot
+     ved andre trykk: der finnes ingen «seg selv» aa aapne. */
+  if(f.classList.contains('oppe')){ neamFirerNed(); neamAapne(); return; }
   h.classList.add('oppe');
   f.hidden = false;
   /* Neste ramme, saa overgangen faktisk spilles - et element som faar
@@ -982,15 +993,16 @@ function neamBygg(){
      haandtaket selv er den fjerde. Retningene betyr det samme paa
      alle sidene:
 
-        opp     samtalen
+        opp     tilbake til Dash
         skraa   de andre appene
         ved     lys og Homey
 
-     Haandtaket lukker. Det var en femmer til 30. august 2026, der
-     midten aapnet samtalen og en femte knapp la den ned - men naar
-     haandtaket blir staaende, gjoer det den jobben selv, og de to
-     plassene gaar til noe som faktisk gjoer noe. «Hjem» flyttet
-     samtidig inn i applista, se NEAM_APPER. */
+     Samtalen ligger paa haandtaket selv, paa andre trykk - se
+     neamFirer(). Det var en femmer til 30. august 2026, der midten
+     aapnet samtalen og en femte knapp la den ned; naar haandtaket blir
+     staaende, gjoer det begge jobbene, og plassene gaar til noe som
+     faktisk gjoer noe. «Hjem» flyttet samtidig inn i applista, se
+     NEAM_APPER. */
   const firer = document.createElement('div');
   firer.className = 'neam-firer';
   firer.id = 'neamFirer';
@@ -1001,10 +1013,11 @@ function neamBygg(){
          + ' aria-label="' + tekst + '" title="' + tekst + '">' + ikon + '</button>';
   };
   firer.innerHTML =
-      knapp('neamTPrat', 'opp', 'Snakk med Neam',
+      knapp('neamTDash', 'opp', 'Til Dash',
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
       + 'stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M21 12a8 8 0 0 1-8 8H4l2.2-2.8A8 8 0 1 1 21 12z"/></svg>')
+      + '<rect x="3" y="4" width="18" height="14" rx="2"/>'
+      + '<path d="M3 9h18M9 18v3M15 18v3M8 21h8"/></svg>')
     + knapp('neamTApper', 'skraa', 'Andre apper',
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
       + 'stroke-linecap="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/>'
@@ -1098,7 +1111,12 @@ function neamBygg(){
   document.getElementById('neamLukk').onclick = neamLukk;
   document.getElementById('neamSend').onclick = neamSend;
   document.getElementById('neamNy').onclick   = neamNySamtale;
-  document.getElementById('neamTPrat').onclick = function(){ neamFirerNed(); neamAapne(); };
+  document.getElementById('neamTDash').onclick = function(){
+    neamFirerNed();
+    /* Fast side inntil videre. Dash skal etter hvert vaere den enkelte
+       brukerens egen - da byttes stien her, ikke knappen. */
+    location.href = NEAM_DASH;
+  };
   document.getElementById('neamTApper').onclick = neamVisApper;
   document.getElementById('neamTLys').onclick  = function(){
     /* Homey er ikke koblet til ennaa. Sida kan tilby sin egen styring ved
