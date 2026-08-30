@@ -115,8 +115,18 @@
   --ror-skygge:0 2px 5px rgba(44,62,80,.28);
 }
 
-/* Knappene maa ligge over roeret. */
-.neam-enhet, .neam-app-lenke, .neam-knapp{ position:relative; z-index:1; }
+/* Knappene maa ligge over roeret.
+
+   MERK at .neam-knapp og .neam-enhet IKKE faar z-index her. De har roeret
+   sitt som et eget ::after med z-index:-1, og en z-index paa knappen
+   lager en stablingskontekst - da havner -1 bak knappens INNHOLD, men
+   fortsatt over dens egen bakgrunn, og roeret ble tegnet oppaa den hvite
+   flata. Uten z-index paa knappen gaar ::after bak hele knappen.
+
+   .neam-app-lenke har ingen ::after og trenger derfor ingen slik omtanke;
+   den skal bare ligge over samlerroeret paa forelderen. */
+.neam-app-lenke{ position:relative; z-index:1; }
+.neam-enhet, .neam-knapp{ position:relative; }
 
 /* ---- Grenene i fireren ----
    Roer fra haandtaket ut til ALLE tre knappene, ikke bare de som aapner
@@ -175,13 +185,17 @@
 
 /* Naar én gren er valgt, faller de andre bort - som ventiler som stenges.
    Uten det staar alle roerene aapne mens bare det ene foerer noe sted, og
-   da slutter roeret aa si hvor man er. */
-.neam-firer[class*="gren-"] .neam-knapp::after{
+   da slutter roeret aa si hvor man er.
+
+   .oppe maa staa i selektoren: uten den hadde regelen over - som slaar
+   roerene PAA naar fireren aapnes - hoeyere spesifisitet, og vant. Da ble
+   ingenting kuttet, og alle roerene sto aapne uansett hva man valgte. */
+.neam-firer.oppe[class*="gren-"] .neam-knapp::after{
   opacity:0; transition-delay:0s;
 }
-.neam-firer.gren-opp   .neam-knapp.opp::after,
-.neam-firer.gren-ved   .neam-knapp.ved::after,
-.neam-firer.gren-skraa .neam-knapp.skraa::after{ opacity:1; }
+.neam-firer.oppe.gren-opp   .neam-knapp.opp::after,
+.neam-firer.oppe.gren-ved   .neam-knapp.ved::after,
+.neam-firer.oppe.gren-skraa .neam-knapp.skraa::after{ opacity:1; }
 
 /* ---------- Stabelen ----------
    En kolonne som vokser OPPOVER fra en av knappene i fireren. Enhetene
@@ -408,7 +422,12 @@
   background:var(--paper); color:var(--ink);
   box-shadow:0 4px 14px rgba(44,62,80,.28);
   display:flex; align-items:center; justify-content:center;
-  overflow:hidden;
+  /* overflow:visible, ikke hidden. Roeret er et ::after PAA knappen, og
+     hidden klippet det til sirkelen - da saa man bare en stump inne i
+     knappen i stedet for et roer ut av den. Klippingen trengtes uansett
+     ikke: ikonene er SVG som holder seg innenfor, og merkene skal
+     nettopp IKKE beskjaeres. */
+  overflow:visible;
   /* Alle starter i hjoernet, under haandtaket, og glir ut derfra. */
   left:0; bottom:0;
   opacity:0; transform:scale(.5);
