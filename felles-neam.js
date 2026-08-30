@@ -791,9 +791,16 @@ let neamSideValg = {};
 
 /* Duselaget. Felles for begge hjoernene - se kommentaren i CSS-en.
    Bygges av neamBygg(). */
-function neamDuseOpp(){
+/* passivt er id-en paa haandtaket som IKKE er i bruk. Det legges under
+   duselaget og dempes med resten av sida - ellers staar det igjen som det
+   eneste skarpe punktet paa en flate som nettopp ble tonet ned. */
+function neamDuseOpp(passivt){
   const d = document.getElementById('neamDuse');
   if(!d) return;
+  ['neamHandtak', 'neamSideHandtak'].forEach(function(id){
+    const h = document.getElementById(id);
+    if(h) h.classList.toggle('dus', id === passivt);
+  });
   d.hidden = false;
   /* Neste ramme, ellers hopper overgangen rett til sluttbildet. */
   requestAnimationFrame(function(){ d.classList.add('oppe'); });
@@ -803,6 +810,10 @@ function neamDuseNed(){
   const d = document.getElementById('neamDuse');
   if(!d) return;
   d.classList.remove('oppe');
+  ['neamHandtak', 'neamSideHandtak'].forEach(function(id){
+    const h = document.getElementById(id);
+    if(h) h.classList.remove('dus');
+  });
   setTimeout(function(){
     /* Rakk det andre hjoernet aa aapne seg i mellomtiden, skal flata bli
        staaende - ellers blinker den bort naar man bytter side. */
@@ -854,7 +865,7 @@ function neamSideFirer(){
     k.title = navn;
   });
 
-  neamDuseOpp();
+  neamDuseOpp('neamHandtak');
   /* Haandtaket blir staaende og vokser. */
   h.classList.add('oppe');
   f.hidden = false;
@@ -903,7 +914,7 @@ function neamFirer(){
      man ikke samtidig treffer noe under. Hoeyre haandtak lukker derimot
      ved andre trykk: der finnes ingen «seg selv» aa aapne. */
   if(f.classList.contains('oppe')){ neamFirerNed(); neamAapne(); return; }
-  neamDuseOpp();
+  neamDuseOpp('neamSideHandtak');
   h.classList.add('oppe');
   f.hidden = false;
   /* Neste ramme, saa overgangen faktisk spilles - et element som faar
@@ -921,6 +932,8 @@ function neamFirerNed(){
   neamDuseNed();
   const apper = document.getElementById('neamApper');
   if(apper) apper.hidden = true;
+  const enheter = document.getElementById('neamEnheter');
+  if(enheter) enheter.hidden = true;
   document.removeEventListener('pointerdown', neamFirerUtenfor, true);
   /* Vent til knappene har trukket seg sammen foer laget gjemmes. */
   setTimeout(function(){ f.hidden = true; }, 190);
@@ -976,6 +989,46 @@ function neamFirerUtenfor(ev){
   }
 }
 
+/* Enhetene. Tom liste i dag - Homey er ikke koblet til. Sida kan tilby
+   sine egne ved aa sette window.neamEnheter til en liste av
+   {navn, ikon, gjor}. Da tar den over, og kolonnen tegner seg selv.
+
+   Er det ingenting aa vise, sies det som det er i stedet for aa aapne en
+   tom kolonne - samme regel som for en tom sidefirer. */
+function neamVisEnheter(){
+  const boks = document.getElementById('neamEnheter');
+  if(!boks) return;
+  if(!boks.hidden){ boks.hidden = true; return; }
+
+  let liste = [];
+  try{
+    if(typeof window.neamEnheter === 'function') liste = window.neamEnheter() || [];
+    else if(Array.isArray(window.neamEnheter))   liste = window.neamEnheter;
+  }catch(e){ liste = []; }
+
+  if(!liste.length){
+    if(typeof varsle === 'function'){
+      varsle('Lysstyring kommer - Homey er ikke koblet til ennå.');
+    }
+    return;
+  }
+
+  boks.innerHTML = liste.map(function(e, i){
+    return '<button type="button" class="neam-enhet" data-nr="' + i + '" '
+         +   'title="' + e.navn + '" aria-label="' + e.navn + '">'
+         +   (e.ikon || '') + '</button>';
+  }).join('');
+  Array.prototype.forEach.call(boks.querySelectorAll('.neam-enhet'), function(k){
+    k.onclick = function(){
+      const e = liste[parseInt(k.dataset.nr, 10)];
+      if(e && typeof e.gjor === 'function'){
+        try{ e.gjor(); }catch(err){ console.warn('Enhet feilet:', err); }
+      }
+    };
+  });
+  boks.hidden = false;
+}
+
 function neamVisApper(){
   const boks = document.getElementById('neamApper');
   if(!boks) return;
@@ -1021,9 +1074,14 @@ function neamBygg(){
      haandtaket selv er den fjerde. Retningene betyr det samme paa
      alle sidene:
 
-        opp     tilbake til Dash
+        opp     enheter og lys
         skraa   de andre appene
-        ved     lys og Homey
+        ved     tilbake til Dash
+
+     Enheter og Dash byttet plass 30. august 2026. Grunnen er utleggingen:
+     enhetene legger seg VERTIKALT opp fra knappen sin, appene vannrett
+     fra sin, og en kolonne trenger en knapp med tak over seg. «opp» er
+     den eneste som har det.
 
      Samtalen ligger paa haandtaket selv, paa andre trykk - se
      neamFirer(). Det var en femmer til 30. august 2026, der midten
@@ -1048,21 +1106,21 @@ function neamBygg(){
          + ' aria-label="' + tekst + '" title="' + tekst + '">' + ikon + '</button>';
   };
   firer.innerHTML =
-      knapp('neamTDash', 'opp', 'Til Dash',
+      knapp('neamTLys', 'opp', 'Enheter og lys',
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
       + 'stroke-linecap="round" stroke-linejoin="round">'
-      + '<rect x="3" y="4" width="18" height="14" rx="2"/>'
-      + '<path d="M3 9h18M9 18v3M15 18v3M8 21h8"/></svg>')
+      + '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.9.7 1.5 1.7 1.5 2.8V17h4v-.3c0-1.1.6-2.1 1.5-2.8A6 6 0 0 0 12 3z"/></svg>')
     + knapp('neamTApper', 'skraa', 'Andre apper',
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
       + 'stroke-linecap="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/>'
       + '<rect x="14" y="4" width="6" height="6" rx="1.5"/>'
       + '<rect x="4" y="14" width="6" height="6" rx="1.5"/>'
       + '<rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>')
-    + knapp('neamTLys', 'ved', 'Lys og Homey',
+    + knapp('neamTDash', 'ved', 'Til Dash',
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
       + 'stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.9.7 1.5 1.7 1.5 2.8V17h4v-.3c0-1.1.6-2.1 1.5-2.8A6 6 0 0 0 12 3z"/></svg>');
+      + '<rect x="3" y="4" width="18" height="14" rx="2"/>'
+      + '<path d="M3 9h18M9 18v3M15 18v3M8 21h8"/></svg>');
   document.body.appendChild(firer);
 
   /* Applista er sin egen boks utenfor fireren: den er fastposisjonert mot
@@ -1072,6 +1130,12 @@ function neamBygg(){
   apperBoks.id = 'neamApper';
   apperBoks.hidden = true;
   document.body.appendChild(apperBoks);
+
+  const enhetBoks = document.createElement('div');
+  enhetBoks.className = 'neam-enheter';
+  enhetBoks.id = 'neamEnheter';
+  enhetBoks.hidden = true;
+  document.body.appendChild(enhetBoks);
 
   /* ---- Hoeyre hjoerne: sidas egne handlinger ----
      Speilvendt av venstre. Merket er sidas eget, saa hvilken app du
@@ -1153,13 +1217,7 @@ function neamBygg(){
     location.href = NEAM_DASH;
   };
   document.getElementById('neamTApper').onclick = neamVisApper;
-  document.getElementById('neamTLys').onclick  = function(){
-    /* Homey er ikke koblet til ennaa. Sida kan tilby sin egen styring ved
-       aa definere neamLys() - da tar den over. Ellers sies det som det er,
-       i stedet for en knapp som later som. */
-    if(typeof window.neamLys === 'function'){ neamFirerNed(); window.neamLys(); }
-    else if(typeof varsle === 'function') varsle('Lysstyring kommer - Homey er ikke koblet til ennå.');
-  };
+  document.getElementById('neamTLys').onclick = neamVisEnheter;
   document.getElementById('neamModell').onclick = function(){
     /* Ikke midt i en tur: modellen som svarer skal vaere den som ble
        spurt. Byttet gjelder fra neste melding. */

@@ -37,16 +37,18 @@
    det. Rundt 90-128px er der baandteksten paa merkene begynner aa kunne
    leses, og det er hele grunnen til at den vokser.
 
-   TELEFON er krympet to ganger 30. august 2026: 112 -> 90 -> 68. Fire
-   knapper paa 112 la beslag paa to tredeler av skjermbredden, og aapen
-   tilstand ble en flate man maatte forbi i stedet for en meny man leste.
-   Hvilestoerrelsen sto uroert begge ganger - den var aldri problemet.
+   TELEFON regnes ut, ikke settes: fire app-knapper skal staa paa én rad
+   uansett telefon, og da er det skjermbredden som bestemmer hvor store de
+   kan bli - ikke et tall vi gjetter. Taket paa 84px er der fordi en
+   stoerre knapp ikke gjoer merket mer lesbart, bare mer plasskrevende.
 
-   Prisen er notert: 68px er under grensen der baandteksten paa et merke
-   kan leses, saa paa telefon maa merkene kjennes igjen paa form og farge.
-   Det er ett tall aa skru paa om det viser seg aa vaere feil vei. */
+   Regnestykket gir 76px paa en SE, 81 paa en 15 og 84 (taket) paa en Pro
+   Max. Verdien var gjennom 112 -> 90 -> 68 foer den ble regnet ut; alle
+   tre var gjetninger paa noe som har et riktig svar. */
 :root{
-  --f-handtak:54px; --f-aapen:68px; --f-luft:10px; --f-ikon:26px;
+  --f-handtak:54px;
+  --f-aapen:min(84px, calc((100vw - 2 * var(--f-marg-x) - 3 * var(--f-luft)) / 4));
+  --f-luft:10px; --f-ikon:30px;
   --f-marg-x:20px; --f-marg-y:24px;
 }
 @media(min-width:700px) and (min-height:600px){
@@ -86,6 +88,35 @@
 .neam-handtak:active{ transform:scale(.94); }
 .neam-handtak.oppe{ width:var(--f-aapen); height:var(--f-aapen); }
 
+/* ---------- Enhetslista ----------
+   Enhetene legger seg VERTIKALT opp fra «opp»-knappen, mens appene legger
+   seg vannrett fra «skraa». Det er derfor de to byttet plass: en kolonne
+   trenger en knapp med tak over seg, og «opp» er den eneste som har det.
+
+   Samme knappestoerrelse som alt annet i laget - laget fortsetter, det
+   begynner ikke paa nytt. */
+.neam-enheter{
+  position:fixed; z-index:90; pointer-events:none;
+  left:var(--f-marg-x);
+  bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom)
+              + 2 * var(--f-aapen) + var(--f-luft) + 16px);
+  display:flex; flex-direction:column-reverse; gap:var(--f-luft);
+  align-items:flex-start;
+}
+.neam-enheter[hidden]{ display:none; }
+.neam-enheter.side{ left:auto; right:var(--f-marg-x); align-items:flex-end; }
+.neam-enhet{
+  pointer-events:auto; flex:none;
+  width:var(--f-aapen); height:var(--f-aapen); border-radius:50%;
+  border:none; padding:0; cursor:pointer;
+  background:var(--paper); color:var(--ink);
+  box-shadow:0 4px 14px rgba(44,62,80,.28);
+  display:flex; align-items:center; justify-content:center;
+}
+.neam-enhet svg{ width:var(--f-ikon); height:var(--f-ikon); }
+.neam-enhet img{ width:100%; height:auto; display:block; }
+.neam-enhet:active{ transform:scale(.94); }
+
 /* ---------- Duselaget ----------
    Bakgrunnen dempes naar et av hjoernene aapnes. Knappene er runde merker
    uten flate under seg, og de laa rett paa et teksturert bakgrunnsbilde
@@ -107,6 +138,12 @@
 }
 .neam-duse[hidden]{ display:none; }
 .neam-duse.oppe{ opacity:1; }
+
+/* Haandtaket i det andre hjoernet skal dempes som alt annet naar ett
+   hjoerne er i bruk. Det staar normalt paa 91, altsaa OVER duselaget, og
+   stakk derfor fram som det eneste skarpe punktet paa en dempet side.
+   Under flata i stedet - da faar det samme behandling som resten. */
+.neam-handtak.dus{ z-index:88; }
 
 /* ---------- Fireren ----------
    Tre knapper rundt haandtaket, som fire prikker paa en terning der
