@@ -11,7 +11,8 @@
    Haandtaket staar nede til VENSTRE. Hoeyre hjoerne er opptatt av
    sidenes egne knapper - handleliste har .bottom-bar der.
 
-   z-index: haandtak 90, panel 92. Under filviseren (95),
+   z-index: dempet haandtak 84, duselag 85, undermenyer 89,
+   fireren 90, haandtak 91, panel 92. Under filviseren (95),
    modalene (100) og dialogene (120), saa en bekreftelse fra
    felles-dialog.js legger seg oppaa panelet og ikke under.
 
@@ -112,7 +113,50 @@
 }
 
 /* Knappene maa ligge over roeret. */
-.neam-enhet, .neam-app-lenke{ position:relative; z-index:1; }
+.neam-enhet, .neam-app-lenke, .neam-knapp{ position:relative; z-index:1; }
+
+/* ---- Grenene i fireren ----
+   Roer fra haandtaket ut til de to knappene som AAPNER noe. «ved» gaar
+   bare til en annen side og faar ingen gren - et roer skal bety at noe
+   henger sammen, ikke at to knapper ligger ved siden av hverandre.
+
+   Stammen gaar loddrett fra haandtaket opp til «opp». Grenen til «skraa»
+   tar av derfra og gaar vannrett. Begge ligger bak knappene og synes bare
+   i mellomrommene, som roerstrekk mellom bokser.
+
+   Roerene henger paa knappene selv, ikke paa fireren: da flytter de seg
+   med knappene naar geometrien endres, og det er ett sted aa regne. */
+.neam-knapp.opp::after,
+.neam-knapp.skraa::after{
+  content:''; position:absolute; z-index:-1;
+  background:var(--ror-loddrett); box-shadow:var(--ror-skygge);
+  opacity:0; transition:opacity .15s ease .1s;
+}
+.neam-firer.oppe .neam-knapp.opp::after,
+.neam-firer.oppe .neam-knapp.skraa::after{ opacity:1; }
+
+/* Stammen: ned fra «opp» til haandtaket. */
+.neam-knapp.opp::after{
+  width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
+  top:50%; height:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
+}
+/* Grenen: fra «skraa» bort til «opp». Vannrett, saa den bruker den andre
+   gradienten. */
+.neam-knapp.skraa::after{
+  background:var(--ror-vann);
+  height:var(--ror-tykk); top:calc(50% - var(--ror-tykk) / 2);
+  left:50%; width:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
+}
+.neam-firer.side .neam-knapp.skraa::after{
+  left:auto; right:50%;
+}
+
+/* Naar én gren er valgt, faller den andre bort - som en ventil som
+   stenges. Uten det staar begge roerene aapne mens bare det ene fører
+   noe sted, og da slutter roeret aa si hvor man er. */
+.neam-firer.gren-opp   .neam-knapp.skraa::after,
+.neam-firer.gren-skraa .neam-knapp.skraa::after{ transition-delay:0s; }
+.neam-firer.gren-opp   .neam-knapp.skraa::after{ opacity:0; }
 
 /* ---------- Stabelen ----------
    En kolonne som vokser OPPOVER fra en av knappene i fireren. Enhetene
@@ -125,7 +169,10 @@
    Samme knappestoerrelse som alt annet i laget - laget fortsetter, det
    begynner ikke paa nytt. */
 .neam-stabel{
-  position:fixed; z-index:90; pointer-events:none;
+  /* 89, altsaa UNDER fireren (90). Undermenyene ligger etter fireren i
+     DOM-en, og med samme z-index vant de - da la roeret deres seg oppaa
+     knappen det skulle henge i, i stedet for aa stikke inn under den. */
+  position:fixed; z-index:89; pointer-events:none;
   display:flex; flex-direction:column-reverse; gap:var(--f-luft);
 }
 .neam-stabel[hidden]{ display:none; }
@@ -166,19 +213,52 @@
   right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
 }
 
-/* Vannrett roer innover fra moderknappen. Stabelens ytterkant ligger
-   a/2 + luft fra «ved»-knappens senter. */
+/* ---- Broen ----
+   Valgene under System staar paa SAMME hoeyde som moderknappen, saa et
+   roer rett bortover ville ligget bak alle tre og bare vist seg i to
+   smale gap. Roeret gaar derfor OPP fra System, i bro over knappene, og
+   NED i hver av dem. Da ser man at det ene deler seg i to.
+
+   Tre deler: stigningen (::after paa stabelen), broen (::before paa
+   stabelen) og nedstikkene (::before paa hver knapp). */
+/* Broen legges i det vannrette mellomrommet som alt finnes mellom de to
+   radene i fireren - a/2 + halve lufta. Hoeyere opp ville den forsvunnet
+   bak «skraa» og bare vist seg i biter; her loeper den ubrutt fra System
+   til siste knapp, og stigningen blir kort men tydelig. */
+.neam-stabel.rad{ --bro:calc(var(--f-aapen) / 2 + var(--f-luft) / 2); }
+
+/* Broen: vannrett, over knappene, fra stigningen til siste nedstikk. */
 .neam-stabel.rad::before{
   content:''; position:absolute; z-index:0;
   height:var(--ror-tykk); background:var(--ror-vann);
   box-shadow:var(--ror-skygge);
-  top:calc(50% - var(--ror-tykk) / 2);
+  bottom:calc(50% + var(--bro) - var(--ror-tykk) / 2);
   left:calc(var(--f-aapen) / 2);
   right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
 }
 .neam-stabel.side.rad::before{
   left:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft)));
   right:calc(var(--f-aapen) / 2);
+}
+/* Stigningen: opp fra moderknappens senter til broen. Ligger utenfor
+   stabelen, over der System staar. */
+.neam-stabel.rad::after{
+  content:''; position:absolute; z-index:0;
+  width:var(--ror-tykk); background:var(--ror-loddrett);
+  box-shadow:var(--ror-skygge);
+  bottom:50%; height:var(--bro);
+  right:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft) + var(--ror-tykk) / 2));
+}
+.neam-stabel.rad:not(.side)::after{
+  right:auto;
+  left:calc(-1 * (var(--f-aapen) / 2 + var(--f-luft) + var(--ror-tykk) / 2));
+}
+/* Nedstikkene: fra broen ned i hver knapp. */
+.neam-stabel.rad .neam-enhet::before{
+  content:''; position:absolute; z-index:-1;
+  width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
+  background:var(--ror-loddrett); box-shadow:var(--ror-skygge);
+  bottom:50%; height:var(--bro);
 }
 
 /* ---- Rad i stedet for kolonne ----
@@ -226,7 +306,7 @@
    trenger ingen egen klikkhaandtering - men den maa ta imot trykk, ellers
    gaar de rett gjennom til sida under. */
 .neam-duse{
-  position:fixed; inset:0; z-index:89;
+  position:fixed; inset:0; z-index:85;
   /* LYS, ikke moerk. En moerk flate over et beige bakgrunnsbilde ga to
      lag moenster oppaa hverandre - bildets tannhjul skinte gjennom og la
      seg bak knappene i stedet for aa forsvinne. En lys flate i sidas egen
@@ -243,7 +323,7 @@
    hjoerne er i bruk. Det staar normalt paa 91, altsaa OVER duselaget, og
    stakk derfor fram som det eneste skarpe punktet paa en dempet side.
    Under flata i stedet - da faar det samme behandling som resten. */
-.neam-handtak.dus{ z-index:88; }
+.neam-handtak.dus{ z-index:84; }
 
 /* ---------- Fireren ----------
    Tre knapper rundt haandtaket, som fire prikker paa en terning der
@@ -329,9 +409,10 @@
    fireren med skrift utenfor et merke.
 
    Festet til skjermen, ikke til fireren: sentrert over et haandtak i
-   venstre hjoerne rant venstre ende utenfor kanten paa smal skjerm. */
+   venstre hjoerne rant venstre ende utenfor kanten paa smal skjerm.
+   z-index 89 av samme grunn som .neam-stabel - se der. */
 .neam-apper{
-  position:fixed; z-index:90; pointer-events:none;
+  position:fixed; z-index:89; pointer-events:none;
   left:var(--f-marg-x); right:var(--f-marg-x);
   /* env(safe-area-inset-bottom) MAA staa her ogsaa. Fireren har den, og
      uten den her maales de to fra hvert sitt nullpunkt: paa en iPhone
@@ -349,18 +430,28 @@
   justify-content:flex-start; flex-wrap:wrap-reverse;
 }
 .neam-apper[hidden]{ display:none; }
-/* Applista henger under «skraa», som staar i oeverste rad ytterst. Roeret
-   er loddrett: ned fra listas bunn til den knappens senter, som ligger
-   1,5 knapp + luft fra fireens ytterkant. */
+/* Applista henger under «skraa». To roer: et vannrett samlerroer som
+   loeper gjennom hele raden og forgrener seg til alle appene, og en
+   loddrett stamme ned fra det til «skraa»-knappens senter.
+
+   Uten samlerroeret hang bare den ene appen sammen med menyen, og de tre
+   andre sto som loese sirkler ved siden av. */
 .neam-apper::before{
+  content:''; position:absolute; z-index:0;
+  height:var(--ror-tykk); background:var(--ror-vann);
+  box-shadow:var(--ror-skygge);
+  top:calc(50% - var(--ror-tykk) / 2);
+  left:calc(var(--f-aapen) / 2); right:calc(var(--f-aapen) / 2);
+}
+.neam-apper::after{
   content:''; position:absolute; z-index:0;
   width:var(--ror-tykk); background:var(--ror-loddrett);
   box-shadow:var(--ror-skygge);
   left:calc(1.5 * var(--f-aapen) + var(--f-luft) - var(--ror-tykk) / 2);
-  top:calc(var(--f-aapen) / 2);
+  top:50%;
   bottom:calc(-1 * (var(--f-aapen) / 2 + 16px));
 }
-.neam-apper.side::before{
+.neam-apper.side::after{
   left:auto;
   right:calc(1.5 * var(--f-aapen) + var(--f-luft) - var(--ror-tykk) / 2);
 }

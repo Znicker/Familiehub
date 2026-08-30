@@ -935,6 +935,7 @@ function neamFirerNed(){
   if(apper) apper.hidden = true;
   const enheter = document.getElementById('neamEnheter');
   if(enheter) enheter.hidden = true;
+  f.classList.remove('gren-opp', 'gren-skraa');
   document.removeEventListener('pointerdown', neamFirerUtenfor, true);
   /* Vent til knappene har trukket seg sammen foer laget gjemmes. */
   setTimeout(function(){ f.hidden = true; }, 190);
@@ -1051,10 +1052,19 @@ function neamSideStabel(plass, liste){
   boks.hidden = false;
 }
 
+/* Merker hvilken gren som er valgt, saa roeret til den andre kan falle
+   bort. Tom streng betyr ingen - da staar begge aapne. */
+function neamGren(plass){
+  const f = document.getElementById('neamFirer');
+  if(!f) return;
+  f.classList.remove('gren-opp', 'gren-skraa');
+  if(plass) f.classList.add('gren-' + plass);
+}
+
 function neamVisEnheter(){
   const boks = document.getElementById('neamEnheter');
   if(!boks) return;
-  if(!boks.hidden){ boks.hidden = true; return; }
+  if(!boks.hidden){ boks.hidden = true; neamGren(''); return; }
 
   let liste = [];
   try{
@@ -1083,12 +1093,13 @@ function neamVisEnheter(){
     };
   });
   boks.hidden = false;
+  neamGren('opp');
 }
 
 function neamVisApper(){
   const boks = document.getElementById('neamApper');
   if(!boks) return;
-  if(!boks.hidden){ boks.hidden = true; return; }
+  if(!boks.hidden){ boks.hidden = true; neamGren(''); return; }
   const her = neamSti();
   /* Én knapp per app, i samme stoerrelse som knappene i fireren. Navnet
      staar i aria-label og ikke som tekst under: merkene baerer navnet
@@ -1102,6 +1113,7 @@ function neamVisApper(){
            + '</a>';
     }).join('');
   boks.hidden = false;
+  neamGren('skraa');
 }
 
 /* ============================================================
