@@ -389,9 +389,14 @@
   /* Kortflata er TRE, ikke lakk: moerk ved med liggende aarer, og et
      gradientlag over som gir lyset ovenfra. Treet ligger i samme moerke
      ende av paletten som messingen, saa kortet hoerer til maskinen. */
-  background:
+  /* background-COLOR under bildet er sikringen: mangler treet - fordi
+     fila ikke er pushet, eller cachen serverer feil innhold - er kortet
+     fortsatt moerkt og klokka fortsatt en klokke. Et manglende bilde skal
+     koste tekstur, aldri lesbarhet. */
+  background-color:#241503;
+  background-image:
     linear-gradient(to bottom, rgba(255,235,200,.10), rgba(0,0,0,0) 45%, rgba(0,0,0,.30)),
-    url('/bilder/tre-mork.png?v=1');
+    url('/bilder/tre-mork.png?v=2');
   background-size:auto, 256px 256px;
   text-align:center;
   backface-visibility:hidden; -webkit-backface-visibility:hidden;
@@ -409,7 +414,13 @@
      drop-shadow foelger den klippede formen og gir tallet en moerk kant
      mot flata - uten den floet lyst tre paa moerkt tre sammen der aarene
      tilfeldig traff hverandre i tone. */
-  background:url('/bilder/tre-lys.png?v=1') 0 0 / 256px 256px;
+  /* Samme sikring som paa flata: fargen ligger under bildet, og siden
+     clip:text klipper ALLE bakgrunnslag til glyfene, er tallene lys
+     messing selv om treet uteblir. Uten dette var tallene klippet til
+     ingenting - en usynlig klokke. */
+  background-color:#D9B370;
+  background-image:url('/bilder/tre-lys.png?v=2');
+  background-position:0 0; background-size:256px 256px;
   -webkit-background-clip:text; background-clip:text;
   color:transparent; -webkit-text-fill-color:transparent;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));
@@ -424,9 +435,10 @@
 .fk-n, .fk-blad-n{ bottom:0; border-radius:0 0 .1em .1em;
   /* Nedre halvdel: samme tre, men gradienten snus moerkere - halvdelen
      vender bort fra lyset. */
-  background:
+  background-color:#1E1202;
+  background-image:
     linear-gradient(to bottom, rgba(0,0,0,.18), rgba(0,0,0,.38)),
-    url('/bilder/tre-mork.png?v=1');
+    url('/bilder/tre-mork.png?v=2');
   background-size:auto, 256px 256px; }
 .fk-n > b, .fk-blad-n > b{ margin-top:-.64em; }
 
