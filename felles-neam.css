@@ -260,11 +260,15 @@
 
    Tre deler: stigningen (::after paa stabelen), broen (::before paa
    stabelen) og nedstikkene (::before paa hver knapp). */
-/* Broen legges i det vannrette mellomrommet som alt finnes mellom de to
-   radene i fireren - a/2 + halve lufta. Hoeyere opp ville den forsvunnet
-   bak «skraa» og bare vist seg i biter; her loeper den ubrutt fra System
-   til siste knapp, og stigningen blir kort men tydelig. */
-.neam-stabel.rad{ --bro:calc(var(--f-aapen) / 2 + var(--f-luft) / 2); }
+/* Broen loeftes godt over knappene, ikke bare ned i mellomrommet. Laa den
+   tett paa, ble stigningen og nedstikkene noen faa piksler hver, og hele
+   figuren leste som en strek langs toppen i stedet for som et roer som
+   gaar opp, bortover og ned igjen.
+
+   Den kan da gaa bak «skraa» hvis den plassen er tatt. Det er greit -
+   roeret forsvinner bak en knapp og kommer ut paa andre siden, som roer
+   gjoer. */
+.neam-stabel.rad{ --bro:calc(var(--f-aapen) / 2 + var(--f-luft) + 12px); }
 
 /* Broen: vannrett, over knappene, fra stigningen til siste nedstikk.
    Forankret til NEDERSTE rads senter, ikke til halve stabelen: blir det
@@ -482,7 +486,13 @@
    z-index 89 av samme grunn som .neam-stabel - se der. */
 .neam-apper{
   position:fixed; z-index:89; pointer-events:none;
-  left:var(--f-marg-x); right:var(--f-marg-x);
+  /* Bredden foelger INNHOLDET, ikke skjermen. Med left og right begge satt
+     ble lista like bred som vinduet, og samlerroeret - som maales a/2 inn
+     fra hver kant - stakk da langt ut forbi foerste og siste app.
+     max-content med tak lar den fortsatt bryte naar den maa. */
+  left:var(--f-marg-x); right:auto;
+  width:max-content;
+  max-width:calc(100vw - 2 * var(--f-marg-x));
   /* env(safe-area-inset-bottom) MAA staa her ogsaa. Fireren har den, og
      uten den her maales de to fra hvert sitt nullpunkt: paa en iPhone
      skjoev safe-area fireren 34px opp mens lista sto stille, saa de
@@ -527,7 +537,10 @@
 /* Speilvendt naar den hoerer til hoeyre hjoerne - i dag gjoer den ikke
    det, men regelen staar saa fireren kan flyttes uten aa etterlate
    lista i feil hjoerne. */
-.neam-apper.side{ justify-content:flex-end; }
+.neam-apper.side{
+  justify-content:flex-end;
+  left:auto; right:var(--f-marg-x);
+}
 
 .neam-app-lenke{
   pointer-events:auto; flex:none;
