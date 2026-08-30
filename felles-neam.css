@@ -125,6 +125,23 @@
   right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
 }
 
+/* ---- Rad i stedet for kolonne ----
+   Valgene under en knapp i NEDERSTE rad legger seg innover, ikke oppover:
+   en kolonne derfra ville lagt seg bak «opp» og «skraa», som staar i raden
+   over. De starter altsaa der moderknappen slutter, paa samme hoeyde som
+   den, og fortsetter forbi fireren. */
+.neam-stabel.rad{
+  flex-direction:row; align-items:center;
+  bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom));
+  left:calc(var(--f-marg-x) + 2 * var(--f-aapen) + 2 * var(--f-luft));
+  right:auto;
+}
+.neam-stabel.side.rad{
+  flex-direction:row-reverse;
+  left:auto;
+  right:calc(var(--f-marg-x) + 2 * var(--f-aapen) + 2 * var(--f-luft));
+}
+
 .neam-enhet{
   pointer-events:auto; flex:none;
   width:var(--f-aapen); height:var(--f-aapen); border-radius:50%;

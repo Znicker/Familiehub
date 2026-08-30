@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=5">
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=18">
+<link rel="stylesheet" href="/felles-neam.css?v=19">
 <!-- Datalaget baerer husregisteret og lastes foer sidens eget skript.
      felles-skjema.js gir avbryt-regelen paa husskjemaet og krever
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
@@ -1056,7 +1056,7 @@ window.neamSideHandlinger = function(){
        ingen av dem tilhoerer noen app - de er huset, ikke innholdet.
        To trykk for aa logge ut er dessuten riktig vekting: paa en iPad
        flere deler, skal det ikke skje ved et uhell. */
-    { plass:'ved', navn:'System',
+    { plass:'ved', navn:'System', behold:true,
       ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
          + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
          + '<rect x="3" y="4" width="18" height="12" rx="2"/>'
@@ -1108,6 +1108,6 @@ window.neamUtfor = async function(navn, arg){
      overalt, og senere er dette veien til aa snakke med Neam herfra. -->
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=33"></script>
+<script src="/felles-neam.js?v=34"></script>
 </body>
 </html>

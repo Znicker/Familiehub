@@ -1027,7 +1027,12 @@ function neamSideStabel(plass, liste){
   if(!boks.hidden){ boks.hidden = true; return; }
   if(!liste || !liste.length) return;
 
-  boks.className = 'neam-stabel side fra-' + (plass === 'opp' ? 'opp' : 'ved');
+  /* «opp» staar i oeverste rad og har tak over seg - da vokser valgene
+     oppover. «ved» staar i nederste rad ved siden av haandtaket, og der er
+     veien videre innover, ikke opp: en kolonne derfra ville lagt seg bak
+     «opp» og «skraa». */
+  boks.className = 'neam-stabel side '
+                 + (plass === 'opp' ? 'fra-opp' : 'fra-ved rad');
   boks.innerHTML = liste.map(function(v, i){
     return '<button type="button" class="neam-enhet' + (v.merke ? ' merke' : '') + '" '
          +   'data-nr="' + i + '" title="' + v.navn + '" aria-label="' + v.navn + '">'
@@ -1230,7 +1235,11 @@ function neamBygg(){
     document.getElementById('neamS_' + p).onclick = function(){
       const v = neamSideValg[p];
       if(!v) return;                 /* skjult uansett - se .neam-knapp.doed */
-      neamSideFirerNed();
+      /* En handling som ROMMER flere - System, for eksempel - skal la
+         fireren staa: den aapner et lag til, den forlater ikke menyen.
+         Uten dette lukket menyen seg i samme oeyeblikk som undervalgene
+         kom fram, og de sto igjen alene paa en tom skjerm. */
+      if(!v.behold) neamSideFirerNed();
       try{ v.gjor(); }catch(e){ console.warn('Sidehandling feilet:', e); }
     };
   });
