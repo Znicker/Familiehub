@@ -876,10 +876,14 @@ body{
   padding:7px 10px;
 }
 
-/* Hva raden ER, naar den ikke har en frist aa vise. */
-.forslag-slag{
-  font-size:var(--t-etikett); font-weight:700; letter-spacing:.05em;
-  text-transform:uppercase; color:var(--ink-soft); padding-top:12px;
+/* Undertekst inne i et fag: «Læringsmål» og «Lekser». Innrykket viser at
+   den hoerer til faget over, og ikke er en ny overskrift paa samme nivaa.
+   Merkelappen som sto ute i frist-kolonnen paa maalradene er borte - naar
+   bolken er navngitt, sa den det samme én gang til per rad. */
+.forslag-under{
+  font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
+  letter-spacing:.07em; color:var(--ink-soft);
+  margin:9px 0 1px 36px;
 }
 .forslag-frist{ display:block; }
 /* Teksten er det viktigste i raden og faar mest plass. Feltene toppstilles,
@@ -5966,6 +5970,10 @@ function tegnForslag(){
       +   (nytt ? '<span class="forslag-nytt">nytt fag</span>' : '')
       + '</div>';
 
+    /* Undertekst per bolk inne i faget. Bare naar bolken har noe - en
+       overskrift over ingenting leses som at noe mangler. */
+    if(g.maal.length) ut += '<div class="forslag-under">Læringsmål</div>';
+
     g.maal.forEach(function(i){
       const m = ventendeMaal[i];
       ut += '<div class="forslag-rad' + (m.med ? '' : ' av') + '">'
@@ -5974,9 +5982,11 @@ function tegnForslag(){
         + '<textarea class="hu-felt forslag-maaltekst" rows="' + forslagLinjer(m.maal) + '" '
         +   'oninput="maalSett(' + i + ', \'maal\', this.value); voksFelt(this)">'
         +   esc(m.maal) + '</textarea>'
-        + '<span class="forslag-slag maal">Læringsmål</span>'
+        + '<span></span>'
         + '</div>';
     });
+
+    if(g.lekser.length) ut += '<div class="forslag-under">Lekser</div>';
 
     g.lekser.forEach(function(i){
       const r = ventendeForslag[i];
