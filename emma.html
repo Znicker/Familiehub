@@ -5374,7 +5374,10 @@ window.neamBakgrunn = async function(){
     + 'ta med matpakke, frist for et skjema: legg_til_paaminnelse MED dato. Den '
     + 'havner under «Påminnelser i dag» på den dagen.\n'
     + '  - Har den ingen dato - «husk innesko denne uka», «foreldremøte kommer»: '
-    + 'legg_til_paaminnelse UTEN dato. Den havner under «Påminnelser denne uken».\n'
+    + 'legg_til_paaminnelse UTEN dato, men MED uke-argumentet satt til uka planen '
+    + 'gjelder. Den havner under «Påminnelser denne uken» i den uka. Utelater du '
+    + 'uke, havner den i uka skjermen tilfeldigvis står på - og leser du en plan '
+    + 'for neste uke, er beskjeden borte samme kveld.\n'
     + 'Si etterpå hvilke beskjeder du la inn og hvor de havnet, så hun kan rette '
     + 'det som ble feil plassert.\n\n'
     + 'UKEPLANEN GÅR ALLTID VIA foreslaa_lekser. Får du en ukeplan, et bilde, en '
@@ -5733,7 +5736,8 @@ const FAG_VERKTOY = [
                + 'gymtøy, foreldremøte, innlevering av skjema, beskjeder rettet til '
                + 'Emma personlig. Har beskjeden en DATO, havner den under «Påminnelser '
                + 'i dag» på den datoen. Har den ingen dato, havner den under '
-               + '«Påminnelser denne uken». Send ALDRI en lekse hit - lekser hører til '
+               + '«Påminnelser denne uken» - og da må du sende uke-argumentet, ellers '
+               + 'havner den i feil uke. Send ALDRI en lekse hit - lekser hører til '
                + 'et fag og går via foreslaa_lekser.',
     input_schema: {
       type:'object',
@@ -5744,6 +5748,12 @@ const FAG_VERKTOY = [
                                              + 'påminnelsen åpnes.' },
         dato:    { type:'string', description:'Dato på formen 2026-09-08. Utelat den '
                                             + 'hvis beskjeden ikke gjelder en bestemt dag.' },
+        uke:     { type:'number', description:'Ukenummeret beskjeden gjelder. SEND ALLTID '
+                                            + 'DENNE når beskjeden kommer fra en ukeplan. '
+                                            + 'Uten den havner beskjeden i uka SKJERMEN '
+                                            + 'står på, og det er sjelden den samme som '
+                                            + 'planens. Gjelder bare beskjeder uten dato - '
+                                            + 'har beskjeden en dato, er den gitt av datoen.' },
         gjelder: { type:'string', description:'Emma, Magne, Nina, Andrea eller Familie. '
                                             + 'Utelat for Emma.' }
       },
@@ -6287,8 +6297,8 @@ async function hentUkeplan(){
     + 'egne kall.\n\n'
     + '3. BESKJEDENE som ikke er lekser - turdag, utstyr, frister, foreldremøte, '
     + 'og alt som er rettet til Emma ved navn - legger du inn med '
-    + 'legg_til_paaminnelse, én per beskjed. Med dato hvis den har en, uten hvis '
-    + 'den ikke har.\n\n'
+    + 'legg_til_paaminnelse, én per beskjed. Med dato hvis den har en; har den '
+    + 'ingen, send uke-argumentet med ukenummeret planen gjelder.\n\n'
     + 'Ta ikke med overskrifter eller ukenummer. Si til slutt hva du la fram og '
     + 'hvilke beskjeder du la inn.',
     {friskt:true});
@@ -6368,8 +6378,9 @@ async function sendArkTilNeam(){
       + 'Står det læringsmål per fag, send dem i maal-lista i det samme '
       + 'foreslaa_lekser-kallet.\n\n'
       + 'Beskjeder som IKKE er lekser - utstyr, turdager, frister, og alt som er '
-      + 'rettet til Emma ved navn - legger du inn med legg_til_paaminnelse, med '
-      + 'dato hvis den har en. Ta ikke med overskrifter eller ukenummer.\n\n' + tekst,
+      + 'rettet til Emma ved navn - legger du inn med legg_til_paaminnelse. Med '
+      + 'dato hvis den har en; har den ingen, send uke-argumentet med ukenummeret '
+      + 'planen gjelder. Ta ikke med overskrifter eller ukenummer.\n\n' + tekst,
       {friskt:true});
   }catch(e){
     varsle('Fikk ikke sendt til Neam: ' + e.message);
@@ -6691,13 +6702,18 @@ async function fagUtfor(navn, arg){
 
     /* MED dato: en bestemt dag, altsaa «i dag»-boksen paa den datoen.
        UTEN dato: noe som gjelder uka, og da settes fristen til soendagen
-       i uka man staar i - det er slik ukesboksen finner sine punkter, se
-       ukeAv() i tegnHuskeInner. */
+       i den uka - det er slik ukesboksen finner sine punkter, se ukeAv()
+       i tegnHuskeInner.
+
+       HVILKEN uke er avgjoerende. Foer brukte vi uka SKJERMEN sto paa, og
+       det er nesten aldri den samme som ukeplanens: legger man inn
+       ukeplanen for uke 38 paa en fredag i uke 37, havnet «husk innesko»
+       i uke 37 og forsvant fra boksen samme kveld. Kommer beskjeden fra
+       en plan, sier Neam hvilken uke det er, og den gaar foran. */
     const omfang = dato ? 'dag' : 'uke';
-    const frist  = dato || datoNokkel(new Date(
-        ukeStart(dagenViser()).getFullYear(),
-        ukeStart(dagenViser()).getMonth(),
-        ukeStart(dagenViser()).getDate() + 6));
+    const man = arg.uke ? mandagIUke(arg.uke) : ukeStart(dagenViser());
+    const frist = dato || datoNokkel(
+        new Date(man.getFullYear(), man.getMonth(), man.getDate() + 6));
 
     const gjelder = String(arg.gjelder || '').trim() || EIER;
     const ny = {
@@ -6712,8 +6728,10 @@ async function fagUtfor(navn, arg){
     };
     await endreHuske(function(liste){ return liste.concat([ny]); });
     return { lagt:{ tekst:tekst, gjelder:gjelder, dato:dato || null,
-                    hvor: omfang === 'uke' ? 'Påminnelser denne uken'
-                                           : 'Påminnelser i dag' } };
+                    uke: omfang === 'uke' ? isoUke(man).uke : undefined,
+                    hvor: omfang === 'uke'
+                            ? 'Påminnelser i uke ' + isoUke(man).uke
+                            : 'Påminnelser i dag' } };
   }
 
   if(navn === 'legg_til_lekse'){
