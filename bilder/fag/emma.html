@@ -506,13 +506,24 @@ body{
    ut: boksen er gitt, og merket skaleres inn i den og sentreres.
    Merkene er 360x309-330, altsaa nesten kvadratiske, saa boksen kan
    settes ett sted uten at noen av dem faar mye luft rundt seg. */
-/* Staaende merker, ikke runde: ramma er hoeyere enn den er bred, og
-   bildet sentreres i den. Kortet er bredere enn merket - det er med
-   vilje, teksten under trenger bredden. */
+/* Merket til venstre, teksten ved siden - og videre UNDER merket naar
+   den ikke faar plass ved siden av det.
+
+   `float` og ikke to kolonner i flex eller grid: en kolonne ville holdt
+   teksten smal hele veien ned, ogsaa forbi merket, og et fag med seks
+   lekser hadde blitt en hoey, tynn spalte ved siden av et bilde med luft
+   under seg. Med float kortes bare de linjene som ligger side om side,
+   og resten tar hele bredden. Det er nettopp den oppfoerselen float er
+   laget for, og den eneste som gir den av seg selv.
+
+   Lekselinjene er flex-bokser, og en flex-boks legger seg ikke oppaa et
+   flytende element - den krymper ved siden av det og gaar tilbake til
+   full bredde naar den er forbi. Det er derfor de bryter riktig uten at
+   noe maa regnes ut. */
 .fag-bilde{
-  display:block; flex:none;
-  width:100%; height:190px;
-  margin:0 auto 8px;
+  display:block; float:left; flex:none;
+  width:120px; height:154px;
+  margin:0 14px 8px 0;
 }
 .fag-bilde img{
   width:100%; height:100%;
@@ -525,23 +536,30 @@ body{
    samme kort blir hoeyere av seg selv, og trenger mer plass rundt seg. */
 @media(min-width:700px){
   #fag{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px; }
-  .fag-bilde{ height:230px; margin-bottom:10px; }
-  .fag-kort{ padding:15px 17px 17px; min-height:336px; }
+  .fag-bilde{ width:152px; height:196px; margin-right:16px; }
+  .fag-kort{ padding:15px 17px 17px; min-height:236px; }
 }
+/* PC har fem smale spalter. Merket maa krympe tilsvarende, ellers blir
+   det ingen bredde igjen til teksten ved siden - og da er det ikke lenger
+   to spalter, bare et bilde med enkeltord til hoeyre. */
 @media(min-width:1300px){
   #fag{ grid-template-columns:repeat(5, minmax(0,1fr)); gap:14px; }
-  .fag-bilde{ height:200px; }
-  .fag-kort{ padding:13px 15px 15px; min-height:296px; }
+  .fag-bilde{ width:112px; height:144px; margin-right:12px; }
+  .fag-kort{ padding:13px 15px 15px; min-height:180px; }
 }
 .fag-kort{
   border:1px solid var(--line);border-radius:12px;background:var(--bg-2);
   padding:13px 15px 15px;
-  display:flex;flex-direction:column;
-  /* Hoeyt nok til merket pluss navn og en linje under, satt som TALL og
-     ikke overlatt til utregning. Kortene sto paa den gamle min-height
-     paa 104px uansett hva som laa i dem - bildet talte ikke med - og da
-     er en min-height som faktisk dekker innholdet det som holder. */
-  min-height:288px;
+  /* Blokk, ikke flex-kolonne: et flytende element inne i en flex-boks
+     flyter ikke - det blir et flex-element som alle andre, og teksten
+     legger seg under i stedet for ved siden. */
+  display:block;
+  /* Hoeyt nok til merket pluss litt, satt som TALL. Kortene sto en stund
+     paa min-height uansett hva som laa i dem fordi bildet ikke talte med
+     i hoeyden; da er en min-height som faktisk dekker merket det som
+     holder. overflow:hidden under gjoer dessuten at kortet omslutter
+     det flytende merket i stedet for aa la det stikke ut nederst. */
+  min-height:190px;
   /* Sperre, ikke rettelse: hoeyden over holder bildet inne av seg selv.
      Skulle noe likevel bli for stort en dag, blir det klippet HER og
      ikke tegnet oppaa nabokortet - en avkuttet ting er lett aa se og
@@ -561,9 +579,12 @@ body{
 .fag-topp{display:flex;align-items:center;gap:8px}
 /* Laerer og dager staar under navnet i fellesvisningen - to korte linjer
    som sier hvem og naar uten aa aapne faget. */
+/* Metalinja stod med nowrap og ellipse da den hadde hele kortbredden.
+   Ved siden av merket er spalten smalere, og «Kari Nordmann · tir, ons,
+   tor» ville blitt kuttet til nesten ingenting. Den faar bryte i stedet. */
 .fag-meta{
   font-size:var(--t-etikett); color:var(--ink-soft); line-height:1.4;
-  margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  margin-top:2px; overflow-wrap:anywhere;
 }
 .fag-merke{
   flex-shrink:0; font-size:var(--t-etikett); font-weight:700;
