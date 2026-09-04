@@ -315,6 +315,48 @@ body{
 /* ---------- Vær ---------- */
 .vaer-t{flex:1;text-align:center;padding:8px 2px;border-radius:11px;background:#F7F9FA}
 
+/* ---------- Snarveier ----------
+   Timeplanen og skolens ukeplan hoerer til alle fire visningene, ikke til
+   én av dem, saa de staar ved siden av visningsbytteren og skifter aldri.
+   Dempet form: de er oppslagsverk, ikke handlinger, og skal ikke
+   konkurrere med fanene om oppmerksomheten. */
+.snarveier{ display:inline-flex; gap:6px; flex-shrink:0; }
+.snarvei{
+  border:1px solid var(--line); background:var(--paper); color:var(--ink-soft);
+  border-radius:999px; padding:5px 12px; cursor:pointer; text-decoration:none;
+  font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+  letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;
+  display:inline-flex; align-items:center;
+}
+.snarvei:active{ background:var(--boks-mild); color:var(--ink); }
+/* Under 900px er korttittelen trang alt. Timeplanen har egen knapp i
+   Rediger-stabelen der, saa den er ikke borte - bare flyttet. */
+@media(max-width:900px){ .snarveier{ display:none; } }
+
+/* ---------- Timeplanen ---------- */
+.timeplan-boks{ width:min(96vw, 900px); max-width:none; }
+.tp-tabell{
+  width:100%; border-collapse:collapse; font-family:'Archivo',sans-serif;
+}
+.tp-tabell th, .tp-tabell td{
+  border:1px solid var(--line); padding:10px 8px; text-align:center;
+  font-size:var(--t-meta);
+}
+.tp-tabell thead th{
+  background:var(--bg-2); font-size:var(--t-etikett); font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft);
+}
+.tp-tabell td{ font-weight:600; }
+.tp-tabell td:empty{ background:var(--paper-soft); }
+.tp-time{
+  background:var(--bg-2); width:38px; color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;
+}
+/* Dagens kolonne, ikke dagens rute: hvilken time man er inne i vet vi
+   ikke - skoletimene staar ikke med klokkeslett paa arket. */
+.tp-tabell .idag{ background:var(--aksent-lys); }
+.tp-tabell thead th.idag{ color:var(--ink); }
+
 /* ---------- Visningsbytter ----------
    Tre visninger deler venstre kolonne. Bytteren staar i korttittelen og
    ikke over kortet: raden over kortene ble fjernet paa kjoekkendashen for
@@ -607,6 +649,11 @@ body{
 .fagvis-tom{ font-size:var(--t-meta); color:var(--ink-soft); font-style:italic; }
 
 .lim-hjelp{font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5;margin-bottom:10px}
+.lim-omr{
+  min-height:200px;width:100%;
+  font-family:'IBM Plex Mono',monospace;font-size:14px;line-height:1.5;
+}
+.lim-omr.slipp{ border-color:var(--handling-ny); background:var(--aksent-lys); }
 
 /* ---------- Forslag fra Neam ----------
    Neam skriver ikke leksene rett inn. Han legger dem HER, og de blir
@@ -1246,6 +1293,37 @@ select.hu-felt{
     </div>
   </div>
 
+  <!-- Timeplanen. Data, ikke et vedlagt dokument - se TIMEPLAN. -->
+  <div class="hu-boble-bak avtale-bak" id="timeplanBak" hidden onclick="lukkTimeplan()"></div>
+  <div class="avtale-boks timeplan-boks" id="timeplanBoks" hidden role="dialog" aria-modal="true">
+    <button class="hub-lukk" onclick="lukkTimeplan()" aria-label="Lukk">×</button>
+    <div class="av-tittel"><span>Timeplan 8C</span></div>
+    <div class="av-skjema" style="display:block" id="timeplanKropp"></div>
+  </div>
+
+  <!-- Lekseark inn. Teksten gaar til Neam, som legger leksene fram i
+       forslagspanelet - han skriver ingenting selv. -->
+  <div class="hu-boble-bak avtale-bak" id="arkBak" hidden></div>
+  <div class="avtale-boks" id="arkBoks" hidden role="dialog" aria-modal="true">
+    <button class="hub-lukk" onclick="lukkArk()" aria-label="Lukk">×</button>
+    <div class="av-tittel"><span>Lim inn lekseark</span></div>
+    <div class="av-skjema" style="display:block">
+      <div class="lim-hjelp">
+        Lim inn hele ukeplanen eller lekselista under, slik den står. Neam
+        sorterer den på fag og legger den fram til godkjenning — ingenting
+        lagres før du har sett over den.
+      </div>
+      <textarea class="hu-felt hu-omr lim-omr" id="arkFelt"
+                placeholder="Lim inn her (Ctrl+V), eller slipp en tekstfil oppi."></textarea>
+      <div class="bilde-hjelp">Word-dokumenter kan ikke leses direkte —
+        åpne dokumentet, merk alt og lim inn teksten.</div>
+    </div>
+    <div class="av-foot">
+      <button class="hu-avbryt" onclick="avbrytSkjema('arkBoks', lukkArk)">Avbryt</button>
+      <button class="knapp-gronn" id="arkSend" onclick="sendArkTilNeam()">Send til Neam</button>
+    </div>
+  </div>
+
   <!-- Forslag fra Neam. Ingenting er lagret naar denne staar oppe. -->
   <div class="hu-boble-bak avtale-bak" id="forslagBak" hidden></div>
   <div class="avtale-boks forslag-boks" id="forslagBoks" hidden role="dialog" aria-modal="true">
@@ -1287,6 +1365,11 @@ select.hu-felt{
           <button class="vis-knapp aktiv" data-vis="dag" onclick="settVisning('dag')">Dag</button>
           <button class="vis-knapp" data-vis="uke" onclick="settVisning('uke')">Uke</button>
           <button class="vis-knapp" data-vis="fag" onclick="settVisning('fag')">Fag</button>
+        </span>
+        <span class="snarveier">
+          <button class="snarvei" onclick="apneTimeplan()">Dagsplan fag</button>
+          <a class="snarvei" href="https://roligheden.skole.arendal.no/index.php?pageID=181"
+             target="_blank" rel="noopener">Ukesplan</a>
         </span>
         <button class="til-idag" id="tilIdag" onclick="tilbakeTilStandard()" hidden>
           Tilbake til i dag
@@ -2088,8 +2171,10 @@ passSkjema();
 function skjemaAapent(){
   const viser = $('filviser') && !$('filviser').hidden;
   const forslag = $('forslagBoks') && !$('forslagBoks').hidden;
+  const ark     = $('arkBoks') && !$('arkBoks').hidden;
+  const tp      = $('timeplanBoks') && !$('timeplanBoks').hidden;
   return avtaleAapen || huskeSkjema !== null || fagSkjema !== null
-      || fagVisId !== null || !!forslag || !!viser;
+      || fagVisId !== null || !!forslag || !!ark || !!tp || !!viser;
 }
 
 function nyAvtale(){ apneAvtale(null); }
@@ -2672,11 +2757,15 @@ function ukeBrikke(e, nr){
    ============================================================ */
 const FAG_NOKKEL = 'emma-fag:v1';
 
-/* Utgangspunktet foerste gang. Ingenting skrives til KV av dette - det
-   staar bare i lista til noen legger inn noe. */
-const FAG_STANDARD = ['Norsk', 'Matematikk', 'Engelsk', 'Naturfag',
+/* Emmas fag i 8C. Ukedagene er lest ut av timeplanen under, ikke skrevet
+   inn for haand - staar timeplanen der, finnes svaret allerede.
+
+   Ingenting skrives til KV av dette. Lista er utgangspunktet den dagen
+   noekkelen er tom; er den alt fylt, blir den staaende som den er, og fag
+   maa endres i sida. */
+const FAG_STANDARD = ['Norsk', 'Engelsk', 'Matematikk', 'Naturfag',
                       'Samfunnsfag', 'KRLE', 'Kroppsøving', 'Musikk',
-                      'Kunst og håndverk', 'Mat og helse', 'Spansk'];
+                      'Utdanningsvalg', 'Spansk', 'Innsats for andre'];
 
 let fagData = null;
 
@@ -2686,7 +2775,7 @@ function nyId(){
 
 function tomtFag(){
   return { fag: FAG_STANDARD.map(function(n){
-             return { id:nyId(), navn:n, laerer:'', dager:[] };
+             return { id:nyId(), navn:n, laerer:'', dager:timeplanDager(n) };
            }),
            lekser: [], prover: [] };
 }
@@ -2767,6 +2856,106 @@ function fristTekst(frist){
   if(dager === 1) return { tekst:'I morgen', klasse:'naer' };
   if(dager <   7) return { tekst:UKEDAGER[ukedagNr(d)], klasse:'' };
   return { tekst:d.getDate() + '. ' + MND[d.getMonth()].slice(0, 3), klasse:'' };
+}
+
+/* ============================================================
+   Timeplan 8C
+   ------------------------------------------------------------
+   Fem timer, fem dager. Rutene bruker navnene slik de staar paa
+   arket fra skolen - «Matte», «Krle», «Gym» - og TIMEPLAN_FAG
+   oversetter dem til fagnavnene sida bruker. To navn paa samme
+   fag er greit saa lenge oversettelsen staar ett sted.
+
+   Ligger som data og ikke som et vedlagt dokument: da kan den
+   vises i sida, den kan leses av Neam, og ukedagene under hvert
+   fag kan regnes ut av den i stedet for aa tastes inn en gang
+   til.
+   ============================================================ */
+const TIMEPLAN = [
+  /* time 1 */ ['Naturfag',   'Samfunnsfag', 'Språkfag',    'Engelsk',     'Matte'],
+  /* time 2 */ ['Matte',      'Norsk',       'Samfunnsfag', 'Norsk',       'Musikk'],
+  /* time 3 */ ['Engelsk',    'Matte',       'Norsk',       'Krle',        'Språkfag'],
+  /* time 4 */ ['Gym',        'Krle',        'Naturfag',    'Samfunnsfag', 'Norsk'],
+  /* time 5 */ ['Gym',        'Valgfag',     'UTV',         '',            '']
+];
+
+/* Rutenavn -> fagnavn. Det som ikke staar her, heter det samme begge
+   steder. «Språkfag/Arbeidslivsfag» er Emmas spanskgruppe, og «Valgfag»
+   er Innsats for andre. */
+const TIMEPLAN_FAG = {
+  'Matte'    : 'Matematikk',
+  'Krle'     : 'KRLE',
+  'Gym'      : 'Kroppsøving',
+  'UTV'      : 'Utdanningsvalg',
+  'Språkfag' : 'Spansk',
+  'Valgfag'  : 'Innsats for andre'
+};
+
+function timeplanFag(rute){
+  const r = String(rute || '').trim();
+  return r ? (TIMEPLAN_FAG[r] || r) : '';
+}
+
+/* Hvilke ukedager et fag er, lest ut av timeplanen. */
+function timeplanDager(fagnavn){
+  const ut = [];
+  TIMEPLAN.forEach(function(rad){
+    rad.forEach(function(rute, dag){
+      if(timeplanFag(rute) === fagnavn && ut.indexOf(dag) === -1) ut.push(dag);
+    });
+  });
+  return ut.sort(function(a, b){ return a - b; });
+}
+
+/* Dagens timer, i rekkefoelge. Tomme ruter tas ikke med. */
+function timeplanForDag(dag){
+  const ut = [];
+  TIMEPLAN.forEach(function(rad, i){
+    const f = timeplanFag(rad[dag]);
+    if(f) ut.push({ time:i + 1, fag:f });
+  });
+  return ut;
+}
+
+/* Timeplanen som tekst, til systemteksten. Bygget av de samme dataene som
+   tabellen - staar de to hver for seg, glir de fra hverandre. */
+function timeplanTekst(){
+  return ['Mandag','Tirsdag','Onsdag','Torsdag','Fredag'].map(function(d, i){
+    const t = timeplanForDag(i);
+    return d + ': ' + (t.length
+      ? t.map(function(x){ return x.time + '. ' + x.fag; }).join(', ')
+      : 'ingenting');
+  }).join('\n');
+}
+
+function apneTimeplan(){
+  const idagN = ukedagNr(idag0());
+  let ut = '<table class="tp-tabell"><thead><tr><th></th>'
+    + ['Mandag','Tirsdag','Onsdag','Torsdag','Fredag'].map(function(d, i){
+        return '<th' + (i === idagN ? ' class="idag"' : '') + '>' + d + '</th>';
+      }).join('')
+    + '</tr></thead><tbody>';
+
+  TIMEPLAN.forEach(function(rad, i){
+    ut += '<tr><th class="tp-time">' + (i + 1) + '</th>'
+      + rad.map(function(rute, dag){
+          const f = timeplanFag(rute);
+          return '<td' + (dag === idagN ? ' class="idag"' : '') + '>'
+               + (f ? esc(f) : '') + '</td>';
+        }).join('')
+      + '</tr>';
+  });
+  ut += '</tbody></table>';
+
+  $('timeplanKropp').innerHTML = ut;
+  $('timeplanBak').hidden  = false;
+  $('timeplanBoks').hidden = false;
+  passSkjema();
+}
+
+function lukkTimeplan(){
+  $('timeplanBoks').hidden = true;
+  $('timeplanBak').hidden  = true;
 }
 
 /* ============================================================
@@ -4258,6 +4447,14 @@ window.neamBakgrunn = async function(){
     + 'avtalene i kalenderen hennes. Fag handler om hva som skal være gjort '
     + 'til når, ikke om hvilken time som er når.\n\n'
     + 'DØGNET SKIFTER KLOKKA 20. Etter det viser skjermen morgendagen.\n\n'
+    + 'FAGENE HENNES i 8C er: Norsk, Engelsk, Matematikk, Naturfag, '
+    + 'Samfunnsfag, KRLE, Kroppsøving, Musikk, Utdanningsvalg, Spansk og '
+    + 'Innsats for andre. På arkene fra skolen står noen av dem med andre '
+    + 'navn: «Matte» er Matematikk, «Krle» er KRLE, «Gym» er Kroppsøving, '
+    + '«UTV» er Utdanningsvalg, «Språkfag» eller «Arbeidslivsfag» er Spansk, '
+    + 'og «Valgfag» er Innsats for andre. Bruk alltid det FØRSTE navnet når '
+    + 'du sender noe til et verktøy.\n\n'
+    + 'TIMEPLANEN:\n' + timeplanTekst() + '\n\n'
     + 'DU EIER FAG, LEKSER OG PRØVER på denne siden og kan både lese og skrive '
     + 'dem. Slå alltid opp med les_fagene eller les_lekser før du svarer på hva '
     + 'hun har - ikke gjett, og ikke svar av hukommelsen fra tidligere i '
@@ -4308,6 +4505,22 @@ window.neamSideHandlinger = function(){
                  + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
                  + '<path d="M4 5h16M4 12h10M4 19h10"/><path d="M18 15v6M15 18h6"/></svg>',
               gjor: apneFagSkjema },
+
+            { navn:'Lim inn lekseark', tekst:'Lim inn ark', farge:'ny',
+              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                 + '<rect x="6" y="4" width="12" height="17" rx="2"/>'
+                 + '<path d="M9 4V3h6v1M9 10h6M9 14h4"/></svg>',
+              gjor: apneArk },
+
+            /* Timeplanen er ogsaa her, ikke bare i korttittelen: under
+               900px er snarveiradene skjult, og da maa den finnes et sted. */
+            { navn:'Timeplan 8C', tekst:'Timeplan',
+              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                 + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
+                 + '<path d="M3 9h18M9 9v12M15 9v12"/></svg>',
+              gjor: apneTimeplan },
 
             /* Ryddeknapp for testing. Skal ut naar ukeplanveien er kjoert
                inn - den hoerer ikke hjemme i en hverdagsmeny. */
@@ -4735,6 +4948,86 @@ async function lagreForslag(){
     settVisning('fag');
   }catch(e){
     varsle('Fikk ikke lagt inn: ' + e.message);
+  }finally{
+    knapp.disabled = false;
+  }
+}
+
+/* ---------------- Lekseark inn ----------------
+   Teksten gaar til Neam, ikke til en tolk her i sida. Han kan lese en
+   ukeplan som er satt opp paa en maate ingen har sett foer, og han legger
+   resultatet i forslagspanelet - samme vei som alt annet han foreslaar.
+
+   En .docx kan ikke leses her: den er en zip, og aa pakke den ut i
+   nettleseren krever et bibliotek sida ikke har. Vanlige tekstfiler kan
+   slippes oppi, og det man kopierer ut av Word er tekst.
+   ------------------------------------------------------------ */
+function apneArk(){
+  $('arkFelt').value = '';
+  $('arkBak').hidden  = false;
+  $('arkBoks').hidden = false;
+  huskSkjema('arkBoks');
+  passSkjema();
+  setTimeout(function(){ $('arkFelt').focus(); }, 30);
+}
+
+function lukkArk(){
+  $('arkBoks').hidden = true;
+  $('arkBak').hidden  = true;
+}
+
+function kobleArkSlipp(){
+  const felt = $('arkFelt');
+  if(!felt) return;
+  ['dragenter','dragover'].forEach(function(n){
+    felt.addEventListener(n, function(ev){
+      ev.preventDefault();
+      felt.classList.add('slipp');
+    });
+  });
+  ['dragleave','drop'].forEach(function(n){
+    felt.addEventListener(n, function(){ felt.classList.remove('slipp'); });
+  });
+  felt.addEventListener('drop', function(ev){
+    ev.preventDefault();
+    const f = (ev.dataTransfer && ev.dataTransfer.files || [])[0];
+    if(!f) return;
+    /* Word-filer sier det med det samme i stedet for aa vise en skjerm
+       full av zip-soppel. */
+    if(/\.(docx|doc|pdf|pages)$/i.test(f.name)){
+      varsle('«' + f.name + '» kan ikke leses her. Åpne dokumentet, '
+           + 'merk alt og lim inn teksten i stedet.');
+      return;
+    }
+    const les = new FileReader();
+    les.onload = function(){ felt.value = String(les.result || ''); };
+    les.onerror = function(){ varsle('Fikk ikke lest fila.'); };
+    les.readAsText(f);
+  });
+}
+
+async function sendArkTilNeam(){
+  const tekst = $('arkFelt').value.trim();
+  if(!tekst){ varsle('Lim inn teksten først.'); return; }
+  if(typeof neamStart !== 'function'){
+    varsle('Neam er ikke tilgjengelig på denne siden.');
+    return;
+  }
+  const knapp = $('arkSend');
+  knapp.disabled = true;
+  try{
+    lukkArk();
+    /* friskt: et lekseark er en ny sak, og den forrige samtalen har
+       ingenting med tolkningen aa gjoere. */
+    await neamStart(
+      'Her er lekselista fra skolen. Sorter den på fagene Emma har, regn om '
+      + 'datoene til formen 2026-09-08, og legg ALT fram i ETT kall til '
+      + 'foreslaa_lekser. Er du i tvil om en dato, send leksa uten frist og si '
+      + 'fra om hvilke det gjaldt. Ta ikke med overskrifter, ukenummer eller '
+      + 'beskjeder som ikke er lekser.\n\n' + tekst,
+      {friskt:true});
+  }catch(e){
+    varsle('Fikk ikke sendt til Neam: ' + e.message);
   }finally{
     knapp.disabled = false;
   }
@@ -5212,6 +5505,7 @@ async function oppdaterAlt(manuelt){
      sekundet noen trykker paa den. */
   await lastFag();
   kobleLimBilde();
+  kobleArkSlipp();
   /* Navnet vises ikke i toppen - siden heter det den heter. Men det huskes,
      for merknadsskjemaet foreslaar fornavnet under "Skrevet av". */
   graph('/me').then(function(me){
@@ -5247,6 +5541,8 @@ document.addEventListener('keydown', function(e){
   if(avtaleAapen){ lukkAvtale(); return; }
   if(huskeSkjema){ lukkHuskeSkjema(); return; }
   if(fagSkjema){ lukkFagSkjema(); return; }
+  if($('timeplanBoks') && !$('timeplanBoks').hidden){ lukkTimeplan(); return; }
+  if($('arkBoks') && !$('arkBoks').hidden){ lukkArk(); return; }
   if($('forslagBoks') && !$('forslagBoks').hidden){ lukkForslag(); return; }
   if(fagVisId){ lukkFagVis(); return; }
   if(huBobleId) lukkHuskeBoble();
