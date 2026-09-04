@@ -562,6 +562,12 @@
   border-radius:50%; background:var(--paper);
 }
 .neam-knapp svg, .neam-knapp .neam-knapp-tekst{ position:relative; z-index:1; }
+/* Stabelknappene har roeret sitt paa samme vis og trenger det samme. */
+.neam-enhet:not(.merke)::before{
+  content:''; position:absolute; inset:0; z-index:0;
+  border-radius:50%; background:var(--paper);
+}
+.neam-enhet svg, .neam-enhet .neam-knapp-tekst{ position:relative; z-index:1; }
 
 /* ---- Navnet i knappen ----
    Strektegningene sier ikke nok alene. Et merke baerer navnet sitt selv og
@@ -570,8 +576,10 @@
    Knappen er 84px paa telefon og 120-128px ellers, saa teksten maa vaere
    kort - kallstedet sender et eget `tekst`-felt der `navn` er for langt.
    To linjer er taket; over det spiser teksten ikonet. */
-.neam-knapp:not(.merke){ flex-direction:column; gap:3px; padding:0 6px; }
-.neam-knapp:not(.merke) svg{
+.neam-knapp:not(.merke),
+.neam-enhet:not(.merke){ flex-direction:column; gap:3px; padding:0 6px; }
+.neam-knapp:not(.merke) svg,
+.neam-enhet:not(.merke) svg{
   width:calc(var(--f-ikon) * .82); height:calc(var(--f-ikon) * .82);
 }
 .neam-knapp-tekst{

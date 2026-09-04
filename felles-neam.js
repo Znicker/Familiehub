@@ -1192,9 +1192,12 @@ function neamSideStabel(plass, liste){
   boks.className = 'neam-stabel side '
                  + (plass === 'opp' ? 'fra-opp' : 'fra-ved rad');
   boks.innerHTML = liste.map(function(v, i){
+    /* Samme regel som i fireren: en strektegning baerer ikke betydningen
+       alene og faar navnet under seg, et merke baerer sitt eget. Uten
+       dette var undermenyen tre like runde skiver med hver sin strek. */
     return '<button type="button" class="neam-enhet' + (v.merke ? ' merke' : '') + '" '
          +   'data-nr="' + i + '" title="' + v.navn + '" aria-label="' + v.navn + '">'
-         +   (v.ikon || '') + '</button>';
+         +   neamKnappInnhold(v.ikon, v.tekst || v.navn, !!v.merke) + '</button>';
   }).join('');
   Array.prototype.forEach.call(boks.querySelectorAll('.neam-enhet'), function(k){
     k.onclick = function(){
