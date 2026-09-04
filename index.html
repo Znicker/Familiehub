@@ -420,6 +420,9 @@ input,select,textarea{font-size:16px}
         <a class="app merke" href="dashboard.html" id="dashKort" hidden aria-label="Kjøkken dash">
           <span class="app-icon"><img alt="Kjøkken dash" src="/bilder/merke-kjokken-dash.png" width="256" height="265"></span>
         </a>
+        <a class="app merke" href="emma.html" id="emmaKort" aria-label="Emma dash">
+          <span class="app-icon"><img alt="Emma dash" src="/bilder/merke-emma-dash.png" width="512" height="516"></span>
+        </a>
         <a class="app merke" href="oppskrifter.html" aria-label="Matlaging">
           <span class="app-icon"><img alt="Matlaging" src="/bilder/merke-matlaging.png" width="256" height="270"></span>
         </a>
@@ -773,6 +776,18 @@ document.addEventListener('visibilitychange', () => {
    kitchen-kontoen gjort veggskjermen utilgjengelig uten vei inn. */
 const DASH_TILGANG = ['kitchen@neam.no', 'sys@neam.no'];
 
+/* Emma dash har med vilje INGEN liste her. Flisen staar aapen for alle
+   inntil videre - tilgangsstyringen kommer senere.
+
+   Den ekte sperren ligger uansett i emma.html og er uroert: aapner
+   Andrea flisen, blir hun avvist i porten der. Det som mangler her er
+   bare hoefligheten i aa slippe aa vise en snarvei man blir avvist fra,
+   slik dashboard-flisen gjoer.
+
+   Skal den lukkes: legg tilbake `hidden` paa #emmaKort, sett opp en
+   EMMA_TILGANG med de samme fire adressene som i emma.html, og gi
+   vurderDashFlis() linja si tilbake. */
+
 function normEpostDash(s){
   s = String(s || '').toLowerCase().trim();
   const ext = s.indexOf('#ext#');
@@ -784,24 +799,30 @@ function normEpostDash(s){
   return s;
 }
 
-async function vurderDashFlis(){
-  const kort = document.getElementById('dashKort');
-  if(!kort) return;
-  let epost = '';
-  /* Graph foerst — Access-sesjonen kan henge igjen som forrige bruker. */
+/* Hvem som er logget inn. Graph foerst — Access-sesjonen kan henge igjen
+   som forrige bruker ved brukerbytte, mens Graph-navnet er riktig hver
+   gang. Ett oppslag for begge flisene: to kall til get-identity for aa
+   svare paa det samme spoersmaalet er ett for mye. */
+async function innloggetEpost(){
   if(A && A.me){
-    epost = normEpostDash(A.me.mail || A.me.userPrincipalName || '');
+    const e = normEpostDash(A.me.mail || A.me.userPrincipalName || '');
+    if(e) return e;
   }
-  if(!epost){
-    try{
-      const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), {cache:'no-store'});
-      if(r.ok){
-        const d = await r.json();
-        epost = normEpostDash(d.email || '');
-      }
-    }catch(_){}
-  }
-  kort.hidden = DASH_TILGANG.indexOf(epost) === -1;
+  try{
+    const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), {cache:'no-store'});
+    if(r.ok){
+      const d = await r.json();
+      return normEpostDash(d.email || '');
+    }
+  }catch(_){}
+  return '';
+}
+
+async function vurderDashFlis(){
+  const dash = document.getElementById('dashKort');
+  if(!dash) return;
+  const epost = await innloggetEpost();
+  if(dash) dash.hidden = DASH_TILGANG.indexOf(epost) === -1;
 }
 
 function vekslePlanlagte(){
@@ -1108,6 +1129,6 @@ window.neamUtfor = async function(navn, arg){
      overalt, og senere er dette veien til aa snakke med Neam herfra. -->
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=39"></script>
+<script src="/felles-neam.js?v=40"></script>
 </body>
 </html>

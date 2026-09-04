@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Kjøkken dash">
+<meta name="apple-mobile-web-app-title" content="Emma dash">
 <meta name="theme-color" content="#F5F5F5">
 <meta name="robots" content="noindex, nofollow">
-<title>Kjøkken dash – Neam</title>
+<title>Emma dash – Neam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -154,7 +154,6 @@ body{
 @media(max-width:900px){
   .vaer-stripe{gap:12px;margin:0}
   .vt-timer{display:none}
-  .hoyre > .kort:last-child{flex:1}
 }
 
 /* Vaeret i toppraden, mellom overskriften og klokka. Full melding
@@ -175,12 +174,10 @@ body{
   min-height:0;
 }
 .hoyre{display:flex;flex-direction:column;gap:16px;min-height:0}
-/* Hoeyrekolonnen er I dag, Denne uken og Middag. Reglene under stammet fra
-   da vaeret laa oeverst her, og ga middagen all resthoeyden. */
+/* Hoeyrekolonnen er Merknader og Denne uken. Middagskortet laa under dem
+   paa kjoekkendashen og tok bare hoeyden det trengte; her er de to alene
+   og deler hoeyden likt. */
 .hoyre > .kort{flex:1 1 0;min-height:0}
-/* Middagen er en rad med lite bilde - bare saa hoey som innholdet, slik at
-   resthoeyden gaar til Merknader og Denne uken. */
-.hoyre > .kort:last-child{flex:0 0 auto}        /* middagen: en fjerdedel */
 
 .kort{
   background:var(--paper);
@@ -209,9 +206,6 @@ body{
   .dag-piler{display:none}
 }
 .kort-kropp{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
-/* Middagskortet skal fylle hoeyden: kroppen maa ikke rulle, den skal
-   strekke innholdet i stedet, ellers har bildet ingen plass aa vokse i. */
-#middag{overflow:hidden;display:flex;flex-direction:column}
 .kort-kropp::-webkit-scrollbar{width:0;background:transparent}
 
 .tom{color:var(--ink-soft);font-size:var(--t-brod);padding:6px 0}
@@ -317,61 +311,122 @@ body{
 /* ---------- Vær ---------- */
 .vaer-t{flex:1;text-align:center;padding:8px 2px;border-radius:11px;background:#F7F9FA}
 
-/* ---------- Middag ---------- */
-/* Lite bilde til venstre, navnet ved siden av. Middagen er ett kort med
-   ett navn og trenger ikke en stor plakat. */
-.middag{
-  display:flex;flex-direction:row;align-items:flex-start;gap:14px;
-  min-height:0;
+/* ---------- Visningsbytter ----------
+   Tre visninger deler venstre kolonne. Bytteren staar i korttittelen og
+   ikke over kortet: raden over kortene ble fjernet paa kjoekkendashen for
+   aa gi hoeyde til huskeboksene, og den skal ikke tilbake her. */
+.vis-bytt{
+  display:inline-flex;gap:2px;background:var(--paper-soft);
+  border-radius:999px;padding:3px;flex-shrink:0;
 }
-/* Overskriften staar inne i raden, saa bildet naar opp paa hoeyde med den.
-   Da trenger den ikke luften den har i de andre kortene. */
-.middag .kort-tittel{margin-bottom:6px}
-a.middag{
-  text-decoration:none;color:inherit;
-  -webkit-tap-highlight-color:transparent;
-  transition:opacity .15s ease;
-}
-a.middag:active{opacity:.72}
-
-.middag-tekst{flex:1 1 auto;min-width:0}
-.middag-lenke{color:inherit;text-decoration:underline;text-underline-offset:2px}
-.middag-ikon{
-  width:62px;height:62px;flex:0 0 62px;border-radius:14px;background:#F5F7F9;
-  display:flex;align-items:center;justify-content:center;font-size:var(--t-ikon);line-height:1;
-}
-/* "Middag" staar som liten merkelapp over rettens navn, ikke som egen
-   overskriftsrad - det sparer en hel linje i et lavt kort. */
-
-.kort-middag{padding:18px 20px}
-/* Middagsnotat for dager uten noe i matplanen. */
-.mid-tom{cursor:pointer;display:flex;align-items:baseline;gap:8px}
-.mid-legg{
+.vis-knapp{
+  border:none;background:transparent;color:var(--ink-soft);font-family:inherit;
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  color:#FFFFFF;background:var(--handling-ny);border:none;border-radius:999px;
-  padding:4px 12px;flex-shrink:0;margin-left:auto;
+  padding:5px 13px;border-radius:999px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
 }
-.mid-tom:active .mid-legg{filter:brightness(.9)}
-.mid-notat{
-  font-size:var(--t-brod);font-weight:600;line-height:1.35;cursor:pointer;
-  white-space:pre-wrap;overflow-wrap:anywhere;
+.vis-knapp.aktiv{background:var(--aksent);color:#FFFFFF}
+
+/* ---------- Ukesvisning ----------
+   Sju RADER, ikke sju kolonner. Venstrekolonnen er 1.45fr av skjermen -
+   rundt 660px paa iPaden i landskap - og sju kolonner blir 90px hver.
+   Det holder til fargeprikker og ikke til lesbare avtaler. En rad per dag
+   taaler at fredagen har fem ting og mandagen ingen. */
+.uke-rad{
+  display:flex;align-items:flex-start;gap:11px;
+  padding:7px 9px;border-radius:11px;margin-bottom:4px;
 }
-.mid-notat:active{opacity:.7}
-.mid-felt{min-height:56px;resize:vertical}
-.kort-middag .kort-kropp{overflow:visible}
-.middag-bilde{
-  width:62px;height:62px;flex:0 0 62px;
-  border-radius:14px;object-fit:cover;display:block;
-  box-shadow:0 2px 10px rgba(0,0,0,.14);
+.uke-rad.idag{background:var(--aksent-lys)}
+/* Dager som er gaatt falmer, som passerte avtaler i dagsvisningen. */
+.uke-rad.forbi{opacity:.45}
+.uke-dag{width:76px;flex-shrink:0;line-height:1.25;padding-top:3px}
+.uke-navn{
+  font-size:var(--t-meta);font-weight:700;text-transform:uppercase;letter-spacing:.05em;
 }
-.middag-navn{
-  font-size:var(--t-brod);font-weight:700;line-height:1.3;
-  overflow-wrap:anywhere;
+.uke-dato{
+  font-size:var(--t-etikett);color:var(--ink-soft);font-weight:600;
+  font-variant-numeric:tabular-nums;
 }
-.middag-flere{
-  font-size:var(--t-meta);color:var(--ink-soft);margin-top:9px;
-  padding-top:9px;border-top:1px solid var(--line);
+.uke-brikker{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:5px}
+.uke-brikke{
+  display:inline-flex;align-items:baseline;gap:7px;max-width:100%;
+  border:1px solid transparent;border-radius:9px;padding:5px 10px;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-meta);color:var(--ink);
+  line-height:1.25;-webkit-tap-highlight-color:transparent;text-align:left;
 }
+.uke-brikke:active{filter:brightness(.96)}
+.uke-brikke.valgt{box-shadow:inset 0 0 0 2px rgba(44,62,80,.45)}
+.uke-kl{font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0}
+.uke-tittel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.uke-ingen{font-size:var(--t-meta);color:var(--ink-soft);font-style:italic;padding-top:4px}
+
+/* ---------- Fag og frister ----------
+   Timeplanen ligger i merknadene paa avtalene hennes. Denne visningen er
+   derfor lekser og frister, ikke hvilken time som er naar. */
+.fag-kort{
+  border:1px solid var(--line);border-radius:12px;background:var(--bg-2);
+  padding:11px 13px;margin-bottom:8px;
+}
+.fag-topp{display:flex;align-items:center;gap:8px}
+.fag-navn{
+  flex:1;min-width:0;font-size:var(--t-brod);font-weight:700;overflow-wrap:anywhere;
+}
+.lekse-linje{display:flex;align-items:flex-start;gap:9px;margin-top:8px}
+.lekse-tekst{
+  flex:1;min-width:0;font-size:var(--t-meta);line-height:1.4;overflow-wrap:anywhere;
+}
+/* Fristen er det som avgjoer om noe haster, saa den faar farge og ikke
+   bare et tall. Okeren betyr «i morgen eller i dag», roedt «gaatt ut» -
+   samme to betydninger som ellers i huset. */
+.lekse-frist{
+  font-size:var(--t-etikett);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ink-soft);flex-shrink:0;white-space:nowrap;padding-top:2px;
+}
+.lekse-frist.naer{color:var(--handling-endre)}
+.lekse-frist.over{color:var(--danger)}
+.lekse-linje.ferdig .lekse-tekst{text-decoration:line-through;opacity:.45}
+.lekse-linje.ferdig .lekse-frist{opacity:.45}
+/* Haken er den samme som i huskeboksene, bare mindre - en lekse er en
+   mindre sak enn en merknad. */
+.lekse-hake{
+  width:21px;height:21px;padding:0;flex-shrink:0;cursor:pointer;margin-top:1px;
+  border:2px solid var(--ink-soft);border-radius:7px;background:transparent;
+  opacity:.5;color:transparent;font-size:var(--t-etikett);font-weight:700;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.lekse-linje.ferdig .lekse-hake{
+  opacity:1;border-color:var(--handling-ny);background:var(--handling-ny);color:#FFFFFF;
+}
+.fag-tomme{
+  font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5;
+  margin-top:14px;padding-top:11px;border-top:1px solid var(--line);
+}
+.fag-foot{display:flex;gap:8px;flex-shrink:0;margin-top:12px}
+.fag-foot[hidden]{display:none}
+.fag-foot .knapp-gronn{flex:1;font-size:var(--t-meta);padding:11px 10px}
+
+/* Lim inn-skjemaet arver avtaleboksens ramme. Feltet er monospace fordi
+   det som limes inn er linjer med skilletegn, og da hjelper det aa se at
+   kolonnene staar under hverandre. */
+.lim-omr{min-height:132px;font-family:'IBM Plex Mono',monospace;font-size:14px;line-height:1.5}
+.lim-hjelp{font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5;margin-bottom:8px}
+.lim-fasit{
+  margin-top:10px;max-height:190px;overflow-y:auto;overscroll-behavior:contain;
+}
+.lim-rad{
+  display:flex;gap:9px;font-size:var(--t-meta);padding:5px 0;
+  border-bottom:1px solid var(--line);
+}
+.lim-rad:last-child{border-bottom:none}
+.lim-rad.avvist{color:var(--danger)}
+.lim-fag{
+  width:118px;flex-shrink:0;font-weight:700;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.lim-tekst{flex:1;min-width:0;overflow-wrap:anywhere}
+.lim-frist{flex-shrink:0;font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+.lim-teller{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600;margin-right:auto}
 
 /* ---------- Feilkort ----------
    Skjermen har ingen bunnrad lenger - den oppdaterer seg selv. Den eneste
@@ -753,9 +808,9 @@ select.hu-felt{
 
   <div class="topp">
     <a class="merke" href="./index.html">
-      <span class="merke-ikon"><img src="/bilder/merke-kjokken-dash.png" alt="Kjøkken dash" width="256" height="265"></span>
+      <span class="merke-ikon"><img src="/bilder/merke-emma-dash.png" alt="Emma dash" width="512" height="516"></span>
       <span>
-        <span class="merke-tittel">Kjøkken dash</span>
+        <span class="merke-tittel">Emma dash</span>
         <span class="merke-sub" style="display:block">NEAM</span>
       </span>
     </a>
@@ -874,23 +929,105 @@ select.hu-felt{
     <div id="huBobleInn"></div>
   </div>
 
+  <!-- Lekse og fag deler bakteppe med de andre skjemaene, men har egen
+       boks: feltene er faerre og skal ikke arve avtaleskjemaets tre
+       kolonner. -->
+  <div class="hu-boble-bak avtale-bak" id="fagBak" hidden></div>
+  <div class="avtale-boks" id="fagBoks" hidden role="dialog" aria-modal="true">
+    <button class="hub-lukk" onclick="lukkFagSkjema()" aria-label="Lukk">×</button>
+    <div class="av-tittel"><span id="fagTittelTekst">Ny lekse</span></div>
+    <div class="av-skjema">
+      <div class="av-kol">
+        <label class="av-felt" id="fagVelgFelt">Fag
+          <select class="hu-felt" id="fagVelg"></select>
+        </label>
+        <label class="av-felt" id="fagNavnFelt" hidden>Navn på faget
+          <input class="hu-felt" id="fagNavn" maxlength="40" placeholder="For eksempel Naturfag">
+        </label>
+        <label class="av-felt" id="fagFristFelt">Frist
+          <input class="hu-felt" type="date" id="fagFrist">
+        </label>
+      </div>
+      <div class="av-kol" id="fagTekstKol">
+        <label class="av-felt av-vokser">Lekse
+          <textarea class="hu-felt hu-omr" id="fagTekst"
+                    placeholder="Hva skal gjøres?"></textarea>
+        </label>
+      </div>
+      <div class="av-feil" id="fagFeil" hidden></div>
+    </div>
+    <div class="av-foot">
+      <button class="knapp-slett" id="fagSlett" onclick="slettFraFagSkjema()" hidden>Slett</button>
+      <button class="hu-avbryt" onclick="avbrytSkjema('fagBoks', lukkFagSkjema)">Avbryt</button>
+      <button class="knapp-gronn" id="fagLagre" onclick="lagreFagSkjema()">Legg til</button>
+    </div>
+  </div>
+
+  <!-- Lim inn: en skanning av ukeplanen blir til lekser. Den lagrer
+       ingenting foer linjene staar tolket paa skjermen og noen har sett
+       paa dem. -->
+  <div class="hu-boble-bak avtale-bak" id="limBak" hidden></div>
+  <div class="avtale-boks" id="limBoks" hidden role="dialog" aria-modal="true">
+    <button class="hub-lukk" onclick="lukkLimInn()" aria-label="Lukk">×</button>
+    <div class="av-tittel"><span>Lim inn lekser</span></div>
+    <div class="av-skjema">
+      <div class="av-kol">
+        <div class="lim-hjelp">
+          Én linje per lekse: <b>fag ; hva som skal gjøres ; frist</b>.
+          Fristen kan skrives 2026-09-08, 08.09 eller 8/9. Fag som ikke
+          finnes fra før blir lagt til.
+        </div>
+        <textarea class="hu-felt hu-omr lim-omr" id="limFelt" oninput="limTolk()"
+                  placeholder="Matematikk ; oppgave 4.5 s. 88 ; 08.09&#10;Norsk ; les kapittel 3 ; 09.09"></textarea>
+      </div>
+      <div class="av-kol">
+        <div class="av-etikett">Slik blir det lest</div>
+        <div class="lim-fasit" id="limFasit">
+          <div class="tom">Ingenting limt inn ennå.</div>
+        </div>
+      </div>
+    </div>
+    <div class="av-foot">
+      <span class="lim-teller" id="limTeller"></span>
+      <button class="hu-avbryt" onclick="avbrytSkjema('limBoks', lukkLimInn)">Avbryt</button>
+      <button class="knapp-gronn" id="limLagre" onclick="lagreLimInn()" disabled>Legg inn</button>
+    </div>
+  </div>
+
   <div class="rutenett">
 
     <div class="kort">
       <div class="kort-tittel">
         <span class="dag-navn" id="dagLabel">I dag</span>
+        <span class="vis-bytt" id="visBytt" role="group" aria-label="Visning">
+          <button class="vis-knapp aktiv" data-vis="dag" onclick="settVisning('dag')">Dag</button>
+          <button class="vis-knapp" data-vis="uke" onclick="settVisning('uke')">Uke</button>
+          <button class="vis-knapp" data-vis="fag" onclick="settVisning('fag')">Fag</button>
+        </span>
         <button class="til-idag" id="tilIdag" onclick="tilbakeTilStandard()" hidden>
           Tilbake til i dag
         </button>
-        <span class="dag-piler">
-          <button class="dag-pil" onclick="byttDag(-1)" aria-label="Forrige dag">&#8249;</button>
-          <button class="dag-pil" onclick="byttDag(1)" aria-label="Neste dag">&#8250;</button>
+        <span class="dag-piler" id="dagPiler">
+          <button class="dag-pil" onclick="byttDag(-1)" aria-label="Forrige">&#8249;</button>
+          <button class="dag-pil" onclick="byttDag(1)" aria-label="Neste">&#8250;</button>
         </span>
       </div>
       <div class="kort-kropp" id="plan">
         <div class="tom">Henter …</div>
       </div>
-      <button class="knapp-gronn ny-avtale" onclick="nyAvtale()">Legg til avtale i kalenderen</button>
+      <div class="kort-kropp" id="uke" hidden>
+        <div class="tom">Henter …</div>
+      </div>
+      <div class="kort-kropp" id="fag" hidden>
+        <div class="tom">Henter …</div>
+      </div>
+      <button class="knapp-gronn ny-avtale" id="nyAvtaleKnapp"
+              onclick="nyAvtale()">Legg til avtale i kalenderen</button>
+      <div class="fag-foot" id="fagFoot" hidden>
+        <button class="knapp-gronn" onclick="apneLekseSkjema()">Ny lekse</button>
+        <button class="knapp-gronn" onclick="apneFagSkjema()">Nytt fag</button>
+        <button class="knapp-gronn" onclick="apneLimInn()">Lim inn</button>
+      </div>
     </div>
 
     <div class="hoyre">
@@ -918,12 +1055,6 @@ select.hu-felt{
         </div>
       </div>
 
-      <div class="kort kort-middag" id="kortMiddag">
-        <div class="kort-kropp" id="middag">
-          <div class="tom">Henter …</div>
-        </div>
-      </div>
-
     </div>
   </div>
 
@@ -940,9 +1071,19 @@ select.hu-felt{
 <script src="/felles-neam.js?v=40"></script>
 <script>
 /* ============================================================
-   NEAM – Kjøkken dash (pilot)
-   Viser dagens kalenderplan, vaeret, dagens middag og klokke.
-   Leser bare data — endrer ingenting.
+   NEAM – Emma dash
+   Emmas egen skjerm. Samme form som kjoekkendashen - fast ramme,
+   ingen rulling, sveip mellom dager - men et annet innhold:
+   venstre kolonne har tre visninger (dag, uke, fag), hoeyre har
+   huskeboksene, og middagen er ute.
+
+   HVORFOR EGEN FIL OG IKKE ÉN SIDE FOR ALLE: Emma trenger fag,
+   frister og skoledag. Nina trenger noe annet. En felles side
+   ville blitt full av forgreninger paa innlogget bruker, og
+   driften mellom dem ville ligget gjemt inne i if-ene i stedet
+   for aapent i to filer. Mekanikken under er likevel skrevet
+   uten «Emma» i seg - eieren er en konstant oeverst - saa den
+   kan loeftes ut den dagen den staar likt i to filer.
    ============================================================ */
 
 const $ = function(id){ return document.getElementById(id); };
@@ -1120,6 +1261,18 @@ function visPort(paa){
    Felles farger fra Cloudflare KV
    ============================================================ */
 /* ============================================================
+   Hvem sida er til, og hvem sida er om
+   ------------------------------------------------------------
+   EIER er den sida handler om. Alt som er personlig - kalenderne
+   som vises, hvilke merknader som havner i huskeboksene - henger
+   paa den ene konstanten, ikke paa navnet spredt utover.
+
+   TILGANG er hvem som slipper inn. Emma eier sida, men sys,
+   Magne og Nina skal kunne skrive her: en frist lagt inn fra
+   kjoekkenbenken skal staa paa skjermen hennes.
+
+   ------------------------------------------------------------
+   Under her staar den gamle overskriften uendret:
    Tilgang — piloten er foreloepig kun for sys.
    Sperren er paa klientsiden: den hindrer familien i aa snuble inn
    i noe halvferdig, men er ingen ekte sikkerhetsgrense. Alle bak
@@ -1129,7 +1282,24 @@ function visPort(paa){
 /* Kjoekkenskjermen kjoerer som kitchen. Sys staar igjen med vilje:
    uten den ville en feil paa kitchen-kontoen laast oss ute av
    veggskjermen uten vei inn. */
-const DASH_TILGANG = ['kitchen@neam.no', 'sys@neam.no'];
+const EIER = 'Emma';
+
+/* Kalenderne sida viser. Emmas egen og familiens - resten av husets
+   kalendere hoerer ikke hjemme paa skjermen hennes. Navnene sammenlignes
+   i smaa bokstaver; «Familien» heter den i kalenderappen, «Familie» i
+   huskelista, og begge staar her saa ingen av dem faller ut.
+
+   Finner filteret INGEN av dem, slipper vi alle gjennom i stedet for aa
+   vise en tom skjerm. En side som viser for mye er en side man ser at er
+   feil; en tom side ser ut som en dag uten avtaler. */
+const EIER_KALENDERE = ['emma', 'familien', 'familie'];
+
+/* Hvem huskeboksene viser. Familiens merknader gjelder henne ogsaa - det
+   er der «vi drar klokka fem» staar. */
+const EIER_MERKNADER = ['Emma', 'Familie', 'Familien'];
+
+const DASH_TILGANG = ['emma@neam.no', 'sys@neam.no',
+                      'magne@neam.no', 'nina@neam.no'];
 
 
 async function harTilgang(){
@@ -1244,21 +1414,33 @@ function dagNavn(){
   return tekst.charAt(0).toUpperCase() + tekst.slice(1);
 }
 
-async function hentPlan(){
-  const start = dagenViser();
-  const slutt = new Date(start.getTime() + 86400000);
+/* Kalenderne, filtrert til dem sida handler om.
 
+   Filteret gjoeres HER og ikke i tegningen: skjemaet leser den samme
+   lista for aa vite hvor en ny avtale kan legges, og en kalender som
+   ikke vises skal heller ikke kunne skrives til herfra. */
+async function hentKalendere(){
   const kal = await graph('/me/calendars?$top=50');
-  const aktive = (kal.value || []).map(function(c){
+  const alle = (kal.value || []).map(function(c){
     return { id:c.id, navn:c.name, farge:kalenderFarge(c.name),
              kanSkrive: c.canEdit !== false };
   });
-  /* Skjemaet trenger den samme lista for aa vite hvor en ny avtale skal. */
-  kalendere = aktive;
+  const mine = alle.filter(function(c){
+    return EIER_KALENDERE.indexOf(String(c.navn || '').trim().toLowerCase()) !== -1;
+  });
+  kalendere = mine.length ? mine : alle;
+  return kalendere;
+}
+
+/* Henter avtaler i et tidsrom. Dagsvisningen ber om ett doegn,
+   ukesvisningen om sju - ellers er de like, og var det to funksjoner
+   ville en rettelse i den ene ikke naadd den andre. */
+async function hentAvtaler(start, slutt){
+  const aktive = await hentKalendere();
 
   const q = '?startDateTime=' + start.toISOString()
           + '&endDateTime=' + slutt.toISOString()
-          + '&$orderby=start/dateTime&$top=100'
+          + '&$orderby=start/dateTime&$top=250'
           + '&$select=id,subject,isAllDay,start,end,location,body,type,hasAttachments';
 
   /* Maks tre samtidige kall, og en kalender som feiler skal ikke
@@ -1304,6 +1486,23 @@ async function hentPlan(){
   return { avtaler: alle, feilet: feilet };
 }
 
+async function hentPlan(){
+  const start = dagenViser();
+  return hentAvtaler(start, new Date(start.getTime() + 86400000));
+}
+
+/* Mandag i uka dagen ligger i. */
+function ukeStart(d){
+  const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  s.setDate(s.getDate() - ukedagNr(s));
+  return s;
+}
+
+async function hentUke(){
+  const start = ukeStart(dagenViser());
+  return hentAvtaler(start, new Date(start.getTime() + 7 * 86400000));
+}
+
 let dagensAvtaler = [];
 
 function tegnPlan(res){
@@ -1328,8 +1527,11 @@ function tegnPlan(res){
     const paagaar = idag && !e.heleDagen && e.start <= naa && e.slutt > naa;
     /* Kalendernavnet er ute - initialen sier hvem det gjelder. Stedet blir. */
     const meta = e.sted || '';
+    /* data-avtale, ikke plassen i DOM-en: ukesvisningen tegner de samme
+       avtalene i en annen rekkefoelge, og markeringen av valgt avtale maa
+       finne igjen den samme raden i begge. */
     return '<div class="plan-rad' + (forbi ? ' forbi' : '') + (paagaar ? ' naa' : '') + '"'
-      + ' style="' + fyll(e.farge) + '"'
+      + ' style="' + fyll(e.farge) + '" data-avtale="' + i + '"'
       + ' onclick="visDetalj(' + i + ')" role="button" tabindex="0">'
       + '<div class="plan-tid' + (e.heleDagen ? ' hel' : '') + '">'
       +   (e.heleDagen
@@ -1369,7 +1571,7 @@ function rullTilNaa(boks){
 /* Avtalen tar over hele hoeyrekolonnen i stedet for aa legge seg som en
    boble oppaa. Da kan notatet vaere langt uten aa dekke planen man leser
    det ut fra. */
-const HOYRE_KORT = ['kortMerknader', 'kortUken', 'kortMiddag'];
+const HOYRE_KORT = ['kortMerknader', 'kortUken'];
 
 let detaljIndeks = null;
 
@@ -1414,9 +1616,10 @@ function visDetalj(i){
   $('detalj').hidden = false;
   HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = true; });
 
-  /* Marker raden som er valgt, saa det er tydelig hva kolonnen viser. */
-  Array.from(document.querySelectorAll('.plan-rad')).forEach(function(r, n){
-    r.classList.toggle('valgt', n === i);
+  /* Marker raden som er valgt, saa det er tydelig hva kolonnen viser.
+     Bade dagsradene og ukesbrikkene baerer data-avtale. */
+  Array.from(document.querySelectorAll('[data-avtale]')).forEach(function(r){
+    r.classList.toggle('valgt', parseInt(r.dataset.avtale, 10) === i);
   });
   visTilIdag();
 }
@@ -1429,7 +1632,7 @@ function lukkDetalj(){
     $('detalj').style.boxShadow = '';
   }
   HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = false; });
-  Array.from(document.querySelectorAll('.plan-rad.valgt'))
+  Array.from(document.querySelectorAll('[data-avtale].valgt'))
     .forEach(function(r){ r.classList.remove('valgt'); });
   if(typeof visTilIdag === 'function') visTilIdag();
 }
@@ -1597,7 +1800,8 @@ passSkjema();
 
 function skjemaAapent(){
   const viser = $('filviser') && !$('filviser').hidden;
-  return avtaleAapen || huskeSkjema !== null || !!viser;
+  const lim = $('limBoks') && !$('limBoks').hidden;
+  return avtaleAapen || huskeSkjema !== null || fagSkjema !== null || !!lim || !!viser;
 }
 
 function nyAvtale(){ apneAvtale(null); }
@@ -1726,6 +1930,9 @@ function apneAvtale(e){
    merket bort. skjemaVedlegg i seg selv fylles av et bakgrunnskall ETTER
    at avtrykket er tatt, saa lengden paa den ville endret seg av seg selv
    og gitt et spoersmaal ingen har fortjent. */
+/* Fag- og limskjemaet har ingenting utenfor feltene sine - alt de kan
+   miste ligger i en textarea eller et input, og avtrykket fanger dem
+   uten hjelp herfra. */
 ekstraTilstand['avtaleBoks'] = function(){
   const fjernet = skjemaVedlegg.filter(function(v){ return v.fjern; }).length;
   return nyeFiler.length + ':' + fjernet;
@@ -1944,6 +2151,637 @@ async function lagreAvtale(){
     avtaleFeil(err.status === 403
       ? 'Kontoen mangler skrivetilgang til kalenderen. Logg ut og inn igjen, så Microsoft spør om den på nytt.'
       : 'Fikk ikke lagret avtalen: ' + err.message);
+  }
+}
+
+
+/* ============================================================
+   Tre visninger i venstre kolonne
+   ------------------------------------------------------------
+   DAG er kjoekkendashens plan, uendret. UKE er sju rader med de
+   samme avtalene. FAG er lekser og frister.
+
+   Timeplanen ligger i merknadene paa avtalene i kalenderen
+   hennes, og Fag skal derfor ikke vise hvilken time som er naar
+   - den skal vise hva som skal vaere gjort til naar.
+
+   Alle tre deler dagOffset. Bytter man til Uke og blar to uker
+   fram, staar man paa en dag to uker fram naar man gaar tilbake
+   til Dag. Det er med vilje: én dag om gangen paa skjermen, og
+   pilene betyr det samme uansett hvilken visning som staar.
+   ============================================================ */
+let visning = 'dag';
+
+const VIS_BOKS = { dag:'plan', uke:'uke', fag:'fag' };
+
+function settVisning(ny){
+  if(!VIS_BOKS[ny] || visning === ny) return;
+  visning = ny;
+  lukkDetalj();
+  lukkHuskeBoble();
+
+  Array.from(document.querySelectorAll('.vis-knapp')).forEach(function(k){
+    k.classList.toggle('aktiv', k.dataset.vis === ny);
+  });
+  Object.keys(VIS_BOKS).forEach(function(v){
+    const el = $(VIS_BOKS[v]);
+    if(el) el.hidden = (v !== ny);
+  });
+
+  /* Knappen under kortet hoerer til kalenderen; fagraden til Fag. */
+  if($('nyAvtaleKnapp')) $('nyAvtaleKnapp').hidden = (ny === 'fag');
+  if($('fagFoot'))       $('fagFoot').hidden       = (ny !== 'fag');
+  /* Fag har ingen dag aa bla i. */
+  if($('dagPiler'))      $('dagPiler').hidden      = (ny === 'fag');
+
+  settDagsTitler();
+  tegnVisning();
+}
+
+/* Tegner den visningen som staar. Kalles av dagbytte, av oppdateringen
+   og av visningsbytte - ingen av dem trenger aa vite hvilken det er. */
+function tegnVisning(){
+  if(visning === 'uke') return tegnUkePaaNytt();
+  if(visning === 'fag') return tegnFag();
+  return tegnPlanPaaNytt();
+}
+
+/* ------------------------------------------------------------
+   Ukesvisningen
+   ------------------------------------------------------------
+   En avtale over flere doegn staar bare paa dagen den begynner.
+   Det er en kjent forenkling: alternativet er aa dele avtalen opp
+   i én rad per doegn, og da peker fire rader paa samme avtale i
+   detaljkortet.
+   ------------------------------------------------------------ */
+async function tegnUkePaaNytt(){
+  const mitt = ++tegneNr;
+  lukkDetalj();
+  settDagsTitler();
+  tegnHuske();
+  tegnVaerStripe();
+  $('uke').innerHTML = '<div class="tom">Henter …</div>';
+  try{
+    const r = await hentUke();
+    if(mitt !== tegneNr) return;          /* overhalt av en nyere sveip */
+    tegnUke(r);
+  }catch(e){
+    if(mitt !== tegneNr) return;
+    $('uke').innerHTML = planFeil(e);
+  }
+}
+
+function tegnUke(res){
+  const boks = $('uke');
+  const avtaler = res.avtaler || [];
+  /* Detaljkortet leser dagensAvtaler. Ukesvisningen fyller den med sju
+     dager i stedet for én - indeksene i data-avtale peker inn i den samme
+     lista uansett hvilken visning som tegnet dem. */
+  dagensAvtaler = avtaler;
+
+  const start  = ukeStart(dagenViser());
+  const idagNo = datoNokkel(idag0());
+
+  /* Avtalene sorteres i dagsbunker foerst - det er raskere enn aa gaa
+     gjennom hele lista sju ganger, og det holder rekkefoelgen fra Graph. */
+  const bunker = {};
+  avtaler.forEach(function(e, nr){
+    const n = datoNokkel(e.start);
+    (bunker[n] = bunker[n] || []).push(nr);
+  });
+
+  let html = '';
+  for(let i = 0; i < 7; i++){
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    const n = datoNokkel(d);
+    const paa = bunker[n] || [];
+    const erIdag = (n === idagNo);
+    const forbi  = (d < idag0());
+
+    html += '<div class="uke-rad' + (erIdag ? ' idag' : '') + (forbi ? ' forbi' : '') + '">'
+      + '<div class="uke-dag">'
+      +   '<div class="uke-navn">' + esc(UKEDAG_KORT[i]) + '</div>'
+      +   '<div class="uke-dato">' + d.getDate() + '. ' + esc(MND[d.getMonth()].slice(0, 3)) + '</div>'
+      + '</div>'
+      + '<div class="uke-brikker">';
+
+    if(!paa.length){
+      html += '<div class="uke-ingen">–</div>';
+    }else{
+      paa.forEach(function(nr){
+        const e = avtaler[nr];
+        html += '<button type="button" class="uke-brikke" data-avtale="' + nr + '"'
+          + ' style="' + fyll(e.farge) + '" onclick="visDetalj(' + nr + ')"'
+          + ' title="' + esc(e.tittel) + '">'
+          + '<span class="uke-kl">' + (e.heleDagen ? 'Hele' : esc(kl(e.start))) + '</span>'
+          + '<span class="uke-tittel">' + esc(e.tittel) + '</span>'
+          + '</button>';
+      });
+    }
+    html += '</div></div>';
+  }
+
+  if(res.feilet){
+    html += '<div class="plan-meta feil" style="padding-top:10px">'
+      + res.feilet + ' kalender(e) svarte ikke — prøv Oppdater.</div>';
+  }
+  boks.innerHTML = html;
+}
+
+
+/* ============================================================
+   Fag og frister
+   ------------------------------------------------------------
+   Én KV-noekkel med bade fagene og leksene:
+     { fag:    [{id, navn}],
+       lekser: [{id, fagId, tekst, frist, ferdig}] }
+
+   Ett oppslag i stedet for to. De to endres alltid sammen - et
+   nytt fag kommer som regel fordi noe skal legges under det -
+   og to noekler ville betydd to skrivinger som kunne komme fra
+   hverandre.
+
+   Skrivingen leser friskt foerst, som huskelista: KV er
+   sist-skriving-vinner, og flere kan staa i den samtidig.
+   ============================================================ */
+const FAG_NOKKEL = 'emma-fag:v1';
+
+/* Utgangspunktet foerste gang. Ingenting skrives til KV av dette -
+   det staar bare i lista til noen legger inn noe. Fagene kan
+   endres og slettes i sida. */
+const FAG_STANDARD = ['Norsk', 'Matematikk', 'Engelsk', 'Naturfag',
+                      'Samfunnsfag', 'KRLE', 'Kroppsøving', 'Musikk',
+                      'Kunst og håndverk', 'Mat og helse', 'Spansk'];
+
+let fagData = null;
+
+function nyId(){
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function tomtFag(){
+  return { fag: FAG_STANDARD.map(function(n){ return { id:nyId(), navn:n }; }),
+           lekser: [] };
+}
+
+/* Alt som leses utenfra kan vaere hva som helst. Formen tvinges her, én
+   gang, saa resten av fila slipper aa vokte hvert felt. */
+function ryddFag(d){
+  if(!d || typeof d !== 'object') return tomtFag();
+  const fag = Array.isArray(d.fag) ? d.fag.filter(function(f){
+    return f && f.id && String(f.navn || '').trim();
+  }).map(function(f){
+    return { id:String(f.id), navn:String(f.navn).trim() };
+  }) : [];
+  const kjente = {};
+  fag.forEach(function(f){ kjente[f.id] = true; });
+  const lekser = Array.isArray(d.lekser) ? d.lekser.filter(function(l){
+    return l && l.id && kjente[l.fagId] && String(l.tekst || '').trim();
+  }).map(function(l){
+    return { id:String(l.id), fagId:String(l.fagId),
+             tekst:String(l.tekst).trim(),
+             frist:String(l.frist || ''), ferdig:!!l.ferdig };
+  }) : [];
+  return { fag: fag.length ? fag : tomtFag().fag, lekser: lekser };
+}
+
+async function hentFag(){
+  return ryddFag(await husLesJson(FAG_NOKKEL));
+}
+
+async function lastFag(){
+  try{ fagData = await hentFag(); }
+  catch(e){ fagData = tomtFag(); }
+  if(visning === 'fag') tegnFag();
+}
+
+async function endreFag(endring){
+  const fersk = await hentFag();
+  const ny = ryddFag(endring(fersk));
+  await dataSkriv(FAG_NOKKEL, ny);
+  fagData = ny;
+  tegnFag();
+}
+
+function fagNavnAv(id){
+  const f = (fagData && fagData.fag || []).find(function(x){ return x.id === id; });
+  return f ? f.navn : '';
+}
+
+/* ---------------- Frister ----------------
+   Fristen leses mot ekte i dag, ikke mot dagen skjermen staar paa: en
+   lekse til fredag er ikke mindre forfalt fordi noen har bladd fram. */
+function fristTekst(frist){
+  if(!frist) return { tekst:'', klasse:'' };
+  const d = datoFraTekst(frist);
+  const dager = Math.round((d - idag0()) / 86400000);
+  if(dager <  0) return { tekst:'Gikk ut ' + UKEDAG_KORT[ukedagNr(d)], klasse:'over' };
+  if(dager === 0) return { tekst:'I dag',    klasse:'naer' };
+  if(dager === 1) return { tekst:'I morgen', klasse:'naer' };
+  if(dager <   7) return { tekst:UKEDAGER[ukedagNr(d)], klasse:'' };
+  return { tekst:d.getDate() + '. ' + MND[d.getMonth()].slice(0, 3), klasse:'' };
+}
+
+function fristSort(a, b){
+  /* Uten frist er ikke det samme som frist langt fram - det er
+     uspesifisert, og skal ligge sist. */
+  const A = a.frist || '9999-99-99';
+  const B = b.frist || '9999-99-99';
+  return A.localeCompare(B);
+}
+
+/* ---------------- Tegning ----------------
+   Fag UTEN lekser staar ikke som tomme kort. Elleve tomme kort er en
+   liste man slutter aa lese; navnene deres staar samlet paa én linje
+   nederst i stedet, saa man ser at faget finnes. */
+function tegnFag(){
+  const boks = $('fag');
+  if(!boks) return;
+  if(!fagData){ boks.innerHTML = '<div class="tom">Henter …</div>'; return; }
+
+  const perFag = {};
+  fagData.lekser.forEach(function(l){
+    (perFag[l.fagId] = perFag[l.fagId] || []).push(l);
+  });
+
+  const medNoe = [];
+  const tomme  = [];
+  fagData.fag.forEach(function(f){
+    if((perFag[f.id] || []).length) medNoe.push(f); else tomme.push(f);
+  });
+
+  /* Faget med den naermeste fristen staar oeverst. Avhukede lekser
+     teller ikke - et fag der alt er gjort skal synke. */
+  function naermest(f){
+    const aapne = (perFag[f.id] || []).filter(function(l){ return !l.ferdig; });
+    if(!aapne.length) return '9999-99-99';
+    return aapne.map(function(l){ return l.frist || '9999-99-98'; }).sort()[0];
+  }
+  medNoe.sort(function(a, b){ return naermest(a).localeCompare(naermest(b)); });
+
+  let html = '';
+  medNoe.forEach(function(f){
+    const liste = (perFag[f.id] || []).slice().sort(function(a, b){
+      if(!!a.ferdig !== !!b.ferdig) return a.ferdig ? 1 : -1;
+      return fristSort(a, b);
+    });
+    html += '<div class="fag-kort">'
+      + '<div class="fag-topp">'
+      +   '<span class="fag-navn">' + esc(f.navn) + '</span>'
+      +   '<button class="hu-endre" onclick="redigerFag(\'' + esc(f.id) + '\')" '
+      +     'aria-label="Endre faget">✎</button>'
+      + '</div>';
+    liste.forEach(function(l){
+      const fr = fristTekst(l.frist);
+      html += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '') + '">'
+        + '<button class="lekse-hake" onclick="vekslLekse(\'' + esc(l.id) + '\')" '
+        +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
+        + '<span class="lekse-tekst" onclick="redigerLekse(\'' + esc(l.id) + '\')">'
+        +   esc(l.tekst) + '</span>'
+        + (fr.tekst ? '<span class="lekse-frist ' + fr.klasse + '">' + esc(fr.tekst) + '</span>' : '')
+        + '</div>';
+    });
+    html += '</div>';
+  });
+
+  if(!medNoe.length){
+    html += '<div class="tom">Ingen lekser eller frister lagt inn.</div>';
+  }
+  if(tomme.length){
+    html += '<div class="fag-tomme">Uten lekser: '
+      + tomme.map(function(f){
+          return '<a href="#" onclick="event.preventDefault();redigerFag(\'' + esc(f.id) + '\')">'
+               + esc(f.navn) + '</a>';
+        }).join(', ')
+      + '</div>';
+  }
+  boks.innerHTML = html;
+}
+
+async function vekslLekse(id){
+  try{
+    await endreFag(function(d){
+      d.lekser = d.lekser.map(function(l){
+        return l.id === id ? Object.assign({}, l, {ferdig: !l.ferdig}) : l;
+      });
+      return d;
+    });
+  }catch(e){
+    varsle('Fikk ikke huket av leksa: ' + e.message);
+  }
+}
+
+/* ---------------- Skjemaet ----------------
+   Én boks for bade lekse og fag. De to har ikke nok felt hver til aa
+   fortjene hvert sitt skjema, og de aapnes fra samme rad. */
+let fagSkjema = null;      /* 'lekse' | 'fag' | null */
+let fagEndrer = null;      /* id-en som endres, ellers null = ny */
+
+function fyllFagVelger(valgt){
+  const v = $('fagVelg');
+  if(!v) return;
+  v.innerHTML = (fagData && fagData.fag || []).map(function(f){
+    return '<option value="' + esc(f.id) + '"' + (f.id === valgt ? ' selected' : '') + '>'
+         + esc(f.navn) + '</option>';
+  }).join('');
+}
+
+function visFagSkjema(modus, id){
+  fagSkjema = modus;
+  fagEndrer = id || null;
+  const lekse = (modus === 'lekse');
+
+  $('fagVelgFelt').hidden  = !lekse;
+  $('fagFristFelt').hidden = !lekse;
+  $('fagTekstKol').hidden  = !lekse;
+  $('fagNavnFelt').hidden  = lekse;
+  $('fagFeil').hidden = true;
+
+  const l = lekse && id
+    ? (fagData.lekser.find(function(x){ return x.id === id; }) || null) : null;
+  const f = !lekse && id
+    ? (fagData.fag.find(function(x){ return x.id === id; }) || null) : null;
+
+  $('fagTittelTekst').textContent =
+      lekse ? (l ? 'Endre lekse' : 'Ny lekse')
+            : (f ? 'Endre fag'   : 'Nytt fag');
+
+  if(lekse){
+    fyllFagVelger(l ? l.fagId : null);
+    $('fagTekst').value = l ? l.tekst : '';
+    $('fagFrist').value = l ? l.frist : datoNokkel(dagenViser());
+  }else{
+    $('fagNavn').value = f ? f.navn : '';
+  }
+
+  $('fagSlett').hidden = !id;
+  $('fagLagre').textContent = id ? 'Lagre' : 'Legg til';
+
+  $('fagBak').hidden  = false;
+  $('fagBoks').hidden = false;
+  huskSkjema('fagBoks');
+  passSkjema();
+  setTimeout(function(){
+    const f2 = lekse ? $('fagTekst') : $('fagNavn');
+    if(f2) f2.focus();
+  }, 30);
+}
+
+function apneLekseSkjema(){
+  if(!fagData) return;
+  if(!fagData.fag.length){ varsle('Legg inn et fag først.'); return; }
+  visFagSkjema('lekse', null);
+}
+function apneFagSkjema(){ if(fagData) visFagSkjema('fag', null); }
+function redigerLekse(id){ if(fagData) visFagSkjema('lekse', id); }
+function redigerFag(id){   if(fagData) visFagSkjema('fag', id); }
+
+function lukkFagSkjema(){
+  fagSkjema = null;
+  fagEndrer = null;
+  $('fagBoks').hidden = true;
+  $('fagBak').hidden  = true;
+}
+
+function fagFeil(tekst){
+  const el = $('fagFeil');
+  el.textContent = tekst;
+  el.hidden = false;
+}
+
+async function lagreFagSkjema(){
+  if(!fagSkjema) return;
+  const knapp = $('fagLagre');
+  knapp.disabled = true;
+  try{
+    if(fagSkjema === 'fag'){
+      const navn = $('fagNavn').value.trim();
+      if(!navn){ fagFeil('Faget må ha et navn.'); return; }
+      const id = fagEndrer;
+      await endreFag(function(d){
+        if(id){
+          d.fag = d.fag.map(function(f){
+            return f.id === id ? Object.assign({}, f, {navn:navn}) : f;
+          });
+        }else{
+          d.fag.push({ id:nyId(), navn:navn });
+        }
+        return d;
+      });
+    }else{
+      const tekst = $('fagTekst').value.trim();
+      if(!tekst){ fagFeil('Skriv hva som skal gjøres.'); return; }
+      const fagId = $('fagVelg').value;
+      const frist = $('fagFrist').value || '';
+      const id = fagEndrer;
+      await endreFag(function(d){
+        if(id){
+          d.lekser = d.lekser.map(function(l){
+            return l.id === id
+              ? Object.assign({}, l, {fagId:fagId, tekst:tekst, frist:frist}) : l;
+          });
+        }else{
+          d.lekser.push({ id:nyId(), fagId:fagId, tekst:tekst, frist:frist, ferdig:false });
+        }
+        return d;
+      });
+    }
+    lukkFagSkjema();
+  }catch(e){
+    fagFeil('Fikk ikke lagret: ' + e.message);
+  }finally{
+    knapp.disabled = false;
+  }
+}
+
+/* Sletting beholder bekreftelsen. Et fag tar leksene sine med seg, og
+   det er ikke noe man ser at gikk galt etterpaa - da staar regelen om
+   at en handling kan miste dialogen naar feilen blir staaende synlig
+   ikke ved lag. */
+async function slettFraFagSkjema(){
+  const id = fagEndrer;
+  if(!id) return;
+  if(fagSkjema === 'fag'){
+    const antall = fagData.lekser.filter(function(l){ return l.fagId === id; }).length;
+    const ok = await bekreft(
+      antall
+        ? 'Slette ' + fagNavnAv(id) + '? ' + antall + ' lekse(r) under faget forsvinner også.'
+        : 'Slette ' + fagNavnAv(id) + '?',
+      {jaTekst:'Slett', fare:true});
+    if(!ok) return;
+    try{
+      await endreFag(function(d){
+        d.fag    = d.fag.filter(function(f){ return f.id !== id; });
+        d.lekser = d.lekser.filter(function(l){ return l.fagId !== id; });
+        return d;
+      });
+      lukkFagSkjema();
+    }catch(e){ fagFeil('Fikk ikke slettet: ' + e.message); }
+    return;
+  }
+  if(!(await bekreft('Slette leksa?', {jaTekst:'Slett', fare:true}))) return;
+  try{
+    await endreFag(function(d){
+      d.lekser = d.lekser.filter(function(l){ return l.id !== id; });
+      return d;
+    });
+    lukkFagSkjema();
+  }catch(e){ fagFeil('Fikk ikke slettet: ' + e.message); }
+}
+
+/* ============================================================
+   Lim inn
+   ------------------------------------------------------------
+   Ukeplanen fra skolen skannes et annet sted og limes inn her.
+   Ingenting lagres foer linjene staar tolket paa skjermen -
+   en skanning som har lest «8/9» som «8. september» og en som
+   har lest det som «9. august» ser like riktige ut i raa tekst,
+   og forskjellen er synlig foerst naar tolkningen vises.
+
+   Skilletegnet er semikolon eller tabulator. Tabulator er med
+   fordi det er det man faar naar noe kopieres ut av en tabell.
+   ============================================================ */
+let limTolket = [];
+
+function limDato(t){
+  const r = String(t || '').trim();
+  if(!r) return '';
+  let m;
+  /* 2026-09-08 */
+  m = r.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m) return m[1] + '-' + pad(+m[2]) + '-' + pad(+m[3]);
+  /* 08.09, 8/9, 08-09 - aar utelatt. Da er det den foerste av den datoen
+     som kommer fra i dag av: en frist man skriver uten aarstall er alltid
+     framover, og i romjula betyr «5.1» neste aar. */
+  m = r.match(/^(\d{1,2})[.\/-](\d{1,2})\.?$/);
+  if(m){
+    const dag = +m[1], mnd = +m[2];
+    if(dag < 1 || dag > 31 || mnd < 1 || mnd > 12) return '';
+    const n = idag0();
+    let d = new Date(n.getFullYear(), mnd - 1, dag);
+    if(d < n) d = new Date(n.getFullYear() + 1, mnd - 1, dag);
+    return datoNokkel(d);
+  }
+  /* 08.09.2026 */
+  m = r.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
+  if(m) return m[3] + '-' + pad(+m[2]) + '-' + pad(+m[1]);
+  return '';
+}
+
+/* Faget kjennes igjen uten hensyn til store bokstaver, og delvis: «matte»
+   treffer «Matematikk». Uten treff blir det et nytt fag - det er tryggere
+   enn aa gjette feil, og et fag for mye er synlig og lett aa slette. */
+function limFinnFag(navn){
+  const n = String(navn || '').trim().toLowerCase();
+  if(!n) return null;
+  const liste = (fagData && fagData.fag) || [];
+  let t = liste.find(function(f){ return f.navn.toLowerCase() === n; });
+  if(t) return t;
+  t = liste.find(function(f){
+    const a = f.navn.toLowerCase();
+    return a.indexOf(n) === 0 || n.indexOf(a) === 0;
+  });
+  return t || null;
+}
+
+function limTolk(){
+  const raa = $('limFelt').value || '';
+  limTolket = [];
+
+  raa.split('\n').forEach(function(linje){
+    if(!linje.trim()) return;
+    const b = linje.split(/[;\t]/).map(function(x){ return x.trim(); });
+    const fagNavn = b[0] || '';
+    const tekst   = b[1] || '';
+    const frist   = limDato(b[2] || '');
+    if(!fagNavn || !tekst){
+      limTolket.push({ ok:false, raa:linje.trim(),
+                       grunn:'trenger fag og oppgave, skilt med semikolon' });
+      return;
+    }
+    if((b[2] || '').trim() && !frist){
+      limTolket.push({ ok:false, raa:linje.trim(),
+                       grunn:'skjønte ikke fristen «' + b[2].trim() + '»' });
+      return;
+    }
+    const treff = limFinnFag(fagNavn);
+    limTolket.push({ ok:true, fagId: treff ? treff.id : null,
+                     fagNavn: treff ? treff.navn : fagNavn,
+                     nyttFag: !treff, tekst:tekst, frist:frist });
+  });
+
+  const gode = limTolket.filter(function(r){ return r.ok; });
+  const boks = $('limFasit');
+  boks.innerHTML = limTolket.length
+    ? limTolket.map(function(r){
+        if(!r.ok){
+          return '<div class="lim-rad avvist">'
+            + '<span class="lim-fag">Hopper over</span>'
+            + '<span class="lim-tekst">' + esc(r.raa) + ' — ' + esc(r.grunn) + '</span>'
+            + '</div>';
+        }
+        const fr = r.frist ? fristTekst(r.frist) : {tekst:'ingen frist'};
+        return '<div class="lim-rad">'
+          + '<span class="lim-fag">' + esc(r.fagNavn) + (r.nyttFag ? ' +' : '') + '</span>'
+          + '<span class="lim-tekst">' + esc(r.tekst) + '</span>'
+          + '<span class="lim-frist">' + esc(fr.tekst) + '</span>'
+          + '</div>';
+      }).join('')
+    : '<div class="tom">Ingenting limt inn ennå.</div>';
+
+  const nye = gode.filter(function(r){ return r.nyttFag; }).length;
+  $('limTeller').textContent = limTolket.length
+    ? gode.length + ' av ' + limTolket.length + ' linjer'
+      + (nye ? ', ' + nye + ' nytt fag' : '')
+    : '';
+  $('limLagre').disabled = !gode.length;
+}
+
+function apneLimInn(){
+  if(!fagData) return;
+  $('limFelt').value = '';
+  limTolk();
+  $('limBak').hidden  = false;
+  $('limBoks').hidden = false;
+  huskSkjema('limBoks');
+  passSkjema();
+  setTimeout(function(){ $('limFelt').focus(); }, 30);
+}
+
+function lukkLimInn(){
+  $('limBoks').hidden = true;
+  $('limBak').hidden  = true;
+  limTolket = [];
+}
+
+async function lagreLimInn(){
+  const gode = limTolket.filter(function(r){ return r.ok; });
+  if(!gode.length) return;
+  const knapp = $('limLagre');
+  knapp.disabled = true;
+  try{
+    await endreFag(function(d){
+      gode.forEach(function(r){
+        let id = r.fagId;
+        /* Faget kan ha blitt lagt inn av en tidligere linje i samme
+           innliming, eller av noen andre siden lista ble lest. */
+        if(!id){
+          const finnes = d.fag.find(function(f){
+            return f.navn.toLowerCase() === r.fagNavn.toLowerCase();
+          });
+          if(finnes){ id = finnes.id; }
+          else { id = nyId(); d.fag.push({ id:id, navn:r.fagNavn }); }
+        }
+        d.lekser.push({ id:nyId(), fagId:id, tekst:r.tekst,
+                        frist:r.frist, ferdig:false });
+      });
+      return d;
+    });
+    lukkLimInn();
+  }catch(e){
+    varsle('Fikk ikke lagret: ' + e.message);
+  }finally{
+    knapp.disabled = false;
   }
 }
 
@@ -2238,9 +3076,11 @@ function lukkVaerBoble(){
 }
 
 /* ============================================================
-   Dagens middag
-   Leser matplanen fra samme sky-lagring som Matlaging bruker.
-   Format: { "2026-W34": { 1:[{id,title,servings}], ... } }  (1 = mandag)
+   Uketall
+   ------------------------------------------------------------
+   Sto under «Dagens middag» paa kjoekkendashen. Middagen er ute
+   her, men uketallet blir: huskeboksene og ukesvisningen henger
+   begge paa den.
    ============================================================ */
 function isoUke(dato){
   const d = new Date(Date.UTC(dato.getFullYear(), dato.getMonth(), dato.getDate()));
@@ -2252,50 +3092,6 @@ function isoUke(dato){
   forsteTorsdag.setUTCDate(forsteTorsdag.getUTCDate() - fdNr + 3);
   const uke = 1 + Math.round((d - forsteTorsdag) / (7 * 86400000));
   return { aar: aar, uke: uke, dagNr: dagNr + 1 };  /* dagNr: 1 = mandag */
-}
-
-/* Bildet hentes fra den lette oppskriftsindeksen, ikke fra hele
-   oppskriften — indeksen har en 200px-miniatyr, mens selve oppskriften
-   ogsaa baerer alle stegbildene og kan bli mange megabyte. */
-let bildeIndeks = null;
-
-async function hentBildeIndeks(){
-  if(bildeIndeks) return bildeIndeks;
-  bildeIndeks = {};
-  try{
-    const r = await fetch('/api/data?key=' + encodeURIComponent('p:recipe-index'), {cache:'no-store'});
-    if(!r.ok) return bildeIndeks;
-    const txt = await r.text();
-    if(!txt) return bildeIndeks;
-    let d = JSON.parse(txt);
-    if(d && typeof d === 'object' && d.value !== undefined) d = d.value;
-    if(typeof d === 'string') d = JSON.parse(d);
-    if(Array.isArray(d)){
-      d.forEach(function(r){ if(r && r.id && r.thumb) bildeIndeks[r.id] = r.thumb; });
-    }
-  }catch(e){ /* uten bilde klarer vi oss */ }
-  return bildeIndeks;
-}
-
-async function hentMiddag(){
-  const r = await fetch('/api/data?key=' + encodeURIComponent('p:meal-plan'), {cache:'no-store'});
-  if(!r.ok){
-    if(r.status === 404) return [];
-    throw new Error('HTTP ' + r.status);
-  }
-  const txt = await r.text();
-  if(!txt) return [];
-
-  let d = JSON.parse(txt);
-  if(d && typeof d === 'object' && d.value !== undefined) d = d.value;
-  if(typeof d === 'string') d = JSON.parse(d);
-  if(!d || typeof d !== 'object') return [];
-
-  const i = isoUke(dagenViser());
-  const nokkel = i.aar + '-W' + String(i.uke).padStart(2, '0');
-  const uke = d[nokkel];
-  if(!uke) return [];
-  return uke[i.dagNr] || uke[String(i.dagNr)] || [];
 }
 
 /* ============================================================
@@ -2492,6 +3288,9 @@ function lukkHuskeBoble(){
 
 /* Skjemaet er en dialog oeverst paa skjermen, ikke en boks inne i kortet:
    inne i kortet havnet feltene bak tastaturet paa iPad. */
+/* Nytt punkt fra Emmas skjerm gjelder henne med mindre noen sier noe
+   annet. Kjoekkendashen foreslaar Familie av samme grunn - den er husets
+   skjerm, dette er hennes. */
 function personValg(velg, valgt){
   velg.innerHTML = PERSONER.map(function(n){
     return '<option value="' + esc(n) + '"' + (n === valgt ? ' selected' : '') + '>'
@@ -2508,7 +3307,7 @@ function visHuskeSkjema(omfang, m){
     + (omfang === 'uke' ? 'ukemerknad' : 'merknad');
   $('huOverskrift').value = m ? (m.overskrift || '') : '';
   $('huTekst').value = m ? (m.tekst || '') : '';
-  personValg($('huGjelder'), m ? (m.gjelder || 'Familie') : 'Familie');
+  personValg($('huGjelder'), m ? (m.gjelder || EIER) : EIER);
   personValg($('huAv'), m ? (m.av || meg) : meg);
 
   /* Uken har ingen dato, bare en ukedag. Dagen har datoen sin. */
@@ -2628,15 +3427,22 @@ function tegnHuske(){
 function tegnHuskeInner(){
   const liste = huskeliste || [];
   lukkHuskeBoble();          /* lista tegnes om - boblen ville pekt paa ingenting */
-  middagRedig = false;       /* et halvskrevet notat hoerer til dagen det ble aapnet paa */
   const dag = datoNokkel(dagenViser());
   const uke = ukeNokkel(dagenViser());
 
+  /* Bare det som gjelder henne eller hele familien. Merknadene ligger i
+     den samme KV-noekkelen som kjoekkendashen leser - det er derfor en
+     frist lagt inn ved kjoekkenbenken dukker opp her uten noe mer
+     maskineri. Andreas turnoevelser skal ikke staa paa Emmas skjerm. */
+  const mine = liste.filter(function(m){
+    return EIER_MERKNADER.indexOf(String(m.gjelder || '').trim()) !== -1;
+  });
+
   const grupper = [
     {omfang: 'dag', boks: 'huskeIdag',
-     treff: liste.filter(function(m){ return m.omfang !== 'uke' && m.frist === dag; })},
+     treff: mine.filter(function(m){ return m.omfang !== 'uke' && m.frist === dag; })},
     {omfang: 'uke', boks: 'huskeUken',
-     treff: liste.filter(function(m){ return m.omfang === 'uke' && ukeAv(m.frist) === uke; })}
+     treff: mine.filter(function(m){ return m.omfang === 'uke' && ukeAv(m.frist) === uke; })}
   ];
 
   grupper.forEach(function(g){
@@ -2654,70 +3460,6 @@ function tegnHuskeInner(){
   });
 }
 
-/* ---------------- Middagsnotat ----------------
-   Fri tekst per dato, for dager uten noe i matplanen - "rester" eller
-   "pizza fra fryseren". Egen KV-noekkel, saa matplanen fra Matlaging
-   ikke roeres. */
-let middagNotater = null;
-let middagRedig = false;
-
-async function hentMiddagNotat(){
-  const r = await fetch('/api/data?key=middagnotat', {cache:'no-store'});
-  if(!r.ok) return {};
-  const txt = await r.text();
-  if(!txt) return {};
-  let d = JSON.parse(txt);
-  if(d && typeof d === 'object' && d.value !== undefined) d = d.value;
-  if(typeof d === 'string') d = JSON.parse(d);
-  return (d && typeof d === 'object' && !Array.isArray(d)) ? d : {};
-}
-
-async function lastMiddagNotat(){
-  try{ middagNotater = await hentMiddagNotat(); }
-  catch(e){ middagNotater = {}; }
-}
-
-function middagNotat(){
-  return (middagNotater || {})[datoNokkel(dagenViser())] || '';
-}
-
-function apneMiddagNotat(){
-  middagRedig = true;
-  tegnMiddag(sisteRetter || []);
-  const f = $('middagFelt');
-  if(f){ f.focus(); f.select(); }
-}
-async function lukkMiddagNotat(){
-  /* Avbryt-regelen: feltet er forhaandsfylt med det lagrede notatet, saa vi
-     spoer bare hvis teksten faktisk er en annen. */
-  const f = $('middagFelt');
-  if(f && (f.value || '').trim() !== middagNotat().trim() &&
-     !(await bekreft('Du har endret middagsnotatet. Forkaster du endringen nå, er den borte.',
-                     {jaTekst:'Forkast', fare:true}))) return;
-  middagRedig = false;
-  tegnMiddag(sisteRetter || []);
-}
-
-async function lagreMiddagNotat(){
-  const tekst = ($('middagFelt').value || '').trim();
-  const dato = datoNokkel(dagenViser());
-  middagRedig = false;
-  try{
-    const fersk = await hentMiddagNotat();
-    if(tekst) fersk[dato] = tekst; else delete fersk[dato];
-    const r = await fetch('/api/data?key=middagnotat', {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(fersk)
-    });
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    middagNotater = fersk;
-  }catch(e){
-    varsle('Fikk ikke lagret middagsnotatet: ' + e.message);
-  }
-  tegnMiddag(sisteRetter || []);
-}
-
 async function lastHuske(){
   try{
     huskeliste = await hentHuske();
@@ -2725,64 +3467,6 @@ async function lastHuske(){
     huskeliste = [];
   }
   tegnHuske();
-}
-
-let sisteRetter = [];
-
-async function tegnMiddag(retter){
-  const boks = $('middag');
-  sisteRetter = retter || [];
-
-  if(!retter.length){
-    const notat = middagNotat();
-    if(middagRedig){
-      boks.innerHTML = '<div class="kort-tittel"><span>Middag</span></div>'
-        + '<textarea class="hu-felt mid-felt" id="middagFelt" rows="2" '
-        +   'placeholder="Hva blir det til middag?">' + esc(notat) + '</textarea>'
-        + '<div class="hu-knapper" style="margin-top:7px">'
-        +   '<button class="hu-avbryt" onclick="lukkMiddagNotat()">Avbryt</button>'
-        +   '<button class="hu-lagre" onclick="lagreMiddagNotat()">Lagre</button>'
-        + '</div>';
-      return;
-    }
-    boks.innerHTML = '<div class="kort-tittel"><span>Middag</span></div>'
-      + (notat
-          ? '<div class="mid-notat" onclick="apneMiddagNotat()">' + esc(notat) + '</div>'
-          : '<div class="tom mid-tom" onclick="apneMiddagNotat()">'
-            + (viserIdag() ? 'Ingenting planlagt i dag.' : 'Ingenting planlagt denne dagen.')
-            + '<span class="mid-legg">Skriv inn</span></div>');
-    return;
-  }
-  const forste = retter[0];
-  const mitt = tegneNr;
-  const bilder = await hentBildeIndeks();
-  if(mitt !== tegneNr) return;              /* dagen ble byttet mens bildene lastet */
-  const bilde = forste.id && bilder[forste.id];
-  /* Trykk gaar rett til oppskriften i Matlaging. Uten id har vi
-     ingenting aa lenke til, og da lar vi kortet vaere som foer. */
-  const lenke = forste.id ? 'oppskrifter.html?rett=' + encodeURIComponent(forste.id) : '';
-
-  let html = (lenke ? '<a class="middag klikk" href="' + esc(lenke) + '">' : '<div class="middag">')
-    + '<div class="middag-tekst">'
-    +   '<div class="kort-tittel"><span>Middag</span></div>'
-    +   '<div class="middag-navn">' + esc(forste.title || 'Uten navn') + '</div>'
-    + '</div>'
-    + (bilde
-        ? '<img class="middag-bilde" src="' + esc(bilde) + '" alt="">'
-        : '<div class="middag-ikon">🍽️</div>')
-    + (lenke ? '</a>' : '</div>');
-
-  if(retter.length > 1){
-    html += '<div class="middag-flere">Også: '
-      + retter.slice(1).map(function(r){
-          return r.id
-            ? '<a class="middag-lenke" href="oppskrifter.html?rett='
-              + esc(encodeURIComponent(r.id)) + '">' + esc(r.title || 'Uten navn') + '</a>'
-            : esc(r.title || 'Uten navn');
-        }).join(', ')
-      + '</div>';
-  }
-  boks.innerHTML = html;
 }
 
 /* ============================================================
@@ -2802,25 +3486,16 @@ async function tegnPlanPaaNytt(){
   settDagsTitler();
   tegnHuske();                     /* boksene foelger dagen man ser paa */
   tegnVaerStripe();                /* det samme gjoer vaeret */
-  $('plan').innerHTML   = '<div class="tom">Henter …</div>';
-  $('middag').innerHTML = '<div class="tom">Henter …</div>';
+  $('plan').innerHTML = '<div class="tom">Henter …</div>';
 
-  await Promise.all([
-    hentPlan().then(function(r){
-      if(mitt !== tegneNr) return;          /* overhalt av en nyere sveip */
-      tegnPlan(r);
-    }).catch(function(e){
-      if(mitt !== tegneNr) return;
-      $('plan').innerHTML = planFeil(e);
-    }),
-    hentMiddag().then(function(r){
-      if(mitt !== tegneNr) return;
-      return tegnMiddag(r);
-    }).catch(function(){
-      if(mitt !== tegneNr) return;
-      $('middag').innerHTML = '<div class="tom feil">Kunne ikke hente matplanen.</div>';
-    })
-  ]);
+  try{
+    const r = await hentPlan();
+    if(mitt !== tegneNr) return;            /* overhalt av en nyere sveip */
+    tegnPlan(r);
+  }catch(e){
+    if(mitt !== tegneNr) return;
+    $('plan').innerHTML = planFeil(e);
+  }
 }
 
 /* Dagen er felles for hele skjermen. Sveiper man i planen, middagen eller
@@ -2828,7 +3503,17 @@ async function tegnPlanPaaNytt(){
    side ville vaert umulig aa holde styr paa. */
 function settDagsTitler(){
   visTilIdag();
-  $('dagLabel').textContent = dagNavn();
+  $('dagLabel').textContent =
+      visning === 'fag' ? 'Fag og frister'
+    : visning === 'uke' ? ukeNavn()
+    : dagNavn();
+}
+
+/* Uketallet, og ikke bare «Denne uken»: blar man tre uker fram er tallet
+   det eneste som sier hvor man er. Raden for i dag er merket, saa
+   inneværende uke kjennes igjen uansett. */
+function ukeNavn(){
+  return 'Uke ' + isoUke(dagenViser()).uke;
 }
 
 /* Skjermen staar framme hele dagen. Har noen bladd seg fram i tid og gaatt
@@ -2837,13 +3522,13 @@ const HVILE_MS = 3 * 60 * 1000;
 let hvileTimer = null;
 
 function erStandard(){
-  return dagOffset === 0 && $('detalj').hidden;
+  return dagOffset === 0 && visning === 'dag' && $('detalj').hidden;
 }
 /* Knappen dukker opp saa snart noe er flyttet fra standard, og forsvinner
    naar alt er tilbake - da har den ingen jobb aa gjoere. */
 function visTilIdag(){
   const b = $('tilIdag');
-  if(b) b.hidden = (dagOffset === 0);
+  if(b) b.hidden = (dagOffset === 0 || visning === 'fag');
 }
 function tilbakeTilStandard(){
   lukkDetalj();
@@ -2851,38 +3536,90 @@ function tilbakeTilStandard(){
   lukkVaerBoble();
   lukkHuskeSkjema();
   const flyttet = (dagOffset !== 0);
+  const byttet  = (visning !== 'dag');
   dagOffset = 0;
+  /* Skjermen skal finne tilbake til dagen, ikke bare til i dag: staar
+     Fag framme naar ingen har roert skjermen paa tre minutter, er det
+     ikke det neste den som kommer forbi vil se. settVisning() tegner
+     selv, saa tegningen under er bare for de gangene visningen sto. */
+  if(byttet) settVisning('dag');
   tegnVaerStripe();
   visTilIdag();
-  if(flyttet) tegnPlanPaaNytt();
+  if(flyttet && !byttet) tegnPlanPaaNytt();
 }
 /* ============================================================
-   Neam paa veggskjermen
+   Neam paa Emmas skjerm
    ------------------------------------------------------------
-   Kjoekken dash er en informasjonsskjerm og eier ingen data den
-   selv kan endre gjennom Neam - avtalene ligger i Graph, resten
-   leses. Leseverktoeyene er derfor de samme fire som paa de
-   andre sidene, uten noe eget i tillegg.
+   Sida eier fag og lekser, men Neam har ingen verktoey mot dem
+   i denne omgangen - han faar husets fire lesende, som paa de
+   andre sidene. Skal han kunne legge inn en lekse selv, er det
+   et eget verktoey med egen bekreftelse, og det bygges naar
+   lim-inn-veien har vist seg i bruk.
+
+   Han faar VITE at fagvisningen finnes, saa han kan vise vei
+   dit i stedet for aa gjette paa innholdet.
    ============================================================ */
 
 window.neamKontekst = async function(){
+  const antall = fagData
+    ? fagData.lekser.filter(function(l){ return !l.ferdig; }).length : 0;
   return {
-    sted: 'Kjøkken dash',
-    visning: viserIdag() ? 'I dag' : 'I morgen'
+    sted: 'Emma dash',
+    visning: visning === 'fag' ? 'Fag og frister'
+           : visning === 'uke' ? ukeNavn()
+           : dagNavn(),
+    apneLekser: antall
   };
 };
 
 window.neamBakgrunn = async function(){
   const om =
-      'KJØKKEN DASH er skjermen som henger på veggen i kjøkkenet. Den viser '
-    + 'dagens avtaler, været, dagens middag og klokka. Den leses på avstand, '
-    + 'ofte mens noen lager mat, og ingen logger seg ut av den.\n\n'
-    + 'DØGNET SKIFTER KLOKKA 20. Etter det viser skjermen morgendagen, og '
-    + 'etiketten sier «I morgen».\n\n'
-    + 'DU HAR INGEN KALENDERVERKTØY ENNÅ. Blir du spurt om hva som skjer en '
-    + 'dag, si at du ikke kan lese avtalene ennå - ikke gjett.';
+      'EMMA DASH er Emmas egen skjerm. Emma er 13 år og går på ungdomsskolen. '
+    + 'Skjermen har tre visninger i venstre kolonne: DAG (avtalene hennes og '
+    + 'familiens den dagen), UKE (sju rader, én per dag) og FAG (lekser og '
+    + 'frister samlet per fag). Til høyre står Merknader og Denne uken, som '
+    + 'Magne, Nina og Emma selv kan skrive i.\n\n'
+    + 'TIMEPLANEN LIGGER IKKE I FAG-VISNINGEN. Den står som merknader på '
+    + 'avtalene i kalenderen hennes. Fag handler om hva som skal være gjort '
+    + 'til når, ikke om hvilken time som er når.\n\n'
+    + 'DØGNET SKIFTER KLOKKA 20. Etter det viser skjermen morgendagen.\n\n'
+    + 'DU HAR INGEN KALENDER- ELLER LEKSEVERKTØY. Blir du spurt hva hun har i '
+    + 'lekser eller hva som skjer en dag, si at du ikke kan lese det ennå og '
+    + 'vis heller til Fag-visningen - ikke gjett.\n\n'
+    + 'DU SNAKKER MED EN 13-ÅRING. Hold det kort, vennlig og konkret.';
   const hus = await husregisterTekst();
   return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
+};
+
+/* ---- Sidas egne handlinger: hoeyre firer ----
+   De tre tingene som legges til fra denne skjermen. Fag og lekser ligger
+   ikke her, men paa raden under fagvisningen: de gir bare mening naar
+   Fag staar framme, og en knapp som er meningsloes i to av tre visninger
+   hoerer ikke hjemme i hjoernet. */
+window.neamSideHandlinger = function(){
+  return [
+    { plass:'opp', navn:'Legg til avtale',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<rect x="3" y="5" width="18" height="16" rx="2"/>'
+         + '<path d="M16 3v4M8 3v4M3 11h18M12 14v5M9.5 16.5h5"/></svg>',
+      gjor: nyAvtale },
+
+    { plass:'skraa', navn:'Husk i dag',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
+         + '<path d="M12 7v6M9 10h6"/></svg>',
+      gjor: function(){ apneHuskeSkjema('dag'); } },
+
+    { plass:'ved', navn:'Husk denne uken',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
+         + '<path d="M3 9h18M8 2v4M16 2v4"/>'
+         + '<path d="M12 12v5M9.5 14.5h5"/></svg>',
+      gjor: function(){ apneHuskeSkjema('uke'); } }
+  ];
 };
 
 /* ---- Husets leseverktoey ----
@@ -2903,8 +3640,12 @@ function nullstillHvile(){
     if(skjemaAapent()) return;     /* et halvskrevet skjema skal ikke ryke */
     /* Staar femmeren aapen naar skjermen hviler, legges den ned med resten -
        veggen skal vaere tilbake til utgangspunktet naar ingen er der. */
-    if(typeof neamFemmerNed === 'function') neamFemmerNed();
-    if(typeof neamSideFemmerNed === 'function') neamSideFemmerNed();
+    /* Het neamFemmerNed til 30. august 2026. Kjoekkendashen kaller
+       fortsatt det gamle navnet - typeof-sjekken skjuler at det ikke
+       finnes lenger, saa fireren blir staaende aapen naar skjermen
+       hviler der. Rettes i dashboard.html for seg. */
+    if(typeof neamFirerNed === 'function') neamFirerNed();
+    if(typeof neamSideFirerNed === 'function') neamSideFirerNed();
     tilbakeTilStandard();
   }, HVILE_MS);
 }
@@ -2930,18 +3671,24 @@ function kobleHvile(){
 }
 
 function byttDag(steg){
-  dagOffset += steg;
+  if(visning === 'fag') return;            /* fag har ingen dag aa bla i */
+  /* Ukesvisningen blar en uke om gangen. Samme pil, samme sveip - det
+     som flyttes er det man ser. */
+  dagOffset += steg * (visning === 'uke' ? 7 : 1);
   timeOffset = 0;              /* ny dag - vis dagens eget vindu */
   lukkVaerBoble();             /* boblen gjaldt dagen man forlot */
   if(dagOffset < -180) dagOffset = -180;   /* en grense, saa man ikke blar seg bort */
   if(dagOffset >  180) dagOffset =  180;
-  tegnPlanPaaNytt();
+  tegnVisning();
 }
 
 /* Sveip paa plankortet. Utslaget maa vaere tydelig vannrett, ellers ville
    vanlig loddrett rulling i lista utloest et dagbytte. */
 function kobleSveip(){
-  ['plan', 'middag', 'huskeIdag'].forEach(function(id){
+  /* Fagkortet er ikke med: der er det ingen dag aa sveipe til, og en
+     sveip som ikke gjoer noe leses som at skjermen henger.
+     Plan og uke ligger i det SAMME kortet, saa den kobles én gang. */
+  ['plan', 'huskeIdag'].forEach(function(id){
     const el = $(id);
     if(el && el.closest('.kort')) sveipPaa(el.closest('.kort'), byttDag);
   });
@@ -3010,27 +3757,31 @@ async function oppdaterAlt(manuelt){
   if(manuelt){
     lukkDetalj();
     dagOffset = 0;           /* en manuell oppdatering betyr "vis meg naa" */
-    bildeIndeks = null;      /* hent bildene på nytt ved manuell oppdatering */
   }
 
   /* Hver del feiler for seg — vaeret skal ikke ryke fordi kalenderen gjoer det. */
   /* Hvis noe her ryker, maa S.laster likevel nullstilles - ellers blir
      hver senere oppdatering staaende og returnere med én gang. */
+  /* Kalenderen hentes bare for den visningen som staar framme. Fag
+     trenger den ikke i det hele tatt, og en ukeshenting i bakgrunnen av
+     dagsvisningen er sju ganger arbeidet for noe ingen ser. */
+  const kalenderJobb =
+      visning === 'uke'
+        ? hentUke().then(tegnUke).catch(function(e){ $('uke').innerHTML = planFeil(e); })
+    : visning === 'dag'
+        ? hentPlan().then(tegnPlan).catch(function(e){ $('plan').innerHTML = planFeil(e); })
+    : Promise.resolve();
+
   const jobber = [
-    hentPlan().then(tegnPlan).catch(function(e){
-      $('plan').innerHTML = planFeil(e);
-    }),
+    kalenderJobb,
     hentVaer().then(tegnVaer).catch(function(e){
       /* Vaeret bor i toppstripa naa. Feiler det, skjuler vi stripa i
          stedet for aa la den staa med gamle tall. */
       $('vaerStripe').hidden = true;
       settSted('været utilgjengelig', false);
     }),
-    hentMiddag().then(tegnMiddag).catch(function(e){
-      $('middag').innerHTML = '<div class="tom feil">Kunne ikke hente matplanen.</div>';
-    }),
     lastHuske(),
-    lastMiddagNotat()
+    lastFag()
   ];
   try{
     await Promise.all(jobber);
@@ -3097,13 +3848,16 @@ async function oppdaterAlt(manuelt){
     $('portKnapp').hidden = true;
     $('portHjem').hidden = false;
     portNote(tilgang.epost
-      ? 'Kjøkken dash er kjøkkenets egen skjerm og ikke åpen for ' + tilgang.epost + '. Gå tilbake til forsiden.'
-      : 'Kjøkken dash er kjøkkenets egen skjerm og ikke tilgjengelig her.');
+      ? 'Emma dash er Emmas egen skjerm og ikke åpen for ' + tilgang.epost + '. Gå tilbake til forsiden.'
+      : 'Emma dash er Emmas egen skjerm og ikke tilgjengelig her.');
     return;
   }
 
   lesLagretPosisjon();
   await hentFarger();
+  /* Fagene lastes foer foerste tegning, saa Fag-fanen ikke staar tom det
+     sekundet noen trykker paa den. */
+  await lastFag();
   /* Navnet vises ikke i toppen - siden heter det den heter. Men det huskes,
      for merknadsskjemaet foreslaar fornavnet under "Skrevet av". */
   graph('/me').then(function(me){
@@ -3138,6 +3892,8 @@ document.addEventListener('keydown', function(e){
   if($('filviser') && !$('filviser').hidden){ lukkViser(); return; }
   if(avtaleAapen){ lukkAvtale(); return; }
   if(huskeSkjema){ lukkHuskeSkjema(); return; }
+  if($('limBoks') && !$('limBoks').hidden){ lukkLimInn(); return; }
+  if(fagSkjema){ lukkFagSkjema(); return; }
   if(huBobleId) lukkHuskeBoble();
   if(vaerBobleAapen) lukkVaerBoble();
   if($('detalj') && !$('detalj').hidden) lukkDetalj();

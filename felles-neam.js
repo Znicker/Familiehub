@@ -751,6 +751,14 @@ const NEAM_SIDEMERKE = {
   '/oppskrifter': { navn:'Matlaging',    ikon:'/bilder/merke-matlaging.png'    },
   '/kalender'   : { navn:'Kalender',     ikon:'/bilder/merke-kalender.png'     },
   '/dashboard'  : { navn:'Kjøkken dash', ikon:'/bilder/merke-kjokken-dash.png' },
+  /* Emma dash staar HER, men ikke i NEAM_APPER. Hoeyre haandtak maa vite
+     hvilket merke det skal baere paa sida man staar paa, og uten linja
+     under faller Emma dash tilbake paa Neam-merket - «Denne siden» med
+     feil bilde. Applista er et annet spoersmaal: den er lik for alle, og
+     en knapp dit fra en konto som blir avvist i porten er en snarvei til
+     en stengt doer. Skal den inn, maa lista foerst kunne filtreres paa
+     innlogget bruker. */
+  '/emma'       : { navn:'Emma dash',    ikon:'/bilder/merke-emma-dash.png'    },
   '/'           : { navn:'Neam',         ikon:'/bilder/merke-neam.png'         }
 };
 
