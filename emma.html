@@ -495,14 +495,28 @@ body{
 /* Merket er det man kjenner faget paa. Det faar derfor plassen det
    trenger, og rullingen tar resten - et fag man ikke kjenner igjen paa
    avstand er ikke verdt et bilde i det hele tatt. */
+/* `flex:none` er ikke overfloedig: kortet er en flex-kolonne, og et
+   bilde i en slik kolonne kan bade krympes og strekkes av naboene sine.
+   Med maalene paa <img> og flex:none er hoeyden kjent foer lastingen. */
 .fag-bilde{
-  display:block;width:100%;max-width:190px;height:auto;
+  display:block; flex:none; width:100%; max-width:170px; height:auto;
   margin:0 auto 8px;
 }
 /* Et fag uten lekser er alt dempet; merket dempes med. */
 .fag-kort.tomt .fag-bilde{ opacity:.85; }
-@media(min-width:700px){ #fag{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
-@media(min-width:1300px){ #fag{ grid-template-columns:repeat(5, minmax(0,1fr)); } }
+/* iPad: to kolonner, men med mer luft mellom kortene og et mindre merke.
+   Typeskalaen er et hakk stoerre her enn paa PC - se felles-rot.css - saa
+   samme kort blir hoeyere av seg selv, og trenger mer plass rundt seg. */
+@media(min-width:700px){
+  #fag{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px; }
+  .fag-bilde{ max-width:190px; margin-bottom:10px; }
+  .fag-kort{ padding:15px 17px 17px; }
+}
+@media(min-width:1300px){
+  #fag{ grid-template-columns:repeat(5, minmax(0,1fr)); gap:14px; }
+  .fag-bilde{ max-width:170px; }
+  .fag-kort{ padding:13px 15px 15px; }
+}
 .fag-kort{
   border:1px solid var(--line);border-radius:12px;background:var(--bg-2);
   padding:13px 15px 15px;
@@ -620,7 +634,7 @@ body{
 }
 #fagVisBak{ z-index:57; }
 .fagvis-boks .av-tittel{ font-size:calc(var(--t-stor) * 1.35); gap:14px; }
-.fagvis-bilde{ width:92px; height:auto; flex-shrink:0; display:block; }
+.fagvis-bilde{ width:92px; height:auto; flex:none; display:block; }
 .fagvis-boks .fagvis-meta{ font-size:var(--t-brod); gap:8px 20px; }
 .fagvis-boks .fagvis-bolk h4{ font-size:var(--t-meta); }
 .fagvis-boks .lekse-tekst{ font-size:var(--t-brod); line-height:1.45; }
@@ -2935,23 +2949,40 @@ const TIMEPLAN_FAG = {
    Fag uten merke faar ingen - kortet staar da med navnet alene, som foer.
    Legges et nytt fag til, hoerer det hjemme her den dagen det faar et
    bilde. */
+/* Hoeyden staar her sammen med filnavnet, og det er ikke pynt: uten
+   width og height paa <img> vet ikke nettleseren hvor hoeyt bildet blir
+   foer det er lastet, og maa gjette. Safari paa iPad gjettet ut fra
+   bildets EGEN hoeyde i stedet for den nedskalerte, og kortene rant
+   utover hverandre. Chrome paa PC gjorde det ikke - derfor saa det
+   riktig ut der.
+
+   Alle er 360 brede; bare hoeyden varierer. */
 const FAG_MERKE = {
-  'Norsk'             : 'norsk',
-  'Engelsk'           : 'engelsk',
-  'Matematikk'        : 'matematikk',
-  'Naturfag'          : 'naturfag',
-  'Samfunnsfag'       : 'samfunnsfag',
-  'KRLE'              : 'krle',
-  'Kroppsøving'       : 'kroppsoving',
-  'Musikk'            : 'musikk',
-  'Utdanningsvalg'    : 'utdanningsvalg',
-  'Spansk'            : 'spansk',
-  'Innsats for andre' : 'innsats-for-andre'
+  'Norsk'             : ['norsk',             329],
+  'Engelsk'           : ['engelsk',           329],
+  'Matematikk'        : ['matematikk',        330],
+  'Naturfag'          : ['naturfag',          330],
+  'Samfunnsfag'       : ['samfunnsfag',       330],
+  'KRLE'              : ['krle',              327],
+  'Kroppsøving'       : ['kroppsoving',       327],
+  'Musikk'            : ['musikk',            329],
+  'Utdanningsvalg'    : ['utdanningsvalg',    321],
+  'Spansk'            : ['spansk',            323],
+  'Innsats for andre' : ['innsats-for-andre', 309]
 };
 
 function fagMerke(navn){
   const f = FAG_MERKE[String(navn || '').trim()];
-  return f ? ('/bilder/fag/' + f + '.png') : '';
+  if(!f) return null;
+  return { url:'/bilder/fag/' + f[0] + '.png', b:360, h:f[1] };
+}
+
+/* <img> med maal. Kallstedene skal ikke skrive dem tre ganger. */
+function fagMerkeHtml(navn, klasse){
+  const m = fagMerke(navn);
+  if(!m) return '';
+  return '<img class="' + klasse + '" src="' + m.url + '" alt="" '
+       + 'width="' + m.b + '" height="' + m.h + '" loading="lazy">';
 }
 
 function timeplanFag(rute){
@@ -3358,13 +3389,12 @@ function tegnFag(){
     const pr = nesteProve(f);
     const prTekst = pr ? fristTekst(pr) : null;
 
-    const bilde = fagMerke(f.navn);
     let ut = '<div class="fag-kort' + (liste.length ? '' : ' tomt') + '"'
       + ' onclick="apneFagVis(\'' + esc(f.id) + '\')" role="button" tabindex="0">'
       /* Merket baerer fagnavnet selv, men navnet staar likevel under: en
          omdoept variant - «Kroppsøving/gym» - skal kunne leses, og et fag
          uten merke maa ha noe aa staa med. */
-      + (bilde ? '<img class="fag-bilde" src="' + bilde + '" alt="" loading="lazy">' : '')
+      + fagMerkeHtml(f.navn, 'fag-bilde')
       + '<div class="fag-topp">'
       +   '<span class="fag-navn">' + esc(f.navn) + '</span>'
       +   (prTekst ? '<span class="fag-merke">Prøve ' + esc(prTekst.tekst) + '</span>' : '')
@@ -3432,9 +3462,7 @@ function tegnFagVis(){
   const f = fagAv(fagVisId);
   if(!f){ lukkFagVis(); return; }
 
-  const bilde = fagMerke(f.navn);
-  $('fagVisNavn').innerHTML =
-      (bilde ? '<img class="fagvis-bilde" src="' + bilde + '" alt="">' : '')
+  $('fagVisNavn').innerHTML = fagMerkeHtml(f.navn, 'fagvis-bilde')
     + '<span>' + esc(f.navn) + '</span>';
 
   const meta = [];
