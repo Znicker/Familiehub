@@ -526,8 +526,14 @@ body{
    Lagene her er: fagvindu 57/58, skjemaene 60/61. Aa flytte fagvinduet
    ned er riktigere enn aa loefte skjemaene: det er fagvinduet som er
    BAKGRUNNEN naar et skjema staar oppe, og det skal fortsatt vaere
-   synlig rundt kantene. */
-.fagvis-boks{ max-width:640px; z-index:58; }
+   synlig rundt kantene.
+
+   MERK velgeren: .avtale-boks.fagvis-boks, ikke .fagvis-boks alene.
+   Foerste forsoek sto med én klasse, og .avtale-boks - som setter
+   z-index:61 - staar LENGER NEDE i fila. Like spesifikke velgere
+   avgjoeres av rekkefoelge, saa 61 vant og skjemaet ble liggende bak
+   likevel. To klasser slaar én uansett hvor de staar. */
+.avtale-boks.fagvis-boks{ max-width:640px; z-index:58; }
 #fagVisBak{ z-index:57; }
 .fagvis-meta{
   display:flex; flex-wrap:wrap; gap:6px 14px; padding:0 0 4px;
@@ -1175,7 +1181,7 @@ select.hu-felt{
     <div class="fagvis-meta" id="fagVisMeta"></div>
     <div class="fagvis-kropp" id="fagVisKropp"></div>
     <div class="av-foot">
-      <button class="hu-avbryt" onclick="redigerFag(fagVisId)">Rediger faget</button>
+      <button class="knapp-endre" onclick="redigerFag(fagVisId)">Rediger faget</button>
       <button class="knapp-gronn" onclick="apneProveSkjema(fagVisId)">Ny prøve</button>
       <button class="knapp-gronn" onclick="apneLekseSkjema(fagVisId)">Ny lekse</button>
     </div>
