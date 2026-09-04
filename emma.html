@@ -852,22 +852,35 @@ body{
    overskriften som en oppgave. Ingen av dem ser ut som feil i et svar
    fra Neam - de ser ut som lekser. De blir synlige foerst naar de staar
    ved siden av faget de havnet paa, med fristen tolket ferdig. */
-.forslag-boks{ width:min(96vw, 1060px); max-width:none; }
+/* Panelet er der hele uka skal leses gjennom. Da trenger det plassen. */
+.forslag-boks{
+  width:min(96vw, 1180px); max-width:none;
+  height:var(--dlg-hoyde, 88vh); min-height:min(88vh, 720px);
+}
 .forslag-liste{
   flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
 }
+/* Teksten er det viktigste i raden og faar mest plass. Feltene toppstilles,
+   ikke sentreres: tekstfeltet er hoeyere enn de andre, og en avkryssing som
+   svever midt i en fire linjers tekst hoerer ikke sammen med noe. */
 .forslag-rad{
-  display:grid; grid-template-columns:26px 1.1fr 2fr 132px;
-  gap:9px; align-items:center;
-  padding:9px 0; border-bottom:1px solid var(--line);
+  display:grid; grid-template-columns:26px 1fr 2.6fr 138px;
+  gap:10px; align-items:start;
+  padding:11px 0; border-bottom:1px solid var(--line);
+}
+.forslag-rad > *{ align-self:start; }
+.forslag-rad input[type=checkbox]{ margin-top:12px; }
+.forslag-tekst{
+  min-height:74px; resize:vertical; line-height:1.45;
+  font-family:'Archivo',sans-serif; overflow-y:hidden;
 }
 .forslag-rad:last-child{ border-bottom:none; }
 .forslag-rad.av{ opacity:.4; }
 .forslag-rad input[type=checkbox]{ width:20px; height:20px; }
 .forslag-rad .hu-felt{ font-size:var(--t-meta); padding:8px 9px; }
 .forslag-hode{
-  display:grid; grid-template-columns:26px 1.1fr 2fr 132px; gap:9px;
+  display:grid; grid-template-columns:26px 1fr 2.6fr 138px; gap:10px;
   font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
   letter-spacing:.08em; color:var(--ink-soft);
   padding-bottom:6px; border-bottom:1px solid var(--line);
@@ -897,8 +910,9 @@ body{
   .forslag-hode{ display:none; }
   .forslag-rad{
     grid-template-columns:26px 1fr; grid-template-areas:'hake fag' '. tekst' '. frist';
-    gap:6px 9px;
+    gap:7px 9px;
   }
+  .forslag-rad input[type=checkbox]{ margin-top:8px; }
   .forslag-rad > :nth-child(1){ grid-area:hake; }
   .forslag-rad > :nth-child(2){ grid-area:fag; }
   .forslag-rad > :nth-child(3){ grid-area:tekst; }
@@ -5867,8 +5881,13 @@ function tegnForslag(){
       +     'oninput="forslagSett(' + i + ', \'fag\', this.value)" list="forslagFag">'
       +   (nytt ? '<span class="forslag-nytt">nytt fag</span>' : '')
       + '</span>'
-      + '<input class="hu-felt" value="' + esc(r.tekst) + '" '
-      +   'oninput="forslagSett(' + i + ', \'tekst\', this.value)">'
+      /* Textarea, ikke input: en lekse er ofte to setninger, og et
+         enlinjefelt klipper alt etter det som faar plass. Hoeyden settes
+         etter innholdet ved tegning og vokser mens man skriver - se
+         voksFelt(). */
+      + '<textarea class="hu-felt forslag-tekst" rows="' + forslagLinjer(r.tekst) + '" '
+      +   'oninput="forslagSett(' + i + ', \'tekst\', this.value); voksFelt(this)">'
+      +   esc(r.tekst) + '</textarea>'
       + '<span>'
       +   '<input class="hu-felt" type="date" value="' + esc(r.frist) + '" '
       +     'onchange="forslagSett(' + i + ', \'frist\', this.value); '
@@ -5887,6 +5906,24 @@ function tegnForslag(){
   $('forslagTeller').textContent = med + ' av ' + ventendeForslag.length + ' tas med'
     + (nye ? ', ' + nye + ' nytt fag' : '');
   $('forslagLagre').disabled = !med;
+
+  /* rows er et anslag; her maales det faktiske innholdet. */
+  Array.prototype.forEach.call(
+    $('forslagListe').querySelectorAll('.forslag-tekst'), voksFelt);
+}
+
+/* Hvor mange linjer teksten trenger. Grovt anslag paa 34 tegn per linje -
+   det er ikke maalt, men det er bedre enn én linje til alt, og feltet
+   vokser uansett naar man skriver i det. */
+function forslagLinjer(t){
+  const n = String(t || '').length;
+  return Math.max(3, Math.min(8, Math.ceil(n / 34) + 1));
+}
+
+/* Lar feltet vokse med innholdet mens man skriver. */
+function voksFelt(el){
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 260) + 'px';
 }
 
 function forslagMed(i, paa){
