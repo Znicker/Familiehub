@@ -2581,8 +2581,7 @@ function settVisning(ny){
     if(el) el.hidden = (v !== ny);
   });
 
-  /* Fag har ingen dag aa bla i. */
-  if($('dagPiler'))      $('dagPiler').hidden      = (ny === 'fag');
+  /* Fag blar i uker, som ukesvisningen - pilene staar i alle tre. */
 
   settBredde();
   settDagsTitler();
@@ -2864,15 +2863,25 @@ function fagNavnAv(id){ const f = fagAv(id); return f ? f.navn : ''; }
 /* ---------------- Frister ----------------
    Fristen leses mot ekte i dag, ikke mot dagen skjermen staar paa: en
    lekse til fredag er ikke mindre forfalt fordi noen har bladd fram. */
+/* Fristen med DATO, ikke bare «i morgen». Naar man kan bla i uker, er
+   «fredag» tvetydig - det finnes en fredag i hver uke man blar til - og
+   en lekse man planlegger etter maa kunne leses uten aa regne ut hvilken
+   fredag det var. Ordet blir staaende foran datoen der det sier noe
+   ekstra: «i dag» og «i morgen» leses raskere enn et tall. */
+function datoKort(d){
+  return d.getDate() + '. ' + MND[d.getMonth()].slice(0, 3);
+}
+
 function fristTekst(frist){
   if(!frist) return { tekst:'', klasse:'' };
   const d = datoFraTekst(frist);
+  const dato = datoKort(d);
   const dager = Math.round((d - idag0()) / 86400000);
-  if(dager <   0) return { tekst:'Gikk ut ' + UKEDAG_KORT[ukedagNr(d)], klasse:'over' };
-  if(dager === 0) return { tekst:'I dag',    klasse:'naer' };
-  if(dager === 1) return { tekst:'I morgen', klasse:'naer' };
-  if(dager <   7) return { tekst:UKEDAGER[ukedagNr(d)], klasse:'' };
-  return { tekst:d.getDate() + '. ' + MND[d.getMonth()].slice(0, 3), klasse:'' };
+  if(dager <   0) return { tekst:'Gikk ut ' + dato,        klasse:'over' };
+  if(dager === 0) return { tekst:'I dag ' + dato,          klasse:'naer' };
+  if(dager === 1) return { tekst:'I morgen ' + dato,       klasse:'naer' };
+  if(dager <   7) return { tekst:UKEDAG_KORT[ukedagNr(d)] + ' ' + dato, klasse:'' };
+  return { tekst:dato, klasse:'' };
 }
 
 /* ============================================================
@@ -3223,8 +3232,29 @@ function tegnFag(){
   if(!boks) return;
   if(!fagData){ boks.innerHTML = '<div class="tom">Henter …</div>'; return; }
 
+  /* Fagfanen viser UKA man staar i, som de to andre visningene.
+
+     Tre ting slipper likevel gjennom uansett uke:
+     - lekser UTEN frist, som ikke hoerer til noen uke
+     - lekser som har gaatt ut og ikke er huket av, naar man staar paa
+       inneværende uke
+     Den siste er ikke pynt: uten den ville en glemt lekse forsvunnet ut
+     av bildet mandag morgen, og det er nettopp den man skal se. */
+  const uStart = datoNokkel(ukeStart(dagenViser()));
+  const uSlutt = datoNokkel(new Date(ukeStart(dagenViser()).getFullYear(),
+                                     ukeStart(dagenViser()).getMonth(),
+                                     ukeStart(dagenViser()).getDate() + 6));
+  const naaUke = (uStart === datoNokkel(ukeStart(idag0())));
+  const iDag   = datoNokkel(idag0());
+
+  function iUka(l){
+    if(!l.frist) return true;
+    if(l.frist >= uStart && l.frist <= uSlutt) return true;
+    return naaUke && !l.ferdig && l.frist < iDag;      /* etterslep */
+  }
+
   const perFag = {};
-  fagData.lekser.forEach(function(l){
+  fagData.lekser.filter(iUka).forEach(function(l){
     (perFag[l.fagId] = perFag[l.fagId] || []).push(l);
   });
   const proverFor = {};
@@ -3256,7 +3286,7 @@ function tegnFag(){
      om datoen er passert. */
   function nesteProve(f){
     const igjen = (proverFor[f.id] || []).filter(function(p){
-      return !p.karakter && p.dato && datoFraTekst(p.dato) >= idag0();
+      return !p.karakter && p.dato && p.dato >= uStart && p.dato <= uSlutt;
     });
     if(!igjen.length) return null;
     return igjen.map(function(p){ return p.dato; }).sort()[0];
@@ -3277,6 +3307,9 @@ function tegnFag(){
     boks.innerHTML = '<div class="tom">Ingen fag lagt inn.</div>';
     return;
   }
+  /* Har ingen av fagene noe denne uka, sier vi hvilken uke det gjelder -
+     ellers ser en tom uke ut som at leksene er borte. */
+  const noeIUka = Object.keys(perFag).length > 0;
 
   boks.innerHTML = sortert.map(function(f){
     const liste = (perFag[f.id] || []).slice().sort(function(a, b){
@@ -3315,7 +3348,10 @@ function tegnFag(){
       });
     }
     return ut + '</div>';
-  }).join('');
+  }).join('')
+  + (noeIUka ? ''
+     : '<div class="tom" style="grid-column:1/-1">Ingen lekser med frist i '
+       + esc(ukeNavn().toLowerCase()) + '.</div>');
 }
 
 async function vekslLekse(id){
@@ -4447,7 +4483,7 @@ async function tegnPlanPaaNytt(){
 function settDagsTitler(){
   visTilIdag();
   $('dagLabel').textContent =
-      visning === 'fag' ? 'Fag og frister'
+      visning === 'fag' ? ('Fag · ' + ukeNavn().toLowerCase())
     : visning === 'uke' ? ukeNavn()
     : dagNavn();
 }
@@ -4471,7 +4507,7 @@ function erStandard(){
    naar alt er tilbake - da har den ingen jobb aa gjoere. */
 function visTilIdag(){
   const b = $('tilIdag');
-  if(b) b.hidden = (dagOffset === 0 || visning === 'fag');
+  if(b) b.hidden = (dagOffset === 0);
 }
 function tilbakeTilStandard(){
   lukkDetalj();
@@ -4504,7 +4540,7 @@ window.neamKontekst = async function(){
     ? fagData.lekser.filter(function(l){ return !l.ferdig; }).length : 0;
   return {
     sted: 'Emma dash',
-    visning: visning === 'fag' ? 'Fag og frister'
+    visning: visning === 'fag' ? ('Fag, ' + ukeNavn().toLowerCase())
            : visning === 'uke' ? ukeNavn()
            : dagNavn(),
     apneLekser: antall,
@@ -5556,10 +5592,9 @@ function kobleHvile(){
 }
 
 function byttDag(steg){
-  if(visning === 'fag') return;            /* fag har ingen dag aa bla i */
-  /* Ukesvisningen blar en uke om gangen. Samme pil, samme sveip - det
-     som flyttes er det man ser. */
-  dagOffset += steg * (visning === 'uke' ? 7 : 1);
+  /* Uke og Fag blar en uke om gangen, Dag én dag. Samme pil, samme
+     sveip - det som flyttes er det man ser. */
+  dagOffset += steg * (visning === 'dag' ? 1 : 7);
   timeOffset = 0;              /* ny dag - vis dagens eget vindu */
   lukkVaerBoble();             /* boblen gjaldt dagen man forlot */
   if(dagOffset < -180) dagOffset = -180;   /* en grense, saa man ikke blar seg bort */
@@ -5570,9 +5605,9 @@ function byttDag(steg){
 /* Sveip paa plankortet. Utslaget maa vaere tydelig vannrett, ellers ville
    vanlig loddrett rulling i lista utloest et dagbytte. */
 function kobleSveip(){
-  /* Fagkortet er ikke med: der er det ingen dag aa sveipe til, og en
-     sveip som ikke gjoer noe leses som at skjermen henger.
-     Plan og uke ligger i det SAMME kortet, saa den kobles én gang. */
+  /* Alle tre visningene ligger i det SAMME kortet, saa sveipen kobles
+     én gang og virker i alle. Fag blar i uker, som ukesvisningen - se
+     byttDag(). */
   ['plan', 'huskeIdag'].forEach(function(id){
     const el = $(id);
     if(el && el.closest('.kort')) sveipPaa(el.closest('.kort'), byttDag);
