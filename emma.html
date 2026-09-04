@@ -321,23 +321,10 @@ body{
 .hu-rad.hu-lekse.gul{ border-left-color:var(--handling-endre); }
 .hu-rad.hu-lekse.rod{ border-left-color:var(--danger); }
 
-/* ---------- Snarveier ----------
-   Timeplanen og skolens ukeplan hoerer til alle fire visningene, ikke til
-   én av dem, saa de staar ved siden av visningsbytteren og skifter aldri.
-   Dempet form: de er oppslagsverk, ikke handlinger, og skal ikke
-   konkurrere med fanene om oppmerksomheten. */
-.snarveier{ display:inline-flex; gap:6px; flex-shrink:0; }
-.snarvei{
-  border:1px solid var(--line); background:var(--paper); color:var(--ink-soft);
-  border-radius:999px; padding:5px 12px; cursor:pointer; text-decoration:none;
-  font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
-  letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;
-  display:inline-flex; align-items:center;
-}
-.snarvei:active{ background:var(--boks-mild); color:var(--ink); }
-/* Under 900px er korttittelen trang alt. Timeplanen har egen knapp i
-   Rediger-stabelen der, saa den er ikke borte - bare flyttet. */
-@media(max-width:900px){ .snarveier{ display:none; } }
+/* Snarveiene til Roligheden laa i korttittelen til 4. september. De
+   ligger naa under «Roligheden» i hoeyre tommelknapp, sammen med resten
+   av det som peker ut av huset - korttittelen skal si hvor man er, ikke
+   baere knapper. */
 
 /* ---------- Timeplanen ---------- */
 .timeplan-boks{ width:min(96vw, 900px); max-width:none; }
@@ -1512,11 +1499,6 @@ select.hu-felt{
           <button class="vis-knapp aktiv" data-vis="dag" onclick="settVisning('dag')">Dag</button>
           <button class="vis-knapp" data-vis="uke" onclick="settVisning('uke')">Uke</button>
           <button class="vis-knapp" data-vis="fag" onclick="settVisning('fag')">Fag</button>
-        </span>
-        <span class="snarveier">
-          <button class="snarvei" onclick="apneTimeplan()">Dagsplan fag</button>
-          <a class="snarvei" href="https://roligheden.skole.arendal.no/index.php?pageID=181"
-             target="_blank" rel="noopener">Ukesplan</a>
         </span>
         <button class="til-idag" id="tilIdag" onclick="tilbakeTilStandard()" hidden>
           Tilbake til i dag
@@ -3066,6 +3048,10 @@ function fristTekst(frist){
    fag kan regnes ut av den i stedet for aa tastes inn en gang
    til.
    ============================================================ */
+/* Skolens side. Staar ett sted, saa den ikke maa rettes to naar skolen
+   legger om. */
+const ROLIGHEDEN = 'https://roligheden.skole.arendal.no/index.php?pageID=181';
+
 const TIMEPLAN = [
   /* time 1 */ ['Naturfag',   'Samfunnsfag', 'Språkfag',    'Engelsk',     'Matte'],
   /* time 2 */ ['Matte',      'Norsk',       'Samfunnsfag', 'Norsk',       'Musikk'],
@@ -5000,18 +4986,9 @@ window.neamSideHandlinger = function(){
                  + '<path d="M9 4V3h6v1M9 10h6M9 14h4"/></svg>',
               gjor: apneArk },
 
-            /* Timeplanen er ogsaa her, ikke bare i korttittelen: under
-               900px er snarveiradene skjult, og da maa den finnes et sted. */
-            { navn:'Timeplan 8C', tekst:'Timeplan',
-              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-                 + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
-                 + '<path d="M3 9h18M9 9v12M15 9v12"/></svg>',
-              gjor: apneTimeplan },
-
             /* Ryddeknapp for testing. Skal ut naar ukeplanveien er kjoert
                inn - den hoerer ikke hjemme i en hverdagsmeny. */
-            { navn:'Slett lekser denne uken', tekst:'Slett ukas lekser', farge:'slett',
+            { navn:'Slett leksene i uka som vises', tekst:'Slett ukas lekser', farge:'slett',
               ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
                  + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
                  + '<path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/>'
@@ -5029,20 +5006,58 @@ window.neamSideHandlinger = function(){
   return [
     oeverst,
 
-    { plass:'skraa', navn:'Ny påminnelse i dag', tekst:'Påminnelse i dag', farge:'ny',
+    /* Skolen samlet paa én plass. De to peker ut av huset - den ene til
+       en nettside, den andre til timeplanen vi har som data - og hoerer
+       derfor sammen, ikke ved siden av knappene som legger noe inn. */
+    { plass:'skraa', navn:'Roligheden skole', tekst:'Roligheden', behold:true,
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M3 21h18M5 21V9l7-5 7 5v12"/>'
+         + '<path d="M9 21v-6h6v6M10 12h4"/></svg>',
+      gjor: function(){
+        neamSideStabel('skraa', [
+          { navn:'Ukeplan på skolens side', tekst:'Ukeplan',
+            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               + '<path d="M10 14 21 3M21 3v7M21 3h-7"/>'
+               + '<path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>',
+            gjor: function(){ window.open(ROLIGHEDEN, '_blank', 'noopener'); } },
+
+          { navn:'Timeplan 8C', tekst:'Timeplan',
+            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
+               + '<path d="M3 9h18M9 9v12M15 9v12"/></svg>',
+            gjor: apneTimeplan }
+        ]);
+      } },
+
+    /* De to paaminnelsene under én knapp. De gjoer det samme - legger en
+       lapp - og skiller seg bare paa hvor lenge den staar. To knapper i
+       hjoernet for det var to plasser brukt paa én sak. */
+    { plass:'ved', navn:'Påminnelser', tekst:'Påminnelser', behold:true, farge:'ny',
       ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
          + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
          + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
          + '<path d="M12 7v6M9 10h6"/></svg>',
-      gjor: function(){ apneHuskeSkjema('dag'); } },
+      gjor: function(){
+        neamSideStabel('ved', [
+          { navn:'Ny påminnelse i dag', tekst:'I dag', farge:'ny',
+            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
+               + '<path d="M12 7v6M9 10h6"/></svg>',
+            gjor: function(){ apneHuskeSkjema('dag'); } },
 
-    { plass:'ved', navn:'Ny påminnelse denne uken', tekst:'Påminnelse denne uken', farge:'ny',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
-         + '<path d="M3 9h18M8 2v4M16 2v4"/>'
-         + '<path d="M12 12v5M9.5 14.5h5"/></svg>',
-      gjor: function(){ apneHuskeSkjema('uke'); } }
+          { navn:'Ny påminnelse denne uken', tekst:'Denne uken', farge:'ny',
+            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
+               + '<path d="M3 9h18M8 2v4M16 2v4"/>'
+               + '<path d="M12 12v5M9.5 14.5h5"/></svg>',
+            gjor: function(){ apneHuskeSkjema('uke'); } }
+        ]);
+      } }
   ];
 };
 
@@ -5645,9 +5660,20 @@ async function sendArkTilNeam(){
 async function slettUkasLekser(){
   if(!fagData) await lastFag();
 
-  const start = ukeStart(idag0());
-  const fra = datoNokkel(start);
-  const til = datoNokkel(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6));
+  /* UKA MAN VELGER, ikke uka det er. Fagfanen har piler og sveip, og
+     tittelen sier hvilken uke som staar framme - da er valget allerede
+     gjort, og en egen nedtrekksliste ville vaert et andre sted aa velge
+     det samme. Blar man til uke 38 og trykker Slett, er det uke 38 som
+     ryker.
+
+     Staar man i Dag- eller Ukesvisningen, gjelder den uka dagen ligger i.
+     Uketallet staar i spoersmaalet uansett, saa ingen kan komme i skade
+     for aa slette en annen uke enn den de tror. */
+  const start = ukeStart(dagenViser());
+  const uke   = isoUke(start).uke;
+  const fra   = datoNokkel(start);
+  const til   = datoNokkel(new Date(start.getFullYear(), start.getMonth(),
+                                    start.getDate() + 6));
 
   const treff = fagData.lekser.filter(function(l){
     return l.frist && l.frist >= fra && l.frist <= til;
@@ -5655,8 +5681,20 @@ async function slettUkasLekser(){
   const udaterte = fagData.lekser.filter(function(l){ return !l.frist; }).length;
 
   if(!treff.length){
-    varsle('Ingen lekser har frist i uke ' + isoUke(idag0()).uke + '.'
-         + (udaterte ? '\n\n' + udaterte + ' lekse(r) står uten frist og røres ikke.' : ''));
+    /* Sier hvilke uker som FAKTISK har noe, saa man ikke maa bla i blinde
+       for aa finne dem. */
+    const uker = {};
+    fagData.lekser.forEach(function(l){
+      if(!l.frist) return;
+      const u = isoUke(datoFraTekst(l.frist)).uke;
+      uker[u] = (uker[u] || 0) + 1;
+    });
+    const finnes = Object.keys(uker).sort(function(a,b){ return a - b; })
+      .map(function(u){ return 'uke ' + u + ' (' + uker[u] + ')'; });
+    varsle('Ingen lekser har frist i uke ' + uke + '.'
+      + (finnes.length ? '\n\nDet ligger lekser i ' + finnes.join(', ')
+                       + '. Bla dit med pilene og prøv igjen.' : '')
+      + (udaterte ? '\n\n' + udaterte + ' lekse(r) står uten frist og røres ikke.' : ''));
     return;
   }
 
@@ -5669,10 +5707,12 @@ async function slettUkasLekser(){
   });
 
   const ok = await bekreft(
-    'Slette ' + treff.length + ' lekse(r) med frist i uke ' + isoUke(idag0()).uke + '?\n\n'
+    'Slette ' + treff.length + ' lekse(r) med frist i uke ' + uke + '?\n'
+      + '(' + fra.split('-').reverse().join('.') + ' – '
+            + til.split('-').reverse().join('.') + ')\n\n'
       + fag.join(', ')
       + (udaterte ? '\n\n' + udaterte + ' lekse(r) uten frist blir stående.' : ''),
-    {jaTekst:'Slett', fare:true});
+    {jaTekst:'Slett uke ' + uke, fare:true});
   if(!ok) return;
 
   const idg = {};
