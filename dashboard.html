@@ -449,6 +449,10 @@ input,select,textarea{font-size:16px}
   text-transform:uppercase;color:var(--ink-soft);flex-shrink:0;
 }
 /* Avhukingsboksen: tom rute, groenn rute med hake naar den er gjort. */
+/* Uten hake tar raden hele bredden - ellers stopper den der haken pleide
+   aa begynne, og lista faar en ujevn hoeyrekant. */
+.hu-linje.uten-hake{ padding-right:34px; }
+.hu-rad.hu-lekse{ cursor:default; }
 .hu-hake{
   width:25px;height:25px;padding:0;flex-shrink:0;cursor:pointer;
   border:2px solid var(--ink-soft);border-radius:8px;background:transparent;
@@ -2348,6 +2352,60 @@ function ukeAv(datotekst){
   return ukeNokkel(new Date(+b[0], +b[1] - 1, +b[2]));
 }
 
+/* ============================================================
+   Emmas lekser
+   ------------------------------------------------------------
+   Kjoekkenskjermen eier ingen lekser. Den LESER Emmas fagnoekkel
+   og viser leksene med frist i dag i samme boks som resten av
+   paaminnelsene - saa den som staar ved benken ser at datteren
+   har en innlevering i dag, uten aa gaa til hennes skjerm.
+
+   Utledet, ikke kopiert: leksa finnes ett sted, i faget, og
+   vises to steder. Ble den skrevet inn som en egen merknad her,
+   ville de to blitt uenige foerste gang hun huket den av.
+
+   INGEN HAKE og ingen redigering herfra. Leksa krysses ut i
+   fagvinduet paa Emma dash, der den staar med hele teksten sin
+   og faget rundt seg. Kjoekkenet er en oppslagstavle for dette,
+   ikke et arbeidsbord.
+   ============================================================ */
+const EMMA_FAG_NOKKEL = 'emma-fag:v1';
+
+let emmaFag = null;          /* { fag:[...], lekser:[...] } */
+let emmaFagAvtrykk = '';
+
+async function hentEmmaFag(){
+  const r = await fetch('/api/data?key=' + EMMA_FAG_NOKKEL, {cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  const d = await r.json();
+  const v = d && d.value;
+  if(!v || typeof v !== 'object') return { fag:[], lekser:[] };
+  return {
+    fag:    Array.isArray(v.fag)    ? v.fag    : [],
+    lekser: Array.isArray(v.lekser) ? v.lekser : []
+  };
+}
+
+function emmaFagNavn(id){
+  const f = (emmaFag && emmaFag.fag || []).find(function(x){ return x.id === id; });
+  return f ? String(f.navn || '') : '';
+}
+
+/* Speiles i samme tempo som huskelista - se speilHuske(). Tegner bare
+   naar noe faktisk er annerledes. */
+async function speilEmmaFag(){
+  if(document.hidden) return;
+  let d;
+  try{ d = await hentEmmaFag(); }
+  catch(e){ return; }
+  const avtrykk = JSON.stringify(d);
+  if(avtrykk === emmaFagAvtrykk) return;
+  emmaFagAvtrykk = avtrykk;
+  emmaFag = d;
+  if(huBobleId) { huskeUtsatt = true; return; }
+  tegnHuske();
+}
+
 async function hentHuske(){
   const r = await fetch('/api/data?key=huskeliste', {cache:'no-store'});
   if(!r.ok) return [];
@@ -2400,7 +2458,23 @@ function datoIUken(basisdato, nr){
   return datoNokkel(d);
 }
 
+/* En lekse tegnet som en paaminnelse. Ingen hake og ingen blyant - den
+   hoerer hjemme paa Emma dash. Merket «lekse» sier hvorfor den ser litt
+   annerledes ut enn naboen. */
+function lekseRadIHuske(m){
+  return '<div class="hu-linje uten-hake' + (m.ferdig ? ' ferdig' : '') + '">'
+    +   '<div class="hu-rad hu-lekse" style="' + fyll(huskeFarge(m.gjelder)) + '">'
+    +     initial(m.gjelder, huskeFarge(m.gjelder))
+    +     '<span class="hu-tittel">' + esc(m.overskrift) + '</span>'
+    +     '<span class="hu-innen">lekse</span>'
+    +   '</div>'
+    + '</div>';
+}
+
 function huskeRad(m){
+  /* En utledet lekse har ingen merknad bak seg - hverken boble eller
+     hake peker paa noe her. */
+  if(m.lekse) return lekseRadIHuske(m);
   const uke = m.omfang === 'uke';
   const ferdig = !!m.ferdig;
   const harTekst = !!(m.tekst || '').trim();
@@ -2643,6 +2717,24 @@ function tegnHuskeInner(){
     {omfang: 'uke', boks: 'huskeUken',
      treff: liste.filter(function(m){ return m.omfang === 'uke' && ukeAv(m.frist) === uke; })}
   ];
+
+  /* Emmas lekser med frist paa denne dagen, lagt til i «i dag»-boksen.
+     De er utledet fra fagnoekkelen hennes - se hentEmmaFag(). */
+  const emmasLekser = (emmaFag ? emmaFag.lekser : []).filter(function(l){
+    return l && l.frist === dag;
+  }).map(function(l){
+    return {
+      id: 'lekse:' + l.id,
+      lekse: true,
+      gjelder: 'Emma',
+      overskrift: emmaFagNavn(l.fagId) + ': ' + String(l.tekst || ''),
+      tekst: '',
+      frist: l.frist,
+      omfang: 'dag',
+      ferdig: !!l.ferdig
+    };
+  });
+  grupper[0].treff = grupper[0].treff.concat(emmasLekser);
 
   grupper.forEach(function(g){
     /* Avhukede punkter synker til bunnen - de er gjort, men blir staaende
@@ -3069,6 +3161,9 @@ async function oppdaterAlt(manuelt){
       $('middag').innerHTML = '<div class="tom feil">Kunne ikke hente matplanen.</div>';
     }),
     lastHuske(),
+    hentEmmaFag().then(function(d){
+      emmaFag = d; emmaFagAvtrykk = JSON.stringify(d);
+    }).catch(function(){ emmaFag = { fag:[], lekser:[] }; }),
     lastMiddagNotat()
   ];
   try{
@@ -3184,6 +3279,8 @@ async function oppdaterAlt(manuelt){
      Bare huskelista, ikke oppdaterAlt(): kalenderen koster et Graph-kall
      og vaeret et vaerkall, og de taaler ikke dette tempoet. */
   setInterval(speilHuske, 3000);
+  /* Emmas fag ligger i sin egen noekkel og maa speiles for seg. */
+  setInterval(speilEmmaFag, 3000);
 })();
 
 document.addEventListener('keydown', function(e){
@@ -3197,7 +3294,7 @@ document.addEventListener('keydown', function(e){
 });
 
 document.addEventListener('visibilitychange', function(){
-  if(!document.hidden){ tegnKlokke(); oppdaterAlt(false); speilHuske(); }
+  if(!document.hidden){ tegnKlokke(); oppdaterAlt(false); speilHuske(); speilEmmaFag(); }
 });
 </script>
 </body>
