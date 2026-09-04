@@ -278,6 +278,59 @@
   right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
 }
 
+/* ---- To rader ----
+   En kolonne med seks valg er hoeyere enn skjermen. Maalt: paa iPad i
+   landskap faar tre av seks plass, paa en 1080-PC fire, paa en stor
+   skjerm alle seks - stabelen ruller ikke og klipper ikke, den bare
+   fortsetter opp forbi skjermkanten. Utenfra ser det ut som at sidene
+   har ULIKE knapper, og det er den verste sorten feil: den ser ikke ut
+   som en feil.
+
+   Over tre valg legges de derfor i to rader. Flex gjoer jobben - main-
+   aksen er fortsatt nedenfra og opp, saa foerste kolonne fylles bunn foer
+   topp, og neste kolonne legger seg ved siden av.
+
+   Retningen paa NESTE kolonne maa foelge hjoernet: fra venstre hjoerne
+   vokser den mot hoeyre (wrap), fra hoeyre mot venstre (wrap-reverse).
+   Ellers legger den seg ut av skjermen paa den andre siden. */
+.neam-stabel.bred{
+  flex-wrap:wrap;
+  max-height:calc(2 * var(--f-aapen) + var(--f-luft));
+  width:auto;
+}
+.neam-stabel.side.bred{ flex-wrap:wrap-reverse; }
+
+/* Roeret ligger under kolonnen som staar over moderknappen - den foerste.
+   `50%` var riktig da boksen var én knapp bred; med flere kolonner peker
+   den midt mellom dem. */
+.neam-stabel.bred::before{ left:calc(var(--f-aapen) / 2 - var(--ror-tykk) / 2); }
+.neam-stabel.side.bred::before{
+  left:auto; right:calc(var(--f-aapen) / 2 - var(--ror-tykk) / 2);
+}
+
+/* Vannrett roer langs NEDERSTE rad, fra foerste til siste kolonnes akse,
+   saa kolonnene henger sammen i stedet for aa staa loese ved siden av
+   hverandre. */
+.neam-stabel.bred::after{
+  content:''; position:absolute; z-index:0;
+  height:var(--ror-tykk);
+  bottom:calc(var(--f-aapen) / 2 - var(--ror-tykk) / 2);
+  left:calc(var(--f-aapen) / 2); right:calc(var(--f-aapen) / 2);
+  background-image:var(--ror-vann);
+  background-size:auto 100%; background-repeat:repeat-x;
+  box-shadow:var(--ror-skygge);
+}
+
+/* ---- Dempingen naar en undermeny staar oppe ----
+   Trykker man Rediger, er det Rediger som gjelder. De andre knappene i
+   fireren blir staaende - de skal kunne naas - men de dempes, saa oeyet
+   ikke maa velge mellom seks nye valg og tre gamle samtidig. Roerene
+   deres er alt skrudd av av regelen over; dette er knappene selv. */
+.neam-firer.oppe[class*="gren-"] .neam-knapp{ opacity:.32; }
+.neam-firer.oppe.gren-opp   .neam-knapp.opp,
+.neam-firer.oppe.gren-ved   .neam-knapp.ved,
+.neam-firer.oppe.gren-skraa .neam-knapp.skraa{ opacity:1; }
+
 /* ---- Broen ----
    Valgene under System staar paa SAMME hoeyde som moderknappen, saa et
    roer rett bortover ville ligget bak alle tre og bare vist seg i to

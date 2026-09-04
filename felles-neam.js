@@ -1203,8 +1203,12 @@ function neamSideStabel(plass, liste){
      oppover. «ved» staar i nederste rad ved siden av haandtaket, og der er
      veien videre innover, ikke opp: en kolonne derfra ville lagt seg bak
      «opp» og «skraa». */
+  /* Over tre valg legges kolonnen i to rader - se .neam-stabel.bred.
+     Gjelder bare «opp»: «ved» er alt en rad som brekker av seg selv. */
   boks.className = 'neam-stabel side '
-                 + (plass === 'opp' ? 'fra-opp' : 'fra-ved rad');
+                 + (plass === 'opp'
+                      ? ('fra-opp' + (liste.length > 3 ? ' bred' : ''))
+                      : 'fra-ved rad');
   boks.innerHTML = liste.map(function(v, i){
     /* Samme regel som i fireren: en strektegning baerer ikke betydningen
        alene og faar navnet under seg, et merke baerer sitt eget. Uten
