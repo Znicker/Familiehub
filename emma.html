@@ -477,7 +477,23 @@ body{
 .fag-navn{
   flex:1;min-width:0;font-size:var(--t-brod);font-weight:700;overflow-wrap:anywhere;
 }
-.lekse-linje{display:flex;align-items:flex-start;gap:9px;margin-top:8px}
+/* Fargen paa en lekse sier hvor mye av tiden som er igjen, ikke hvor
+   mange dager. En innlevering med tre ukers frist og en lekse til i
+   morgen er ikke like presserende paa dag fem, og en absolutt grense -
+   «tre dager igjen er gult» - ville sagt at de er det.
+
+   Merket er en stripe langs venstre kant og ikke en flate bak teksten:
+   en gul flate inne i et fagkort som allerede har egen bakgrunn blir tre
+   toner oppaa hverandre, og en roed flate leser som en feilmelding. */
+.lekse-linje{
+  display:flex;align-items:flex-start;gap:9px;margin-top:8px;
+  border-left:3px solid transparent;padding-left:8px;margin-left:-11px;
+}
+.lekse-linje.gul{border-left-color:var(--handling-endre)}
+.lekse-linje.rod{border-left-color:var(--danger)}
+/* Ferdig er ferdig. Da er det ingenting igjen som haster, og stripa
+   forsvinner sammen med resten av oppmerksomheten linja krevde. */
+.lekse-linje.ferdig{border-left-color:transparent}
 .lekse-tekst{
   flex:1;min-width:0;font-size:var(--t-meta);line-height:1.4;overflow-wrap:anywhere;
 }
@@ -488,6 +504,10 @@ body{
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
   color:var(--ink-soft);flex-shrink:0;white-space:nowrap;padding-top:2px;
 }
+.lekse-frist.gul{color:var(--handling-endre)}
+.lekse-frist.rod{color:var(--danger)}
+/* Brukes fortsatt av proevedatoene, som ikke har noe opprettelsestidspunkt
+   aa maale mot og derfor gaar paa en absolutt grense. */
 .lekse-frist.naer{color:var(--handling-endre)}
 .lekse-frist.over{color:var(--danger)}
 .lekse-linje.ferdig .lekse-tekst{text-decoration:line-through;opacity:.45}
@@ -2619,7 +2639,8 @@ function ryddFag(d){
     return l && l.id && kjente[l.fagId] && String(l.tekst || '').trim();
   }).map(function(l){
     return { id:String(l.id), fagId:String(l.fagId), tekst:String(l.tekst).trim(),
-             frist:String(l.frist || ''), ferdig:!!l.ferdig };
+             frist:String(l.frist || ''), ferdig:!!l.ferdig,
+             laget:String(l.laget || '') };
   });
 
   const prover = (Array.isArray(d.prover) ? d.prover : []).filter(function(p){
@@ -2667,6 +2688,43 @@ function fristTekst(frist){
   if(dager === 1) return { tekst:'I morgen', klasse:'naer' };
   if(dager <   7) return { tekst:UKEDAGER[ukedagNr(d)], klasse:'' };
   return { tekst:d.getDate() + '. ' + MND[d.getMonth()].slice(0, 3), klasse:'' };
+}
+
+/* ------------------------------------------------------------
+   Hvor mye av tiden er igjen
+   ------------------------------------------------------------
+   Maalt fra da leksa ble lagt inn til fristen, ikke i dager. Halve tiden
+   igjen gir gult, en sjettedel gir roedt. En innlevering med tre ukers
+   frist blir dermed gul etter ti dager og roed de tre siste; en lekse til
+   i morgen er roed med det samme, som den skal vaere.
+
+   GAMLE LEKSER har ingen `laget` - feltet kom 4. september. De regnes som
+   lagt inn en uke foer fristen, som er omtrent det en ukeplan gir. Det er
+   en gjetning, men den gaar over av seg selv etter hvert som de gamle
+   huker seg av, og alternativet - ingen farge paa dem - ville sett ut som
+   at fargen ikke virket.
+   ------------------------------------------------------------ */
+const HAST_GUL = 0.50;
+const HAST_ROD = 0.15;
+
+function lekseHast(l){
+  if(!l || l.ferdig || !l.frist) return '';
+  const frist = datoFraTekst(l.frist);
+  const naa   = idag0();
+  if(frist < naa) return 'rod';                  /* fristen er gaatt ut */
+
+  const laget = l.laget ? datoFraTekst(l.laget)
+                        : new Date(frist.getTime() - 7 * 86400000);
+  /* Gulvet paa ett doegn er ikke pynt: en lekse lagt inn samme dag som
+     fristen gir null i nevneren, og da blir andelen NaN - som ikke er
+     mindre enn noe som helst, saa linja hadde staatt uten farge nettopp
+     den dagen den hastet mest. */
+  const total = Math.max(frist - laget, 86400000);
+  const andel = (frist - naa) / total;
+
+  if(andel <= HAST_ROD) return 'rod';
+  if(andel <= HAST_GUL) return 'gul';
+  return '';
 }
 
 function fristSort(a, b){
@@ -2767,12 +2825,14 @@ function tegnFag(){
       ut += '<div class="fag-ingen">Ingen lekser</div>';
     }else{
       liste.forEach(function(l){
-        const fr = fristTekst(l.frist);
-        ut += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '') + '">'
+        const fr   = fristTekst(l.frist);
+        const hast = lekseHast(l);
+        ut += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '')
+          +   (hast ? ' ' + hast : '') + '">'
           + '<button class="lekse-hake" onclick="event.stopPropagation();vekslLekse(\'' + esc(l.id) + '\')" '
           +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
           + '<span class="lekse-tekst">' + esc(l.tekst) + '</span>'
-          + (fr.tekst ? '<span class="lekse-frist ' + fr.klasse + '">' + esc(fr.tekst) + '</span>' : '')
+          + (fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
           + '</div>';
       });
     }
@@ -2841,13 +2901,15 @@ function tegnFagVis(){
     ut += '<div class="fagvis-tom">Ingen lekser lagt inn.</div>';
   }else{
     lekser.forEach(function(l){
-      const fr = fristTekst(l.frist);
-      ut += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '') + '">'
+      const fr   = fristTekst(l.frist);
+      const hast = lekseHast(l);
+      ut += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '')
+        +   (hast ? ' ' + hast : '') + '">'
         + '<button class="lekse-hake" onclick="vekslLekse(\'' + esc(l.id) + '\')" '
         +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
         + '<span class="lekse-tekst" onclick="redigerLekse(\'' + esc(l.id) + '\')">'
         +   esc(l.tekst) + '</span>'
-        + (fr.tekst ? '<span class="lekse-frist ' + fr.klasse + '">' + esc(fr.tekst) + '</span>' : '')
+        + (fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
         + '</div>';
     });
   }
@@ -3061,7 +3123,8 @@ async function lagreFagSkjema(){
               ? Object.assign({}, l, {fagId:fagId, tekst:tekst, frist:frist}) : l;
           });
         }else{
-          d.lekser.push({ id:nyId(), fagId:fagId, tekst:tekst, frist:frist, ferdig:false });
+          d.lekser.push({ id:nyId(), fagId:fagId, tekst:tekst, frist:frist,
+                          ferdig:false, laget:datoNokkel(new Date()) });
         }
         return d;
       });
@@ -3264,7 +3327,7 @@ async function lagreLimInn(){
           else { id = nyId(); d.fag.push({ id:id, navn:r.fagNavn }); }
         }
         d.lekser.push({ id:nyId(), fagId:id, tekst:r.tekst,
-                        frist:r.frist, ferdig:false });
+                        frist:r.frist, ferdig:false, laget:datoNokkel(new Date()) });
       });
       return d;
     });
