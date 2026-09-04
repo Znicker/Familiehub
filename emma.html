@@ -1019,6 +1019,82 @@ body{
   .hoyre .kort{flex:1}
 }
 
+/* ============================================================
+   Telefon
+   ------------------------------------------------------------
+   Sida er bygd som en VEGGFLATE: fast hoeyde, ingen rulling,
+   tre kort som deler skjermen mellom seg. Det er riktig paa en
+   iPad i landskap og galt paa en telefon i haanden - der blir
+   hvert kort en liten rute med sin egen rullestripe inni, og
+   tre slike over hverandre er vondt aa bruke.
+
+   Under 700px snur vi derfor prinsippet: SIDA ruller, kortene
+   gjoer det ikke. Hvert kort tar hoeyden innholdet trenger, og
+   man blar gjennom dem som en vanlig side. Rulling inni rulling
+   er den ene tingen som aldri fungerer paa beroeringsskjerm.
+   ============================================================ */
+@media(max-width:700px){
+  html, body{ height:auto; overflow-y:auto; }
+  body{ overflow-x:hidden; }
+  .skjerm{
+    height:auto; min-height:100dvh;
+    padding:14px 14px 20px; gap:12px;
+  }
+
+  /* Toppen: merket paa egen linje, vaer og klokke under. Alle tre paa
+     rad ble 56px merke + vaerstripe + klapptavle paa 390px. */
+  .topp{ flex-wrap:wrap; gap:10px 12px; }
+  .merke{ width:100%; }
+  /* Vaeret og klokka deler linja under merket. Vaeret tar plassen som
+     blir igjen og faar bryte; klokka er fast bred og skyves til hoeyre. */
+  .vaer-stripe{ flex:1; min-width:0; flex-wrap:wrap; }
+  .klokke{ margin-left:auto; flex-shrink:0; }
+  .klokke-tid{ font-size:38px; }
+
+  /* Kolonnene blir en stabel. */
+  .rutenett{ display:block; }
+  .rutenett.bred{ display:block; }
+  .rutenett.bred .hoyre{ display:block; }
+  .hoyre{ display:block; }
+  .kort{ margin-bottom:12px; }
+  .hoyre > .kort{ margin-bottom:12px; }
+
+  /* Kortene ruller ikke lenger - sida gjoer det. */
+  .kort-kropp{ overflow:visible; min-height:0; flex:none; }
+  /* touch-action:pan-y lar sida rulle loddrett selv om sveipen ligger paa
+     kortet. Uten den ville en skraa dragning nedover blitt lest som et
+     dagbytte midt i rullingen. */
+  .kort{ touch-action:pan-y; }
+  #fag{ padding-bottom:4px; }
+
+  /* Litt hoeyde saa et tomt kort ikke blir en stripe, men ingen tak. */
+  #plan{ min-height:140px; }
+  #uke{ min-height:180px; }
+
+  /* Ukesvisningen har sju doegnsoeyler. Paa 390px blir de 50px hver, og
+     da staar det ingenting lesbart i dem. Vi beholder soeylene og lar
+     dem RULLE SIDELENGS i stedet - overskriftsraden og innholdet ligger
+     i samme rullefelt, saa de foelger hverandre. */
+  #uke{ overflow-x:auto; overflow-y:visible; -webkit-overflow-scrolling:touch; }
+  .uke-head, .pu-rad{ min-width:700px; }
+  .uke-scroll{ overflow:visible; min-height:0; }
+  .uke-dcol{ padding:5px 3px 6px; }
+  .uke-dnum{ font-size:var(--t-brod); }
+
+  /* Dialogene fyller skjermen. En modal med 20px luft rundt seg paa en
+     telefon er 20px bortkastet paa hver side. */
+  .avtale-boks, .avtale-boks.fagvis-boks, .forslag-boks, .timeplan-boks{
+    width:100vw; max-width:none; border-radius:0;
+    left:0; transform:none; padding:16px 14px 12px;
+  }
+  .avtale-boks.fagvis-boks, .forslag-boks{ height:var(--dlg-hoyde, 92dvh); min-height:0; }
+  .fagvis-bilde{ width:96px; }
+  .fagvis-boks .av-tittel{ font-size:var(--t-stor); }
+
+  /* Fagkortet: merket over teksten - se ogsaa 520px-regelen over. */
+  .fag-bilde{ width:150px; }
+}
+
 /* ---------- Laast ramme ----------
    Siden skal ikke kunne dras sidelengs eller zoomes ved uhell.
    Merk: iOS Safari overstyrer user-scalable og slipper knipezoom likevel -
