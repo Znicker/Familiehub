@@ -3019,19 +3019,19 @@ const FAG_MERKE = {
   'Innsats for andre' : ['innsats-for-andre', 428]
 };
 
-/* Versjonsnummer paa bildene, av samme grunn som paa CSS og JS: uten det
-   ligger et bytta merke igjen i cachen til den gaar ut av seg selv.
-   Nettleseren spoer ikke etter en fil den mener den har, og paa iPad
-   finnes det ingen hard oppfrisking aa ty til.
+/* NY MAPPE, ikke nye filnavn i den gamle. De staaende merkene erstattet
+   de runde 4. september, og de gamle ble liggende igjen overalt - i
+   Cloudflare, i nettleseren og, mest sannsynlig, i selve repoet, der en
+   fil lastet ned to ganger blir «norsk (1).png» og aldri kommer med.
+   Et `?v=`-nummer hjelper ikke mot det siste: adressen er ny, men fila
+   den peker paa er den samme gamle.
 
-   BYTTES ET MERKE: oek tallet. Filnavnet blir staaende - det er
-   adressen som skal se ny ut, ikke fila. */
-const FAG_MERKE_V = 2;
-
+   En mappe som aldri har eksistert kan ikke ha noe liggende i seg.
+   Naar det nye virker, kan bilder/fag/ slettes i sin helhet. */
 function fagMerke(navn){
   const f = FAG_MERKE[String(navn || '').trim()];
   if(!f) return null;
-  return { url:'/bilder/fag/' + f[0] + '.png?v=' + FAG_MERKE_V, b:320, h:f[1] };
+  return { url:'/bilder/fagkort/' + f[0] + '.png', b:320, h:f[1] };
 }
 
 /* <img> med maal. Kallstedene skal ikke skrive dem tre ganger. */
