@@ -863,23 +863,35 @@ body{
   flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
 }
-/* Bolkoverskriften limer seg til toppen mens man ruller, saa man alltid
-   ser om raden man leser er en lekse eller et laeringsmaal. */
-.forslag-bolk-hode{
+/* Fagnavnet limer seg til toppen mens man ruller gjennom fagets rader,
+   saa man alltid ser hvilket fag man staar i. */
+.forslag-gruppe{ margin-bottom:6px; }
+.forslag-fag{
   position:sticky; top:0; z-index:2; background:var(--paper);
-  font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
-  letter-spacing:.08em; color:var(--ink-soft);
-  padding:12px 0 5px; border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:9px;
+  padding:11px 0 6px; border-bottom:1px solid var(--line);
 }
-#forslagMaalBolk{ margin-top:6px; }
+.forslag-fag .hu-felt{
+  width:210px; font-weight:700; font-size:var(--t-brod);
+  padding:7px 10px;
+}
+
+/* Hva raden ER, naar den ikke har en frist aa vise. */
+.forslag-slag{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.05em;
+  text-transform:uppercase; color:var(--ink-soft); padding-top:12px;
+}
+.forslag-frist{ display:block; }
 /* Teksten er det viktigste i raden og faar mest plass. Feltene toppstilles,
    ikke sentreres: tekstfeltet er hoeyere enn de andre, og en avkryssing som
    svever midt i en fire linjers tekst hoerer ikke sammen med noe. */
+/* Tre kolonner naa, ikke fire: fagnavnet staar i gruppeoverskriften. */
 .forslag-rad{
-  display:grid; grid-template-columns:26px 1fr 2.6fr 138px;
+  display:grid; grid-template-columns:26px 1fr 138px;
   gap:10px; align-items:start;
   padding:8px 0; border-bottom:1px solid var(--line);
 }
+.forslag-rad:last-child{ border-bottom:none; }
 .forslag-rad > *{ align-self:start; }
 .forslag-rad input[type=checkbox]{ margin-top:12px; }
 .forslag-tekst{
@@ -890,12 +902,6 @@ body{
 .forslag-rad.av{ opacity:.4; }
 .forslag-rad input[type=checkbox]{ width:20px; height:20px; }
 .forslag-rad .hu-felt{ font-size:var(--t-meta); padding:8px 9px; }
-.forslag-hode{
-  display:grid; grid-template-columns:26px 1fr 2.6fr 138px; gap:10px;
-  font-size:var(--t-etikett); font-weight:600; letter-spacing:.04em;
-  color:var(--ink-soft); opacity:.8;
-  padding:6px 0 4px;
-}
 /* Antatt frist: den staar ikke i planen, den er regnet ut av timeplanen.
    Merket forsvinner naar noen roerer datofeltet - da er den ikke antatt
    lenger, da er den bestemt. */
@@ -906,14 +912,6 @@ body{
 /* Fristen ligger i en annen uke enn planen gjelder. Kan vaere riktig - en
    innlevering kan peke framover - men er oftere en dato som er lest feil,
    og forskjellen er ikke synlig i en datoboks. */
-.forslag-maalrad{
-  display:grid; grid-template-columns:26px 1fr 2.6fr; gap:10px;
-  align-items:start; padding:8px 0; border-bottom:1px solid var(--line);
-}
-.forslag-maalrad:last-child{ border-bottom:none; }
-.forslag-maalrad.av{ opacity:.4; }
-.forslag-maalrad input[type=checkbox]{ width:20px; height:20px; margin-top:12px; }
-.forslag-maalrad .hu-felt{ font-size:var(--t-meta); padding:8px 9px; }
 /* Et laeringsmaal er én til to setninger. 66px ga tre tomme linjer under
    teksten paa de fleste av dem, og elleve fag ble til en lang rulling av
    luft. Feltet vokser uansett med innholdet - se voksFelt(). */
@@ -922,8 +920,9 @@ body{
   font-family:'Archivo',sans-serif; overflow-y:hidden;
 }
 @media(max-width:700px){
-  .forslag-maalrad{ grid-template-columns:26px 1fr; }
-  .forslag-maalrad > :nth-child(3){ grid-column:2; }
+  .forslag-rad{ grid-template-columns:26px 1fr; }
+  .forslag-rad > :nth-child(3){ grid-column:2; padding-top:0; }
+  .forslag-fag .hu-felt{ width:100%; }
 }
 .forslag-utenfor{
   font-size:var(--t-etikett); font-weight:700; color:var(--danger);
@@ -937,11 +936,6 @@ body{
   font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin-right:auto;
 }
 @media(max-width:700px){
-  .forslag-hode{ display:none; }
-  .forslag-rad{
-    grid-template-columns:26px 1fr; grid-template-areas:'hake fag' '. tekst' '. frist';
-    gap:7px 9px;
-  }
   .forslag-rad input[type=checkbox]{ margin-top:8px; }
   .forslag-rad > :nth-child(1){ grid-area:hake; }
   .forslag-rad > :nth-child(2){ grid-area:fag; }
@@ -1592,22 +1586,9 @@ select.hu-felt{
          klemt til null - de sto der, usynlige, mens teksten over sa at
          fem frister var antatt. To rullefelt i samme dialog er uansett
          feil; det skal vaere ett, med bolker inni. -->
-    <div class="forslag-rull">
-      <div id="forslagLekseBolk">
-        <div class="forslag-bolk-hode">Lekser</div>
-        <div class="forslag-hode">
-          <span></span><span>Fag</span><span>Lekse</span><span>Frist</span>
-        </div>
-        <div id="forslagListe"></div>
-      </div>
-      <!-- Laeringsmaalene hoerer til samme ukeplan og godkjennes i samme
-           runde, men de har verken frist eller hake - egne rader er
-           tydeligere enn en kolonne som staar tom paa halve lista. -->
-      <div id="forslagMaalBolk" hidden>
-        <div class="forslag-bolk-hode">Læringsmål</div>
-        <div id="forslagMaalListe"></div>
-      </div>
-    </div>
+    <!-- Gruppert per fag - fagets laeringsmaal foerst, saa leksene. Se
+         forslagGrupper(). Alt tegnes av JS; her staar bare beholderen. -->
+    <div class="forslag-rull" id="forslagRull"></div>
     <div class="av-foot">
       <span class="forslag-teller" id="forslagTeller"></span>
       <button class="hu-avbryt" onclick="avbrytSkjema('forslagBoks', lukkForslag)">Avbryt</button>
@@ -5945,73 +5926,109 @@ function lukkForslag(){
   $('forslagBak').hidden  = true;
 }
 
+/* Gruppert PER FAG: fagets laeringsmaal foerst, saa leksene i det.
+   Foer laa alle leksene i én bolk og alle maalene i en annen, og skulle
+   man vurdere om norskleksa svarte til norskmaalet, maatte man rulle
+   forbi ti andre fag mellom dem.
+
+   Fagnavnet staar én gang, i overskriften, og redigeres DER. Det var
+   det samme navnet skrevet paa hver rad foer; med gruppering blir det
+   ett felt som flytter hele gruppa. */
+function forslagGrupper(){
+  const rekke = [];
+  const kart = {};
+  const legg = function(navn){
+    const n = String(navn || '').trim();
+    const noekkel = n.toLowerCase();
+    if(!kart[noekkel]){
+      kart[noekkel] = { fag:n, maal:[], lekser:[] };
+      rekke.push(kart[noekkel]);
+    }
+    return kart[noekkel];
+  };
+  /* Maalene foerst, saa rekkefoelgen paa fagene foelger ukeplanens egen -
+     den lister som regel alle fagene med maal, mens leksene er faerre. */
+  ventendeMaal.forEach(function(m, i){ legg(m.fag).maal.push(i); });
+  ventendeForslag.forEach(function(r, i){ legg(r.fag).lekser.push(i); });
+  return rekke;
+}
+
 function tegnForslag(){
   const fagValg = (fagData && fagData.fag || []);
-  $('forslagListe').innerHTML = ventendeForslag.map(function(r, i){
-    const nytt = !fagFinn(r.fag);
-    return '<div class="forslag-rad' + (r.med ? '' : ' av') + '" data-nr="' + i + '">'
-      + '<input type="checkbox" ' + (r.med ? 'checked' : '')
-      +   ' onchange="forslagMed(' + i + ', this.checked)" aria-label="Ta med">'
-      + '<span>'
-      +   '<input class="hu-felt" value="' + esc(r.fag) + '" '
-      +     'oninput="forslagSett(' + i + ', \'fag\', this.value)" list="forslagFag">'
+  const grupper = forslagGrupper();
+
+  $('forslagRull').innerHTML = grupper.map(function(g){
+    const nytt = !fagFinn(g.fag);
+    let ut = '<div class="forslag-gruppe">'
+      + '<div class="forslag-fag">'
+      +   '<input class="hu-felt" value="' + esc(g.fag) + '" list="forslagFag" '
+      +     'onchange="gruppeDoep(\'' + esc(g.fag).replace(/'/g, "\\'") + '\', this.value)">'
       +   (nytt ? '<span class="forslag-nytt">nytt fag</span>' : '')
-      + '</span>'
-      /* Textarea, ikke input: en lekse er ofte to setninger, og et
-         enlinjefelt klipper alt etter det som faar plass. Hoeyden settes
-         etter innholdet ved tegning og vokser mens man skriver - se
-         voksFelt(). */
-      + '<textarea class="hu-felt forslag-tekst" rows="' + forslagLinjer(r.tekst) + '" '
-      +   'oninput="forslagSett(' + i + ', \'tekst\', this.value); voksFelt(this)">'
-      +   esc(r.tekst) + '</textarea>'
-      + '<span>'
-      +   '<input class="hu-felt" type="date" value="' + esc(r.frist) + '" '
-      +     'onchange="forslagSett(' + i + ', \'frist\', this.value); '
-      +     'forslagSett(' + i + ', \'antatt\', false)">'
-      +   (r.antatt ? '<span class="forslag-antatt">antatt</span>' : '')
-      +   (r.utenfor ? '<span class="forslag-utenfor">uke ' + r.uke + '</span>' : '')
-      + '</span>'
       + '</div>';
+
+    g.maal.forEach(function(i){
+      const m = ventendeMaal[i];
+      ut += '<div class="forslag-rad' + (m.med ? '' : ' av') + '">'
+        + '<input type="checkbox" ' + (m.med ? 'checked' : '')
+        +   ' onchange="maalMed(' + i + ', this.checked)" aria-label="Ta med">'
+        + '<textarea class="hu-felt forslag-maaltekst" rows="' + forslagLinjer(m.maal) + '" '
+        +   'oninput="maalSett(' + i + ', \'maal\', this.value); voksFelt(this)">'
+        +   esc(m.maal) + '</textarea>'
+        + '<span class="forslag-slag maal">Læringsmål</span>'
+        + '</div>';
+    });
+
+    g.lekser.forEach(function(i){
+      const r = ventendeForslag[i];
+      ut += '<div class="forslag-rad' + (r.med ? '' : ' av') + '">'
+        + '<input type="checkbox" ' + (r.med ? 'checked' : '')
+        +   ' onchange="forslagMed(' + i + ', this.checked)" aria-label="Ta med">'
+        + '<textarea class="hu-felt forslag-tekst" rows="' + forslagLinjer(r.tekst) + '" '
+        +   'oninput="forslagSett(' + i + ', \'tekst\', this.value); voksFelt(this)">'
+        +   esc(r.tekst) + '</textarea>'
+        + '<span class="forslag-frist">'
+        +   '<input class="hu-felt" type="date" value="' + esc(r.frist) + '" '
+        +     'onchange="forslagSett(' + i + ', \'frist\', this.value); '
+        +     'forslagSett(' + i + ', \'antatt\', false)">'
+        +   (r.antatt ? '<span class="forslag-antatt">antatt</span>' : '')
+        +   (r.utenfor ? '<span class="forslag-utenfor">uke ' + r.uke + '</span>' : '')
+        + '</span>'
+        + '</div>';
+    });
+
+    return ut + '</div>';
   }).join('')
   + '<datalist id="forslagFag">'
   + fagValg.map(function(f){ return '<option value="' + esc(f.navn) + '">'; }).join('')
   + '</datalist>';
 
-  /* En tom bolk skal ikke staa igjen med overskrift og kolonnenavn - da
-     ser det ut som at noe mangler. */
-  $('forslagLekseBolk').hidden = !ventendeForslag.length;
-
-  /* ---- Laeringsmaalene ---- */
-  $('forslagMaalBolk').hidden = !ventendeMaal.length;
-  if(ventendeMaal.length){
-    $('forslagMaalListe').innerHTML = ventendeMaal.map(function(m, i){
-      const nytt = !fagFinn(m.fag);
-      return '<div class="forslag-maalrad' + (m.med ? '' : ' av') + '">'
-        + '<input type="checkbox" ' + (m.med ? 'checked' : '')
-        +   ' onchange="maalMed(' + i + ', this.checked)" aria-label="Ta med">'
-        + '<span>'
-        +   '<input class="hu-felt" value="' + esc(m.fag) + '" '
-        +     'oninput="maalSett(' + i + ', \'fag\', this.value)" list="forslagFag">'
-        +   (nytt ? '<span class="forslag-nytt">nytt fag</span>' : '')
-        + '</span>'
-        + '<textarea class="hu-felt forslag-maaltekst" rows="' + forslagLinjer(m.maal) + '" '
-        +   'oninput="maalSett(' + i + ', \'maal\', this.value); voksFelt(this)">'
-        +   esc(m.maal) + '</textarea>'
-        + '</div>';
-    }).join('');
-  }
-
-  const med = ventendeForslag.filter(function(r){ return r.med; }).length;
-  const nye = ventendeForslag.filter(function(r){ return r.med && !fagFinn(r.fag); }).length;
+  const med  = ventendeForslag.filter(function(r){ return r.med; }).length;
   const medM = ventendeMaal.filter(function(m){ return m.med; }).length;
-  $('forslagTeller').textContent = med + ' av ' + ventendeForslag.length + ' lekser'
-    + (medM ? ', ' + medM + ' læringsmål' : '')
+  const nye  = grupper.filter(function(g){ return !fagFinn(g.fag); }).length;
+  $('forslagTeller').textContent =
+      med + ' av ' + ventendeForslag.length + ' lekser'
+    + (ventendeMaal.length ? ', ' + medM + ' av ' + ventendeMaal.length + ' læringsmål' : '')
     + (nye ? ', ' + nye + ' nytt fag' : '');
   $('forslagLagre').disabled = !med && !medM;
 
   /* rows er et anslag; her maales det faktiske innholdet. */
   Array.prototype.forEach.call(
-    $('forslagBoks').querySelectorAll('.forslag-tekst, .forslag-maaltekst'), voksFelt);
+    $('forslagRull').querySelectorAll('.forslag-tekst, .forslag-maaltekst'), voksFelt);
+}
+
+/* Doeper om HELE gruppa - navnet staar ett sted og gjelder alle radene
+   under det. */
+function gruppeDoep(gammelt, nytt){
+  const fra = String(gammelt || '').trim().toLowerCase();
+  const til = String(nytt || '').trim();
+  if(!til) { tegnForslag(); return; }
+  ventendeMaal.forEach(function(m){
+    if(String(m.fag || '').trim().toLowerCase() === fra) m.fag = til;
+  });
+  ventendeForslag.forEach(function(r){
+    if(String(r.fag || '').trim().toLowerCase() === fra) r.fag = til;
+  });
+  tegnForslag();
 }
 
 function maalMed(i, paa){
