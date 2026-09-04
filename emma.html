@@ -173,6 +173,15 @@ body{
   gap:16px;
   min-height:0;
 }
+/* Uke og Fag tar hele bredden. De to har mye mer aa vise enn dagsplanen -
+   sju rader mot én liste, elleve fag mot fire avtaler - og huskeboksene
+   staar der uansett naar man gaar tilbake til Dag.
+
+   Detaljkortet bor i hoeyrekolonnen. Aapner man en avtale fra
+   ukesvisningen, maa kolonnen derfor tilbake; settBredde() styrer begge
+   deler fra ett sted, saa de to reglene ikke kan komme i utakt. */
+.rutenett.bred{grid-template-columns:1fr}
+.rutenett.bred .hoyre{display:none}
 .hoyre{display:flex;flex-direction:column;gap:16px;min-height:0}
 /* Hoeyrekolonnen er Merknader og Denne uken. Middagskortet laa under dem
    paa kjoekkendashen og tok bare hoeyden det trengte; her er de to alene
@@ -363,10 +372,32 @@ body{
 /* ---------- Fag og frister ----------
    Timeplanen ligger i merknadene paa avtalene hennes. Denne visningen er
    derfor lekser og frister, ikke hvilken time som er naar. */
+/* Alle fagene faar en ramme, ogsaa de tomme. Faget skal vaere et sted
+   som finnes hele tiden og fylles - ikke noe som blir til naar det kommer
+   en lekse og forsvinner naar den er huket av.
+
+   Rutenett og ikke én kolonne: visningen tar hele bredden, og elleve fag
+   i én spalte er en rulleliste. `auto-fill` med et gulv paa 260px gir tre
+   kolonner paa iPaden i landskap, to i portrett og én paa telefon, uten
+   at noen av dem er skrevet ned som tall. */
+#fag{
+  display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+  gap:10px;align-content:start;padding-right:2px;
+}
 .fag-kort{
   border:1px solid var(--line);border-radius:12px;background:var(--bg-2);
-  padding:11px 13px;margin-bottom:8px;
+  padding:11px 13px;
+  display:flex;flex-direction:column;
 }
+/* Tomme fag skal vaere synlige, men ikke trekke blikk fra dem som har
+   noe. Samme grep som avhukede foeringer i huskelista. */
+.fag-kort.tomt{opacity:.55}
+.fag-kort.tomt .fag-ingen{
+  font-size:var(--t-meta);color:var(--ink-soft);font-style:italic;margin-top:6px;
+}
+/* Meldingen naar det ikke finnes fag i det hele tatt maa bryte ut av
+   rutenettet - ellers staar den i en 260px-spalte. */
+#fag .tom{grid-column:1/-1}
 .fag-topp{display:flex;align-items:center;gap:8px}
 .fag-navn{
   flex:1;min-width:0;font-size:var(--t-brod);font-weight:700;overflow-wrap:anywhere;
@@ -397,10 +428,6 @@ body{
 }
 .lekse-linje.ferdig .lekse-hake{
   opacity:1;border-color:var(--handling-ny);background:var(--handling-ny);color:#FFFFFF;
-}
-.fag-tomme{
-  font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5;
-  margin-top:14px;padding-top:11px;border-top:1px solid var(--line);
 }
 .fag-foot{display:flex;gap:8px;flex-shrink:0;margin-top:12px}
 .fag-foot[hidden]{display:none}
@@ -463,6 +490,7 @@ body{
 /* ---------- iPad portrett ---------- */
 @media (max-width:900px){
   .rutenett{grid-template-columns:1fr;grid-template-rows:1.3fr 1fr}
+  .rutenett.bred{grid-template-rows:1fr}
   .hoyre{flex-direction:row}
   .hoyre .kort{flex:1}
 }
@@ -994,7 +1022,7 @@ select.hu-felt{
     </div>
   </div>
 
-  <div class="rutenett">
+  <div class="rutenett" id="rutenett">
 
     <div class="kort">
       <div class="kort-tittel">
@@ -1042,7 +1070,7 @@ select.hu-felt{
       </div>
 
       <div class="kort" id="kortMerknader">
-        <div class="kort-tittel"><span>Merknader</span><button class="hu-ny" onclick="apneHuskeSkjema('dag')" aria-label="Ny merknad">+</button></div>
+        <div class="kort-tittel"><span>Husk i dag</span><button class="hu-ny" onclick="apneHuskeSkjema('dag')" aria-label="Ny merknad">+</button></div>
         <div class="kort-kropp" id="huskeIdag">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
@@ -1615,6 +1643,7 @@ function visDetalj(i){
   if(e.harVedlegg) visDetaljVedlegg(i, e);
   $('detalj').hidden = false;
   HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = true; });
+  settBredde();                    /* kolonnen maa fram for aa vise kortet */
 
   /* Marker raden som er valgt, saa det er tydelig hva kolonnen viser.
      Bade dagsradene og ukesbrikkene baerer data-avtale. */
@@ -1632,6 +1661,7 @@ function lukkDetalj(){
     $('detalj').style.boxShadow = '';
   }
   HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = false; });
+  settBredde();
   Array.from(document.querySelectorAll('[data-avtale].valgt'))
     .forEach(function(r){ r.classList.remove('valgt'); });
   if(typeof visTilIdag === 'function') visTilIdag();
@@ -2194,8 +2224,20 @@ function settVisning(ny){
   /* Fag har ingen dag aa bla i. */
   if($('dagPiler'))      $('dagPiler').hidden      = (ny === 'fag');
 
+  settBredde();
   settDagsTitler();
   tegnVisning();
+}
+
+/* Full bredde i Uke og Fag - men ikke mens et detaljkort staar oppe, for
+   det bor i kolonnen som da er borte. Regnes ut fra tilstanden hver gang
+   i stedet for aa slaas av og paa fra fire kallsteder: da kan den ikke
+   bli staaende feil etter en vei gjennom koden ingen taenkte paa. */
+function settBredde(){
+  const r = $('rutenett');
+  const d = $('detalj');
+  if(!r) return;
+  r.classList.toggle('bred', visning !== 'dag' && (!d || d.hidden));
 }
 
 /* Tegner den visningen som staar. Kalles av dagbytte, av oppdateringen
@@ -2404,58 +2446,61 @@ function tegnFag(){
     (perFag[l.fagId] = perFag[l.fagId] || []).push(l);
   });
 
-  const medNoe = [];
-  const tomme  = [];
-  fagData.fag.forEach(function(f){
-    if((perFag[f.id] || []).length) medNoe.push(f); else tomme.push(f);
-  });
-
-  /* Faget med den naermeste fristen staar oeverst. Avhukede lekser
-     teller ikke - et fag der alt er gjort skal synke. */
+  /* Faget med den naermeste fristen staar foerst, tomme fag sist.
+     Avhukede lekser teller ikke med i naerheten - et fag der alt er gjort
+     skal synke, ellers blir toppen av lista staaende paa noe som er
+     unnagjort. Men det beholder rammen sin. */
   function naermest(f){
     const aapne = (perFag[f.id] || []).filter(function(l){ return !l.ferdig; });
     if(!aapne.length) return '9999-99-99';
     return aapne.map(function(l){ return l.frist || '9999-99-98'; }).sort()[0];
   }
-  medNoe.sort(function(a, b){ return naermest(a).localeCompare(naermest(b)); });
 
-  let html = '';
-  medNoe.forEach(function(f){
+  /* slice() foerst: sort() endrer lista den staar paa, og fagData er
+     ikke vaar aa stokke om paa. Rekkefoelgen fagene ble lagt inn i er
+     den man ser igjen i nedtrekket i skjemaet. */
+  const sortert = fagData.fag.slice().sort(function(a, b){
+    const noeA = (perFag[a.id] || []).length ? 0 : 1;
+    const noeB = (perFag[b.id] || []).length ? 0 : 1;
+    if(noeA !== noeB) return noeA - noeB;          /* med innhold oeverst */
+    if(noeA) return 0;                             /* tomme: uroert rekkefoelge */
+    return naermest(a).localeCompare(naermest(b));
+  });
+
+  if(!sortert.length){
+    boks.innerHTML = '<div class="tom">Ingen fag lagt inn.</div>';
+    return;
+  }
+
+  boks.innerHTML = sortert.map(function(f){
     const liste = (perFag[f.id] || []).slice().sort(function(a, b){
       if(!!a.ferdig !== !!b.ferdig) return a.ferdig ? 1 : -1;
       return fristSort(a, b);
     });
-    html += '<div class="fag-kort">'
+
+    let ut = '<div class="fag-kort' + (liste.length ? '' : ' tomt') + '">'
       + '<div class="fag-topp">'
       +   '<span class="fag-navn">' + esc(f.navn) + '</span>'
       +   '<button class="hu-endre" onclick="redigerFag(\'' + esc(f.id) + '\')" '
       +     'aria-label="Endre faget">✎</button>'
       + '</div>';
-    liste.forEach(function(l){
-      const fr = fristTekst(l.frist);
-      html += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '') + '">'
-        + '<button class="lekse-hake" onclick="vekslLekse(\'' + esc(l.id) + '\')" '
-        +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
-        + '<span class="lekse-tekst" onclick="redigerLekse(\'' + esc(l.id) + '\')">'
-        +   esc(l.tekst) + '</span>'
-        + (fr.tekst ? '<span class="lekse-frist ' + fr.klasse + '">' + esc(fr.tekst) + '</span>' : '')
-        + '</div>';
-    });
-    html += '</div>';
-  });
 
-  if(!medNoe.length){
-    html += '<div class="tom">Ingen lekser eller frister lagt inn.</div>';
-  }
-  if(tomme.length){
-    html += '<div class="fag-tomme">Uten lekser: '
-      + tomme.map(function(f){
-          return '<a href="#" onclick="event.preventDefault();redigerFag(\'' + esc(f.id) + '\')">'
-               + esc(f.navn) + '</a>';
-        }).join(', ')
-      + '</div>';
-  }
-  boks.innerHTML = html;
+    if(!liste.length){
+      ut += '<div class="fag-ingen">Ingen lekser</div>';
+    }else{
+      liste.forEach(function(l){
+        const fr = fristTekst(l.frist);
+        ut += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '') + '">'
+          + '<button class="lekse-hake" onclick="vekslLekse(\'' + esc(l.id) + '\')" '
+          +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
+          + '<span class="lekse-tekst" onclick="redigerLekse(\'' + esc(l.id) + '\')">'
+          +   esc(l.tekst) + '</span>'
+          + (fr.tekst ? '<span class="lekse-frist ' + fr.klasse + '">' + esc(fr.tekst) + '</span>' : '')
+          + '</div>';
+      });
+    }
+    return ut + '</div>';
+  }).join('');
 }
 
 async function vekslLekse(id){
@@ -3621,6 +3666,24 @@ window.neamSideHandlinger = function(){
       gjor: function(){ apneHuskeSkjema('uke'); } }
   ];
 };
+
+/* Haandtaket bestemmer seg for om det skal vises ÉN gang, i neamBygg(),
+   og neamBygg() kjoerer med det samme fila er lastet naar det finnes en
+   body. Her ligger felles-neam.js FOER sidens skript - altsaa foer linja
+   over har kjoert - og haandtaket ble derfor bygget skjult.
+
+   Forsiden slipper unna fordi den laster felles-neam.js SIST, etter sitt
+   eget skript. Kjoekkendashen slipper unna fordi den ikke melder inn noe
+   i det hele tatt, og et skjult haandtak er riktig svar der.
+
+   Vi kunne flyttet skript-taggen, men da ville sidens skript vaere det
+   eneste av fem som ligger foer fellesfila. Linja under gjoer det samme
+   uten aa endre rekkefoelgen noe sted, og den bruker sperren som alt
+   finnes i stedet for aa gjette paa den. */
+(function(){
+  const h = document.getElementById('neamSideHandtak');
+  if(h && typeof neamSideHarNoe === 'function') h.hidden = !neamSideHarNoe();
+})();
 
 /* ---- Husets leseverktoey ----
    Ligger i felles-data.js og er identiske paa alle fem sidene. */
