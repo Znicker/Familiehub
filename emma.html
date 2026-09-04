@@ -520,15 +520,19 @@ body{
    flytende element - den krymper ved siden av det og gaar tilbake til
    full bredde naar den er forbi. Det er derfor de bryter riktig uten at
    noe maa regnes ut. */
+/* Bare BREDDE. Hoeyden kommer av bildets eget forhold, som nettleseren
+   kjenner fra width og height paa <img>. En fast rammehoeyde ga to
+   problemer paa én gang: merket ble klemt inn i et forhold som ikke var
+   dets eget, og kortet fikk en hoeyde det ikke skulle hatt. */
 .fag-bilde{
   display:block; flex:none;
-  width:120px; height:154px;
-  margin:0;
+  width:140px; margin:0;
 }
+.fag-bilde[hidden]{ display:none; }
 .fag-tekst{ flex:1; min-width:0; }
 .fag-bilde img{
-  width:100%; height:100%;
-  object-fit:contain; object-position:center; display:block;
+  width:100%; height:auto; display:block;
+  border-radius:8px;
 }
 /* Et fag uten lekser er alt dempet; merket dempes med. */
 .fag-kort.tomt .fag-bilde{ opacity:.85; }
@@ -537,23 +541,31 @@ body{
    samme kort blir hoeyere av seg selv, og trenger mer plass rundt seg. */
 /* Under 520px staar merket over teksten i stedet for ved siden: en
    tekstspalte paa under 150px bryter «Kapittelprøve» over tre linjer. */
+/* Under 520px staar merket over teksten i stedet for ved siden: en
+   tekstspalte paa under 150px bryter «Kapittelprøve» over tre linjer. */
 @media(max-width:520px){
   .fag-kort{ flex-direction:column; }
-  .fag-bilde{ width:132px; height:170px; margin:0 auto 8px; }
+  .fag-bilde{ width:170px; margin:0 auto 8px; }
   .fag-tekst{ width:100%; }
 }
 @media(min-width:700px){
   #fag{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px; }
-  .fag-bilde{ width:152px; height:196px; }
-  .fag-kort{ padding:15px 17px 17px; min-height:236px; gap:16px; }
+  .fag-bilde{ width:160px; }
+  .fag-kort{ padding:15px 17px 17px; gap:16px; }
 }
 /* PC har fem smale spalter. Merket maa krympe tilsvarende, ellers blir
    det ingen bredde igjen til teksten ved siden - og da er det ikke lenger
    to spalter, bare et bilde med enkeltord til hoeyre. */
+/* iPad i LANDSKAP har brede nok kort til et stoerre merke. Staaende er
+   kortet 376px, og et merke paa 200 ville latt 126px staa igjen til
+   teksten - da er det ikke to spalter lenger. */
+@media(min-width:1000px) and (max-width:1299px){
+  .fag-bilde{ width:200px; }
+}
 @media(min-width:1300px){
   #fag{ grid-template-columns:repeat(5, minmax(0,1fr)); gap:14px; }
-  .fag-bilde{ width:112px; height:144px; }
-  .fag-kort{ padding:13px 15px 15px; min-height:180px; gap:12px; }
+  .fag-bilde{ width:132px; }
+  .fag-kort{ padding:13px 15px 15px; gap:12px; }
 }
 .fag-kort{
   border:1px solid var(--line);border-radius:12px;background:var(--bg-2);
@@ -561,17 +573,16 @@ body{
   /* To kolonner: merket til venstre, teksten til hoeyre. Under 520px er
      kortet for smalt til begge deler, og da stables de - se nederst. */
   display:flex; flex-direction:row; align-items:flex-start; gap:14px;
-  /* Hoeyt nok til merket pluss litt, satt som TALL. Kortene sto en stund
-     paa min-height uansett hva som laa i dem fordi bildet ikke talte med
-     i hoeyden; da er en min-height som faktisk dekker merket det som
-     holder. overflow:hidden under gjoer dessuten at kortet omslutter
-     det flytende merket i stedet for aa la det stikke ut nederst. */
-  min-height:190px;
-  /* Sperre, ikke rettelse: hoeyden over holder bildet inne av seg selv.
-     Skulle noe likevel bli for stort en dag, blir det klippet HER og
-     ikke tegnet oppaa nabokortet - en avkuttet ting er lett aa se og
-     lett aa finne, en overlappende er ingen av delene. */
-  overflow:hidden;
+  /* INGEN min-height og INGEN overflow:hidden.
+
+     Begge sto her som sperrer mot et symptom - kort som ikke vokste av
+     innholdet - og begge ble til slutt selve feilen: kortet ble
+     staaende paa minstehoeyden, og alt som ikke fikk plass innenfor den
+     ble klippet bort av overflow. Derfor sto det bare en overskrift ved
+     siden av merket; leksene var der, men utenfor kanten.
+
+     Uten dem maa kortet vokse av det som ligger i det. Blir noe for
+     stort en dag, skal det synes - ikke skjules. */
 }
 /* Tomme fag skal vaere synlige, men ikke trekke blikk fra dem som har
    noe. Samme grep som avhukede foeringer i huskelista. */
@@ -689,8 +700,8 @@ body{
 }
 #fagVisBak{ z-index:57; }
 .fagvis-boks .av-tittel{ font-size:calc(var(--t-stor) * 1.35); gap:14px; }
-.fagvis-bilde{ width:76px; height:100px; flex:none; display:block; }
-.fagvis-bilde img{ width:100%; height:100%; object-fit:contain; display:block; }
+.fagvis-bilde{ width:76px; flex:none; display:block; }
+.fagvis-bilde img{ width:100%; height:auto; display:block; border-radius:6px; }
 .fagvis-boks .fagvis-meta{ font-size:var(--t-brod); gap:8px 20px; }
 .fagvis-boks .fagvis-bolk h4{ font-size:var(--t-meta); }
 .fagvis-boks .lekse-tekst{ font-size:var(--t-brod); line-height:1.45; }
@@ -3045,10 +3056,20 @@ const FAG_MERKE = {
 
    En mappe som aldri har eksistert kan ikke ha noe liggende i seg.
    Naar det nye virker, kan bilder/fag/ slettes i sin helhet. */
+/* Versjon paa adressen, av samme grunn som paa CSS og JS: uten den
+   spoer ikke nettleseren etter en fil den mener den alt har, og paa iPad
+   finnes ingen hard oppfriskning aa ty til. Byttes et merke: oek tallet. */
+const FAG_MERKE_V = 3;
+
+/* MAPPA HETER `fag`. Den het `fagkort` en kort stund - et forsoek paa aa
+   komme unna gamle filer i cachen ved aa bytte mappe i stedet for aa
+   bytte adresse - og det er grunnen til at merkene sto som brutte
+   bildeikoner: sida spurte etter en mappe som ikke fantes paa tjeneren.
+   Versjonsnummeret over gjoer omdoepingen unoedvendig. */
 function fagMerke(navn){
   const f = FAG_MERKE[String(navn || '').trim()];
   if(!f) return null;
-  return { url:'/bilder/fagkort/' + f[0] + '.png', b:320, h:f[1] };
+  return { url:'/bilder/fag/' + f[0] + '.png?v=' + FAG_MERKE_V, b:320, h:f[1] };
 }
 
 /* <img> med maal. Kallstedene skal ikke skrive dem tre ganger. */
@@ -3061,9 +3082,13 @@ function fagMerke(navn){
 function fagMerkeHtml(navn, klasse){
   const m = fagMerke(navn);
   if(!m) return '';
+  /* Svarer adressen med noe annet enn et bilde, tegner nettleseren et
+     brutt bildeikon med spoersmaalstegn. Det ser ut som en feil i faget
+     og ikke i en fil. Da skjuler vi ramma i stedet, og kortet staar med
+     navnet alene - som et fag uten merke. */
   return '<span class="' + klasse + '">'
        + '<img src="' + m.url + '" alt="" width="' + m.b + '" height="' + m.h
-       + '" loading="lazy"></span>';
+       + '" loading="lazy" onerror="this.parentNode.hidden=true"></span>';
 }
 
 function timeplanFag(rute){
