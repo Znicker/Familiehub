@@ -3031,9 +3031,30 @@ function ryddFag(d){
 
 async function hentFag(){ return ryddFag(await husLesJson(FAG_NOKKEL)); }
 
+/* Avtrykk, som for huskelista - se speilHuske(). Fagene fyller ogsaa
+   lekseradene i Paaminnelser i dag, saa de maa speiles i samme tempo. */
+let fagAvtrykk = '';
+
+async function speilFag(){
+  if(document.hidden) return;
+  let d;
+  try{ d = await hentFag(); }
+  catch(e){ return; }
+  const avtrykk = JSON.stringify(d);
+  if(avtrykk === fagAvtrykk) return;
+  fagAvtrykk = avtrykk;
+  fagData = d;
+  /* Ikke midt i et skjema eller et aapent fagvindu: tegningen ville
+     flyttet kortene under fingeren og tatt markoeren ut av notatfeltet. */
+  if((typeof skjemaAapent === 'function' && skjemaAapent()) || fagVisId) return;
+  tegnFag();
+  tegnHuske();
+}
+
 async function lastFag(){
   try{ fagData = await hentFag(); }
   catch(e){ fagData = tomtFag(); }
+  fagAvtrykk = JSON.stringify(fagData);
   if(visning === 'fag') tegnFag();
   tegnHuske();
   if(fagVisId) tegnFagVis();
@@ -3044,6 +3065,7 @@ async function endreFag(endring){
   const ny = ryddFag(endring(fersk));
   await dataSkriv(FAG_NOKKEL, ny);
   fagData = ny;
+  fagAvtrykk = JSON.stringify(ny);      /* vaar egen endring, alt kjent */
   tegnFag();
   /* Leksene vises ogsaa i Paaminnelser i dag, og den lista er utledet -
      den maa tegnes om naar kilden endrer seg. */
@@ -4511,6 +4533,9 @@ async function endreHuske(endring){
   });
   if(!r.ok) throw new Error('HTTP ' + r.status);
   huskeliste = ny;
+  /* Vi vet hva som staar der naa - da trenger ikke speilingen aa oppdage
+     vaar egen endring paa nytt og tegne én gang til. */
+  huskeAvtrykk = JSON.stringify(ny);
   tegnHuske();
 }
 
@@ -4632,6 +4657,7 @@ function lukkHuskeBoble(){
   huBobleId = null;
   if($('huBoble')) $('huBoble').hidden = true;
   if($('huBobleBak')) $('huBobleBak').hidden = true;
+  huskeTaIgjen();
 }
 
 /* Skjemaet er en dialog oeverst paa skjermen, ikke en boks inne i kortet:
@@ -4700,6 +4726,7 @@ function lukkHuskeSkjema(){
   huskeSkjema = null;
   if($('huskeBak'))  $('huskeBak').hidden = true;
   if($('huskeBoks')) $('huskeBoks').hidden = true;
+  huskeTaIgjen();
 }
 
 async function lagreHuske(){
@@ -4834,12 +4861,46 @@ function tegnHuskeInner(){
   });
 }
 
+/* Avtrykket av lista slik den sist ble hentet. Poenget er aa kunne se at
+   INGENTING er endret uten aa tegne noe: naar lista hentes hvert
+   sekund, er det tegningen som koster, ikke oppslaget. */
+let huskeAvtrykk = '';
+/* Sant naar det kom noe nytt mens en boble eller et skjema sto aapent.
+   Da venter tegningen til det lukkes - en liste som stokker om paa seg
+   selv mens man leser en boble er verre enn en som er to sekunder gammel. */
+let huskeUtsatt = false;
+
 async function lastHuske(){
   try{
     huskeliste = await hentHuske();
   }catch(e){
     huskeliste = [];
   }
+  huskeAvtrykk = JSON.stringify(huskeliste);
+  tegnHuske();
+}
+
+/* Det hyppige oppslaget. Tegner bare naar noe faktisk er annerledes. */
+async function speilHuske(){
+  if(document.hidden) return;
+  let liste;
+  try{ liste = await hentHuske(); }
+  catch(e){ return; }                       /* nettet kommer tilbake */
+  const avtrykk = JSON.stringify(liste);
+  if(avtrykk === huskeAvtrykk) return;      /* ingenting nytt */
+  huskeAvtrykk = avtrykk;
+  huskeliste = liste;
+  if((typeof skjemaAapent === 'function' && skjemaAapent()) || huBobleId){
+    huskeUtsatt = true;
+    return;
+  }
+  tegnHuske();
+}
+
+/* Kalles naar en boble eller et skjema lukkes. */
+function huskeTaIgjen(){
+  if(!huskeUtsatt) return;
+  huskeUtsatt = false;
   tegnHuske();
 }
 
@@ -6401,24 +6462,20 @@ async function oppdaterAlt(manuelt){
      skal ikke den automatiske oppdateringen dra dem tilbake. */
   setInterval(function(){ if(!document.hidden && dagOffset === 0) oppdaterAlt(false); }, 5*60*1000);
 
-  /* Paaminnelsene hentes hvert MINUTT, ikke hvert femte som resten.
-     Kjoekkendashen og Emma dash deler samme noekkel i KV, men det finnes
-     ingen kanal mellom dem - den ene faar vite om den andres endring
-     foerst naar den spoer. Paa fem minutter foeltes det som at de ikke
-     hang sammen i det hele tatt.
+  /* Paaminnelsene speiles hvert TREDJE SEKUND. Kjoekkendashen og Emma
+     dash deler samme noekkel i KV, men det finnes ingen kanal mellom dem
+     - den ene faar vite om den andres endring foerst naar den spoer.
 
-     Bare huskelista, ikke oppdaterAlt(): kalenderen og vaeret koster et
-     Graph-kall og et vaerkall hver gang, mens dette er ett lite oppslag.
+     Tre sekunder gaar an fordi speilingen TEGNER INGENTING naar
+     ingenting er endret: den henter, sammenligner med avtrykket, og gaar
+     hjem igjen. Det som koster paa en skjerm som staar paa hele dagen er
+     tegningen, ikke oppslaget - og en liste med ti punkter er noen faa
+     kilobyte.
 
-     Ikke mens noe staar aapent - tegningen lukker boblen, og en boble som
-     lukker seg selv midt i lesingen er verre enn et minutt gammel liste. */
-  setInterval(function(){
-    if(document.hidden) return;
-    if(typeof skjemaAapent === 'function' && skjemaAapent()) return;
-    if(typeof huBobleId !== 'undefined' && huBobleId) return;
-    lastHuske();
-  lastFag();
-  }, 60*1000);
+     Bare huskelista og fagene, ikke oppdaterAlt(): kalenderen koster et
+     Graph-kall og vaeret et vaerkall, og de taaler ikke dette tempoet. */
+  setInterval(speilHuske, 3000);
+  setInterval(speilFag, 3000);
 })();
 
 document.addEventListener('keydown', function(e){
@@ -6437,7 +6494,7 @@ document.addEventListener('keydown', function(e){
 });
 
 document.addEventListener('visibilitychange', function(){
-  if(!document.hidden){ tegnKlokke(); oppdaterAlt(false); }
+  if(!document.hidden){ tegnKlokke(); oppdaterAlt(false); speilHuske(); }
 });
 </script>
 </body>
