@@ -514,7 +514,9 @@ body{
 .fag-bilde{
   display:block; flex:none;
   width:140px; margin:0;
-  /* Stempelet ligger oppaa merket og maa ha noe aa maale seg mot. */
+  /* Stempelet ligger oppaa merket og maa ha noe aa maale seg mot.
+     overflow er IKKE satt: stempelet skal kunne stikke litt utenfor
+     bildekanten, slik et gummistempel gjoer. */
   position:relative;
 }
 .fag-bilde[hidden]{ display:none; }
@@ -634,20 +636,28 @@ body{
    stempel PAA bildet og ikke som en etikett foran det. */
 .fag-stempel{
   position:absolute; left:50%; top:50%;
-  transform:translate(-50%, -50%) rotate(-16deg);
+  transform:translate(-50%, -50%) rotate(-27deg);
   white-space:nowrap; pointer-events:none;
   font-family:'Archivo',sans-serif; font-weight:700;
-  font-size:15px; text-transform:uppercase; letter-spacing:.08em;
-  padding:5px 12px; border-radius:6px;
-  border:2.5px solid currentColor;
-  background:rgba(251,249,245,.86);
+  font-size:21px; text-transform:uppercase; letter-spacing:.06em; line-height:1.05;
+  padding:7px 15px; border-radius:7px;
+  border:3.5px solid currentColor;
+  background:rgba(251,249,245,.88);
+  /* Diagonalen i et 140px merke er nesten 200px, saa en bred tekst faar
+     plass paa skraa selv om den ikke ville hatt det vannrett. Blir den
+     likevel litt bredere enn bildet, er det riktig: et stempel som ikke
+     stikker utenfor ser ut som en etikett. */
 }
 .fag-stempel.ingen{ color:var(--danger); }
 /* Groent betyr gjort, som haken. Roedt betyr sletter, og en farge kan
    ikke bety to ting i samme app - derfor ikke roedt her. */
 .fag-stempel.ferdig{ color:var(--handling-ny); }
-@media(min-width:700px){ .fag-stempel{ font-size:19px; } }
-@media(min-width:1300px){ .fag-stempel{ font-size:15px; } }
+@media(min-width:700px){
+  .fag-stempel{ font-size:29px; border-width:4px; padding:9px 19px; }
+}
+@media(min-width:1300px){
+  .fag-stempel{ font-size:20px; border-width:3.5px; padding:7px 14px; }
+}
 
 .lekse-linje{
   display:flex;align-items:flex-start;gap:9px;margin-top:8px;
@@ -4968,6 +4978,10 @@ window.neamBakgrunn = async function(){
     + 'gjelder den henne - ta den med. Står et annet elevnavn, er den ikke hennes; '
     + 'la den ligge. Beskjeder uten navn gjelder hele klassen og gjelder derfor '
     + 'også henne.\n\n'
+    + 'EN LEKSE MED FRIST VISER SEG AV SEG SELV under «Påminnelser i dag» på '
+    + 'dagen fristen går ut - huset henter den fra faget. Legg derfor ALDRI inn '
+    + 'en påminnelse om en lekse du allerede har lagt fram; da står den samme '
+    + 'saken to steder, og de to blir uenige første gang hun huker av den ene.\n\n'
     + 'BESKJEDER SOM IKKE ER LEKSER går til legg_til_paaminnelse, ikke til '
     + 'foreslaa_lekser. Regelen er enkel:\n'
     + '  - Hører beskjeden til et FAG og er noe som skal gjøres: det er en lekse.\n'
