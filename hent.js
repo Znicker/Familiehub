@@ -54,11 +54,28 @@ function avkod(s){
     .replace(/&Aring;/g, 'Å').replace(/&Oslash;/g, 'Ø').replace(/&AElig;/g, 'Æ');
 }
 
+/* Alle skrivemaater av samme vert skal ende opp likt. Sida kan godt lenke
+   til http:// eller til www.-varianten av seg selv, og en lenke som ikke
+   staver seg akkurat som ROT ble ellers kastet av filteret under - da sto
+   lista tom uten at noe hadde gaatt galt. */
+function samsVert(v){
+  return String(v || '').toLowerCase().replace(/^www\./, '') === VERT;
+}
+
 function absolutt(href){
   const h = String(href || '').trim();
-  if(/^https?:\/\//i.test(h)) return h;
   if(h.startsWith('//')) return 'https:' + h;
   if(h.startsWith('/'))  return ROT + h;
+  if(/^https?:\/\//i.test(h)){
+    try{
+      const u = new URL(h);
+      if(!samsVert(u.hostname)) return h;        /* et annet sted - filteret tar den */
+      u.protocol = 'https:';
+      u.hostname = VERT;
+      return u.toString();
+    }catch(e){ return h; }
+  }
+  if(/^(mailto|tel|javascript):/i.test(h)) return h;
   return ROT + '/' + h;
 }
 
@@ -231,10 +248,16 @@ function xmlTilTekst(xml){
 
 async function hent(url){
   const r = await fetch(url, {
-    headers: { 'User-Agent': 'Neam/1.0 (familiehub; enkeltoppslag)' },
+    /* Noen tjenere svarer 403 paa en ukjent klient. Vi sier hvem vi er,
+       men i en form de kjenner igjen. */
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; Neam/1.0; familiehub enkeltoppslag)',
+      'Accept': '*/*'
+    },
+    redirect: 'follow',
     cf: { cacheTtl: 300, cacheEverything: true }
   });
-  if(!r.ok) throw new Error('Skolens side svarte ' + r.status);
+  if(!r.ok) throw new Error('Skolens side svarte ' + r.status + ' på ' + url);
   const buf = await r.arrayBuffer();
   if(buf.byteLength > MAKS) throw new Error('Fila er for stor.');
   return { bytes: new Uint8Array(buf), type: r.headers.get('content-type') || '' };
@@ -249,6 +272,23 @@ export async function onRequest(context){
       const r = await hent(SIDEN);
       const html = new TextDecoder('utf-8').decode(r.bytes);
       const lenker = lenkerFra(html);
+
+      /* ?alle=1 gir hver eneste lenke paa sida, ufiltrert. Til diagnose:
+         staar lista tom, er spoersmaalet om lenkene mangler eller om
+         filteret spiste dem, og det kan ikke gjettes utenfra. */
+      if(inn.searchParams.get('alle')){
+        const raa = [];
+        const re = /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        let m;
+        while((m = re.exec(html)) !== null && raa.length < 300){
+          raa.push({ navn: avkod(m[2].replace(/<[^>]*>/g, '')).replace(/\s+/g, ' ').trim(),
+                     href: m[1] });
+        }
+        return svar({ kilde:SIDEN, tegn:html.length,
+                      antallLenker:raa.length, etterFilter:lenker.length,
+                      lenker:lenker, alle:raa });
+      }
+
       return svar({ kilde: SIDEN, antall: lenker.length, lenker: lenker });
     }
 
@@ -264,11 +304,22 @@ export async function onRequest(context){
       }
 
       const r = await hent(mal.toString());
-      const erDocx = /officedocument\.wordprocessingml/i.test(r.type)
-                  || /\.docx(\?|$)/i.test(mal.pathname);
-      if(!erDocx){
-        return svar({ feil:'Fila er ikke en .docx. Åpne den i nettleseren og '
-                         + 'lim inn teksten i stedet.', type:r.type }, 415);
+
+      /* Filtypen avgjoeres av de fire foerste BYTENE, ikke av navnet eller
+         av content-type. Skolens getfile.php sender gjerne
+         application/octet-stream og har ikke alltid .docx i adressen; da
+         ble en helt gyldig fil avvist med «er ikke en .docx».
+         «PK\x03\x04» er ZIP, og en .docx er en ZIP. */
+      const b = r.bytes;
+      const erZip = b.length > 4 && b[0] === 0x50 && b[1] === 0x4B
+                                 && b[2] === 0x03 && b[3] === 0x04;
+      if(!erZip){
+        /* Sier hva vi FIKK, saa feilen kan diagnostiseres uten aa gjette.
+           Er det HTML, er det som regel en paaloggingsside eller en 404. */
+        const start = new TextDecoder().decode(b.subarray(0, 200))
+                        .replace(/\s+/g, ' ').trim();
+        return svar({ feil:'Fila er ikke et Word-dokument.',
+                      type:r.type, bytes:b.length, start:start }, 415);
       }
       const tekst = await docxTilTekst(r.bytes);
       return svar({ url: mal.toString(),

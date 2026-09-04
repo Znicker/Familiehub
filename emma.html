@@ -4777,14 +4777,20 @@ const FAG_VERKTOY = [
     name: 'hent_skoleplan',
     description: 'Henter en .docx fra skolens side og gir innholdet som tekst. '
                + 'Uten argument hentes den NYESTE ukeplanen for 8. trinn. '
+               + 'Skal du ha en TIMEPLAN eller noe annet enn en ukeplan, send navn '
+               + 'eller url fra list_skoleplaner - timeplanene har ikke ukenummer '
+               + 'og finnes ikke av søket etter nyeste ukeplan. '
                + 'Etter dette: sorter leksene på fag og legg dem fram med '
                + 'foreslaa_lekser - ikke skriv dem inn selv.',
     input_schema: {
       type:'object',
       properties:{
         uke: { type:'number', description:'Ukenummer. Utelat for den nyeste.' },
+        navn: { type:'string', description:'Navnet på fila slik det står i '
+                                         + 'list_skoleplaner, for eksempel «Timeplan, 8C». '
+                                         + 'Bruk dette for timeplaner og annet enn ukeplaner.' },
         url: { type:'string', description:'Full adresse fra list_skoleplaner. '
-                                        + 'Bruk denne for timeplaner og annet enn ukeplaner.' }
+                                        + 'Alternativ til navn.' }
       },
       required:[]
     }
@@ -5371,6 +5377,22 @@ async function fagUtfor(navn, arg){
   if(navn === 'hent_skoleplan'){
     let url = String(arg.url || '').trim();
     let hvilken = null;
+
+    /* Er det en TIMEPLAN som skal hentes, ligger den i lista uten
+       ukenummer - da er soeket etter «nyeste ukeplan» feil sted aa lete.
+       Neam ba om «timeplanen» og fikk «fant ingen ukeplan» i retur, som
+       er sant, men ikke svar paa det han spurte om. */
+    if(!url && arg.navn){
+      const planer = await skolePlaner();
+      const sok = String(arg.navn).trim().toLowerCase();
+      const t = planer.find(function(l){ return l.navn.toLowerCase() === sok; })
+             || planer.find(function(l){ return l.navn.toLowerCase().indexOf(sok) !== -1; });
+      if(!t) throw new Error('Fant ingen fil som heter «' + arg.navn + '». '
+                           + 'Bruk list_skoleplaner for å se hva som ligger der.');
+      url = t.url;
+      hvilken = t;
+    }
+
     if(!url){
       const planer = await skolePlaner();
       /* «8. trinn» og et ukenummer. Timeplanene ligger i samme liste og
