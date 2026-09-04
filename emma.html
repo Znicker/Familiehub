@@ -315,6 +315,12 @@ body{
 /* ---------- Vær ---------- */
 .vaer-t{flex:1;text-align:center;padding:8px 2px;border-radius:11px;background:#F7F9FA}
 
+/* En lekse i huskeboksen. Stripa er den samme hastefargen som i Fag, saa
+   det er samme sak som ser lik ut to steder. */
+.hu-rad.hu-lekse{ border-left:3px solid transparent; }
+.hu-rad.hu-lekse.gul{ border-left-color:var(--handling-endre); }
+.hu-rad.hu-lekse.rod{ border-left-color:var(--danger); }
+
 /* ---------- Snarveier ----------
    Timeplanen og skolens ukeplan hoerer til alle fire visningene, ikke til
    én av dem, saa de staar ved siden av visningsbytteren og skifter aldri.
@@ -683,6 +689,13 @@ body{
   font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
   letter-spacing:.08em; color:var(--ink-soft);
   padding-bottom:6px; border-bottom:1px solid var(--line);
+}
+/* Antatt frist: den staar ikke i planen, den er regnet ut av timeplanen.
+   Merket forsvinner naar noen roerer datofeltet - da er den ikke antatt
+   lenger, da er den bestemt. */
+.forslag-antatt{
+  font-size:var(--t-etikett); font-weight:700; color:var(--handling-endre);
+  letter-spacing:.05em;
 }
 .forslag-nytt{
   font-size:var(--t-etikett); font-weight:700; color:var(--handling-ny);
@@ -2827,6 +2840,7 @@ async function lastFag(){
   try{ fagData = await hentFag(); }
   catch(e){ fagData = tomtFag(); }
   if(visning === 'fag') tegnFag();
+  tegnHuske();
   if(fagVisId) tegnFagVis();
 }
 
@@ -2836,6 +2850,9 @@ async function endreFag(endring){
   await dataSkriv(FAG_NOKKEL, ny);
   fagData = ny;
   tegnFag();
+  /* Leksene vises ogsaa i Paaminnelser i dag, og den lista er utledet -
+     den maa tegnes om naar kilden endrer seg. */
+  tegnHuske();
   if(fagVisId) tegnFagVis();
 }
 
@@ -2926,6 +2943,36 @@ function timeplanTekst(){
       ? t.map(function(x){ return x.time + '. ' + x.fag; }).join(', ')
       : 'ingenting');
   }).join('\n');
+}
+
+/* Mandagen i et gitt ukenummer. Vi leter framover og bakover fra i dag i
+   stedet for aa regne ISO-uker baklengs: en ukeplan gjelder alltid uka vi
+   staar i eller en av naboukene, og et soek over et halvaar treffer den
+   uten aa maatte haandtere aar med 53 uker. */
+function mandagIUke(uke){
+  const n = Number(uke);
+  if(!n) return ukeStart(idag0());
+  const naa = ukeStart(idag0());
+  for(let i = -26; i <= 26; i++){
+    const m = new Date(naa.getFullYear(), naa.getMonth(), naa.getDate() + i * 7);
+    if(isoUke(m).uke === n) return m;
+  }
+  return naa;
+}
+
+/* SISTE dagen faget har time i uka. Staar det ingen frist i ukeplanen, er
+   det denne leksa skal vaere ferdig til - det er den siste anledningen
+   faget er samlet i uka.
+
+   Har faget ingen timer i timeplanen - et fag som er kommet til etterpaa,
+   eller et navn som ikke staar der - gir vi ingen frist. En gjettet dato
+   er verre enn ingen: den ser riktig ut. */
+function sisteFagdag(fagnavn, uke){
+  const dager = timeplanDager(fagnavn);
+  if(!dager.length) return '';
+  const m = mandagIUke(uke);
+  const d = new Date(m.getFullYear(), m.getMonth(), m.getDate() + dager[dager.length - 1]);
+  return datoNokkel(d);
 }
 
 function apneTimeplan(){
@@ -4060,6 +4107,10 @@ function datoIUken(basisdato, nr){
 }
 
 function huskeRad(m){
+  /* En utledet lekse har ingen merknad bak seg: boblen, blyanten og
+     sletting hoerer til Fag, ikke hit. Haken virker - den er det samme
+     spoersmaalet begge steder. */
+  if(m.lekse) return lekseRadIHuske(m);
   const uke = m.omfang === 'uke';
   const ferdig = !!m.ferdig;
   const harTekst = !!(m.tekst || '').trim();
@@ -4311,6 +4362,32 @@ function tegnHuskeInner(){
      treff: mine.filter(function(m){ return m.omfang === 'uke' && ukeAv(m.frist) === uke; })}
   ];
 
+  /* Leksene med frist paa denne dagen staar ogsaa som paaminnelser.
+     UTLEDET, ikke kopiert: en lekse som ogsaa ble skrevet inn i
+     huskelista ville vaert to sannheter om samme sak, og de to ville
+     kommet fra hverandre foerste gang en frist ble flyttet eller en lekse
+     huket av. Her finnes den ett sted og VISES to steder.
+
+     Konsekvensen er at haken virker begge veier: huker hun av leksa her,
+     er den gjort i Fag ogsaa, og den forsvinner fra denne lista i morgen
+     sammen med dagen. */
+  const lekserIdag = (fagData ? fagData.lekser : []).filter(function(l){
+    return l.frist === dag;
+  }).map(function(l){
+    return {
+      id: 'lekse:' + l.id,
+      lekse: true,
+      gjelder: EIER,
+      overskrift: fagNavnAv(l.fagId) + ': ' + l.tekst,
+      tekst: '',
+      frist: l.frist,
+      omfang: 'dag',
+      ferdig: l.ferdig
+    };
+  });
+
+  grupper[0].treff = grupper[0].treff.concat(lekserIdag);
+
   grupper.forEach(function(g){
     /* Avhukede punkter synker til bunnen - de er gjort, men blir staaende
        ut uken saa man ser at de er unnagjort. */
@@ -4468,6 +4545,10 @@ window.neamBakgrunn = async function(){
     + 'lagret av det kallet. Si «jeg har lagt fram X lekser, se over fristene» - '
     + 'ikke «jeg har lagt dem inn». Bruk legg_til_lekse bare når hun ber om én '
     + 'bestemt lekse i klartekst.\n\n'
+    + 'STÅR DET INGEN FRIST i ukeplanen, skal du UTELATE fristen — ikke gjette. '
+    + 'Huset setter den da til siste dagen faget har time den uka, ut fra '
+    + 'timeplanen over, og merker linja som antatt så Emma ser å sjekke den. '
+    + 'Send gjerne ukenummeret planen gjelder med, så blir uka riktig.\n\n'
     + 'DATOER skrives 2026-09-08. Står det «8/9» eller «torsdag» i kilden, må du '
     + 'regne det om selv - og er du i tvil om hvilken måned eller hvilken uke, '
     + 'send den heller UTEN frist og si fra at den mangler. En feil frist er verre '
@@ -4685,6 +4766,8 @@ const FAG_VERKTOY = [
     input_schema: {
       type:'object',
       properties:{
+        uke: { type:'number', description:'Ukenummeret planen gjelder. Brukes til å '
+                                        + 'regne ut antatte frister. Utelat for inneværende uke.' },
         lekser: {
           type:'array',
           description:'Leksene som legges fram.',
@@ -4695,7 +4778,11 @@ const FAG_VERKTOY = [
                                                 + 'huset finner riktig fag, og lager et nytt hvis '
                                                 + 'det ikke finnes fra før.' },
               tekst: { type:'string', description:'Hva som skal gjøres.' },
-              frist: { type:'string', description:'Dato på formen 2026-09-08. Utelat hvis den ikke står.' }
+              frist: { type:'string', description:'Dato på formen 2026-09-08. UTELAT den hvis '
+                                          + 'ukeplanen ikke sier noe - da settes fristen til '
+                                          + 'siste dagen faget har time den uka, og linja '
+                                          + 'merkes som antatt så Emma ser å sjekke den. '
+                                          + 'Ikke gjett selv.' }
             },
             required:['fag','tekst']
           }
@@ -4922,8 +5009,12 @@ function tegnForslag(){
       + '</span>'
       + '<input class="hu-felt" value="' + esc(r.tekst) + '" '
       +   'oninput="forslagSett(' + i + ', \'tekst\', this.value)">'
-      + '<input class="hu-felt" type="date" value="' + esc(r.frist) + '" '
-      +   'onchange="forslagSett(' + i + ', \'frist\', this.value)">'
+      + '<span>'
+      +   '<input class="hu-felt" type="date" value="' + esc(r.frist) + '" '
+      +     'onchange="forslagSett(' + i + ', \'frist\', this.value); '
+      +     'forslagSett(' + i + ', \'antatt\', false)">'
+      +   (r.antatt ? '<span class="forslag-antatt">antatt</span>' : '')
+      + '</span>'
       + '</div>';
   }).join('')
   + '<datalist id="forslagFag">'
@@ -4984,6 +5075,26 @@ async function lagreForslag(){
   }finally{
     knapp.disabled = false;
   }
+}
+
+/* En lekse tegnet som en paaminnelse. Samme form som en merknad, men
+   uten blyant og uten boble - trykket gaar til lekseskjemaet i Fag, der
+   leksa faktisk bor. Merket «lekse» sier hvorfor den ser litt annerledes
+   ut enn naboen. */
+function lekseRadIHuske(m){
+  const id = m.id.slice(6);                    /* «lekse:» av */
+  const hast = lekseHast({ frist:m.frist, ferdig:m.ferdig });
+  return '<div class="hu-linje' + (m.ferdig ? ' ferdig' : '') + '">'
+    +   '<div class="hu-rad hu-lekse' + (hast ? ' ' + hast : '') + '" '
+    +     'style="' + fyll(huskeFarge(m.gjelder)) + '" '
+    +     'onclick="redigerLekse(\'' + esc(id) + '\')">'
+    +     initial(m.gjelder, huskeFarge(m.gjelder))
+    +     '<span class="hu-tittel">' + esc(m.overskrift) + '</span>'
+    +     '<span class="hu-innen">lekse</span>'
+    +   '</div>'
+    +   '<button class="hu-hake" onclick="vekslLekse(\'' + esc(id) + '\')" '
+    +     'aria-label="' + (m.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
+    + '</div>';
 }
 
 /* ---------------- Skolens side ----------------
@@ -5252,15 +5363,29 @@ async function fagUtfor(navn, arg){
     const rader = inn.filter(function(r){
       return r && String(r.fag || '').trim() && String(r.tekst || '').trim();
     }).map(function(r){
-      return { med:true, fag:String(r.fag).trim(), tekst:String(r.tekst).trim(),
-               frist: datoKrev(r.frist, 'Fristen') };
+      const fag = String(r.fag).trim();
+      let frist = datoKrev(r.frist, 'Fristen');
+      let antatt = false;
+      /* Ingen frist i planen: siste dagen faget har time den uka. */
+      if(!frist){
+        const treff = fagFinn(fag);
+        frist = sisteFagdag(treff ? treff.navn : fag, arg.uke);
+        antatt = !!frist;
+      }
+      return { med:true, fag:fag, tekst:String(r.tekst).trim(),
+               frist:frist, antatt:antatt };
     });
     if(!rader.length) throw new Error('Ingen lekser å legge fram.');
+
+    const antatte = rader.filter(function(r){ return r.antatt; }).length;
     apneForslag(rader, 'Ingenting er lagret ennå. Rett det som er galt, ta bort '
-                     + 'det som ikke skal med, og trykk Legg inn.');
-    return { venter:true, antall:rader.length,
+                     + 'det som ikke skal med, og trykk Legg inn.'
+                     + (antatte ? ' ' + antatte + ' frist er antatt ut fra timeplanen '
+                                + '— de er merket.' : ''));
+    return { venter:true, antall:rader.length, antatteFrister:antatte || undefined,
              beskjed:'Forslagene ligger på skjermen og venter på at Emma godkjenner dem. '
-                   + 'Ingenting er lagret. Si hva du la fram, og be henne se over fristene.' };
+                   + 'Ingenting er lagret. Si hva du la fram, og si fra om hvilke frister '
+                   + 'som er antatt ut fra timeplanen framfor å stå i planen.' };
   }
 
   if(navn === 'legg_til_lekse'){
