@@ -1203,11 +1203,17 @@ function neamSideStabel(plass, liste){
      oppover. «ved» staar i nederste rad ved siden av haandtaket, og der er
      veien videre innover, ikke opp: en kolonne derfra ville lagt seg bak
      «opp» og «skraa». */
-  /* Over tre valg legges kolonnen i to rader - se .neam-stabel.bred.
-     Gjelder bare «opp»: «ved» er alt en rad som brekker av seg selv. */
+  /* Tre plasser, tre forankringer. «skraa» manglet og falt ned i
+     «ved»-grenen: stabelen havnet én knapp for lavt, og roeret rakk ikke
+     opp til knappen den skulle henge i.
+
+     Over tre valg legges kolonnen i to rader - se .neam-stabel.bred.
+     Gjelder de loddrette («opp» og «skraa»); «ved» er alt en rad som
+     brekker av seg selv. */
+  const loddrett = (plass === 'opp' || plass === 'skraa');
   boks.className = 'neam-stabel side '
-                 + (plass === 'opp'
-                      ? ('fra-opp' + (liste.length > 3 ? ' bred' : ''))
+                 + (loddrett
+                      ? ('fra-' + plass + (liste.length > 3 ? ' bred' : ''))
                       : 'fra-ved rad');
   boks.innerHTML = liste.map(function(v, i){
     /* Samme regel som i fireren: en strektegning baerer ikke betydningen

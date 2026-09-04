@@ -271,8 +271,24 @@
   bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom)
               + var(--f-aapen) + 16px);
 }
+/* Fra «skraa»: den staar i OEVERSTE rad, andre kolonne - altsaa like
+   hoeyt som «opp» og like langt inn som «ved». Stabelen laa foer i
+   «ved»-posisjonen, én knapp for lavt, og roeret rakk derfor ikke opp til
+   knappen den skulle henge i. Utenfra saa det ut som at valgene la seg i
+   bunnen uten forbindelse. */
+.neam-stabel.fra-skraa{
+  left:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
+  align-items:flex-start;
+  bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom)
+              + 2 * var(--f-aapen) + var(--f-luft) + 16px);
+}
+
 /* Hoeyre hjoerne: speilvendt. */
 .neam-stabel.side.fra-opp{ left:auto; right:var(--f-marg-x); align-items:flex-end; }
+.neam-stabel.side.fra-skraa{
+  left:auto; align-items:flex-end;
+  right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
+}
 .neam-stabel.side.fra-ved{
   left:auto; align-items:flex-end;
   right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));

@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=5">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=39">
+<link rel="stylesheet" href="/felles-neam.css?v=40">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -1655,7 +1655,7 @@ select.hu-felt{
 <script src="/felles-filviser.js?v=2"></script>
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
-<script src="/felles-neam.js?v=46"></script>
+<script src="/felles-neam.js?v=47"></script>
 <script>
 /* ============================================================
    NEAM – Emma dash
@@ -5337,13 +5337,6 @@ window.neamSideHandlinger = function(){
                  + '<path d="M4 5h16M4 12h10M4 19h10"/><path d="M18 15v6M15 18h6"/></svg>',
               gjor: apneFagSkjema },
 
-            { navn:'Hent ukeplan fra skolen', tekst:'Hent ukeplan', farge:'ny',
-              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-                 + '<path d="M12 3v12M8 11l4 4 4-4"/>'
-                 + '<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>',
-              gjor: hentUkeplan },
-
             { navn:'Lim inn lekseark', tekst:'Lim inn ark', farge:'ny',
               ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
                  + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
@@ -5387,6 +5380,13 @@ window.neamSideHandlinger = function(){
                + '<path d="M10 14 21 3M21 3v7M21 3h-7"/>'
                + '<path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>',
             gjor: function(){ window.open(ROLIGHEDEN, '_blank', 'noopener'); } },
+
+          { navn:'Hent ukeplan fra skolen', tekst:'Hent ukeplan', farge:'ny',
+            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               + '<path d="M12 3v12M8 11l4 4 4-4"/>'
+               + '<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>',
+            gjor: hentUkeplan },
 
           { navn:'Timeplan 8C', tekst:'Timeplan',
             ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
@@ -6202,11 +6202,19 @@ async function slettUkasLekser(){
     if(n && fag.indexOf(n) === -1) fag.push(n);
   });
 
+  /* Laeringsmaalene hoerer til uka paa samme maate som leksene. Ryddes
+     uka, skal de med - ellers staar forrige ukes maal igjen og ser ut som
+     denne ukas. */
+  const medMaal = fagData.fag.filter(function(f){
+    return f.maal && f.maal[ukeNokkel(start)];
+  }).length;
+
   const ok = await bekreft(
     'Slette ' + treff.length + ' lekse(r) med frist i uke ' + uke + '?\n'
       + '(' + fra.split('-').reverse().join('.') + ' – '
             + til.split('-').reverse().join('.') + ')\n\n'
       + fag.join(', ')
+      + (medMaal ? '\n\n' + medMaal + ' læringsmål for uken slettes også.' : '')
       + (udaterte ? '\n\n' + udaterte + ' lekse(r) uten frist blir stående.' : ''),
     {jaTekst:'Slett uke ' + uke, fare:true});
   if(!ok) return;
@@ -6214,8 +6222,15 @@ async function slettUkasLekser(){
   const idg = {};
   treff.forEach(function(l){ idg[l.id] = true; });
   try{
+    const ukeN = ukeNokkel(start);
     await endreFag(function(d){
       d.lekser = d.lekser.filter(function(l){ return !idg[l.id]; });
+      d.fag = d.fag.map(function(f){
+        if(!f.maal || !f.maal[ukeN]) return f;
+        const m = Object.assign({}, f.maal);
+        delete m[ukeN];
+        return Object.assign({}, f, {maal:m});
+      });
       return d;
     });
   }catch(e){
