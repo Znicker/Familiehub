@@ -3552,9 +3552,12 @@ function fristSort(a, b){
   return (a.frist || '9999-99-99').localeCompare(b.frist || '9999-99-99');
 }
 
+/* Fullt utskrevet: «mandag, torsdag», ikke «man, tor». Det er tre fag som
+   staar paa et kort, ikke tredve - plassen er der, og forkortelsene ga
+   ingenting igjen for den. */
 function dagerTekst(dager){
   if(!dager || !dager.length) return '';
-  return dager.map(function(n){ return UKEDAG_KORT[n]; }).join(', ');
+  return dager.map(function(n){ return UKEDAGER[n]; }).join(', ');
 }
 
 /* ---------------- Fellesvisningen ----------------
@@ -5560,14 +5563,21 @@ const FAG_VERKTOY = [
   {
     name: 'endre_fag',
     description: 'Setter faglærer og hvilke ukedager et fag er, eller gir det nytt navn. '
-               + 'Bare feltene du sender blir rørt.',
+               + 'Bare feltene du sender blir rørt. Dagene ERSTATTER de gamle - send '
+               + 'derfor hele lista hver gang, ikke bare den som skal legges til. '
+               + 'Timeplanen står i systemteksten over; les den der hvis du er i tvil.',
     input_schema: {
       type:'object',
       properties:{
         fag:    { type:'string', description:'Navnet på faget slik det heter nå.' },
         navn:   { type:'string', description:'Nytt navn på faget.' },
         laerer: { type:'string', description:'Faglærerens navn. Tom streng fjerner den.' },
-        dager:  { type:'array', description:'Ukedager: mandag, tirsdag, onsdag, torsdag, fredag, lørdag, søndag.',
+        dager:  { type:'array',
+                  description:'ALLE ukedagene faget har time - ikke bare den første. '
+                            + 'Et fag som er både mandag og torsdag skal ha begge: '
+                            + '["mandag","torsdag"]. Sender du bare én, blir den ene '
+                            + 'stående alene og de andre forsvinner. Tom liste [] '
+                            + 'fjerner alle dagene.',
                   items:{ type:'string' } }
       },
       required:['fag']
@@ -5652,12 +5662,47 @@ function datoKrev(t, hva){
   return r;
 }
 
-function dagerInn(liste){
-  if(!Array.isArray(liste)) return null;
+/* Ukedager inn, uansett form.
+
+   Den gamle utgaven krevde en ARRAY og ga null for alt annet. Ba man Neam
+   sette flere dager, sendte han dem gjerne som én streng - «mandag og
+   torsdag» - og da falt hele feltet bort. Var det eneste felt i kallet,
+   endte det med «Ingenting aa endre». Med ÉN dag traff han oftere paa
+   array-formen, og derfor virket akkurat det.
+
+   Naa godtas en array, en streng med skilletegn, tall, korte og lange
+   navn, og bokmaalsformene med og uten «dag». Utenfor gaar bare null -
+   som betyr «feltet var ikke med», noe helt annet enn en tom liste, som
+   betyr «faget har ingen dager». */
+const DAGNAVN = ['mandag','tirsdag','onsdag','torsdag','fredag','lørdag','søndag'];
+
+function dagNr(v){
+  if(typeof v === 'number' && v >= 0 && v <= 6) return v;
+  let n = String(v || '').trim().toLowerCase()
+            .replace(/[.]/g, '')
+            .replace(/^soendag$/, 'søndag').replace(/^loerdag$/, 'lørdag');
+  if(!n) return -1;
+  if(/^[0-6]$/.test(n)) return +n;
+  /* «tor», «tors», «torsdag» - alle begynner likt. */
+  for(let i = 0; i < 7; i++){
+    if(DAGNAVN[i].indexOf(n) === 0 || n.indexOf(DAGNAVN[i]) === 0) return i;
+  }
+  return -1;
+}
+
+function dagerInn(v){
+  if(v === undefined || v === null) return null;
+  let biter;
+  if(Array.isArray(v)) biter = v;
+  else if(typeof v === 'string'){
+    /* Komma, semikolon, skraastrek, «og», eller bare mellomrom. */
+    biter = v.split(/\s*(?:,|;|\/|\bog\b|\+)\s*|\s+/i);
+  }
+  else biter = [v];
+
   const ut = [];
-  liste.forEach(function(d){
-    const n = String(d || '').trim().toLowerCase().slice(0, 3);
-    const i = ['man','tir','ons','tor','fre','lør','søn'].indexOf(n);
+  biter.forEach(function(d){
+    const i = dagNr(d);
     if(i !== -1 && ut.indexOf(i) === -1) ut.push(i);
   });
   return ut.sort(function(a, b){ return a - b; });
