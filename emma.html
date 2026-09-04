@@ -515,9 +515,9 @@ body{
   display:block; flex:none;
   width:140px; margin:0;
   /* Stempelet ligger oppaa merket og maa ha noe aa maale seg mot.
-     overflow er IKKE satt: stempelet skal kunne stikke litt utenfor
-     bildekanten, slik et gummistempel gjoer. */
-  position:relative;
+     overflow:hidden holder det INNE i bildet - uten den la det seg tvers
+     over kortet og inn i teksten ved siden av. */
+  position:relative; overflow:hidden; border-radius:8px;
 }
 .fag-bilde[hidden]{ display:none; }
 .fag-tekst{ flex:1; min-width:0; }
@@ -636,27 +636,30 @@ body{
    stempel PAA bildet og ikke som en etikett foran det. */
 .fag-stempel{
   position:absolute; left:50%; top:50%;
-  transform:translate(-50%, -50%) rotate(-27deg);
-  white-space:nowrap; pointer-events:none;
+  /* Langs boksens EGEN diagonal. Merkene er 320x402, altsaa staaende,
+     og vinkelen fra hjoerne til hjoerne er 51 grader - men et stempel
+     paa 51 grader leses daarlig. 38 er naer nok til aa foelge diagonalen
+     og fortsatt vaere lesbart paa et blikk. */
+  transform:translate(-50%, -50%) rotate(-38deg);
+  pointer-events:none; text-align:center;
+  /* Bryter over to linjer heller enn aa stikke ut av bildet. Uten
+     max-width sto «Ingen lekser» tvers over kortet og inn i teksten. */
+  max-width:82%;
   font-family:'Archivo',sans-serif; font-weight:700;
-  font-size:21px; text-transform:uppercase; letter-spacing:.06em; line-height:1.05;
-  padding:7px 15px; border-radius:7px;
-  border:3.5px solid currentColor;
+  font-size:15px; text-transform:uppercase; letter-spacing:.05em; line-height:1.15;
+  padding:5px 11px; border-radius:6px;
+  border:3px solid currentColor;
   background:rgba(251,249,245,.88);
-  /* Diagonalen i et 140px merke er nesten 200px, saa en bred tekst faar
-     plass paa skraa selv om den ikke ville hatt det vannrett. Blir den
-     likevel litt bredere enn bildet, er det riktig: et stempel som ikke
-     stikker utenfor ser ut som en etikett. */
 }
 .fag-stempel.ingen{ color:var(--danger); }
 /* Groent betyr gjort, som haken. Roedt betyr sletter, og en farge kan
    ikke bety to ting i samme app - derfor ikke roedt her. */
 .fag-stempel.ferdig{ color:var(--handling-ny); }
 @media(min-width:700px){
-  .fag-stempel{ font-size:29px; border-width:4px; padding:9px 19px; }
+  .fag-stempel{ font-size:20px; border-width:3.5px; padding:6px 14px; }
 }
 @media(min-width:1300px){
-  .fag-stempel{ font-size:20px; border-width:3.5px; padding:7px 14px; }
+  .fag-stempel{ font-size:15px; border-width:3px; padding:5px 11px; }
 }
 
 .lekse-linje{
@@ -3624,11 +3627,6 @@ function tegnFag(){
          en float. */
       + '<div class="fag-tekst">'
       + '<div class="fag-topp">'
-      +   (liste.length === 1
-            ? '<button class="lekse-hake" onclick="event.stopPropagation();vekslLekse(\''
-              + esc(liste[0].id) + '\')" aria-label="'
-              + (liste[0].ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
-            : '')
       +   '<span class="fag-navn">' + esc(f.navn) + '</span>'
       +   (prTekst ? '<span class="fag-merke">Prøve ' + esc(prTekst.tekst) + '</span>' : '')
       + '</div>'
@@ -3640,18 +3638,14 @@ function tegnFag(){
       liste.forEach(function(l){
         const fr   = fristFullt(l.frist);
         const hast = lekseHast(l);
-        /* Haken staar ved siden av FAGNAVNET naar faget har én lekse - det
-           er den vanlige uka - og teksten faar da hele spalten. Har faget
-           flere, maa hver av dem ha sin egen hake, og da staar de paa hver
-           sin linje som foer. Ett fag med to lekser og én hake ville ikke
-           sagt hvilken av dem som var gjort. */
-        const alene = (liste.length === 1);
+        /* INGEN HAKE i oversikten. Avkryssingen skjer inne i fagvinduet,
+           der leksa staar med hele teksten sin. Et lite kvadrat ute i
+           rutenettet er lett aa treffe ved et uhell, og en lekse som blir
+           huket av ved en feil ser ut som en lekse som er gjort.
+           Stempelet paa merket sier hvordan faget ligger an - det er det
+           man trenger paa avstand. */
         ut += '<div class="lekse-blokk' + (l.ferdig ? ' ferdig' : '')
-          +   (hast ? ' ' + hast : '') + (alene ? ' alene' : '') + '">'
-          + (alene ? '' :
-              '<button class="lekse-hake" onclick="event.stopPropagation();vekslLekse(\''
-              + esc(l.id) + '\')" aria-label="'
-              + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>')
+          +   (hast ? ' ' + hast : '') + '">'
           + '<div class="lekse-inn">'
           +   (fr.tekst ? '<div class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</div>' : '')
           +   '<div class="lekse-tekst">' + esc(l.tekst)
