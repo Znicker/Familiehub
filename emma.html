@@ -311,11 +311,6 @@ body{
 .av-foot .knapp-gronn{border-color:var(--handling-ny)}
 .av-foot .knapp-endre{border-color:var(--handling-endre)}
 
-/* Under dagens avtaler, i full bredde. */
-.ny-avtale{
-  flex-shrink:0;width:100%;margin-top:12px;
-  font-size:var(--t-meta);padding:11px 15px;
-}
 
 /* ---------- Vær ---------- */
 .vaer-t{flex:1;text-align:center;padding:8px 2px;border-radius:11px;background:#F7F9FA}
@@ -433,17 +428,30 @@ body{
    en lekse og forsvinner naar den er huket av.
 
    Rutenett og ikke én kolonne: visningen tar hele bredden, og elleve fag
-   i én spalte er en rulleliste. `auto-fill` med et gulv paa 260px gir tre
-   kolonner paa iPaden i landskap, to i portrett og én paa telefon, uten
-   at noen av dem er skrevet ned som tall. */
+   i én spalte er en rulleliste.
+
+   Kolonnetallet er skrevet ned, ikke regnet ut av `auto-fill`. Med et gulv
+   paa 260px ble det tre kolonner paa iPaden, og tre kolonner gjoer hvert
+   kort saa smalt at en lekse paa fem ord brekker over to linjer. Antallet
+   er en lesbarhetsavgjoerelse, ikke en plassregning: to paa iPad, fem paa
+   PC. Bruddpunktene er de samme som typeskalaen bruker i felles-rot.css.
+
+   HOEYDEN er fri. Kortene faar den plassen innholdet trenger, og
+   rutenettet ruller - det er billigere aa rulle enn aa klippe en lekse
+   paa midten. `align-content:start` hindrer at faa fag strekkes ut over
+   hele hoeyden. */
 #fag{
-  display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
-  gap:10px;align-content:start;padding-right:2px;
+  display:grid;grid-template-columns:1fr;
+  gap:12px;align-content:start;padding:2px 2px 14px 0;
 }
+@media(min-width:700px){ #fag{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
+@media(min-width:1300px){ #fag{ grid-template-columns:repeat(5, minmax(0,1fr)); } }
 .fag-kort{
   border:1px solid var(--line);border-radius:12px;background:var(--bg-2);
-  padding:11px 13px;
+  padding:13px 15px 15px;
   display:flex;flex-direction:column;
+  /* Et fag uten lekser skal fortsatt vaere et kort og ikke en stripe. */
+  min-height:104px;
 }
 /* Tomme fag skal vaere synlige, men ikke trekke blikk fra dem som har
    noe. Samme grep som avhukede foeringer i huskelista. */
@@ -1190,8 +1198,10 @@ select.hu-felt{
       <div class="kort-kropp" id="fag" hidden>
         <div class="tom">Henter …</div>
       </div>
-      <button class="knapp-gronn ny-avtale" id="nyAvtaleKnapp"
-              onclick="nyAvtale()">Legg til avtale i kalenderen</button>
+      <!-- «Legg til avtale i kalenderen» sto her til 4. september. Den
+           gjoer det samme som oeverste plass i hoeyre tommelknapp, og to
+           veier til samme handling er én for mye naar den ene ligger fast
+           i hjoernet paa alle sidene. -->
       <!-- Fagraden laa her til 4. september. Alt som endrer noe under Fag
            ligger naa i hoeyre tommelknapp under «Rediger», og det som
            gjelder ett enkelt fag ligger i fagets eget kort. En rad med
@@ -2359,8 +2369,6 @@ function settVisning(ny){
     if(el) el.hidden = (v !== ny);
   });
 
-  /* Knappen under kortet hoerer til kalenderen; fagraden til Fag. */
-  if($('nyAvtaleKnapp')) $('nyAvtaleKnapp').hidden = (ny === 'fag');
   /* Fag har ingen dag aa bla i. */
   if($('dagPiler'))      $('dagPiler').hidden      = (ny === 'fag');
 
@@ -2675,10 +2683,25 @@ function tegnFag(){
     (proverFor[p.fagId] = proverFor[p.fagId] || []).push(p);
   });
 
-  function naermest(f){
-    const aapne = (perFag[f.id] || []).filter(function(l){ return !l.ferdig; });
-    if(!aapne.length) return '9999-99-99';
-    return aapne.map(function(l){ return l.frist || '9999-99-98'; }).sort()[0];
+  /* Hastegraden til et fag ER den mest presserende AAPNE leksa under det.
+     Avhukede teller ikke - et fag der alt er gjort haster ikke, uansett
+     hvor naer fristen sto.
+
+     De tre trinnene er datoer, saa de kan sammenlignes med hverandre uten
+     noen ekstra sortering:
+       en dato          - det finnes en aapen lekse med frist
+       9999-99-97       - aapen lekse uten frist: noe gjenstaar, men naar
+                          er ikke sagt
+       9999-99-98       - alt er huket av, men faget har innhold
+       9999-99-99       - ingen lekser i det hele tatt
+     Rekkefoelgen mellom de tre siste er valgt: «noe gjenstaar» skal alltid
+     ligge over «alt er gjort», som igjen skal ligge over «ingenting her». */
+  function haster(f){
+    const alle = perFag[f.id] || [];
+    if(!alle.length) return '9999-99-99';
+    const aapne = alle.filter(function(l){ return !l.ferdig; });
+    if(!aapne.length) return '9999-99-98';
+    return aapne.map(function(l){ return l.frist || '9999-99-97'; }).sort()[0];
   }
   /* Neste proeve som ikke har faatt karakter - den er ikke unnagjort selv
      om datoen er passert. */
@@ -2694,11 +2717,11 @@ function tegnFag(){
      vaar aa stokke om paa. Rekkefoelgen fagene ble lagt inn i er den man
      ser igjen i nedtrekket i skjemaet. */
   const sortert = fagData.fag.slice().sort(function(a, b){
-    const noeA = (perFag[a.id] || []).length ? 0 : 1;
-    const noeB = (perFag[b.id] || []).length ? 0 : 1;
-    if(noeA !== noeB) return noeA - noeB;          /* med innhold oeverst */
-    if(noeA) return 0;                             /* tomme: uroert rekkefoelge */
-    return naermest(a).localeCompare(naermest(b));
+    const h = haster(a).localeCompare(haster(b));
+    /* Staar to fag likt - typisk to tomme - beholder de rekkefoelgen de
+       ble lagt inn i. Den er den samme som i nedtrekket i skjemaet, og et
+       rutenett som stokker om paa seg selv uten grunn er vondt aa lete i. */
+    return h;
   });
 
   if(!sortert.length){
