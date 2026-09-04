@@ -606,6 +606,56 @@ body{
 }
 .fagvis-tom{ font-size:var(--t-meta); color:var(--ink-soft); font-style:italic; }
 
+.lim-hjelp{font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5;margin-bottom:10px}
+
+/* ---------- Forslag fra Neam ----------
+   Neam skriver ikke leksene rett inn. Han legger dem HER, og de blir
+   ingenting foer noen har sett paa dem og trykket Legg inn.
+
+   Grunnen er hva slags feil en skanning gjoer: den leser «8/9» som feil
+   maaned, den henger en lekse paa naboFAGet i tabellen, den tar med
+   overskriften som en oppgave. Ingen av dem ser ut som feil i et svar
+   fra Neam - de ser ut som lekser. De blir synlige foerst naar de staar
+   ved siden av faget de havnet paa, med fristen tolket ferdig. */
+.forslag-boks{ width:min(96vw, 1060px); max-width:none; }
+.forslag-liste{
+  flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.forslag-rad{
+  display:grid; grid-template-columns:26px 1.1fr 2fr 132px;
+  gap:9px; align-items:center;
+  padding:9px 0; border-bottom:1px solid var(--line);
+}
+.forslag-rad:last-child{ border-bottom:none; }
+.forslag-rad.av{ opacity:.4; }
+.forslag-rad input[type=checkbox]{ width:20px; height:20px; }
+.forslag-rad .hu-felt{ font-size:var(--t-meta); padding:8px 9px; }
+.forslag-hode{
+  display:grid; grid-template-columns:26px 1.1fr 2fr 132px; gap:9px;
+  font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--ink-soft);
+  padding-bottom:6px; border-bottom:1px solid var(--line);
+}
+.forslag-nytt{
+  font-size:var(--t-etikett); font-weight:700; color:var(--handling-ny);
+  letter-spacing:.05em;
+}
+.forslag-teller{
+  font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin-right:auto;
+}
+@media(max-width:700px){
+  .forslag-hode{ display:none; }
+  .forslag-rad{
+    grid-template-columns:26px 1fr; grid-template-areas:'hake fag' '. tekst' '. frist';
+    gap:6px 9px;
+  }
+  .forslag-rad > :nth-child(1){ grid-area:hake; }
+  .forslag-rad > :nth-child(2){ grid-area:fag; }
+  .forslag-rad > :nth-child(3){ grid-area:tekst; }
+  .forslag-rad > :nth-child(4){ grid-area:frist; }
+}
+
 /* ---------- Bilder i lekser ----------
    Et bilde av tavla eller av en side i boka sier ofte mer enn setningen
    noen rekker aa skrive av. Miniatyrene staar under teksten; full
@@ -1193,6 +1243,23 @@ select.hu-felt{
       <button class="knapp-slett" id="fagSlett" onclick="slettFraFagSkjema()" hidden>Slett</button>
       <button class="hu-avbryt" onclick="avbrytSkjema('fagBoks', lukkFagSkjema)">Avbryt</button>
       <button class="knapp-gronn" id="fagLagre" onclick="lagreFagSkjema()">Legg til</button>
+    </div>
+  </div>
+
+  <!-- Forslag fra Neam. Ingenting er lagret naar denne staar oppe. -->
+  <div class="hu-boble-bak avtale-bak" id="forslagBak" hidden></div>
+  <div class="avtale-boks forslag-boks" id="forslagBoks" hidden role="dialog" aria-modal="true">
+    <button class="hub-lukk" onclick="lukkForslag()" aria-label="Lukk">×</button>
+    <div class="av-tittel"><span>Neam foreslår disse leksene</span></div>
+    <div class="lim-hjelp" id="forslagHjelp"></div>
+    <div class="forslag-hode">
+      <span></span><span>Fag</span><span>Lekse</span><span>Frist</span>
+    </div>
+    <div class="forslag-liste" id="forslagListe"></div>
+    <div class="av-foot">
+      <span class="forslag-teller" id="forslagTeller"></span>
+      <button class="hu-avbryt" onclick="avbrytSkjema('forslagBoks', lukkForslag)">Avbryt</button>
+      <button class="knapp-gronn" id="forslagLagre" onclick="lagreForslag()">Legg inn</button>
     </div>
   </div>
 
@@ -2020,8 +2087,9 @@ passSkjema();
 
 function skjemaAapent(){
   const viser = $('filviser') && !$('filviser').hidden;
+  const forslag = $('forslagBoks') && !$('forslagBoks').hidden;
   return avtaleAapen || huskeSkjema !== null || fagSkjema !== null
-      || fagVisId !== null || !!viser;
+      || fagVisId !== null || !!forslag || !!viser;
 }
 
 function nyAvtale(){ apneAvtale(null); }
@@ -4160,14 +4228,9 @@ function tilbakeTilStandard(){
 /* ============================================================
    Neam paa Emmas skjerm
    ------------------------------------------------------------
-   Sida eier fag og lekser, men Neam har ingen verktoey mot dem
-   i denne omgangen - han faar husets fire lesende, som paa de
-   andre sidene. Skal han kunne legge inn en lekse selv, er det
-   et eget verktoey med egen bekreftelse, og det bygges naar
-   lim-inn-veien har vist seg i bruk.
-
-   Han faar VITE at fagvisningen finnes, saa han kan vise vei
-   dit i stedet for aa gjette paa innholdet.
+   Han leser og skriver fag, lekser og proever. Verktoeyene og
+   begrunnelsen for at ukeplanen gaar via godkjenning staar over
+   FAG_VERKTOY.
    ============================================================ */
 
 window.neamKontekst = async function(){
@@ -4178,7 +4241,9 @@ window.neamKontekst = async function(){
     visning: visning === 'fag' ? 'Fag og frister'
            : visning === 'uke' ? ukeNavn()
            : dagNavn(),
-    apneLekser: antall
+    apneLekser: antall,
+    /* Staar det forslag og venter, skal han ikke legge fram flere oppaa. */
+    venterGodkjenning: ventendeForslag.length || undefined
   };
 };
 
@@ -4193,10 +4258,24 @@ window.neamBakgrunn = async function(){
     + 'avtalene i kalenderen hennes. Fag handler om hva som skal være gjort '
     + 'til når, ikke om hvilken time som er når.\n\n'
     + 'DØGNET SKIFTER KLOKKA 20. Etter det viser skjermen morgendagen.\n\n'
-    + 'DU HAR INGEN KALENDER- ELLER LEKSEVERKTØY. Blir du spurt hva hun har i '
-    + 'lekser eller hva som skjer en dag, si at du ikke kan lese det ennå og '
-    + 'vis heller til Fag-visningen - ikke gjett.\n\n'
-    + 'DU SNAKKER MED EN 13-ÅRING. Hold det kort, vennlig og konkret.';
+    + 'DU EIER FAG, LEKSER OG PRØVER på denne siden og kan både lese og skrive '
+    + 'dem. Slå alltid opp med les_fagene eller les_lekser før du svarer på hva '
+    + 'hun har - ikke gjett, og ikke svar av hukommelsen fra tidligere i '
+    + 'samtalen hvis noe kan ha endret seg siden.\n\n'
+    + 'UKEPLANEN GÅR ALLTID VIA foreslaa_lekser. Får du en ukeplan, et bilde, en '
+    + 'avskrift eller en liste med lekser du ikke har fått fra Emma i klartekst, '
+    + 'legger du HELE settet fram i ett kall og lar henne godkjenne. Ingenting er '
+    + 'lagret av det kallet. Si «jeg har lagt fram X lekser, se over fristene» - '
+    + 'ikke «jeg har lagt dem inn». Bruk legg_til_lekse bare når hun ber om én '
+    + 'bestemt lekse i klartekst.\n\n'
+    + 'DATOER skrives 2026-09-08. Står det «8/9» eller «torsdag» i kilden, må du '
+    + 'regne det om selv - og er du i tvil om hvilken måned eller hvilken uke, '
+    + 'send den heller UTEN frist og si fra at den mangler. En feil frist er verre '
+    + 'enn ingen: den ser riktig ut.\n\n'
+    + 'DU HAR INGEN KALENDERVERKTØY. Blir du spurt hva som skjer en dag, si at du '
+    + 'ikke kan lese avtalene og vis til Dag- eller Uke-visningen.\n\n'
+    + 'DU SNAKKER MED EN 13-ÅRING. Hold det kort, vennlig og konkret. Ikke moraliser '
+    + 'om lekser hun ikke har gjort - vis hva som står, og la henne bestemme.';
   const hus = await husregisterTekst();
   return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
 };
@@ -4284,11 +4363,557 @@ window.neamSideAndreTrykk = function(){ tilbakeTilStandard(); };
 
 /* ---- Husets leseverktoey ----
    Ligger i felles-data.js og er identiske paa alle fem sidene. */
+
+/* ============================================================
+   Neams verktoey mot fag, lekser og proever
+   ------------------------------------------------------------
+   Sida eier disse dataene, og «les overalt, skriv der du staar»
+   gjelder: Neam kan skrive her fordi det er HER de bor.
+
+   ÉN TING ER ANNERLEDES ENN ELLERS I HUSET. Lekser som kommer
+   fra en ukeplan gaar ikke rett inn - de gaar via
+   foreslaa_lekser, som legger dem i et panel Emma godkjenner.
+   Grunnen er hva slags feil kilden gjoer. En skanning eller en
+   avskrift bommer paa maaneden i «8/9», henger en lekse paa
+   naboraden i tabellen, tar overskriften for en oppgave. Ingen
+   av dem ser gale ut i et svar fra Neam - de ser ut som lekser.
+   De blir synlige foerst naar de staar ved siden av faget de
+   havnet paa, med fristen tolket ferdig.
+
+   Enkeltendringer gaar rett inn. De er én ting om gangen, de er
+   bedt om i klartekst, og de staar paa skjermen etterpaa - da
+   gjelder regelen om at en handling kan miste dialogen naar
+   feilen blir staaende synlig. Sletting beholder sin.
+   ============================================================ */
+
+const FAG_VERKTOY = [
+  {
+    name: 'les_fagene',
+    description: 'Alle fagene Emma har, med id, faglærer, hvilke ukedager faget er, '
+               + 'og hvor mange åpne lekser og kommende prøver hvert av dem har. '
+               + 'Bruk id-ene herfra i de andre verktøyene.',
+    input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'les_lekser',
+    description: 'Leksene med id, fag, tekst og frist. Uten argument gis bare de som '
+               + 'ikke er huket av, sortert med den mest presserende først.',
+    input_schema: {
+      type:'object',
+      properties:{
+        fag: { type:'string', description:'Navn på et fag. Utelat for alle fagene.' },
+        medFerdige: { type:'boolean', description:'true tar med de avhukede også.' }
+      },
+      required:[]
+    }
+  },
+  {
+    name: 'les_prover',
+    description: 'Prøvene med id, fag, type, dato og karakter. Karakteren står tom '
+               + 'til den er satt. Uten argument gis alle.',
+    input_schema: {
+      type:'object',
+      properties:{ fag:{ type:'string', description:'Navn på et fag. Utelat for alle.' } },
+      required:[]
+    }
+  },
+  {
+    name: 'foreslaa_lekser',
+    description: 'Legger én eller flere lekser fram til godkjenning. INGENTING lagres '
+               + 'av dette kallet - forslagene kommer opp i et panel der Emma kan rette '
+               + 'fag, tekst og frist, ta bort linjer og så trykke Legg inn. '
+               + 'BRUK DETTE når leksene kommer fra en ukeplan, et bilde, en avskrift '
+               + 'eller noe annet du ikke har fra Emma selv i klartekst. Send ALLE '
+               + 'leksene i ett kall - hun skal se hele uka på én gang, ikke godkjenne '
+               + 'én linje av gangen. Etter kallet: si hva du la fram og be henne se '
+               + 'over det, særlig fristene. Ikke påstå at noe er lagt inn.',
+    input_schema: {
+      type:'object',
+      properties:{
+        lekser: {
+          type:'array',
+          description:'Leksene som legges fram.',
+          items:{
+            type:'object',
+            properties:{
+              fag:   { type:'string', description:'Navnet på faget. Trenger ikke være eksakt - '
+                                                + 'huset finner riktig fag, og lager et nytt hvis '
+                                                + 'det ikke finnes fra før.' },
+              tekst: { type:'string', description:'Hva som skal gjøres.' },
+              frist: { type:'string', description:'Dato på formen 2026-09-08. Utelat hvis den ikke står.' }
+            },
+            required:['fag','tekst']
+          }
+        }
+      },
+      required:['lekser']
+    }
+  },
+  {
+    name: 'legg_til_lekse',
+    description: 'Legger inn ÉN lekse med det samme. Bruk dette bare når Emma har sagt '
+               + 'i klartekst hva som skal inn. Kommer leksene fra en ukeplan eller et '
+               + 'bilde, bruk foreslaa_lekser i stedet.',
+    input_schema: {
+      type:'object',
+      properties:{
+        fag:   { type:'string', description:'Navnet på faget.' },
+        tekst: { type:'string', description:'Hva som skal gjøres.' },
+        frist: { type:'string', description:'Dato på formen 2026-09-08.' }
+      },
+      required:['fag','tekst']
+    }
+  },
+  {
+    name: 'endre_lekse',
+    description: 'Endrer en lekse som finnes. Bare feltene du sender blir rørt. '
+               + 'ferdig:true huker den av, false tar haken bort igjen.',
+    input_schema: {
+      type:'object',
+      properties:{
+        id:     { type:'string', description:'Leksas id fra les_lekser.' },
+        tekst:  { type:'string' },
+        frist:  { type:'string', description:'Dato på formen 2026-09-08. Tom streng fjerner fristen.' },
+        fag:    { type:'string', description:'Navnet på faget den skal flyttes til.' },
+        ferdig: { type:'boolean' }
+      },
+      required:['id']
+    }
+  },
+  {
+    name: 'slett_lekse',
+    description: 'Sletter en lekse. Emma får et spørsmål først og kan si nei - svaret '
+               + 'sier hva hun valgte. Er leksa gjort, er det bedre å huke den av med '
+               + 'endre_lekse enn å slette den.',
+    input_schema: {
+      type:'object',
+      properties:{ id:{ type:'string', description:'Leksas id fra les_lekser.' } },
+      required:['id']
+    }
+  },
+  {
+    name: 'legg_til_prove',
+    description: 'Legger inn en prøve, innlevering eller framføring på et fag. '
+               + 'La karakteren stå tom - den settes når den kommer.',
+    input_schema: {
+      type:'object',
+      properties:{
+        fag:      { type:'string', description:'Navnet på faget.' },
+        type:     { type:'string', description:'Hva slags prøve. For eksempel «kapittelprøve» eller «muntlig framføring».' },
+        dato:     { type:'string', description:'Dato på formen 2026-09-08.' },
+        karakter: { type:'string', description:'Bare hvis den alt er satt.' }
+      },
+      required:['fag','type']
+    }
+  },
+  {
+    name: 'endre_prove',
+    description: 'Endrer en prøve som finnes - typisk for å sette karakteren når den '
+               + 'har kommet. Bare feltene du sender blir rørt.',
+    input_schema: {
+      type:'object',
+      properties:{
+        id:       { type:'string', description:'Prøvens id fra les_prover.' },
+        type:     { type:'string' },
+        dato:     { type:'string', description:'Dato på formen 2026-09-08.' },
+        karakter: { type:'string' }
+      },
+      required:['id']
+    }
+  },
+  {
+    name: 'endre_fag',
+    description: 'Setter faglærer og hvilke ukedager et fag er, eller gir det nytt navn. '
+               + 'Bare feltene du sender blir rørt.',
+    input_schema: {
+      type:'object',
+      properties:{
+        fag:    { type:'string', description:'Navnet på faget slik det heter nå.' },
+        navn:   { type:'string', description:'Nytt navn på faget.' },
+        laerer: { type:'string', description:'Faglærerens navn. Tom streng fjerner den.' },
+        dager:  { type:'array', description:'Ukedager: mandag, tirsdag, onsdag, torsdag, fredag, lørdag, søndag.',
+                  items:{ type:'string' } }
+      },
+      required:['fag']
+    }
+  },
+  {
+    name: 'legg_til_fag',
+    description: 'Oppretter et nytt fag. Finnes faget fra før, blir det ikke laget på nytt.',
+    input_schema: {
+      type:'object',
+      properties:{
+        navn:   { type:'string' },
+        laerer: { type:'string' },
+        dager:  { type:'array', items:{ type:'string' } }
+      },
+      required:['navn']
+    }
+  }
+];
+
+/* ---------------- Hjelpere ---------------- */
+
+/* Kallenavnene ungdomsskolen faktisk bruker. Prefiksregelen under tar
+   ikke «matte»: «Matematikk» begynner paa «mat», ikke paa «matt». */
+const FAG_KALLENAVN = {
+  'matte':'matematikk', 'matematik':'matematikk',
+  'gym':'kroppsøving', 'kropp':'kroppsøving', 'kroppsoving':'kroppsøving',
+  'k&h':'kunst og håndverk', 'kh':'kunst og håndverk', 'kunst':'kunst og håndverk',
+  'samfunn':'samfunnsfag', 'samf':'samfunnsfag',
+  'mat og helse':'mat og helse', 'moh':'mat og helse',
+  'natur':'naturfag', 'nat':'naturfag',
+  'eng':'engelsk', 'nor':'norsk'
+};
+
+/* Faget kjennes igjen uten hensyn til store bokstaver, gjennom kallenavn,
+   og ellers paa at det ene begynner der det andre gjoer.
+
+   TREFFER ET LOEST SOEK FLERE FAG, gir vi opp i stedet for aa velge ett.
+   «mat» begynner bade «Matematikk» og «Mat og helse», og en lekse lagt
+   paa feil av de to ser helt riktig ut i lista - den staar bare paa feil
+   sted. Da er det bedre at Neam faar «fant ingen» og maa spoerre.
+
+   Uten treff er det et nytt fag. Det er tryggere enn aa gjette, og et fag
+   for mye er synlig og lett aa slette. */
+function fagFinn(navn, liste){
+  let n = String(navn || '').trim().toLowerCase();
+  if(!n) return null;
+  const l = liste || (fagData && fagData.fag) || [];
+
+  let t = l.find(function(f){ return f.navn.toLowerCase() === n; });
+  if(t) return t;
+
+  if(FAG_KALLENAVN[n]){
+    n = FAG_KALLENAVN[n];
+    t = l.find(function(f){ return f.navn.toLowerCase() === n; });
+    if(t) return t;
+  }
+
+  const loese = l.filter(function(f){
+    const a = f.navn.toLowerCase();
+    return a.indexOf(n) === 0 || n.indexOf(a) === 0;
+  });
+  return loese.length === 1 ? loese[0] : null;
+}
+
+function fagKrev(navn){
+  const f = fagFinn(navn);
+  if(!f) throw new Error('Fant ikke ett bestemt fag ut fra «' + navn + '». '
+                       + 'Enten finnes det ikke, eller så passer navnet på flere. '
+                       + 'Bruk les_fagene og send navnet slik det står der, '
+                       + 'eller legg_til_fag hvis faget mangler.');
+  return f;
+}
+
+/* Dato inn fra Neam. Bare ISO godtas - alt annet er en gjetning, og en
+   gjetning paa en frist er nettopp det Emma skal slippe aa oppdage selv. */
+function datoKrev(t, hva){
+  const r = String(t || '').trim();
+  if(!r) return '';
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(r))
+    throw new Error(hva + ' må skrives som 2026-09-08. Fikk «' + r + '».');
+  return r;
+}
+
+function dagerInn(liste){
+  if(!Array.isArray(liste)) return null;
+  const ut = [];
+  liste.forEach(function(d){
+    const n = String(d || '').trim().toLowerCase().slice(0, 3);
+    const i = ['man','tir','ons','tor','fre','lør','søn'].indexOf(n);
+    if(i !== -1 && ut.indexOf(i) === -1) ut.push(i);
+  });
+  return ut.sort(function(a, b){ return a - b; });
+}
+
+function lekseUt(l){
+  return { id:l.id, fag:fagNavnAv(l.fagId), tekst:l.tekst,
+           frist:l.frist || null, ferdig:l.ferdig,
+           bilder:l.bilder.length || undefined };
+}
+
+/* ---------------- Forslagspanelet ---------------- */
+
+let ventendeForslag = [];
+
+function apneForslag(rader, beskjed){
+  ventendeForslag = rader;
+  $('forslagHjelp').textContent = beskjed || '';
+  tegnForslag();
+  $('forslagBak').hidden  = false;
+  $('forslagBoks').hidden = false;
+  huskSkjema('forslagBoks');
+  passSkjema();
+}
+
+function lukkForslag(){
+  ventendeForslag = [];
+  $('forslagBoks').hidden = true;
+  $('forslagBak').hidden  = true;
+}
+
+function tegnForslag(){
+  const fagValg = (fagData && fagData.fag || []);
+  $('forslagListe').innerHTML = ventendeForslag.map(function(r, i){
+    const nytt = !fagFinn(r.fag);
+    return '<div class="forslag-rad' + (r.med ? '' : ' av') + '" data-nr="' + i + '">'
+      + '<input type="checkbox" ' + (r.med ? 'checked' : '')
+      +   ' onchange="forslagMed(' + i + ', this.checked)" aria-label="Ta med">'
+      + '<span>'
+      +   '<input class="hu-felt" value="' + esc(r.fag) + '" '
+      +     'oninput="forslagSett(' + i + ', \'fag\', this.value)" list="forslagFag">'
+      +   (nytt ? '<span class="forslag-nytt">nytt fag</span>' : '')
+      + '</span>'
+      + '<input class="hu-felt" value="' + esc(r.tekst) + '" '
+      +   'oninput="forslagSett(' + i + ', \'tekst\', this.value)">'
+      + '<input class="hu-felt" type="date" value="' + esc(r.frist) + '" '
+      +   'onchange="forslagSett(' + i + ', \'frist\', this.value)">'
+      + '</div>';
+  }).join('')
+  + '<datalist id="forslagFag">'
+  + fagValg.map(function(f){ return '<option value="' + esc(f.navn) + '">'; }).join('')
+  + '</datalist>';
+
+  const med = ventendeForslag.filter(function(r){ return r.med; }).length;
+  const nye = ventendeForslag.filter(function(r){ return r.med && !fagFinn(r.fag); }).length;
+  $('forslagTeller').textContent = med + ' av ' + ventendeForslag.length + ' tas med'
+    + (nye ? ', ' + nye + ' nytt fag' : '');
+  $('forslagLagre').disabled = !med;
+}
+
+function forslagMed(i, paa){
+  if(ventendeForslag[i]) ventendeForslag[i].med = !!paa;
+  tegnForslag();
+}
+
+/* Verdien settes uten aa tegne om: en oninput som bygger raden paa nytt
+   ville tatt markoeren med seg til begynnelsen ved hvert tastetrykk.
+   Telleren oppdateres for seg. */
+function forslagSett(i, felt, verdi){
+  if(!ventendeForslag[i]) return;
+  ventendeForslag[i][felt] = verdi;
+  const med = ventendeForslag.filter(function(r){ return r.med; }).length;
+  const nye = ventendeForslag.filter(function(r){ return r.med && !fagFinn(r.fag); }).length;
+  $('forslagTeller').textContent = med + ' av ' + ventendeForslag.length + ' tas med'
+    + (nye ? ', ' + nye + ' nytt fag' : '');
+}
+
+async function lagreForslag(){
+  const med = ventendeForslag.filter(function(r){
+    return r.med && String(r.tekst || '').trim() && String(r.fag || '').trim();
+  });
+  if(!med.length) return;
+  const knapp = $('forslagLagre');
+  knapp.disabled = true;
+  try{
+    await endreFag(function(d){
+      med.forEach(function(r){
+        /* Faget kan ha blitt laget av en tidligere rad i samme godkjenning,
+           eller av noen andre siden lista ble lest. */
+        let f = fagFinn(r.fag, d.fag);
+        if(!f){
+          f = { id:nyId(), navn:String(r.fag).trim(), laerer:'', dager:[] };
+          d.fag.push(f);
+        }
+        d.lekser.push({ id:nyId(), fagId:f.id, tekst:String(r.tekst).trim(),
+                        frist:String(r.frist || ''), ferdig:false,
+                        laget:datoNokkel(new Date()), bilder:[] });
+      });
+      return d;
+    });
+    lukkForslag();
+    settVisning('fag');
+  }catch(e){
+    varsle('Fikk ikke lagt inn: ' + e.message);
+  }finally{
+    knapp.disabled = false;
+  }
+}
+
+/* ---------------- Utfoeringen ---------------- */
+
+async function fagUtfor(navn, arg){
+  arg = arg || {};
+  if(!fagData) await lastFag();
+
+  if(navn === 'les_fagene'){
+    return { fag: fagData.fag.map(function(f){
+      const l = fagData.lekser.filter(function(x){ return x.fagId === f.id && !x.ferdig; });
+      const p = fagData.prover.filter(function(x){
+        return x.fagId === f.id && x.dato && datoFraTekst(x.dato) >= idag0();
+      });
+      return { id:f.id, navn:f.navn, faglaerer:f.laerer || null,
+               ukedager: f.dager.map(function(n){ return UKEDAGER[n]; }),
+               apneLekser:l.length, kommendeProver:p.length };
+    })};
+  }
+
+  if(navn === 'les_lekser'){
+    const f = arg.fag ? fagKrev(arg.fag) : null;
+    let liste = fagData.lekser.filter(function(l){
+      if(f && l.fagId !== f.id) return false;
+      return arg.medFerdige ? true : !l.ferdig;
+    });
+    liste = liste.slice().sort(fristSort);
+    return { fag: f ? f.navn : null, antall: liste.length,
+             lekser: liste.slice(0, 80).map(lekseUt),
+             avkortet: liste.length > 80 };
+  }
+
+  if(navn === 'les_prover'){
+    const f = arg.fag ? fagKrev(arg.fag) : null;
+    const liste = fagData.prover
+      .filter(function(p){ return !f || p.fagId === f.id; })
+      .slice().sort(function(a, b){ return (a.dato || '').localeCompare(b.dato || ''); });
+    return { antall: liste.length, prover: liste.map(function(p){
+      return { id:p.id, fag:fagNavnAv(p.fagId), type:p.type,
+               dato:p.dato || null, karakter:p.karakter || null };
+    })};
+  }
+
+  if(navn === 'foreslaa_lekser'){
+    const inn = Array.isArray(arg.lekser) ? arg.lekser : [];
+    const rader = inn.filter(function(r){
+      return r && String(r.fag || '').trim() && String(r.tekst || '').trim();
+    }).map(function(r){
+      return { med:true, fag:String(r.fag).trim(), tekst:String(r.tekst).trim(),
+               frist: datoKrev(r.frist, 'Fristen') };
+    });
+    if(!rader.length) throw new Error('Ingen lekser å legge fram.');
+    apneForslag(rader, 'Ingenting er lagret ennå. Rett det som er galt, ta bort '
+                     + 'det som ikke skal med, og trykk Legg inn.');
+    return { venter:true, antall:rader.length,
+             beskjed:'Forslagene ligger på skjermen og venter på at Emma godkjenner dem. '
+                   + 'Ingenting er lagret. Si hva du la fram, og be henne se over fristene.' };
+  }
+
+  if(navn === 'legg_til_lekse'){
+    const f = fagKrev(arg.fag);
+    const tekst = String(arg.tekst || '').trim();
+    if(!tekst) throw new Error('Leksa må ha en tekst.');
+    const frist = datoKrev(arg.frist, 'Fristen');
+    await endreFag(function(d){
+      d.lekser.push({ id:nyId(), fagId:f.id, tekst:tekst, frist:frist, ferdig:false,
+                      laget:datoNokkel(new Date()), bilder:[] });
+      return d;
+    });
+    return { lagt:{ fag:f.navn, tekst:tekst, frist:frist || null } };
+  }
+
+  if(navn === 'endre_lekse'){
+    const gammel = fagData.lekser.find(function(l){ return l.id === arg.id; });
+    if(!gammel) throw new Error('Fant ingen lekse med id «' + arg.id + '». Bruk les_lekser.');
+    const nyFag = arg.fag ? fagKrev(arg.fag) : null;
+    const endring = {};
+    if(arg.tekst !== undefined) endring.tekst = String(arg.tekst).trim();
+    if(arg.frist !== undefined) endring.frist = datoKrev(arg.frist, 'Fristen');
+    if(arg.ferdig !== undefined) endring.ferdig = !!arg.ferdig;
+    if(nyFag) endring.fagId = nyFag.id;
+    if(!Object.keys(endring).length) throw new Error('Ingenting å endre.');
+    await endreFag(function(d){
+      d.lekser = d.lekser.map(function(l){
+        return l.id === arg.id ? Object.assign({}, l, endring) : l;
+      });
+      return d;
+    });
+    const ny = fagData.lekser.find(function(l){ return l.id === arg.id; });
+    return { endret: lekseUt(ny) };
+  }
+
+  if(navn === 'slett_lekse'){
+    const l = fagData.lekser.find(function(x){ return x.id === arg.id; });
+    if(!l) throw new Error('Fant ingen lekse med id «' + arg.id + '». Bruk les_lekser.');
+    /* Sletting beholder bekreftelsen. Det som er borte er borte, og det
+       staar ingen feil igjen paa skjermen aa oppdage etterpaa. */
+    const ok = await bekreft('Neam vil slette «' + l.tekst + '» fra '
+                           + fagNavnAv(l.fagId) + '. Slette den?',
+                           {jaTekst:'Slett', fare:true});
+    if(!ok) return { slettet:false, beskjed:'Emma sa nei. Leksa står som før.' };
+    await endreFag(function(d){
+      d.lekser = d.lekser.filter(function(x){ return x.id !== arg.id; });
+      return d;
+    });
+    return { slettet:true, tekst:l.tekst };
+  }
+
+  if(navn === 'legg_til_prove'){
+    const f = fagKrev(arg.fag);
+    const type = String(arg.type || '').trim();
+    if(!type) throw new Error('Prøven må ha en type.');
+    const dato = datoKrev(arg.dato, 'Datoen');
+    await endreFag(function(d){
+      d.prover.push({ id:nyId(), fagId:f.id, type:type, dato:dato,
+                      karakter:String(arg.karakter || '').trim() });
+      return d;
+    });
+    return { lagt:{ fag:f.navn, type:type, dato:dato || null } };
+  }
+
+  if(navn === 'endre_prove'){
+    const p = fagData.prover.find(function(x){ return x.id === arg.id; });
+    if(!p) throw new Error('Fant ingen prøve med id «' + arg.id + '». Bruk les_prover.');
+    const endring = {};
+    if(arg.type !== undefined)     endring.type = String(arg.type).trim();
+    if(arg.dato !== undefined)     endring.dato = datoKrev(arg.dato, 'Datoen');
+    if(arg.karakter !== undefined) endring.karakter = String(arg.karakter).trim();
+    if(!Object.keys(endring).length) throw new Error('Ingenting å endre.');
+    await endreFag(function(d){
+      d.prover = d.prover.map(function(x){
+        return x.id === arg.id ? Object.assign({}, x, endring) : x;
+      });
+      return d;
+    });
+    const ny = fagData.prover.find(function(x){ return x.id === arg.id; });
+    return { endret:{ fag:fagNavnAv(ny.fagId), type:ny.type,
+                      dato:ny.dato || null, karakter:ny.karakter || null } };
+  }
+
+  if(navn === 'endre_fag'){
+    const f = fagKrev(arg.fag);
+    const endring = {};
+    if(arg.navn   !== undefined && String(arg.navn).trim()) endring.navn = String(arg.navn).trim();
+    if(arg.laerer !== undefined) endring.laerer = String(arg.laerer).trim();
+    const dager = dagerInn(arg.dager);
+    if(dager) endring.dager = dager;
+    if(!Object.keys(endring).length) throw new Error('Ingenting å endre.');
+    await endreFag(function(d){
+      d.fag = d.fag.map(function(x){
+        return x.id === f.id ? Object.assign({}, x, endring) : x;
+      });
+      return d;
+    });
+    const ny = fagAv(f.id);
+    return { endret:{ navn:ny.navn, faglaerer:ny.laerer || null,
+                      ukedager: ny.dager.map(function(n){ return UKEDAGER[n]; }) }};
+  }
+
+  if(navn === 'legg_til_fag'){
+    const nytt = String(arg.navn || '').trim();
+    if(!nytt) throw new Error('Faget må ha et navn.');
+    const finnes = fagFinn(nytt);
+    if(finnes) return { fantes:true, navn:finnes.navn,
+                        beskjed:'Faget finnes fra før og ble ikke laget på nytt.' };
+    const dager = dagerInn(arg.dager) || [];
+    await endreFag(function(d){
+      d.fag.push({ id:nyId(), navn:nytt, laerer:String(arg.laerer || '').trim(), dager:dager });
+      return d;
+    });
+    return { lagt:{ navn:nytt } };
+  }
+
+  return null;
+}
+
+/* Sidas egne foerst, husets sist - da vinner et sidenavn ved en
+   eventuell navnekollisjon. */
 window.neamVerktoy = async function(){
-  return HUS_VERKTOY.slice();
+  return FAG_VERKTOY.concat(HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
+  const mitt = await fagUtfor(navn, arg);
+  if(mitt) return mitt;
   const hus = await husUtfor(navn, arg);
   if(hus) return hus.svar;
   throw new Error('Ukjent verktøy: ' + navn);
@@ -4554,6 +5179,7 @@ document.addEventListener('keydown', function(e){
   if(avtaleAapen){ lukkAvtale(); return; }
   if(huskeSkjema){ lukkHuskeSkjema(); return; }
   if(fagSkjema){ lukkFagSkjema(); return; }
+  if($('forslagBoks') && !$('forslagBoks').hidden){ lukkForslag(); return; }
   if(fagVisId){ lukkFagVis(); return; }
   if(huBobleId) lukkHuskeBoble();
   if(vaerBobleAapen) lukkVaerBoble();
