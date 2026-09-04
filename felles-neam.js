@@ -842,6 +842,7 @@ function neamDuseNed(){
 function neamFargeKlasse(farge){
   if(farge === 'ny')    return ' neam-ny';
   if(farge === 'endre') return ' neam-endre';
+  if(farge === 'slett') return ' neam-slett';
   return '';
 }
 
@@ -907,6 +908,7 @@ function neamSideFirer(){
     k.classList.toggle('merke', !!(v && v.merke));
     k.classList.toggle('neam-ny',    !!(v && v.farge === 'ny'));
     k.classList.toggle('neam-endre', !!(v && v.farge === 'endre'));
+    k.classList.toggle('neam-slett', !!(v && v.farge === 'slett'));
     k.innerHTML = v ? neamKnappInnhold(v.ikon, v.tekst || v.navn, !!v.merke) : '';
     const navn = v ? v.navn : '';
     k.setAttribute('aria-label', navn);

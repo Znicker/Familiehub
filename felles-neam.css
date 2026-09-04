@@ -580,12 +580,17 @@
 .neam-enhet.neam-ny:not(.merke)::before{ background:var(--handling-ny); }
 .neam-knapp.neam-endre:not(.merke)::before,
 .neam-enhet.neam-endre:not(.merke)::before{ background:var(--handling-endre); }
-.neam-knapp.neam-ny, .neam-knapp.neam-endre,
-.neam-enhet.neam-ny, .neam-enhet.neam-endre{ color:#FFFFFF; }
+/* Roedt betyr sletter, og ingenting annet - samme regel som .btn-slett. */
+.neam-knapp.neam-slett:not(.merke)::before,
+.neam-enhet.neam-slett:not(.merke)::before{ background:var(--danger); }
+.neam-knapp.neam-ny, .neam-knapp.neam-endre, .neam-knapp.neam-slett,
+.neam-enhet.neam-ny, .neam-enhet.neam-endre, .neam-enhet.neam-slett{ color:#FFFFFF; }
 .neam-knapp.neam-ny .neam-knapp-tekst,
 .neam-knapp.neam-endre .neam-knapp-tekst,
+.neam-knapp.neam-slett .neam-knapp-tekst,
 .neam-enhet.neam-ny .neam-knapp-tekst,
-.neam-enhet.neam-endre .neam-knapp-tekst{ color:#FFFFFF; opacity:.92; }
+.neam-enhet.neam-endre .neam-knapp-tekst,
+.neam-enhet.neam-slett .neam-knapp-tekst{ color:#FFFFFF; opacity:.92; }
 
 /* ---- Navnet i knappen ----
    Strektegningene sier ikke nok alene. Et merke baerer navnet sitt selv og

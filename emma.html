@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=5">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=37">
+<link rel="stylesheet" href="/felles-neam.css?v=38">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -1353,7 +1353,7 @@ select.hu-felt{
 <script src="/felles-filviser.js?v=2"></script>
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
-<script src="/felles-neam.js?v=44"></script>
+<script src="/felles-neam.js?v=45"></script>
 <script>
 /* ============================================================
    NEAM – Emma dash
@@ -4307,7 +4307,16 @@ window.neamSideHandlinger = function(){
               ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
                  + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
                  + '<path d="M4 5h16M4 12h10M4 19h10"/><path d="M18 15v6M15 18h6"/></svg>',
-              gjor: apneFagSkjema }
+              gjor: apneFagSkjema },
+
+            /* Ryddeknapp for testing. Skal ut naar ukeplanveien er kjoert
+               inn - den hoerer ikke hjemme i en hverdagsmeny. */
+            { navn:'Slett lekser denne uken', tekst:'Slett ukas lekser', farge:'slett',
+              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                 + '<path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/>'
+                 + '<path d="M10 11v6M14 11v6"/></svg>',
+              gjor: slettUkasLekser }
           ]);
         } }
     : { plass:'opp', navn:'Legg til avtale', tekst:'Avtale', farge:'ny',
@@ -4728,6 +4737,65 @@ async function lagreForslag(){
     varsle('Fikk ikke lagt inn: ' + e.message);
   }finally{
     knapp.disabled = false;
+  }
+}
+
+/* ---------------- Rydding under testing ----------------
+   Ligger i Rediger-stabelen fordi den hoerer til det samme arbeidet:
+   legg inn en ukeplan, se hvordan det ble, ta den bort, proev igjen.
+
+   «Denne uken» er den EKTE inneværende uka, maalt fra i dag - ikke uka
+   for dagen skjermen sist sto paa. Under Fag er det ingen ukesnavigasjon
+   og dermed ingenting som viser hvilken uke som ville vaert ment, og en
+   sletteknapp som rammer et annet tidsrom enn den som trykker tror, er
+   den verste sorten.
+
+   Tar bare lekser MED frist i uka. Udaterte lekser fra samme innliming
+   blir staaende, og det staar i spoersmaalet - saa ingen tror lista er
+   tom naar den ikke er det.
+   ------------------------------------------------------------ */
+async function slettUkasLekser(){
+  if(!fagData) await lastFag();
+
+  const start = ukeStart(idag0());
+  const fra = datoNokkel(start);
+  const til = datoNokkel(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6));
+
+  const treff = fagData.lekser.filter(function(l){
+    return l.frist && l.frist >= fra && l.frist <= til;
+  });
+  const udaterte = fagData.lekser.filter(function(l){ return !l.frist; }).length;
+
+  if(!treff.length){
+    varsle('Ingen lekser har frist i uke ' + isoUke(idag0()).uke + '.'
+         + (udaterte ? '\n\n' + udaterte + ' lekse(r) står uten frist og røres ikke.' : ''));
+    return;
+  }
+
+  /* Fagnavnene med i spoersmaalet: «7 lekser» sier ingenting om hva som
+     forsvinner, og dette er en knapp som sletter uten vei tilbake. */
+  const fag = [];
+  treff.forEach(function(l){
+    const n = fagNavnAv(l.fagId);
+    if(n && fag.indexOf(n) === -1) fag.push(n);
+  });
+
+  const ok = await bekreft(
+    'Slette ' + treff.length + ' lekse(r) med frist i uke ' + isoUke(idag0()).uke + '?\n\n'
+      + fag.join(', ')
+      + (udaterte ? '\n\n' + udaterte + ' lekse(r) uten frist blir stående.' : ''),
+    {jaTekst:'Slett', fare:true});
+  if(!ok) return;
+
+  const idg = {};
+  treff.forEach(function(l){ idg[l.id] = true; });
+  try{
+    await endreFag(function(d){
+      d.lekser = d.lekser.filter(function(l){ return !idg[l.id]; });
+      return d;
+    });
+  }catch(e){
+    varsle('Fikk ikke slettet: ' + e.message);
   }
 }
 
