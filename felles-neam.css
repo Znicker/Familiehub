@@ -569,6 +569,24 @@
 }
 .neam-enhet svg, .neam-enhet .neam-knapp-tekst{ position:relative; z-index:1; }
 
+/* ---- Betydningsfarger ----
+   Fylt flate i stedet for papir: groent skaper noe, oker endrer noe som
+   finnes - de samme to betydningene som .btn-ny og .btn-endre har ellers.
+   Fargen ligger paa skiva (::before), ikke paa knappens egen bakgrunn,
+   for det er skiva som ligger over roeret. Ikon og tekst blir hvite.
+
+   Merker faar ingen flate og dermed ingen farge; de baerer sin egen. */
+.neam-knapp.neam-ny:not(.merke)::before,
+.neam-enhet.neam-ny:not(.merke)::before{ background:var(--handling-ny); }
+.neam-knapp.neam-endre:not(.merke)::before,
+.neam-enhet.neam-endre:not(.merke)::before{ background:var(--handling-endre); }
+.neam-knapp.neam-ny, .neam-knapp.neam-endre,
+.neam-enhet.neam-ny, .neam-enhet.neam-endre{ color:#FFFFFF; }
+.neam-knapp.neam-ny .neam-knapp-tekst,
+.neam-knapp.neam-endre .neam-knapp-tekst,
+.neam-enhet.neam-ny .neam-knapp-tekst,
+.neam-enhet.neam-endre .neam-knapp-tekst{ color:#FFFFFF; opacity:.92; }
+
 /* ---- Navnet i knappen ----
    Strektegningene sier ikke nok alene. Et merke baerer navnet sitt selv og
    faar ikke tekst; en strektegning faar den under seg, inne i skiva.

@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=5">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=36">
+<link rel="stylesheet" href="/felles-neam.css?v=37">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -553,8 +553,27 @@ body{
    z-index:61 - staar LENGER NEDE i fila. Like spesifikke velgere
    avgjoeres av rekkefoelge, saa 61 vant og skjemaet ble liggende bak
    likevel. To klasser slaar én uansett hvor de staar. */
-.avtale-boks.fagvis-boks{ max-width:640px; z-index:58; }
+/* Fagvinduet er ikke et skjema, men en LESEFLATE - lekser, frister og
+   proever som skal kunne leses tvers over et rom, ikke fylles ut. Derfor
+   bredere enn skjemaene og med stoerre skrift enn dem. Hoeyden settes av
+   passSkjema() fra visualViewport, som for de andre boksene. */
+.avtale-boks.fagvis-boks{
+  width:min(96vw, 1180px); max-width:none; z-index:58;
+  padding:22px 26px 18px;
+}
 #fagVisBak{ z-index:57; }
+.fagvis-boks .av-tittel{ font-size:calc(var(--t-stor) * 1.35); }
+.fagvis-boks .fagvis-meta{ font-size:var(--t-brod); gap:8px 20px; }
+.fagvis-boks .fagvis-bolk h4{ font-size:var(--t-meta); }
+.fagvis-boks .lekse-tekst{ font-size:var(--t-brod); line-height:1.45; }
+.fagvis-boks .lekse-frist,
+.fagvis-boks .prove-dato{ font-size:var(--t-meta); }
+.fagvis-boks .prove-type{ font-size:var(--t-brod); }
+.fagvis-boks .prove-karakter{ font-size:var(--t-stor); min-width:44px; }
+.fagvis-boks .fagvis-tom{ font-size:var(--t-brod); }
+.fagvis-boks .lekse-linje{ margin-top:11px; }
+.fagvis-boks .lekse-hake{ width:25px; height:25px; }
+.fagvis-boks .prove-linje{ padding:10px 0; }
 .fagvis-meta{
   display:flex; flex-wrap:wrap; gap:6px 14px; padding:0 0 4px;
   font-size:var(--t-meta); color:var(--ink-soft);
@@ -587,27 +606,37 @@ body{
 }
 .fagvis-tom{ font-size:var(--t-meta); color:var(--ink-soft); font-style:italic; }
 
-/* Lim inn-skjemaet arver avtaleboksens ramme. Feltet er monospace fordi
-   det som limes inn er linjer med skilletegn, og da hjelper det aa se at
-   kolonnene staar under hverandre. */
-.lim-omr{min-height:132px;font-family:'IBM Plex Mono',monospace;font-size:14px;line-height:1.5}
-.lim-hjelp{font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5;margin-bottom:8px}
-.lim-fasit{
-  margin-top:10px;max-height:190px;overflow-y:auto;overscroll-behavior:contain;
+/* ---------- Bilder i lekser ----------
+   Et bilde av tavla eller av en side i boka sier ofte mer enn setningen
+   noen rekker aa skrive av. Miniatyrene staar under teksten; full
+   stoerrelse aapnes i filviseren, den samme som vedlegg bruker. */
+.lekse-bilder{ display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; }
+.lekse-bilde{
+  width:74px; height:74px; border-radius:9px; overflow:hidden; padding:0;
+  border:1px solid var(--line); background:var(--bg-2); cursor:pointer;
+  flex-shrink:0; position:relative;
 }
-.lim-rad{
-  display:flex;gap:9px;font-size:var(--t-meta);padding:5px 0;
-  border-bottom:1px solid var(--line);
+.lekse-bilde img{ width:100%; height:100%; object-fit:cover; display:block; }
+.fagvis-boks .lekse-bilde{ width:104px; height:104px; }
+/* Venter paa at bildet skal komme fra KV. */
+.lekse-bilde.laster{ background:var(--paper-soft); }
+
+/* Miniatyrene i skjemaet har et kryss - der skal de kunne fjernes igjen.
+   I visningen har de ikke det: der fjernes de ved aa endre leksa. */
+.bilde-rad{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.bilde-boks{ position:relative; }
+.bilde-boks img{
+  width:88px; height:88px; object-fit:cover; display:block;
+  border-radius:9px; border:1px solid var(--line);
 }
-.lim-rad:last-child{border-bottom:none}
-.lim-rad.avvist{color:var(--danger)}
-.lim-fag{
-  width:118px;flex-shrink:0;font-weight:700;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+.bilde-fjern{
+  position:absolute; top:-6px; right:-6px; width:22px; height:22px;
+  border-radius:50%; border:none; cursor:pointer; padding:0;
+  background:var(--danger); color:#FFFFFF; font-size:14px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 6px rgba(44,62,80,.3);
 }
-.lim-tekst{flex:1;min-width:0;overflow-wrap:anywhere}
-.lim-frist{flex-shrink:0;font-variant-numeric:tabular-nums;color:var(--ink-soft)}
-.lim-teller{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600;margin-right:auto}
+.bilde-hjelp{ font-size:var(--t-etikett); color:var(--ink-soft); margin-top:5px; }
 
 /* ---------- Feilkort ----------
    Skjermen har ingen bunnrad lenger - den oppdaterer seg selv. Den eneste
@@ -1150,6 +1179,13 @@ select.hu-felt{
           <textarea class="hu-felt hu-omr" id="fagTekst"
                     placeholder="Hva skal gjøres?"></textarea>
         </label>
+        <div class="bilde-rad" id="fagBilder"></div>
+        <div class="bilde-hjelp">Lim inn et bilde med Ctrl+V, eller
+          <button type="button" class="knapp-gronn" style="padding:4px 11px"
+                  onclick="velgBilde()">velg fil</button>
+          <input type="file" id="fagBildeFil" accept="image/*" multiple hidden
+                 onchange="filerValgt(this.files)">
+        </div>
       </div>
       <div class="av-feil" id="fagFeil" hidden></div>
     </div>
@@ -1157,37 +1193,6 @@ select.hu-felt{
       <button class="knapp-slett" id="fagSlett" onclick="slettFraFagSkjema()" hidden>Slett</button>
       <button class="hu-avbryt" onclick="avbrytSkjema('fagBoks', lukkFagSkjema)">Avbryt</button>
       <button class="knapp-gronn" id="fagLagre" onclick="lagreFagSkjema()">Legg til</button>
-    </div>
-  </div>
-
-  <!-- Lim inn: en skanning av ukeplanen blir til lekser. Den lagrer
-       ingenting foer linjene staar tolket paa skjermen og noen har sett
-       paa dem. -->
-  <div class="hu-boble-bak avtale-bak" id="limBak" hidden></div>
-  <div class="avtale-boks" id="limBoks" hidden role="dialog" aria-modal="true">
-    <button class="hub-lukk" onclick="lukkLimInn()" aria-label="Lukk">×</button>
-    <div class="av-tittel"><span>Lim inn lekser</span></div>
-    <div class="av-skjema">
-      <div class="av-kol">
-        <div class="lim-hjelp">
-          Én linje per lekse: <b>fag ; hva som skal gjøres ; frist</b>.
-          Fristen kan skrives 2026-09-08, 08.09 eller 8/9. Fag som ikke
-          finnes fra før blir lagt til.
-        </div>
-        <textarea class="hu-felt hu-omr lim-omr" id="limFelt" oninput="limTolk()"
-                  placeholder="Matematikk ; oppgave 4.5 s. 88 ; 08.09&#10;Norsk ; les kapittel 3 ; 09.09"></textarea>
-      </div>
-      <div class="av-kol">
-        <div class="av-etikett">Slik blir det lest</div>
-        <div class="lim-fasit" id="limFasit">
-          <div class="tom">Ingenting limt inn ennå.</div>
-        </div>
-      </div>
-    </div>
-    <div class="av-foot">
-      <span class="lim-teller" id="limTeller"></span>
-      <button class="hu-avbryt" onclick="avbrytSkjema('limBoks', lukkLimInn)">Avbryt</button>
-      <button class="knapp-gronn" id="limLagre" onclick="lagreLimInn()" disabled>Legg inn</button>
     </div>
   </div>
 
@@ -1201,7 +1206,6 @@ select.hu-felt{
     <div class="fagvis-meta" id="fagVisMeta"></div>
     <div class="fagvis-kropp" id="fagVisKropp"></div>
     <div class="av-foot">
-      <button class="knapp-endre" onclick="redigerFag(fagVisId)">Rediger faget</button>
       <button class="knapp-gronn" onclick="apneProveSkjema(fagVisId)">Ny prøve</button>
       <button class="knapp-gronn" onclick="apneLekseSkjema(fagVisId)">Ny lekse</button>
     </div>
@@ -1282,7 +1286,7 @@ select.hu-felt{
 <script src="/felles-filviser.js?v=2"></script>
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
-<script src="/felles-neam.js?v=43"></script>
+<script src="/felles-neam.js?v=44"></script>
 <script>
 /* ============================================================
    NEAM – Emma dash
@@ -2016,9 +2020,8 @@ passSkjema();
 
 function skjemaAapent(){
   const viser = $('filviser') && !$('filviser').hidden;
-  const lim = $('limBoks') && !$('limBoks').hidden;
   return avtaleAapen || huskeSkjema !== null || fagSkjema !== null
-      || fagVisId !== null || !!lim || !!viser;
+      || fagVisId !== null || !!viser;
 }
 
 function nyAvtale(){ apneAvtale(null); }
@@ -2150,6 +2153,13 @@ function apneAvtale(e){
 /* Fag- og limskjemaet har ingenting utenfor feltene sine - alt de kan
    miste ligger i en textarea eller et input, og avtrykket fanger dem
    uten hjelp herfra. */
+/* Bildene ligger i en JS-liste, ikke i et felt, saa avtrykket finner dem
+   ikke selv. Uten denne ville «lim inn et bilde, trykk Avbryt» gaatt rett
+   ut uten spoersmaal. */
+ekstraTilstand['fagBoks'] = function(){
+  return nyeBilder.map(function(b){ return b.id; }).join(',');
+};
+
 ekstraTilstand['avtaleBoks'] = function(){
   const fjernet = skjemaVedlegg.filter(function(v){ return v.fjern; }).length;
   return nyeFiler.length + ':' + fjernet;
@@ -2640,7 +2650,8 @@ function ryddFag(d){
   }).map(function(l){
     return { id:String(l.id), fagId:String(l.fagId), tekst:String(l.tekst).trim(),
              frist:String(l.frist || ''), ferdig:!!l.ferdig,
-             laget:String(l.laget || '') };
+             laget:String(l.laget || ''),
+             bilder:(Array.isArray(l.bilder) ? l.bilder : []).map(String) };
   });
 
   const prover = (Array.isArray(d.prover) ? d.prover : []).filter(function(p){
@@ -2688,6 +2699,166 @@ function fristTekst(frist){
   if(dager === 1) return { tekst:'I morgen', klasse:'naer' };
   if(dager <   7) return { tekst:UKEDAGER[ukedagNr(d)], klasse:'' };
   return { tekst:d.getDate() + '. ' + MND[d.getMonth()].slice(0, 3), klasse:'' };
+}
+
+/* ============================================================
+   Bilder i lekser
+   ------------------------------------------------------------
+   Bildene ligger IKKE i `emma-fag:v1` sammen med resten. Én noekkel
+   per bilde, og leksa baerer bare id-ene.
+
+   Grunnen er stoerrelsen: fagnoekkelen leses og skrives paa nytt ved
+   hver eneste avhuking, og et par telefonbilder i den ville gjort hver
+   avhuking til en overfoering paa flere megabyte - foerst ned, saa opp
+   igjen. Med egne noekler blir fagnoekkelen liggende paa noen kilobyte
+   uansett hvor mange bilder som kommer til.
+
+   Bildene krympes foer de lagres. En telefon leverer 4000 piksler bredt;
+   det som skal leses paa en skjerm trenger 1400, og forskjellen er en
+   faktor aatte i lagret stoerrelse.
+   ============================================================ */
+const BILDE_MAKS = 1400;      /* lengste side, piksler */
+const BILDE_KVAL = 0.72;      /* JPEG-kvalitet */
+
+function bildeNokkel(id){ return 'emma-bilde:' + id; }
+
+/* Lest én gang, husket resten av oekten. Fagvinduet tegnes om ved hver
+   avhuking, og uten dette ville hvert bilde blitt hentet paa nytt. */
+const bildeHusk = new Map();
+
+async function hentBilde(id){
+  if(bildeHusk.has(id)) return bildeHusk.get(id);
+  try{
+    const v = await dataLes(bildeNokkel(id));
+    const url = (typeof v === 'string' && v) ? v : null;
+    bildeHusk.set(id, url);
+    return url;
+  }catch(e){
+    /* Ikke husk en feil: nettet kan komme tilbake, og da skal bildet
+       kunne hentes paa nytt uten at sida lastes om. */
+    return null;
+  }
+}
+
+/* Fil eller utklippstavle inn, krympet data-URL ut. */
+function krympBilde(fil){
+  return new Promise(function(ok, nei){
+    const les = new FileReader();
+    les.onerror = function(){ nei(new Error('Kunne ikke lese bildet')); };
+    les.onload = function(){
+      const bil = new Image();
+      bil.onerror = function(){ nei(new Error('Kunne ikke tolke bildet')); };
+      bil.onload = function(){
+        const skala = Math.min(1, BILDE_MAKS / Math.max(bil.width, bil.height));
+        const b = Math.round(bil.width  * skala);
+        const h = Math.round(bil.height * skala);
+        const lerret = document.createElement('canvas');
+        lerret.width = b; lerret.height = h;
+        const t = lerret.getContext('2d');
+        /* Hvit bunn: et gjennomsiktig PNG blir svart naar det lagres som
+           JPEG, og en skjermdump av en nettside er ofte nettopp det. */
+        t.fillStyle = '#FFFFFF';
+        t.fillRect(0, 0, b, h);
+        t.drawImage(bil, 0, 0, b, h);
+        ok(lerret.toDataURL('image/jpeg', BILDE_KVAL));
+      };
+      bil.src = String(les.result);
+    };
+    les.readAsDataURL(fil);
+  });
+}
+
+/* Bildene som staar i skjemaet akkurat naa. Hver er {id, url} - id-en er
+   satt med det samme, men noekkelen skrives foerst naar leksa lagres.
+   Avbryter man, er det ingenting aa rydde opp etter. */
+let nyeBilder = [];
+
+function velgBilde(){ $('fagBildeFil').click(); }
+
+async function filerValgt(filer){
+  await leggTilBilder(Array.prototype.slice.call(filer || []));
+  $('fagBildeFil').value = '';
+}
+
+async function leggTilBilder(filer){
+  const bilder = filer.filter(function(f){ return f && /^image\//.test(f.type); });
+  if(!bilder.length) return;
+  for(const f of bilder){
+    try{
+      nyeBilder.push({ id:nyId(), url: await krympBilde(f) });
+    }catch(e){
+      varsle('Fikk ikke lagt til bildet: ' + e.message);
+    }
+  }
+  tegnBildeRad();
+}
+
+function fjernBilde(id){
+  nyeBilder = nyeBilder.filter(function(b){ return b.id !== id; });
+  tegnBildeRad();
+}
+
+function tegnBildeRad(){
+  const rad = $('fagBilder');
+  if(!rad) return;
+  rad.innerHTML = nyeBilder.map(function(b){
+    return '<div class="bilde-boks">'
+      + '<img src="' + b.url + '" alt="">'
+      + '<button type="button" class="bilde-fjern" onclick="fjernBilde(\'' + esc(b.id) + '\')" '
+      +   'aria-label="Fjern bildet">×</button>'
+      + '</div>';
+  }).join('');
+}
+
+/* Innlimt bilde fanges paa selve tekstfeltet. Tekst limes inn som foer -
+   vi stopper bare hendelsen naar det faktisk ligger et bilde i
+   utklippstavla, ellers ville en vanlig tekstliming blitt spist. */
+function kobleLimBilde(){
+  const felt = $('fagTekst');
+  if(!felt) return;
+  felt.addEventListener('paste', function(ev){
+    const d = ev.clipboardData;
+    if(!d) return;
+    const filer = Array.prototype.slice.call(d.files || []);
+    const fra = filer.length ? filer
+      : Array.prototype.slice.call(d.items || [])
+          .filter(function(i){ return i.kind === 'file'; })
+          .map(function(i){ return i.getAsFile(); })
+          .filter(Boolean);
+    const bilder = fra.filter(function(f){ return /^image\//.test(f.type); });
+    if(!bilder.length) return;
+    ev.preventDefault();
+    leggTilBilder(bilder);
+  });
+}
+
+/* Miniatyrene i visningen. Hentes etter at linja er tegnet, saa lista
+   ikke staar og venter paa nettet foer den viser teksten. */
+function tegnLekseBilder(rot){
+  Array.prototype.forEach.call(rot.querySelectorAll('.lekse-bilde[data-bilde]'),
+    function(k){
+      const id = k.dataset.bilde;
+      hentBilde(id).then(function(url){
+        if(!url){ k.remove(); return; }   /* borte fra KV - da er den borte */
+        k.classList.remove('laster');
+        k.innerHTML = '<img src="' + url + '" alt="">';
+        k.onclick = function(ev){
+          ev.stopPropagation();
+          aapneViser({ name:'Bilde', contentType:'image/jpeg',
+                       contentBytes: url.split(',')[1] || '' });
+        };
+      });
+    });
+}
+
+function bilderHtml(l){
+  if(!l.bilder || !l.bilder.length) return '';
+  return '<div class="lekse-bilder">'
+    + l.bilder.map(function(id){
+        return '<button type="button" class="lekse-bilde laster" data-bilde="'
+             + esc(id) + '" aria-label="Vis bildet"></button>';
+      }).join('')
+    + '</div>';
 }
 
 /* ------------------------------------------------------------
@@ -2831,7 +3002,10 @@ function tegnFag(){
           +   (hast ? ' ' + hast : '') + '">'
           + '<button class="lekse-hake" onclick="event.stopPropagation();vekslLekse(\'' + esc(l.id) + '\')" '
           +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
-          + '<span class="lekse-tekst">' + esc(l.tekst) + '</span>'
+          + '<span class="lekse-tekst">' + esc(l.tekst)
+          +   (l.bilder.length ? ' <span class="fag-merke">' + l.bilder.length
+                               + ' bilde' + (l.bilder.length > 1 ? 'r' : '') + '</span>' : '')
+          + '</span>'
           + (fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
           + '</div>';
       });
@@ -2907,8 +3081,10 @@ function tegnFagVis(){
         +   (hast ? ' ' + hast : '') + '">'
         + '<button class="lekse-hake" onclick="vekslLekse(\'' + esc(l.id) + '\')" '
         +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
-        + '<span class="lekse-tekst" onclick="redigerLekse(\'' + esc(l.id) + '\')">'
-        +   esc(l.tekst) + '</span>'
+        + '<div class="lekse-tekst">'
+        +   '<span onclick="redigerLekse(\'' + esc(l.id) + '\')">' + esc(l.tekst) + '</span>'
+        +   bilderHtml(l)
+        + '</div>'
         + (fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
         + '</div>';
     });
@@ -2933,6 +3109,7 @@ function tegnFagVis(){
   ut += '</div>';
 
   $('fagVisKropp').innerHTML = ut;
+  tegnLekseBilder($('fagVisKropp'));
 }
 
 /* ---------------- Skjemaet ----------------
@@ -3024,7 +3201,25 @@ function visFagSkjema(modus, id, fagId){
   }else{
     fyllVelger('fagVelg', l ? l.fagId : (p ? p.fagId : (fagId || null)));
     $('fagFrist').value = l ? l.frist : (p ? p.dato : datoNokkel(dagenViser()));
-    if(erLekse) $('fagTekst').value = l ? l.tekst : '';
+    if(erLekse){
+      $('fagTekst').value = l ? l.tekst : '';
+      /* Bildene som alt henger paa leksa hentes inn i skjemaet, saa
+         «lagre» ikke stille fjerner dem. De er allerede lagret; det er
+         bare lista som bygges opp igjen. */
+      nyeBilder = [];
+      tegnBildeRad();
+      if(l && l.bilder.length){
+        l.bilder.forEach(function(id){
+          hentBilde(id).then(function(url){
+            if(!url) return;
+            /* Kan ha rukket aa bli lukket mens bildet var underveis. */
+            if(fagSkjema !== 'lekse' || fagEndrer !== l.id) return;
+            nyeBilder.push({ id:id, url:url, gammelt:true });
+            tegnBildeRad();
+          });
+        });
+      }
+    }
     if(erProve){
       $('fagType').value     = p ? p.type : '';
       $('fagKarakter').value = p ? p.karakter : '';
@@ -3062,6 +3257,7 @@ function redigerFag(id){   if(fagData) visFagSkjema('fag', id || null, null); }
 function lukkFagSkjema(){
   fagSkjema = null;
   fagEndrer = null;
+  nyeBilder = [];
   $('fagBoks').hidden = true;
   $('fagBak').hidden  = true;
 }
@@ -3116,15 +3312,29 @@ async function lagreFagSkjema(){
       if(!tekst){ fagFeil('Skriv hva som skal gjøres.'); return; }
       const fagId = $('fagVelg').value;
       const frist = $('fagFrist').value || '';
+
+      /* Bildene skrives FOER leksa. Ryker en skriving her, staar vi igjen
+         med en ubrukt bildenoekkel - det koster plass og ingenting annet.
+         Motsatt rekkefoelge ville gitt en lekse som peker paa et bilde
+         som ikke finnes, og det ser ut som at noe er borte. */
+      for(const b of nyeBilder){
+        if(b.gammelt) continue;                 /* ligger der alt */
+        await dataSkriv(bildeNokkel(b.id), b.url);
+        bildeHusk.set(b.id, b.url);
+      }
+      const bilder = nyeBilder.map(function(b){ return b.id; });
+
       await endreFag(function(d){
         if(id){
           d.lekser = d.lekser.map(function(l){
             return l.id === id
-              ? Object.assign({}, l, {fagId:fagId, tekst:tekst, frist:frist}) : l;
+              ? Object.assign({}, l, {fagId:fagId, tekst:tekst, frist:frist,
+                                      bilder:bilder}) : l;
           });
         }else{
           d.lekser.push({ id:nyId(), fagId:fagId, tekst:tekst, frist:frist,
-                          ferdig:false, laget:datoNokkel(new Date()) });
+                          ferdig:false, laget:datoNokkel(new Date()),
+                          bilder:bilder });
         }
         return d;
       });
@@ -3181,162 +3391,6 @@ async function slettFraFagSkjema(){
     });
     lukkFagSkjema();
   }catch(e){ fagFeil('Fikk ikke slettet: ' + e.message); }
-}
-
-/* ============================================================
-   Lim inn
-   ------------------------------------------------------------
-   Ukeplanen fra skolen skannes et annet sted og limes inn her.
-   Ingenting lagres foer linjene staar tolket paa skjermen -
-   en skanning som har lest «8/9» som «8. september» og en som
-   har lest det som «9. august» ser like riktige ut i raa tekst,
-   og forskjellen er synlig foerst naar tolkningen vises.
-
-   Skilletegnet er semikolon eller tabulator. Tabulator er med
-   fordi det er det man faar naar noe kopieres ut av en tabell.
-   ============================================================ */
-let limTolket = [];
-
-function limDato(t){
-  const r = String(t || '').trim();
-  if(!r) return '';
-  let m;
-  /* 2026-09-08 */
-  m = r.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if(m) return m[1] + '-' + pad(+m[2]) + '-' + pad(+m[3]);
-  /* 08.09, 8/9, 08-09 - aar utelatt. Da er det den foerste av den datoen
-     som kommer fra i dag av: en frist man skriver uten aarstall er alltid
-     framover, og i romjula betyr «5.1» neste aar. */
-  m = r.match(/^(\d{1,2})[.\/-](\d{1,2})\.?$/);
-  if(m){
-    const dag = +m[1], mnd = +m[2];
-    if(dag < 1 || dag > 31 || mnd < 1 || mnd > 12) return '';
-    const n = idag0();
-    let d = new Date(n.getFullYear(), mnd - 1, dag);
-    if(d < n) d = new Date(n.getFullYear() + 1, mnd - 1, dag);
-    return datoNokkel(d);
-  }
-  /* 08.09.2026 */
-  m = r.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
-  if(m) return m[3] + '-' + pad(+m[2]) + '-' + pad(+m[1]);
-  return '';
-}
-
-/* Faget kjennes igjen uten hensyn til store bokstaver, og delvis: «matte»
-   treffer «Matematikk». Uten treff blir det et nytt fag - det er tryggere
-   enn aa gjette feil, og et fag for mye er synlig og lett aa slette. */
-function limFinnFag(navn){
-  const n = String(navn || '').trim().toLowerCase();
-  if(!n) return null;
-  const liste = (fagData && fagData.fag) || [];
-  let t = liste.find(function(f){ return f.navn.toLowerCase() === n; });
-  if(t) return t;
-  t = liste.find(function(f){
-    const a = f.navn.toLowerCase();
-    return a.indexOf(n) === 0 || n.indexOf(a) === 0;
-  });
-  return t || null;
-}
-
-function limTolk(){
-  const raa = $('limFelt').value || '';
-  limTolket = [];
-
-  raa.split('\n').forEach(function(linje){
-    if(!linje.trim()) return;
-    const b = linje.split(/[;\t]/).map(function(x){ return x.trim(); });
-    const fagNavn = b[0] || '';
-    const tekst   = b[1] || '';
-    const frist   = limDato(b[2] || '');
-    if(!fagNavn || !tekst){
-      limTolket.push({ ok:false, raa:linje.trim(),
-                       grunn:'trenger fag og oppgave, skilt med semikolon' });
-      return;
-    }
-    if((b[2] || '').trim() && !frist){
-      limTolket.push({ ok:false, raa:linje.trim(),
-                       grunn:'skjønte ikke fristen «' + b[2].trim() + '»' });
-      return;
-    }
-    const treff = limFinnFag(fagNavn);
-    limTolket.push({ ok:true, fagId: treff ? treff.id : null,
-                     fagNavn: treff ? treff.navn : fagNavn,
-                     nyttFag: !treff, tekst:tekst, frist:frist });
-  });
-
-  const gode = limTolket.filter(function(r){ return r.ok; });
-  const boks = $('limFasit');
-  boks.innerHTML = limTolket.length
-    ? limTolket.map(function(r){
-        if(!r.ok){
-          return '<div class="lim-rad avvist">'
-            + '<span class="lim-fag">Hopper over</span>'
-            + '<span class="lim-tekst">' + esc(r.raa) + ' — ' + esc(r.grunn) + '</span>'
-            + '</div>';
-        }
-        const fr = r.frist ? fristTekst(r.frist) : {tekst:'ingen frist'};
-        return '<div class="lim-rad">'
-          + '<span class="lim-fag">' + esc(r.fagNavn) + (r.nyttFag ? ' +' : '') + '</span>'
-          + '<span class="lim-tekst">' + esc(r.tekst) + '</span>'
-          + '<span class="lim-frist">' + esc(fr.tekst) + '</span>'
-          + '</div>';
-      }).join('')
-    : '<div class="tom">Ingenting limt inn ennå.</div>';
-
-  const nye = gode.filter(function(r){ return r.nyttFag; }).length;
-  $('limTeller').textContent = limTolket.length
-    ? gode.length + ' av ' + limTolket.length + ' linjer'
-      + (nye ? ', ' + nye + ' nytt fag' : '')
-    : '';
-  $('limLagre').disabled = !gode.length;
-}
-
-function apneLimInn(){
-  if(!fagData) return;
-  $('limFelt').value = '';
-  limTolk();
-  $('limBak').hidden  = false;
-  $('limBoks').hidden = false;
-  huskSkjema('limBoks');
-  passSkjema();
-  setTimeout(function(){ $('limFelt').focus(); }, 30);
-}
-
-function lukkLimInn(){
-  $('limBoks').hidden = true;
-  $('limBak').hidden  = true;
-  limTolket = [];
-}
-
-async function lagreLimInn(){
-  const gode = limTolket.filter(function(r){ return r.ok; });
-  if(!gode.length) return;
-  const knapp = $('limLagre');
-  knapp.disabled = true;
-  try{
-    await endreFag(function(d){
-      gode.forEach(function(r){
-        let id = r.fagId;
-        /* Faget kan ha blitt lagt inn av en tidligere linje i samme
-           innliming, eller av noen andre siden lista ble lest. */
-        if(!id){
-          const finnes = d.fag.find(function(f){
-            return f.navn.toLowerCase() === r.fagNavn.toLowerCase();
-          });
-          if(finnes){ id = finnes.id; }
-          else { id = nyId(); d.fag.push({ id:id, navn:r.fagNavn }); }
-        }
-        d.lekser.push({ id:nyId(), fagId:id, tekst:r.tekst,
-                        frist:r.frist, ferdig:false, laget:datoNokkel(new Date()) });
-      });
-      return d;
-    });
-    lukkLimInn();
-  }catch(e){
-    varsle('Fikk ikke lagret: ' + e.message);
-  }finally{
-    knapp.disabled = false;
-  }
 }
 
 /* ============================================================
@@ -4157,33 +4211,27 @@ window.neamSideHandlinger = function(){
      der du staar: en avtale hoerer til kalenderen, og under Fag er det
      ingen kalender aa legge den i. */
   const oeverst = (visning === 'fag')
-    ? { plass:'opp', navn:'Rediger fag og lekser', tekst:'Rediger', behold:true,
+    ? { plass:'opp', navn:'Rediger fag og lekser', tekst:'Rediger', behold:true, farge:'endre',
         ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
            + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
            + '<path d="M12 20h9"/>'
            + '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
         gjor: function(){
           neamSideStabel('opp', [
-            { navn:'Rediger fag',
+            { navn:'Rediger fag', farge:'endre',
               ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
                  + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
                  + '<path d="M4 5h16M4 12h16M4 19h9"/>'
                  + '<path d="M17.5 16.5a1.6 1.6 0 0 1 2.2 2.2L16 22l-3 .7.7-3z"/></svg>',
               gjor: function(){ redigerFag(null); } },
-            { navn:'Nytt fag',
+            { navn:'Nytt fag', farge:'ny',
               ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
                  + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
                  + '<path d="M4 5h16M4 12h10M4 19h10"/><path d="M18 15v6M15 18h6"/></svg>',
-              gjor: apneFagSkjema },
-            { navn:'Lim inn lekser',
-              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-                 + '<rect x="6" y="4" width="12" height="17" rx="2"/>'
-                 + '<path d="M9 4V3h6v1M9 10h6M9 14h4"/></svg>',
-              gjor: apneLimInn }
+              gjor: apneFagSkjema }
           ]);
         } }
-    : { plass:'opp', navn:'Legg til avtale', tekst:'Avtale',
+    : { plass:'opp', navn:'Legg til avtale', tekst:'Avtale', farge:'ny',
         ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
            + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
            + '<rect x="3" y="5" width="18" height="16" rx="2"/>'
@@ -4193,14 +4241,14 @@ window.neamSideHandlinger = function(){
   return [
     oeverst,
 
-    { plass:'skraa', navn:'Ny påminnelse i dag', tekst:'Påminnelse i dag',
+    { plass:'skraa', navn:'Ny påminnelse i dag', tekst:'Påminnelse i dag', farge:'ny',
       ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
          + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
          + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
          + '<path d="M12 7v6M9 10h6"/></svg>',
       gjor: function(){ apneHuskeSkjema('dag'); } },
 
-    { plass:'ved', navn:'Ny påminnelse denne uken', tekst:'Påminnelse denne uken',
+    { plass:'ved', navn:'Ny påminnelse denne uken', tekst:'Påminnelse denne uken', farge:'ny',
       ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
          + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
          + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
@@ -4470,6 +4518,7 @@ async function oppdaterAlt(manuelt){
   /* Fagene lastes foer foerste tegning, saa Fag-fanen ikke staar tom det
      sekundet noen trykker paa den. */
   await lastFag();
+  kobleLimBilde();
   /* Navnet vises ikke i toppen - siden heter det den heter. Men det huskes,
      for merknadsskjemaet foreslaar fornavnet under "Skrevet av". */
   graph('/me').then(function(me){
@@ -4504,7 +4553,6 @@ document.addEventListener('keydown', function(e){
   if($('filviser') && !$('filviser').hidden){ lukkViser(); return; }
   if(avtaleAapen){ lukkAvtale(); return; }
   if(huskeSkjema){ lukkHuskeSkjema(); return; }
-  if($('limBoks') && !$('limBoks').hidden){ lukkLimInn(); return; }
   if(fagSkjema){ lukkFagSkjema(); return; }
   if(fagVisId){ lukkFagVis(); return; }
   if(huBobleId) lukkHuskeBoble();

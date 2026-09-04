@@ -835,6 +835,16 @@ function neamDuseNed(){
    Kallstedet kan sende et kortere `tekst` enn `navn` - `navn` gaar til
    aria-label og title og skal vaere hel setning, mens det som staar inne
    i en 84px sirkel maa vaere ett eller to ord. */
+/* Betydningsfargen paa en knapp, oversatt til klassenavn. Samme fem
+   betydninger som .btn-* ellers i huset: groent skaper noe, oker endrer
+   noe som finnes. Sier kallstedet ingenting, blir knappen papirhvit -
+   det er fortsatt det vanlige. */
+function neamFargeKlasse(farge){
+  if(farge === 'ny')    return ' neam-ny';
+  if(farge === 'endre') return ' neam-endre';
+  return '';
+}
+
 function neamKnappInnhold(ikon, tekst, erMerke){
   const i = ikon || '';
   if(erMerke || !tekst) return i;
@@ -895,6 +905,8 @@ function neamSideFirer(){
     k.classList.toggle('doed', !v);
     /* Et merke skal staa uten papirflate under seg - se .neam-knapp.merke. */
     k.classList.toggle('merke', !!(v && v.merke));
+    k.classList.toggle('neam-ny',    !!(v && v.farge === 'ny'));
+    k.classList.toggle('neam-endre', !!(v && v.farge === 'endre'));
     k.innerHTML = v ? neamKnappInnhold(v.ikon, v.tekst || v.navn, !!v.merke) : '';
     const navn = v ? v.navn : '';
     k.setAttribute('aria-label', navn);
@@ -1195,7 +1207,8 @@ function neamSideStabel(plass, liste){
     /* Samme regel som i fireren: en strektegning baerer ikke betydningen
        alene og faar navnet under seg, et merke baerer sitt eget. Uten
        dette var undermenyen tre like runde skiver med hver sin strek. */
-    return '<button type="button" class="neam-enhet' + (v.merke ? ' merke' : '') + '" '
+    return '<button type="button" class="neam-enhet' + (v.merke ? ' merke' : '')
+         +   neamFargeKlasse(v.farge) + '" '
          +   'data-nr="' + i + '" title="' + v.navn + '" aria-label="' + v.navn + '">'
          +   neamKnappInnhold(v.ikon, v.tekst || v.navn, !!v.merke) + '</button>';
   }).join('');
