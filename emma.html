@@ -492,6 +492,15 @@ body{
   display:grid;grid-template-columns:1fr;
   gap:12px;align-content:start;padding:2px 2px 14px 0;
 }
+/* Merket er det man kjenner faget paa. Det faar derfor plassen det
+   trenger, og rullingen tar resten - et fag man ikke kjenner igjen paa
+   avstand er ikke verdt et bilde i det hele tatt. */
+.fag-bilde{
+  display:block;width:100%;max-width:190px;height:auto;
+  margin:0 auto 8px;
+}
+/* Et fag uten lekser er alt dempet; merket dempes med. */
+.fag-kort.tomt .fag-bilde{ opacity:.85; }
 @media(min-width:700px){ #fag{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
 @media(min-width:1300px){ #fag{ grid-template-columns:repeat(5, minmax(0,1fr)); } }
 .fag-kort{
@@ -610,7 +619,8 @@ body{
   padding:22px 26px 18px;
 }
 #fagVisBak{ z-index:57; }
-.fagvis-boks .av-tittel{ font-size:calc(var(--t-stor) * 1.35); }
+.fagvis-boks .av-tittel{ font-size:calc(var(--t-stor) * 1.35); gap:14px; }
+.fagvis-bilde{ width:92px; height:auto; flex-shrink:0; display:block; }
 .fagvis-boks .fagvis-meta{ font-size:var(--t-brod); gap:8px 20px; }
 .fagvis-boks .fagvis-bolk h4{ font-size:var(--t-meta); }
 .fagvis-boks .lekse-tekst{ font-size:var(--t-brod); line-height:1.45; }
@@ -2917,6 +2927,33 @@ const TIMEPLAN_FAG = {
   'Valgfag'  : 'Innsats for andre'
 };
 
+/* Merket til hvert fag. Navnet paa fila utledes ikke av fagnavnet: da
+   ville et fag som doepes om mistet merket sitt uten at noen skjoenner
+   hvorfor, og «Innsats for andre» maatte uansett hatt en egen regel for
+   mellomrommene. Ett oppslag, én linje per fag.
+
+   Fag uten merke faar ingen - kortet staar da med navnet alene, som foer.
+   Legges et nytt fag til, hoerer det hjemme her den dagen det faar et
+   bilde. */
+const FAG_MERKE = {
+  'Norsk'             : 'norsk',
+  'Engelsk'           : 'engelsk',
+  'Matematikk'        : 'matematikk',
+  'Naturfag'          : 'naturfag',
+  'Samfunnsfag'       : 'samfunnsfag',
+  'KRLE'              : 'krle',
+  'Kroppsøving'       : 'kroppsoving',
+  'Musikk'            : 'musikk',
+  'Utdanningsvalg'    : 'utdanningsvalg',
+  'Spansk'            : 'spansk',
+  'Innsats for andre' : 'innsats-for-andre'
+};
+
+function fagMerke(navn){
+  const f = FAG_MERKE[String(navn || '').trim()];
+  return f ? ('/bilder/fag/' + f + '.png') : '';
+}
+
 function timeplanFag(rute){
   const r = String(rute || '').trim();
   return r ? (TIMEPLAN_FAG[r] || r) : '';
@@ -3321,8 +3358,13 @@ function tegnFag(){
     const pr = nesteProve(f);
     const prTekst = pr ? fristTekst(pr) : null;
 
+    const bilde = fagMerke(f.navn);
     let ut = '<div class="fag-kort' + (liste.length ? '' : ' tomt') + '"'
       + ' onclick="apneFagVis(\'' + esc(f.id) + '\')" role="button" tabindex="0">'
+      /* Merket baerer fagnavnet selv, men navnet staar likevel under: en
+         omdoept variant - «Kroppsøving/gym» - skal kunne leses, og et fag
+         uten merke maa ha noe aa staa med. */
+      + (bilde ? '<img class="fag-bilde" src="' + bilde + '" alt="" loading="lazy">' : '')
       + '<div class="fag-topp">'
       +   '<span class="fag-navn">' + esc(f.navn) + '</span>'
       +   (prTekst ? '<span class="fag-merke">Prøve ' + esc(prTekst.tekst) + '</span>' : '')
@@ -3390,7 +3432,10 @@ function tegnFagVis(){
   const f = fagAv(fagVisId);
   if(!f){ lukkFagVis(); return; }
 
-  $('fagVisNavn').textContent = f.navn;
+  const bilde = fagMerke(f.navn);
+  $('fagVisNavn').innerHTML =
+      (bilde ? '<img class="fagvis-bilde" src="' + bilde + '" alt="">' : '')
+    + '<span>' + esc(f.navn) + '</span>';
 
   const meta = [];
   if(f.laerer) meta.push('<span>Faglærer: <b>' + esc(f.laerer) + '</b></span>');
