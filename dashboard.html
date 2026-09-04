@@ -2453,8 +2453,54 @@ function endreHuske(endring){
   return r.p;
 }
 
+/* ============================================================
+   Vakt mot utdatert lesing
+   ------------------------------------------------------------
+   Cloudflare KV mellomlagrer lesinger i opptil 60 sekunder. Rett
+   etter en skriving svarer den derfor med DEN GAMLE verdien.
+
+   Det er ufarlig i seg selv, men blir alvorlig sammen med
+   speilingen som henter hvert tredje sekund: den fikk den gamle
+   verdien tilbake, saa at den var «annerledes» enn det vi nettopp
+   skrev, og la den over vaar egen ferske tilstand. Endringen ble
+   rullet tilbake paa skjermen, og - verre - NESTE skriving leste
+   den gamle verdien som utgangspunkt og skrev vaar forrige
+   endring bort for godt.
+
+   Utenfra saa det ut som at verktoeyet svarte OK uten aa lagre.
+   Det lagret; det ble overskrevet et sekund senere.
+
+   Vakten kjenner igjen en utdatert lesing paa at den er NOEYAKTIG
+   det som sto foer vi skrev. Er svaret noe annet, er det en ekte
+   endring fra en annen skjerm og skal tas imot. Vinduet lukkes
+   etter 90 sekunder, godt over KVs 60.
+   ============================================================ */
+function lagVakt(){
+  return { foer:null, tid:0 };
+}
+
+/* Sann naar svaret er den gamle verdien vi selv nettopp erstattet. */
+function erUtdatert(vakt, json){
+  if(!vakt.foer) return false;
+  if(Date.now() - vakt.tid > 90000){ vakt.foer = null; return false; }
+  return json === vakt.foer;
+}
+
+function noterSkriving(vakt, foerJson){
+  vakt.foer = foerJson;
+  vakt.tid  = Date.now();
+}
+
+const huskeVakt = lagVakt();
+
 async function endreHuskeNaa(endring){
-  const fersk = await hentHuske();
+  let fersk = await hentHuske();
+  const ferskJson = JSON.stringify(fersk);
+  if(erUtdatert(huskeVakt, ferskJson) && huskeliste){
+    fersk = huskeliste;
+  }else{
+    noterSkriving(huskeVakt, ferskJson);
+  }
   const ny = endring(fersk);
   const r = await fetch('/api/data?key=huskeliste', {
     method: 'PUT',
@@ -2462,6 +2508,7 @@ async function endreHuskeNaa(endring){
     body: JSON.stringify(ny)
   });
   if(!r.ok) throw new Error('HTTP ' + r.status);
+  huskeVakt.tid = Date.now();
   huskeliste = ny;
   /* Vi vet hva som staar der naa - da trenger ikke speilingen aa oppdage
      vaar egen endring paa nytt og tegne én gang til. */
@@ -2876,6 +2923,7 @@ async function speilHuske(){
   catch(e){ return; }                       /* nettet kommer tilbake */
   const avtrykk = JSON.stringify(liste);
   if(avtrykk === huskeAvtrykk) return;      /* ingenting nytt */
+  if(erUtdatert(huskeVakt, avtrykk)) return;   /* gammel verdi fra cachen */
   huskeAvtrykk = avtrykk;
   huskeliste = liste;
   if((typeof skjemaAapent === 'function' && skjemaAapent()) || huBobleId){
