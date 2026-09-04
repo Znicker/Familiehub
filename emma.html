@@ -895,6 +895,28 @@ body{
 /* Fristen ligger i en annen uke enn planen gjelder. Kan vaere riktig - en
    innlevering kan peke framover - men er oftere en dato som er lest feil,
    og forskjellen er ikke synlig i en datoboks. */
+.forslag-maal-hode{
+  font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--ink-soft);
+  margin:14px 0 4px; padding-bottom:5px; border-top:1px solid var(--line);
+  padding-top:14px;
+}
+.forslag-maalrad{
+  display:grid; grid-template-columns:26px 1fr 2.6fr; gap:10px;
+  align-items:start; padding:11px 0; border-bottom:1px solid var(--line);
+}
+.forslag-maalrad:last-child{ border-bottom:none; }
+.forslag-maalrad.av{ opacity:.4; }
+.forslag-maalrad input[type=checkbox]{ width:20px; height:20px; margin-top:12px; }
+.forslag-maalrad .hu-felt{ font-size:var(--t-meta); padding:8px 9px; }
+.forslag-maaltekst{
+  min-height:66px; resize:vertical; line-height:1.45;
+  font-family:'Archivo',sans-serif; overflow-y:hidden;
+}
+@media(max-width:700px){
+  .forslag-maalrad{ grid-template-columns:26px 1fr; }
+  .forslag-maalrad > :nth-child(3){ grid-column:2; }
+}
 .forslag-utenfor{
   font-size:var(--t-etikett); font-weight:700; color:var(--danger);
   letter-spacing:.05em;
@@ -1559,6 +1581,14 @@ select.hu-felt{
       <span></span><span>Fag</span><span>Lekse</span><span>Frist</span>
     </div>
     <div class="forslag-liste" id="forslagListe"></div>
+    <!-- Laeringsmaalene i egen bolk under leksene. De hoerer til samme
+         ukeplan og skal godkjennes i samme runde, men de har verken frist
+         eller hake per lekse - egne rader er tydeligere enn en kolonne som
+         staar tom paa halve lista. -->
+    <div id="forslagMaalBolk" hidden>
+      <div class="forslag-maal-hode">Læringsmål</div>
+      <div class="forslag-liste" id="forslagMaalListe"></div>
+    </div>
     <div class="av-foot">
       <span class="forslag-teller" id="forslagTeller"></span>
       <button class="hu-avbryt" onclick="avbrytSkjema('forslagBoks', lukkForslag)">Avbryt</button>
@@ -5248,9 +5278,11 @@ window.neamBakgrunn = async function(){
     + 'la den ligge. Beskjeder uten navn gjelder hele klassen og gjelder derfor '
     + 'også henne.\n\n'
     + 'LÆRINGSMÅL står som regel i ukeplanen, et par linjer per fag om hva '
-    + 'eleven skal kunne. De er ikke lekser og ikke beskjeder - de går til '
-    + 'sett_laeringsmaal, ett kall per fag, og de hører til den uka planen '
-    + 'gjelder.\n\n'
+    + 'eleven skal kunne. De er ikke lekser og ikke beskjeder. Kommer de fra '
+    + 'en ukeplan, sender du dem i maal-lista til foreslaa_lekser i SAMME kall '
+    + 'som leksene - da ser Emma leksene og målene i ett panel og godkjenner '
+    + 'alt på én gang. sett_laeringsmaal er bare for når hun ber om ett '
+    + 'bestemt mål i klartekst.\n\n'
     + 'EN LEKSE MED FRIST VISER SEG AV SEG SELV under «Påminnelser i dag» på '
     + 'dagen fristen går ut - huset henter den fra faget. Legg derfor ALDRI inn '
     + 'en påminnelse om en lekse du allerede har lagt fram; da står den samme '
@@ -5537,7 +5569,7 @@ const FAG_VERKTOY = [
   },
   {
     name: 'foreslaa_lekser',
-    description: 'Legger én eller flere lekser fram til godkjenning. INGENTING lagres '
+    description: 'Legger lekser OG læringsmål fram til godkjenning. INGENTING lagres '
                + 'av dette kallet - forslagene kommer opp i et panel der Emma kan rette '
                + 'fag, tekst og frist, ta bort linjer og så trykke Legg inn. '
                + 'BRUK DETTE når leksene kommer fra en ukeplan, et bilde, en avskrift '
@@ -5554,6 +5586,21 @@ const FAG_VERKTOY = [
                                         + 'sjekke at fristene du har lest faktisk havner i '
                                         + 'den uka. Utelater du den, brukes uka skjermen '
                                         + 'tilfeldigvis står på, og det er sjelden riktig.' },
+        maal: {
+          type:'array',
+          description:'Læringsmålene fra ukeplanen, ett per fag. De legges fram i '
+                    + 'samme panel som leksene og godkjennes sammen med dem. '
+                    + 'Bruk sett_laeringsmaal bare når Emma ber om ett bestemt mål '
+                    + 'i klartekst.',
+          items:{
+            type:'object',
+            properties:{
+              fag:  { type:'string' },
+              maal: { type:'string', description:'Én eller to setninger.' }
+            },
+            required:['fag','maal']
+          }
+        },
         lekser: {
           type:'array',
           description:'Leksene som legges fram.',
@@ -5574,7 +5621,7 @@ const FAG_VERKTOY = [
           }
         }
       },
-      required:['lekser']
+      required:[]
     }
   },
   {
@@ -5852,9 +5899,18 @@ function lekseUt(l){
 /* ---------------- Forslagspanelet ---------------- */
 
 let ventendeForslag = [];
+/* Laeringsmaalene som ligger til godkjenning sammen med leksene.
+   [{med, fag, maal}] */
+let ventendeMaal = [];
+/* Uka panelet gjelder, tatt da det ble aapnet. Laeringsmaalene skal inn i
+   DEN uka, ikke i den skjermen tilfeldigvis staar paa naar man trykker
+   Legg inn - man kan rekke aa bla imens. */
+let forslagUke = '';
 
-function apneForslag(rader, beskjed){
+function apneForslag(rader, beskjed, maal, ukeN){
   ventendeForslag = rader;
+  ventendeMaal = maal || [];
+  forslagUke = ukeN || ukeNokkel(dagenViser());
   $('forslagHjelp').textContent = beskjed || '';
   tegnForslag();
   $('forslagBak').hidden  = false;
@@ -5865,6 +5921,7 @@ function apneForslag(rader, beskjed){
 
 function lukkForslag(){
   ventendeForslag = [];
+  ventendeMaal = [];
   $('forslagBoks').hidden = true;
   $('forslagBak').hidden  = true;
 }
@@ -5901,15 +5958,49 @@ function tegnForslag(){
   + fagValg.map(function(f){ return '<option value="' + esc(f.navn) + '">'; }).join('')
   + '</datalist>';
 
+  /* ---- Laeringsmaalene ---- */
+  $('forslagMaalBolk').hidden = !ventendeMaal.length;
+  if(ventendeMaal.length){
+    $('forslagMaalListe').innerHTML = ventendeMaal.map(function(m, i){
+      const nytt = !fagFinn(m.fag);
+      return '<div class="forslag-maalrad' + (m.med ? '' : ' av') + '">'
+        + '<input type="checkbox" ' + (m.med ? 'checked' : '')
+        +   ' onchange="maalMed(' + i + ', this.checked)" aria-label="Ta med">'
+        + '<span>'
+        +   '<input class="hu-felt" value="' + esc(m.fag) + '" '
+        +     'oninput="maalSett(' + i + ', \'fag\', this.value)" list="forslagFag">'
+        +   (nytt ? '<span class="forslag-nytt">nytt fag</span>' : '')
+        + '</span>'
+        + '<textarea class="hu-felt forslag-maaltekst" rows="' + forslagLinjer(m.maal) + '" '
+        +   'oninput="maalSett(' + i + ', \'maal\', this.value); voksFelt(this)">'
+        +   esc(m.maal) + '</textarea>'
+        + '</div>';
+    }).join('');
+  }
+
   const med = ventendeForslag.filter(function(r){ return r.med; }).length;
   const nye = ventendeForslag.filter(function(r){ return r.med && !fagFinn(r.fag); }).length;
-  $('forslagTeller').textContent = med + ' av ' + ventendeForslag.length + ' tas med'
+  const medM = ventendeMaal.filter(function(m){ return m.med; }).length;
+  $('forslagTeller').textContent = med + ' av ' + ventendeForslag.length + ' lekser'
+    + (medM ? ', ' + medM + ' læringsmål' : '')
     + (nye ? ', ' + nye + ' nytt fag' : '');
-  $('forslagLagre').disabled = !med;
+  $('forslagLagre').disabled = !med && !medM;
 
   /* rows er et anslag; her maales det faktiske innholdet. */
   Array.prototype.forEach.call(
-    $('forslagListe').querySelectorAll('.forslag-tekst'), voksFelt);
+    $('forslagBoks').querySelectorAll('.forslag-tekst, .forslag-maaltekst'), voksFelt);
+}
+
+function maalMed(i, paa){
+  if(ventendeMaal[i]) ventendeMaal[i].med = !!paa;
+  tegnForslag();
+}
+
+/* Som forslagSett(): setter verdien uten aa tegne om, ellers ville
+   markoeren hoppet til begynnelsen ved hvert tastetrykk. */
+function maalSett(i, felt, verdi){
+  if(!ventendeMaal[i]) return;
+  ventendeMaal[i][felt] = verdi;
 }
 
 /* Hvor mange linjer teksten trenger. Grovt anslag paa 34 tegn per linje -
@@ -5947,19 +6038,39 @@ async function lagreForslag(){
   const med = ventendeForslag.filter(function(r){
     return r.med && String(r.tekst || '').trim() && String(r.fag || '').trim();
   });
-  if(!med.length) return;
+  const medMaal = ventendeMaal.filter(function(m){
+    return m.med && String(m.maal || '').trim() && String(m.fag || '').trim();
+  });
+  if(!med.length && !medMaal.length) return;
+  /* Uka maalene skal inn i, tatt naar panelet ble aapnet. */
+  const maalUke = forslagUke;
   const knapp = $('forslagLagre');
   knapp.disabled = true;
   try{
     await endreFag(function(d){
-      med.forEach(function(r){
-        /* Faget kan ha blitt laget av en tidligere rad i samme godkjenning,
-           eller av noen andre siden lista ble lest. */
-        let f = fagFinn(r.fag, d.fag);
+      /* Faget kan bli laget av en lekse ELLER av et laeringsmaal, saa
+         oppslaget maa vaere felles - ellers ender samme fag opp to ganger
+         naar begge deler kommer fra samme ukeplan. */
+      const finnEllerLag = function(navn){
+        let f = fagFinn(navn, d.fag);
         if(!f){
-          f = { id:nyId(), navn:String(r.fag).trim(), laerer:'', dager:[] };
+          f = { id:nyId(), navn:String(navn).trim(), laerer:'', notat:'', maal:{}, dager:[] };
           d.fag.push(f);
         }
+        return f;
+      };
+
+      medMaal.forEach(function(m){
+        const f = finnEllerLag(m.fag);
+        const nyeMaal = Object.assign({}, f.maal || {});
+        nyeMaal[maalUke] = String(m.maal).trim();
+        d.fag = d.fag.map(function(x){
+          return x.id === f.id ? Object.assign({}, x, {maal:nyeMaal}) : x;
+        });
+      });
+
+      med.forEach(function(r){
+        const f = finnEllerLag(r.fag);
         d.lekser.push({ id:nyId(), fagId:f.id, tekst:String(r.tekst).trim(),
                         frist:String(r.frist || ''), ferdig:false,
                         laget:datoNokkel(new Date()), nar:naaKlokke(), av:'Neam',
@@ -6046,8 +6157,8 @@ async function hentUkeplan(){
     + '2026-09-08, og legg ALT fram i ETT kall til foreslaa_lekser. Er du i tvil '
     + 'om en dato, send leksa uten frist og si fra om hvilke det gjaldt.\n\n'
     + '2. LÆRINGSMÅLENE: står det et par linjer per fag om hva hun skal kunne, '
-    + 'setter du dem med sett_laeringsmaal - ett kall per fag, med ukenummeret '
-    + 'planen gjelder.\n\n'
+    + 'sender du dem i maal-lista i det SAMME foreslaa_lekser-kallet. Ikke som '
+    + 'egne kall.\n\n'
     + '3. BESKJEDENE som ikke er lekser - turdag, utstyr, frister, foreldremøte, '
     + 'og alt som er rettet til Emma ved navn - legger du inn med '
     + 'legg_til_paaminnelse, én per beskjed. Med dato hvis den har en, uten hvis '
@@ -6128,6 +6239,8 @@ async function sendArkTilNeam(){
       + 'datoene til formen 2026-09-08, og legg ALT fram i ETT kall til '
       + 'foreslaa_lekser. Er du i tvil om en dato, send leksa uten frist og si fra '
       + 'om hvilke det gjaldt.\n\n'
+      + 'Står det læringsmål per fag, send dem i maal-lista i det samme '
+      + 'foreslaa_lekser-kallet.\n\n'
       + 'Beskjeder som IKKE er lekser - utstyr, turdager, frister, og alt som er '
       + 'rettet til Emma ved navn - legger du inn med legg_til_paaminnelse, med '
       + 'dato hvis den har en. Ta ikke med overskrifter eller ukenummer.\n\n' + tekst,
@@ -6377,7 +6490,14 @@ async function fagUtfor(navn, arg){
       return { med:true, fag:fag, tekst:String(r.tekst).trim(),
                frist:frist, antatt:antatt };
     });
-    if(!rader.length) throw new Error('Ingen lekser å legge fram.');
+    const maalInn = (Array.isArray(arg.maal) ? arg.maal : []).filter(function(m){
+      return m && String(m.fag || '').trim() && String(m.maal || '').trim();
+    }).map(function(m){
+      return { med:true, fag:String(m.fag).trim(), maal:String(m.maal).trim() };
+    });
+
+    if(!rader.length && !maalInn.length)
+      throw new Error('Ingen lekser eller læringsmål å legge fram.');
 
     /* En frist som er SKREVET i planen skal ligge i uka planen gjelder.
        Gjoer den ikke det, er det enten en lekse som med vilje peker
@@ -6396,8 +6516,10 @@ async function fagUtfor(navn, arg){
                      + 'Legg inn.'
                      + (antatte ? ' ' + antatte + ' frist er antatt ut fra timeplanen.' : '')
                      + (utenfor ? ' ' + utenfor + ' frist havner UTENFOR uke ' + planUke
-                                + ' — se over dem.' : ''));
-    return { venter:true, antall:rader.length, uke:planUke,
+                                + ' — se over dem.' : ''),
+                maalInn, ukeNokkel(mandagIUke(planUke)));
+    return { venter:true, antall:rader.length, laeringsmaal:maalInn.length || undefined,
+             uke:planUke,
              antatteFrister:antatte || undefined,
              utenforUka:utenfor || undefined,
              beskjed:'Forslagene ligger på skjermen og venter på at Emma godkjenner dem. '
