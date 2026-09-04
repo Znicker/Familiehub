@@ -495,11 +495,21 @@ body{
 /* Merket er det man kjenner faget paa. Det faar derfor plassen det
    trenger, og rullingen tar resten - et fag man ikke kjenner igjen paa
    avstand er ikke verdt et bilde i det hele tatt. */
-/* `flex:none` er ikke overfloedig: kortet er en flex-kolonne, og et
-   bilde i en slik kolonne kan bade krympes og strekkes av naboene sine.
-   Med maalene paa <img> og flex:none er hoeyden kjent foer lastingen. */
+/* HOEYDEN ER ET TALL, ikke `auto`. Det var det som var galt: med
+   `height:auto` maa nettleseren regne hoeyden ut av bredden og bildets
+   eget forhold, og inne i en flex-kolonne gjorde den det ikke - bildet
+   beholdt sin egen hoeyde og rant ut av kortet, ned over navnet og over
+   kortet under. Maalene paa <img> hjalp ikke; de forteller forholdet,
+   ikke hvor hoeyt det skal bli.
+
+   Med en fast hoeyde og `object-fit:contain` er det ingenting aa regne
+   ut: boksen er gitt, og merket skaleres inn i den og sentreres.
+   Merkene er 360x309-330, altsaa nesten kvadratiske, saa boksen kan
+   settes ett sted uten at noen av dem faar mye luft rundt seg. */
 .fag-bilde{
-  display:block; flex:none; width:100%; max-width:170px; height:auto;
+  display:block; flex:none;
+  width:100%; height:126px;
+  object-fit:contain; object-position:center;
   margin:0 auto 8px;
 }
 /* Et fag uten lekser er alt dempet; merket dempes med. */
@@ -509,12 +519,12 @@ body{
    samme kort blir hoeyere av seg selv, og trenger mer plass rundt seg. */
 @media(min-width:700px){
   #fag{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px; }
-  .fag-bilde{ max-width:190px; margin-bottom:10px; }
+  .fag-bilde{ height:150px; margin-bottom:10px; }
   .fag-kort{ padding:15px 17px 17px; }
 }
 @media(min-width:1300px){
   #fag{ grid-template-columns:repeat(5, minmax(0,1fr)); gap:14px; }
-  .fag-bilde{ max-width:170px; }
+  .fag-bilde{ height:132px; }
   .fag-kort{ padding:13px 15px 15px; }
 }
 .fag-kort{
@@ -523,6 +533,11 @@ body{
   display:flex;flex-direction:column;
   /* Et fag uten lekser skal fortsatt vaere et kort og ikke en stripe. */
   min-height:104px;
+  /* Sperre, ikke rettelse: hoeyden over holder bildet inne av seg selv.
+     Skulle noe likevel bli for stort en dag, blir det klippet HER og
+     ikke tegnet oppaa nabokortet - en avkuttet ting er lett aa se og
+     lett aa finne, en overlappende er ingen av delene. */
+  overflow:hidden;
 }
 /* Tomme fag skal vaere synlige, men ikke trekke blikk fra dem som har
    noe. Samme grep som avhukede foeringer i huskelista. */
