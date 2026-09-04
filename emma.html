@@ -514,6 +514,8 @@ body{
 .fag-bilde{
   display:block; flex:none;
   width:140px; margin:0;
+  /* Stempelet ligger oppaa merket og maa ha noe aa maale seg mot. */
+  position:relative;
 }
 .fag-bilde[hidden]{ display:none; }
 .fag-tekst{ flex:1; min-width:0; }
@@ -606,6 +608,47 @@ body{
    Merket er en stripe langs venstre kant og ikke en flate bak teksten:
    en gul flate inne i et fagkort som allerede har egen bakgrunn blir tre
    toner oppaa hverandre, og en roed flate leser som en feilmelding. */
+/* ---------- Lekseblokka i oversikten ----------
+   Frist paa egen linje, tekst i full bredde under. Ingen hake: den bor i
+   fagvinduet, der leksa staar med hele teksten sin. */
+.lekse-blokk{
+  display:flex; align-items:flex-start; margin-top:9px;
+  border-left:3px solid transparent; padding-left:8px;
+}
+.lekse-blokk.gul{ border-left-color:var(--handling-endre); }
+.lekse-blokk.rod{ border-left-color:var(--danger); }
+.lekse-blokk.ferdig{ border-left-color:transparent; }
+.lekse-blokk.ferdig .lekse-tekst{ text-decoration:line-through; opacity:.45; }
+.lekse-blokk.ferdig .lekse-frist{ opacity:.45; }
+.lekse-inn{ flex:1; min-width:0; }
+/* Fristen staar OVER teksten, ikke ved siden av: full dag og dato tar
+   plass, og teksten skal ha hele bredden. */
+.lekse-inn .lekse-frist{
+  display:block; margin-bottom:3px; padding-top:0; white-space:normal;
+}
+
+/* ---------- Stempelet paa merket ----------
+   Paa skraa tvers over bildet, som et gummistempel. Flate under teksten
+   fordi merkene er travle bilder - ren tekst ville forsvunnet i en
+   bokhylle eller mot en tavle. Litt gjennomsiktig, saa det leses som et
+   stempel PAA bildet og ikke som en etikett foran det. */
+.fag-stempel{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%, -50%) rotate(-16deg);
+  white-space:nowrap; pointer-events:none;
+  font-family:'Archivo',sans-serif; font-weight:700;
+  font-size:15px; text-transform:uppercase; letter-spacing:.08em;
+  padding:5px 12px; border-radius:6px;
+  border:2.5px solid currentColor;
+  background:rgba(251,249,245,.86);
+}
+.fag-stempel.ingen{ color:var(--danger); }
+/* Groent betyr gjort, som haken. Roedt betyr sletter, og en farge kan
+   ikke bety to ting i samme app - derfor ikke roedt her. */
+.fag-stempel.ferdig{ color:var(--handling-ny); }
+@media(min-width:700px){ .fag-stempel{ font-size:19px; } }
+@media(min-width:1300px){ .fag-stempel{ font-size:15px; } }
+
 .lekse-linje{
   display:flex;align-items:flex-start;gap:9px;margin-top:8px;
   /* Stripa laa utenfor kortets polstring den gang lekselinja hadde hele
@@ -3127,16 +3170,25 @@ function fagMerke(navn){
    En hoeyde satt paa <img> hjalp ikke. En tom div med hoeyde er derimot
    en boks nettleseren ikke kan regne seg bort fra, og bildet fyller den
    innenfra med object-fit. */
-function fagMerkeHtml(navn, klasse){
+/* Stempelet paa skraa over merket. To tilstander, og de sier det samme
+   som kortet ellers - men paa avstand, og uten aa leses.
+   `stempel` er 'ingen', 'ferdig' eller tom. */
+function fagMerkeHtml(navn, klasse, stempel){
   const m = fagMerke(navn);
   if(!m) return '';
   /* Svarer adressen med noe annet enn et bilde, tegner nettleseren et
      brutt bildeikon med spoersmaalstegn. Det ser ut som en feil i faget
      og ikke i en fil. Da skjuler vi ramma i stedet, og kortet staar med
      navnet alene - som et fag uten merke. */
+  const lapp = stempel === 'ingen'
+      ? '<span class="fag-stempel ingen">Ingen lekser</span>'
+    : stempel === 'ferdig'
+      ? '<span class="fag-stempel ferdig">Ferdig</span>'
+    : '';
   return '<span class="' + klasse + '">'
        + '<img src="' + m.url + '" alt="" width="' + m.b + '" height="' + m.h
-       + '" loading="lazy" onerror="this.parentNode.hidden=true"></span>';
+       + '" loading="lazy" onerror="this.parentNode.hidden=true">'
+       + lapp + '</span>';
 }
 
 function timeplanFag(rute){
@@ -3548,7 +3600,12 @@ function tegnFag(){
       /* Merket baerer fagnavnet selv, men navnet staar likevel under: en
          omdoept variant - «Kroppsøving/gym» - skal kunne leses, og et fag
          uten merke maa ha noe aa staa med. */
-      + fagMerkeHtml(f.navn, 'fag-bilde')
+      /* Ingen lekser denne uka, eller alle huket av. Et fag med to av tre
+         gjort faar ingenting - da er det fortsatt noe igjen, og et halvt
+         stempel finnes ikke. */
+      + fagMerkeHtml(f.navn, 'fag-bilde',
+          !liste.length ? 'ingen'
+          : liste.every(function(l){ return l.ferdig; }) ? 'ferdig' : '')
       /* Teksten i sin EGEN boks ved siden av merket, ikke som loese
          soesken rundt et flytende bilde. Floaten ga bare overskriften ved
          siden av; resten forsvant. To kolonner er forutsigbart: merket er
@@ -3683,7 +3740,7 @@ function tegnFagVis(){
   const f = fagAv(fagVisId);
   if(!f){ lukkFagVis(); return; }
 
-  $('fagVisNavn').innerHTML = fagMerkeHtml(f.navn, 'fagvis-bilde')
+  $('fagVisNavn').innerHTML = fagMerkeHtml(f.navn, 'fagvis-bilde', '')
     + '<span>' + esc(f.navn) + '</span>';
 
   const meta = [];
