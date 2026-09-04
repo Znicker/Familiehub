@@ -1106,6 +1106,14 @@ body{touch-action:manipulation}
 input,select,textarea{font-size:16px}
 
 /* ---------- Huskeliste ---------- */
+/* Uketallet ved siden av «Påminnelser denne uken». Dempet - det er en
+   presisering, ikke en del av tittelen. */
+.kort-uke{
+  margin-left:auto; font-size:var(--t-etikett); font-weight:700;
+  letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft);
+}
+/* .hu-ny brukes ikke lenger - det som legger noe til ligger i hoeyre
+   tommelknapp. Regelen blir staaende til noen rydder CSS-en samlet. */
 .hu-ny{
   margin-left:auto;border:none;background:var(--handling-ny);
   color:#FFFFFF;font-family:inherit;font-size:var(--t-brod);font-weight:700;
@@ -1150,6 +1158,18 @@ input,select,textarea{font-size:16px}
 }
 .hu-knapp:active{opacity:1;background:rgba(44,62,80,.08)}
 /* Én knapp per foering: endre. Sletting ligger bak den, i skjemaet. */
+/* Knapperaden nederst i boblen. */
+.hub-knapper{
+  display:flex; gap:8px; margin-top:12px;
+  padding-top:11px; border-top:1px solid rgba(44,62,80,.14);
+}
+.hub-knapper button{
+  flex:1; border:none; border-radius:999px; padding:9px 14px; cursor:pointer;
+  font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+  color:#FFFFFF;
+}
+.hub-knapper button:active{ filter:brightness(.92); }
+
 .hu-endre{
   width:26px;height:26px;padding:0;opacity:1;flex-shrink:0;
   background:var(--handling-endre);color:#FFFFFF;border-radius:50%;
@@ -1739,14 +1759,14 @@ select.hu-felt{
       </div>
 
       <div class="kort" id="kortMerknader">
-        <div class="kort-tittel"><span>Påminnelser i dag</span><button class="hu-ny" onclick="apneHuskeSkjema('dag')" aria-label="Ny merknad">+</button></div>
+        <div class="kort-tittel"><span>Påminnelser i dag</span></div>
         <div class="kort-kropp" id="huskeIdag">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
       </div>
 
       <div class="kort" id="kortUken">
-        <div class="kort-tittel"><span>Påminnelser denne uken</span><button class="hu-ny" onclick="apneHuskeSkjema('uke')" aria-label="Ny merknad">+</button></div>
+        <div class="kort-tittel"><span>Påminnelser denne uken</span><span class="kort-uke" id="ukeMerke"></span></div>
         <div class="kort-kropp" id="huskeUken">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
@@ -4900,10 +4920,10 @@ function huskeRad(m){
     +     '<span class="hu-tittel">' + esc(m.overskrift || '') + '</span>'
     +     (harTekst ? '<span class="hu-pil">›</span>' : '')
     +     (uke ? '<span class="hu-innen">' + esc(UKEDAG_KORT[ukedagNr(datoFraTekst(m.frist))]) + '</span>' : '')
-    +     '<div class="hu-verkt">'
-    +       '<button class="hu-knapp hu-endre" onclick="event.stopPropagation(); rediger(\'' + esc(m.id) + '\')" '
-    +         'aria-label="Endre">✎</button>'
-    +     '</div>'
+    /* Blyanten laa her til 5. september. Den sto paa hver eneste rad og
+       konkurrerte med selve raden om trykket - et bom traff Endre i
+       stedet for aa aapne merknaden. Naa ligger den i boblen, der man
+       alt har sagt hvilken merknad det gjelder. */
     +   '</div>'
     +   '<button class="hu-hake" onclick="vekslFerdig(\'' + esc(m.id) + '\')" '
     +     'aria-label="' + (ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
@@ -4950,6 +4970,11 @@ function vekslHuskeBoble(id, ev){
     +   (frist ? ' · ' + esc(frist) : '')
     +   (m.ferdig ? ' · ferdig' : '')
     +   (m.av ? ' · skrevet av ' + esc(m.av) : '')
+    + '</div>'
+    /* Endre og Slett hoerer hjemme HER: boblen er allerede svaret paa
+       «hvilken merknad», og da trenger knappene ingen egen peker. */
+    + '<div class="hub-knapper">'
+    +   '<button class="knapp-endre" onclick="rediger(\'' + esc(m.id) + '\')">Endre</button>'
     + '</div>';
 
   const b = $('huBoble');
@@ -5124,6 +5149,10 @@ function tegnHuskeInner(){
   lukkHuskeBoble();          /* lista tegnes om - boblen ville pekt paa ingenting */
   const dag = datoNokkel(dagenViser());
   const uke = ukeNokkel(dagenViser());
+  /* Hvilken uke boksen viser. «Denne uken» er tvetydig saa snart man kan
+     bla, og doegnet skifter dessuten klokka 20 - en fredag kveld staar
+     sida alt paa loerdagen. */
+  if($('ukeMerke')) $('ukeMerke').textContent = 'uke ' + isoUke(dagenViser()).uke;
 
   /* Bare det som gjelder henne eller hele familien. Merknadene ligger i
      den samme KV-noekkelen som kjoekkendashen leser - det er derfor en

@@ -423,6 +423,14 @@ body{touch-action:manipulation}
 input,select,textarea{font-size:16px}
 
 /* ---------- Huskeliste ---------- */
+/* Uketallet ved siden av «Påminnelser denne uken». Dempet - det er en
+   presisering, ikke en del av tittelen. */
+.kort-uke{
+  margin-left:auto; font-size:var(--t-etikett); font-weight:700;
+  letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft);
+}
+/* .hu-ny brukes ikke lenger - plusstegnene ligger i hoeyre tommelknapp.
+   Regelen blir staaende til noen rydder CSS-en samlet. */
 .hu-ny{
   margin-left:auto;border:none;background:var(--handling-ny);
   color:#FFFFFF;font-family:inherit;font-size:var(--t-brod);font-weight:700;
@@ -909,14 +917,14 @@ select.hu-felt{
       </div>
 
       <div class="kort" id="kortMerknader">
-        <div class="kort-tittel"><span>Påminnelser i dag</span><button class="hu-ny" onclick="apneHuskeSkjema('dag')" aria-label="Ny merknad">+</button></div>
+        <div class="kort-tittel"><span>Påminnelser i dag</span></div>
         <div class="kort-kropp" id="huskeIdag">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
       </div>
 
       <div class="kort" id="kortUken">
-        <div class="kort-tittel"><span>Påminnelser denne uken</span><button class="hu-ny" onclick="apneHuskeSkjema('uke')" aria-label="Ny merknad">+</button></div>
+        <div class="kort-tittel"><span>Påminnelser denne uken</span><span class="kort-uke" id="ukeMerke"></span></div>
         <div class="kort-kropp" id="huskeUken">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
@@ -2619,6 +2627,12 @@ function vekslHuskeBoble(id, ev){
     +   (frist ? ' · ' + esc(frist) : '')
     +   (m.ferdig ? ' · ferdig' : '')
     +   (m.av ? ' · skrevet av ' + esc(m.av) : '')
+    + '</div>'
+    /* Endre hoerer hjemme HER: boblen er allerede svaret paa «hvilken
+       merknad», og da trenger knappen ingen egen peker. Samme grep som
+       paa Emma dash. */
+    + '<div class="hub-knapper">'
+    +   '<button class="knapp-endre" onclick="rediger(\'' + esc(m.id) + '\')">Endre</button>'
     + '</div>';
 
   const b = $('huBoble');
@@ -2791,6 +2805,10 @@ function tegnHuskeInner(){
   middagRedig = false;       /* et halvskrevet notat hoerer til dagen det ble aapnet paa */
   const dag = datoNokkel(dagenViser());
   const uke = ukeNokkel(dagenViser());
+  /* Hvilken uke boksen viser. «Denne uken» er tvetydig saa snart man kan
+     bla - og paa kjoekkendashen skifter doegnet klokka 20, saa en fredag
+     kveld staar den alt paa loerdagen. */
+  if($('ukeMerke')) $('ukeMerke').textContent = 'uke ' + isoUke(dagenViser()).uke;
 
   const grupper = [
     {omfang: 'dag', boks: 'huskeIdag',
@@ -3077,6 +3095,45 @@ function tilbakeTilStandard(){
    leses. Leseverktoeyene er derfor de samme fire som paa de
    andre sidene, uten noe eget i tillegg.
    ============================================================ */
+
+/* ---- Sidas egne handlinger: hoeyre firer ----
+   Plusstegnene i korttitlene er borte; det som legger noe til ligger her,
+   som paa Emma dash. To knapper i hjoernet for én sak var én for mye, saa
+   de to paaminnelsene deler én knapp med undermeny. */
+window.neamSideHandlinger = function(){
+  return [
+    { plass:'ved', navn:'Påminnelser', tekst:'Påminnelser', behold:true, farge:'ny',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
+         + '<path d="M12 7v6M9 10h6"/></svg>',
+      gjor: function(){
+        neamSideStabel('ved', [
+          { navn:'Ny påminnelse i dag', tekst:'I dag', farge:'ny',
+            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
+               + '<path d="M12 7v6M9 10h6"/></svg>',
+            gjor: function(){ apneHuskeSkjema('dag'); } },
+
+          { navn:'Ny påminnelse denne uken', tekst:'Denne uken', farge:'ny',
+            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
+               + '<path d="M3 9h18M8 2v4M16 2v4"/>'
+               + '<path d="M12 12v5M9.5 14.5h5"/></svg>',
+            gjor: function(){ apneHuskeSkjema('uke'); } }
+        ]);
+      } }
+  ];
+};
+
+/* Haandtaket avgjoer synligheten sin i neamBygg(), som kjoerer FOER dette
+   skriptet - se den samme linja i emma.html. */
+(function(){
+  const h = document.getElementById('neamSideHandtak');
+  if(h && typeof neamSideHarNoe === 'function') h.hidden = !neamSideHarNoe();
+})();
 
 window.neamKontekst = async function(){
   return {
