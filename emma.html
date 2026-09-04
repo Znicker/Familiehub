@@ -857,22 +857,33 @@ body{
   width:min(96vw, 1180px); max-width:none;
   height:var(--dlg-hoyde, 88vh); min-height:min(88vh, 720px);
 }
-.forslag-liste{
+/* Rullefeltet er den ENE som deler ut hoeyden. Bolkene inni er vanlige
+   blokker og tar plassen innholdet trenger. */
+.forslag-rull{
   flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
 }
+/* Bolkoverskriften limer seg til toppen mens man ruller, saa man alltid
+   ser om raden man leser er en lekse eller et laeringsmaal. */
+.forslag-bolk-hode{
+  position:sticky; top:0; z-index:2; background:var(--paper);
+  font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--ink-soft);
+  padding:12px 0 5px; border-bottom:1px solid var(--line);
+}
+#forslagMaalBolk{ margin-top:6px; }
 /* Teksten er det viktigste i raden og faar mest plass. Feltene toppstilles,
    ikke sentreres: tekstfeltet er hoeyere enn de andre, og en avkryssing som
    svever midt i en fire linjers tekst hoerer ikke sammen med noe. */
 .forslag-rad{
   display:grid; grid-template-columns:26px 1fr 2.6fr 138px;
   gap:10px; align-items:start;
-  padding:11px 0; border-bottom:1px solid var(--line);
+  padding:8px 0; border-bottom:1px solid var(--line);
 }
 .forslag-rad > *{ align-self:start; }
 .forslag-rad input[type=checkbox]{ margin-top:12px; }
 .forslag-tekst{
-  min-height:74px; resize:vertical; line-height:1.45;
+  min-height:52px; resize:vertical; line-height:1.4;
   font-family:'Archivo',sans-serif; overflow-y:hidden;
 }
 .forslag-rad:last-child{ border-bottom:none; }
@@ -881,9 +892,9 @@ body{
 .forslag-rad .hu-felt{ font-size:var(--t-meta); padding:8px 9px; }
 .forslag-hode{
   display:grid; grid-template-columns:26px 1fr 2.6fr 138px; gap:10px;
-  font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
-  letter-spacing:.08em; color:var(--ink-soft);
-  padding-bottom:6px; border-bottom:1px solid var(--line);
+  font-size:var(--t-etikett); font-weight:600; letter-spacing:.04em;
+  color:var(--ink-soft); opacity:.8;
+  padding:6px 0 4px;
 }
 /* Antatt frist: den staar ikke i planen, den er regnet ut av timeplanen.
    Merket forsvinner naar noen roerer datofeltet - da er den ikke antatt
@@ -895,22 +906,19 @@ body{
 /* Fristen ligger i en annen uke enn planen gjelder. Kan vaere riktig - en
    innlevering kan peke framover - men er oftere en dato som er lest feil,
    og forskjellen er ikke synlig i en datoboks. */
-.forslag-maal-hode{
-  font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
-  letter-spacing:.08em; color:var(--ink-soft);
-  margin:14px 0 4px; padding-bottom:5px; border-top:1px solid var(--line);
-  padding-top:14px;
-}
 .forslag-maalrad{
   display:grid; grid-template-columns:26px 1fr 2.6fr; gap:10px;
-  align-items:start; padding:11px 0; border-bottom:1px solid var(--line);
+  align-items:start; padding:8px 0; border-bottom:1px solid var(--line);
 }
 .forslag-maalrad:last-child{ border-bottom:none; }
 .forslag-maalrad.av{ opacity:.4; }
 .forslag-maalrad input[type=checkbox]{ width:20px; height:20px; margin-top:12px; }
 .forslag-maalrad .hu-felt{ font-size:var(--t-meta); padding:8px 9px; }
+/* Et laeringsmaal er én til to setninger. 66px ga tre tomme linjer under
+   teksten paa de fleste av dem, og elleve fag ble til en lang rulling av
+   luft. Feltet vokser uansett med innholdet - se voksFelt(). */
 .forslag-maaltekst{
-  min-height:66px; resize:vertical; line-height:1.45;
+  min-height:44px; resize:vertical; line-height:1.4;
   font-family:'Archivo',sans-serif; overflow-y:hidden;
 }
 @media(max-width:700px){
@@ -1577,17 +1585,28 @@ select.hu-felt{
     <button class="hub-lukk" onclick="lukkForslag()" aria-label="Lukk">×</button>
     <div class="av-tittel"><span>Neam foreslår disse leksene</span></div>
     <div class="lim-hjelp" id="forslagHjelp"></div>
-    <div class="forslag-hode">
-      <span></span><span>Fag</span><span>Lekse</span><span>Frist</span>
-    </div>
-    <div class="forslag-liste" id="forslagListe"></div>
-    <!-- Laeringsmaalene i egen bolk under leksene. De hoerer til samme
-         ukeplan og skal godkjennes i samme runde, men de har verken frist
-         eller hake per lekse - egne rader er tydeligere enn en kolonne som
-         staar tom paa halve lista. -->
-    <div id="forslagMaalBolk" hidden>
-      <div class="forslag-maal-hode">Læringsmål</div>
-      <div class="forslag-liste" id="forslagMaalListe"></div>
+    <!-- ETT rullefelt rundt begge bolkene.
+         Foer laa lekselista og maalbolken som hver sin flex-boks i
+         dialogen: lista hadde flex:1 og min-height:0, maalbolken hadde
+         ingen begrensning. Maalene tok da all hoeyden, og LEKSENE ble
+         klemt til null - de sto der, usynlige, mens teksten over sa at
+         fem frister var antatt. To rullefelt i samme dialog er uansett
+         feil; det skal vaere ett, med bolker inni. -->
+    <div class="forslag-rull">
+      <div id="forslagLekseBolk">
+        <div class="forslag-bolk-hode">Lekser</div>
+        <div class="forslag-hode">
+          <span></span><span>Fag</span><span>Lekse</span><span>Frist</span>
+        </div>
+        <div id="forslagListe"></div>
+      </div>
+      <!-- Laeringsmaalene hoerer til samme ukeplan og godkjennes i samme
+           runde, men de har verken frist eller hake - egne rader er
+           tydeligere enn en kolonne som staar tom paa halve lista. -->
+      <div id="forslagMaalBolk" hidden>
+        <div class="forslag-bolk-hode">Læringsmål</div>
+        <div id="forslagMaalListe"></div>
+      </div>
     </div>
     <div class="av-foot">
       <span class="forslag-teller" id="forslagTeller"></span>
@@ -5957,6 +5976,10 @@ function tegnForslag(){
   + '<datalist id="forslagFag">'
   + fagValg.map(function(f){ return '<option value="' + esc(f.navn) + '">'; }).join('')
   + '</datalist>';
+
+  /* En tom bolk skal ikke staa igjen med overskrift og kolonnenavn - da
+     ser det ut som at noe mangler. */
+  $('forslagLekseBolk').hidden = !ventendeForslag.length;
 
   /* ---- Laeringsmaalene ---- */
   $('forslagMaalBolk').hidden = !ventendeMaal.length;
