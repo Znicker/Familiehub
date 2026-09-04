@@ -509,8 +509,11 @@ body{
 .fag-bilde{
   display:block; flex:none;
   width:100%; height:126px;
-  object-fit:contain; object-position:center;
   margin:0 auto 8px;
+}
+.fag-bilde img{
+  width:100%; height:100%;
+  object-fit:contain; object-position:center; display:block;
 }
 /* Et fag uten lekser er alt dempet; merket dempes med. */
 .fag-kort.tomt .fag-bilde{ opacity:.85; }
@@ -520,19 +523,22 @@ body{
 @media(min-width:700px){
   #fag{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px; }
   .fag-bilde{ height:150px; margin-bottom:10px; }
-  .fag-kort{ padding:15px 17px 17px; }
+  .fag-kort{ padding:15px 17px 17px; min-height:250px; }
 }
 @media(min-width:1300px){
   #fag{ grid-template-columns:repeat(5, minmax(0,1fr)); gap:14px; }
   .fag-bilde{ height:132px; }
-  .fag-kort{ padding:13px 15px 15px; }
+  .fag-kort{ padding:13px 15px 15px; min-height:224px; }
 }
 .fag-kort{
   border:1px solid var(--line);border-radius:12px;background:var(--bg-2);
   padding:13px 15px 15px;
   display:flex;flex-direction:column;
-  /* Et fag uten lekser skal fortsatt vaere et kort og ikke en stripe. */
-  min-height:104px;
+  /* Hoeyt nok til merket pluss navn og en linje under, satt som TALL og
+     ikke overlatt til utregning. Kortene sto paa den gamle min-height
+     paa 104px uansett hva som laa i dem - bildet talte ikke med - og da
+     er en min-height som faktisk dekker innholdet det som holder. */
+  min-height:216px;
   /* Sperre, ikke rettelse: hoeyden over holder bildet inne av seg selv.
      Skulle noe likevel bli for stort en dag, blir det klippet HER og
      ikke tegnet oppaa nabokortet - en avkuttet ting er lett aa se og
@@ -649,7 +655,8 @@ body{
 }
 #fagVisBak{ z-index:57; }
 .fagvis-boks .av-tittel{ font-size:calc(var(--t-stor) * 1.35); gap:14px; }
-.fagvis-bilde{ width:92px; height:auto; flex:none; display:block; }
+.fagvis-bilde{ width:92px; height:84px; flex:none; display:block; }
+.fagvis-bilde img{ width:100%; height:100%; object-fit:contain; display:block; }
 .fagvis-boks .fagvis-meta{ font-size:var(--t-brod); gap:8px 20px; }
 .fagvis-boks .fagvis-bolk h4{ font-size:var(--t-meta); }
 .fagvis-boks .lekse-tekst{ font-size:var(--t-brod); line-height:1.45; }
@@ -2993,11 +3000,18 @@ function fagMerke(navn){
 }
 
 /* <img> med maal. Kallstedene skal ikke skrive dem tre ganger. */
+/* Bildet i en RAMME med gitt hoeyde, ikke som et bilde i floeten.
+   Bakgrunnen: kortene ble staaende paa noeyaktig min-height uansett hva
+   som laa i dem, altsaa talte ikke bildet med i hoeyden i det hele tatt.
+   En hoeyde satt paa <img> hjalp ikke. En tom div med hoeyde er derimot
+   en boks nettleseren ikke kan regne seg bort fra, og bildet fyller den
+   innenfra med object-fit. */
 function fagMerkeHtml(navn, klasse){
   const m = fagMerke(navn);
   if(!m) return '';
-  return '<img class="' + klasse + '" src="' + m.url + '" alt="" '
-       + 'width="' + m.b + '" height="' + m.h + '" loading="lazy">';
+  return '<span class="' + klasse + '">'
+       + '<img src="' + m.url + '" alt="" width="' + m.b + '" height="' + m.h
+       + '" loading="lazy"></span>';
 }
 
 function timeplanFag(rute){
