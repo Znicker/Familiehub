@@ -861,7 +861,21 @@ function neamSideFirer(){
   /* Aldri to aapne samtidig: to firere er bredere enn en telefonskjerm
      til sammen, og to menyer oppe er uansett to spoersmaal om gangen. */
   neamFirerNed();
-  if(f.classList.contains('oppe')){ neamSideFirerNed(); return; }
+  if(f.classList.contains('oppe')){
+    neamSideFirerNed();
+    /* Andre trykk gjoer mer enn aa lukke naar sida ber om det. Speilet av
+       venstre haandtak, der andre trykk aapner samtalen: det andre
+       trykket er en vei VIDERE, ikke en angring.
+
+       Sida bestemmer hva det betyr - paa en side med visninger er det aa
+       komme tilbake til den man begynte i. Melder sida ingenting, lukker
+       knappen bare, som foer. */
+    if(typeof window.neamSideAndreTrykk === 'function'){
+      try{ window.neamSideAndreTrykk(); }
+      catch(e){ console.warn('neamSideAndreTrykk feilet:', e); }
+    }
+    return;
+  }
 
   /* Hentes ved hver aapning, ikke bare én gang: hva som er mulig
      avhenger av visningen man staar i. */

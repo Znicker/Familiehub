@@ -337,37 +337,93 @@ body{
 .vis-knapp.aktiv{background:var(--aksent);color:#FFFFFF}
 
 /* ---------- Ukesvisning ----------
-   Sju RADER, ikke sju kolonner. Venstrekolonnen er 1.45fr av skjermen -
-   rundt 660px paa iPaden i landskap - og sju kolonner blir 90px hver.
-   Det holder til fargeprikker og ikke til lesbare avtaler. En rad per dag
-   taaler at fredagen har fem ting og mandagen ingen. */
-.uke-rad{
-  display:flex;align-items:flex-start;gap:11px;
-  padding:7px 9px;border-radius:11px;margin-bottom:4px;
+   Sju doegnsoeyler, samme form som kalenderappens ukeplan. Radene med én
+   dag hver var en tilpasning til en smal venstrekolonne; naa tar
+   visningen hele bredden, og da er soeylene bade riktigere og kjent fra
+   den appen dette er de samme avtalene som staar i.
+
+   Klassenavnene er kalenderens egne (.uke-head, .pu-kol, .pu-ev), saa
+   den som har lest den ene fila kjenner igjen den andre. Reglene er
+   forenklet der emma-dashen ikke har delen: ingen valgt dag, ingen
+   helligdagsfarge, ingen parallelle spor - det siste er en dagsvisning,
+   og den ligger i sin egen fane her.
+   ------------------------------------------------------------ */
+#uke{ overflow:hidden; display:flex; flex-direction:column; padding-right:0; }
+
+.uke-head{
+  display:grid; grid-template-columns:repeat(7, minmax(0,1fr));
+  background:var(--bg-2); border-bottom:1px solid var(--line);
+  border-radius:10px 10px 0 0; flex-shrink:0;
 }
-.uke-rad.idag{background:var(--aksent-lys)}
-/* Dager som er gaatt falmer, som passerte avtaler i dagsvisningen. */
-.uke-rad.forbi{opacity:.45}
-.uke-dag{width:76px;flex-shrink:0;line-height:1.25;padding-top:3px}
-.uke-navn{
-  font-size:var(--t-meta);font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+.uke-dcol{
+  padding:6px 4px 7px; text-align:center;
+  border-left:1px solid var(--line);
 }
-.uke-dato{
-  font-size:var(--t-etikett);color:var(--ink-soft);font-weight:600;
+.uke-dcol:first-child{ border-left:none; }
+.uke-dow{
+  font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
+  letter-spacing:.1em; color:var(--ink-soft);
+}
+.uke-dnum{
+  font-size:var(--t-stor); font-weight:700; line-height:1.25;
   font-variant-numeric:tabular-nums;
 }
-.uke-brikker{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:5px}
-.uke-brikke{
-  display:inline-flex;align-items:baseline;gap:7px;max-width:100%;
-  border:1px solid transparent;border-radius:9px;padding:5px 10px;cursor:pointer;
-  font-family:'Archivo',sans-serif;font-size:var(--t-meta);color:var(--ink);
-  line-height:1.25;-webkit-tap-highlight-color:transparent;text-align:left;
+/* Ringen rundt dagens dato er kalenderens - en aapen strek som gaar litt
+   forbi seg selv oeverst til hoeyre, slik en ring satt med tusj gjoer.
+   Kopiert uendret, saa de to sidene merker i dag paa samme maate. */
+.uke-dcol.idag .uke-dnum{
+  position:relative; display:inline-flex; align-items:center;
+  justify-content:center; min-width:26px; height:26px; color:var(--ink);
 }
-.uke-brikke:active{filter:brightness(.96)}
-.uke-brikke.valgt{box-shadow:inset 0 0 0 2px rgba(44,62,80,.45)}
-.uke-kl{font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0}
-.uke-tittel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.uke-ingen{font-size:var(--t-meta);color:var(--ink-soft);font-style:italic;padding-top:4px}
+.uke-dcol.idag .uke-dnum::before{
+  content:''; position:absolute; left:-6px; right:-6px; top:-5px; bottom:-5px;
+  pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M73 17 C74 18 78 21 80 23 C83 25 85 27 87 30 C89 32 90 35 92 38 C93 41 94 44 94 47 C95 50 95 53 94 56 C94 59 93 63 92 66 C91 69 89 72 88 74 C86 77 83 79 81 81 C78 83 75 85 73 87 C70 88 66 89 63 90 C60 91 57 92 53 92 C50 92 47 92 43 91 C40 91 37 90 34 89 C31 88 28 86 25 84 C22 83 20 81 17 78 C15 76 13 73 12 71 C10 68 8 65 8 62 C7 59 6 56 6 53 C6 50 6 47 6 44 C7 41 8 38 9 35 C11 32 13 29 15 27 C17 24 19 22 22 20 C24 18 27 17 30 15 C33 14 36 13 39 12 C42 11 46 11 49 11 C52 11 56 11 59 12 C62 12 65 13 68 15 C71 17 73 19 75 21 C77 23 79 26 80 28 C81 31 81 35 82 37' fill='none' stroke='%23A64D3C' stroke-width='5.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:center; background-size:100% 100%;
+}
+
+.uke-scroll{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.pu-rad{
+  display:grid; grid-template-columns:repeat(7, minmax(0,1fr));
+  align-items:stretch; min-height:100%;
+}
+/* Ingen skillestreker mellom dagene - lufta og brikkene holder dem fra
+   hverandre, og overskriftsraden viser hvor kolonnene gaar. */
+.pu-kol{
+  padding:7px 5px 12px; min-width:0;
+  display:flex; flex-direction:column; gap:5px;
+}
+.pu-kol.rolig{ opacity:.55; }        /* rolige dager skal se rolige ut */
+.pu-kol.forbi{ opacity:.42; }
+
+/* Fyll og rammefarge settes i JS fra kalenderfargen. */
+.pu-ev{
+  border:2px solid transparent; border-radius:9px;
+  padding:6px 7px; overflow:hidden; cursor:pointer; text-align:left;
+  font-family:'Archivo',sans-serif; color:var(--ink); width:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+.pu-ev.valgt{ box-shadow:inset 0 0 0 2px rgba(44,62,80,.5); }
+.pu-ev:active{ filter:brightness(.96); }
+.pu-topp{ display:flex; align-items:center; gap:5px; margin-bottom:2px; }
+.pu-ini{
+  width:20px; height:20px; border-radius:50%; color:#fff; flex-shrink:0;
+  font-size:var(--t-etikett); font-weight:700;
+  display:flex; align-items:center; justify-content:center; line-height:1;
+}
+.pu-tid{
+  font-family:'IBM Plex Mono',monospace; font-size:var(--t-etikett);
+  color:var(--ink); font-variant-numeric:tabular-nums; white-space:nowrap; opacity:.75;
+}
+/* Liten prikk = det finnes sted eller notat aa se i detaljkortet. */
+.pu-mer{ width:5px; height:5px; border-radius:50%; flex-shrink:0; margin-left:auto; }
+.pu-tittel{
+  font-weight:700; font-size:var(--t-meta); line-height:1.25; overflow-wrap:anywhere;
+}
+.uke-ingen{
+  font-size:var(--t-meta); color:var(--ink-soft); font-style:italic;
+  text-align:center; padding:14px 0;
+}
 
 /* ---------- Fag og frister ----------
    Timeplanen ligger i merknadene paa avtalene hennes. Denne visningen er
@@ -398,7 +454,18 @@ body{
 /* Meldingen naar det ikke finnes fag i det hele tatt maa bryte ut av
    rutenettet - ellers staar den i en 260px-spalte. */
 #fag .tom{grid-column:1/-1}
+.fag-kort{ cursor:pointer; }
 .fag-topp{display:flex;align-items:center;gap:8px}
+/* Laerer og dager staar under navnet i fellesvisningen - to korte linjer
+   som sier hvem og naar uten aa aapne faget. */
+.fag-meta{
+  font-size:var(--t-etikett); color:var(--ink-soft); line-height:1.4;
+  margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.fag-merke{
+  flex-shrink:0; font-size:var(--t-etikett); font-weight:700;
+  color:var(--danger); letter-spacing:.05em; text-transform:uppercase;
+}
 .fag-navn{
   flex:1;min-width:0;font-size:var(--t-brod);font-weight:700;overflow-wrap:anywhere;
 }
@@ -429,9 +496,52 @@ body{
 .lekse-linje.ferdig .lekse-hake{
   opacity:1;border-color:var(--handling-ny);background:var(--handling-ny);color:#FFFFFF;
 }
-.fag-foot{display:flex;gap:8px;flex-shrink:0;margin-top:12px}
-.fag-foot[hidden]{display:none}
-.fag-foot .knapp-gronn{flex:1;font-size:var(--t-meta);padding:11px 10px}
+
+/* ---------- Ukedagsvelgeren ---------- */
+.dag-velg{ display:flex; gap:4px; margin-top:4px; flex-wrap:wrap; }
+.dag-velg button{
+  flex:1; min-width:34px; border:1.5px solid var(--line); background:var(--paper);
+  color:var(--ink-soft); border-radius:9px; padding:8px 2px; cursor:pointer;
+  font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+  text-transform:uppercase; letter-spacing:.04em;
+}
+.dag-velg button.paa{
+  background:var(--aksent); border-color:var(--aksent); color:#FFFFFF;
+}
+
+/* ---------- Ett fag ---------- */
+.fagvis-boks{ max-width:640px; }
+.fagvis-meta{
+  display:flex; flex-wrap:wrap; gap:6px 14px; padding:0 0 4px;
+  font-size:var(--t-meta); color:var(--ink-soft);
+}
+.fagvis-meta b{ color:var(--ink); font-weight:700; }
+.fagvis-kropp{ flex:1; min-height:0; overflow-y:auto; padding:10px 0; }
+.fagvis-bolk + .fagvis-bolk{ margin-top:16px; }
+.fagvis-bolk h4{
+  font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+  text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft);
+  margin:0 0 6px; padding-bottom:4px; border-bottom:1px solid var(--line);
+}
+/* Proeverad: type til venstre, dato og karakter hoeyrestilt. Karakteren
+   staar tom til den er satt - en tom plass sier «ikke kommet ennaa»,
+   mens en strek eller et null ville sagt noe annet. */
+.prove-linje{
+  display:flex; align-items:baseline; gap:10px; padding:7px 0;
+  border-bottom:1px solid var(--line); cursor:pointer;
+}
+.prove-linje:last-child{ border-bottom:none; }
+.prove-type{ flex:1; min-width:0; font-size:var(--t-meta); overflow-wrap:anywhere; }
+.prove-dato{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.05em;
+  text-transform:uppercase; color:var(--ink-soft); white-space:nowrap;
+}
+.prove-dato.naer{ color:var(--handling-endre); }
+.prove-karakter{
+  min-width:30px; text-align:center; flex-shrink:0;
+  font-size:var(--t-brod); font-weight:700; color:var(--ink);
+}
+.fagvis-tom{ font-size:var(--t-meta); color:var(--ink-soft); font-style:italic; }
 
 /* Lim inn-skjemaet arver avtaleboksens ramme. Feltet er monospace fordi
    det som limes inn er linjer med skilletegn, og da hjelper det aa se at
@@ -969,8 +1079,23 @@ select.hu-felt{
         <label class="av-felt" id="fagVelgFelt">Fag
           <select class="hu-felt" id="fagVelg"></select>
         </label>
+        <label class="av-felt" id="fagByttFelt" hidden>Hvilket fag
+          <select class="hu-felt" id="fagBytt" onchange="fagByttet()"></select>
+        </label>
         <label class="av-felt" id="fagNavnFelt" hidden>Navn på faget
           <input class="hu-felt" id="fagNavn" maxlength="40" placeholder="For eksempel Naturfag">
+        </label>
+        <label class="av-felt" id="fagLarerFelt" hidden>Faglærer
+          <input class="hu-felt" id="fagLarer" maxlength="60" placeholder="Navn på læreren">
+        </label>
+        <div class="av-felt" id="fagDagerFelt" hidden>Ukedager
+          <div class="dag-velg" id="fagDager"></div>
+        </div>
+        <label class="av-felt" id="fagTypeFelt" hidden>Type prøve
+          <input class="hu-felt" id="fagType" maxlength="40" placeholder="Kapittelprøve, muntlig, innlevering …">
+        </label>
+        <label class="av-felt" id="fagKarakterFelt" hidden>Karakter
+          <input class="hu-felt" id="fagKarakter" maxlength="12" placeholder="Står tom til den er satt">
         </label>
         <label class="av-felt" id="fagFristFelt">Frist
           <input class="hu-felt" type="date" id="fagFrist">
@@ -1022,6 +1147,22 @@ select.hu-felt{
     </div>
   </div>
 
+  <!-- Ett fag i full bredde: laerer, ukedager, lekser og proever. Skjult
+       i fellesvisningen - der er det for mye - og kommer fram naar man
+       trykker paa faget. -->
+  <div class="hu-boble-bak avtale-bak" id="fagVisBak" hidden></div>
+  <div class="avtale-boks fagvis-boks" id="fagVisBoks" hidden role="dialog" aria-modal="true">
+    <button class="hub-lukk" onclick="lukkFagVis()" aria-label="Lukk">×</button>
+    <div class="av-tittel"><span id="fagVisNavn">Fag</span></div>
+    <div class="fagvis-meta" id="fagVisMeta"></div>
+    <div class="fagvis-kropp" id="fagVisKropp"></div>
+    <div class="av-foot">
+      <button class="hu-avbryt" onclick="redigerFag(fagVisId)">Rediger faget</button>
+      <button class="knapp-gronn" onclick="apneProveSkjema(fagVisId)">Ny prøve</button>
+      <button class="knapp-gronn" onclick="apneLekseSkjema(fagVisId)">Ny lekse</button>
+    </div>
+  </div>
+
   <div class="rutenett" id="rutenett">
 
     <div class="kort">
@@ -1051,11 +1192,10 @@ select.hu-felt{
       </div>
       <button class="knapp-gronn ny-avtale" id="nyAvtaleKnapp"
               onclick="nyAvtale()">Legg til avtale i kalenderen</button>
-      <div class="fag-foot" id="fagFoot" hidden>
-        <button class="knapp-gronn" onclick="apneLekseSkjema()">Ny lekse</button>
-        <button class="knapp-gronn" onclick="apneFagSkjema()">Nytt fag</button>
-        <button class="knapp-gronn" onclick="apneLimInn()">Lim inn</button>
-      </div>
+      <!-- Fagraden laa her til 4. september. Alt som endrer noe under Fag
+           ligger naa i hoeyre tommelknapp under «Rediger», og det som
+           gjelder ett enkelt fag ligger i fagets eget kort. En rad med
+           tre knapper under kortet var et tredje sted aa lete. -->
     </div>
 
     <div class="hoyre">
@@ -1096,7 +1236,7 @@ select.hu-felt{
 <script src="/felles-filviser.js?v=2"></script>
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
-<script src="/felles-neam.js?v=41"></script>
+<script src="/felles-neam.js?v=42"></script>
 <script>
 /* ============================================================
    NEAM – Emma dash
@@ -1831,7 +1971,8 @@ passSkjema();
 function skjemaAapent(){
   const viser = $('filviser') && !$('filviser').hidden;
   const lim = $('limBoks') && !$('limBoks').hidden;
-  return avtaleAapen || huskeSkjema !== null || fagSkjema !== null || !!lim || !!viser;
+  return avtaleAapen || huskeSkjema !== null || fagSkjema !== null
+      || fagVisId !== null || !!lim || !!viser;
 }
 
 function nyAvtale(){ apneAvtale(null); }
@@ -2220,7 +2361,6 @@ function settVisning(ny){
 
   /* Knappen under kortet hoerer til kalenderen; fagraden til Fag. */
   if($('nyAvtaleKnapp')) $('nyAvtaleKnapp').hidden = (ny === 'fag');
-  if($('fagFoot'))       $('fagFoot').hidden       = (ny !== 'fag');
   /* Fag har ingen dag aa bla i. */
   if($('dagPiler'))      $('dagPiler').hidden      = (ny === 'fag');
 
@@ -2284,52 +2424,114 @@ function tegnUke(res){
   const start  = ukeStart(dagenViser());
   const idagNo = datoNokkel(idag0());
 
-  /* Avtalene sorteres i dagsbunker foerst - det er raskere enn aa gaa
-     gjennom hele lista sju ganger, og det holder rekkefoelgen fra Graph. */
+  /* Dagsbunker foerst - det er raskere enn aa gaa gjennom hele lista sju
+     ganger, og rekkefoelgen fra Graph beholdes. */
   const bunker = {};
   avtaler.forEach(function(e, nr){
     const n = datoNokkel(e.start);
     (bunker[n] = bunker[n] || []).push(nr);
   });
 
-  let html = '';
+  boks.innerHTML = '';
+
+  const dager = [];
   for(let i = 0; i < 7; i++){
-    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
-    const n = datoNokkel(d);
-    const paa = bunker[n] || [];
-    const erIdag = (n === idagNo);
-    const forbi  = (d < idag0());
-
-    html += '<div class="uke-rad' + (erIdag ? ' idag' : '') + (forbi ? ' forbi' : '') + '">'
-      + '<div class="uke-dag">'
-      +   '<div class="uke-navn">' + esc(UKEDAG_KORT[i]) + '</div>'
-      +   '<div class="uke-dato">' + d.getDate() + '. ' + esc(MND[d.getMonth()].slice(0, 3)) + '</div>'
-      + '</div>'
-      + '<div class="uke-brikker">';
-
-    if(!paa.length){
-      html += '<div class="uke-ingen">–</div>';
-    }else{
-      paa.forEach(function(nr){
-        const e = avtaler[nr];
-        html += '<button type="button" class="uke-brikke" data-avtale="' + nr + '"'
-          + ' style="' + fyll(e.farge) + '" onclick="visDetalj(' + nr + ')"'
-          + ' title="' + esc(e.tittel) + '">'
-          + '<span class="uke-kl">' + (e.heleDagen ? 'Hele' : esc(kl(e.start))) + '</span>'
-          + '<span class="uke-tittel">' + esc(e.tittel) + '</span>'
-          + '</button>';
-      });
-    }
-    html += '</div></div>';
+    dager.push(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
   }
 
+  /* ---- Overskriftsraden ---- */
+  const head = document.createElement('div');
+  head.className = 'uke-head';
+  dager.forEach(function(d, i){
+    const c = document.createElement('div');
+    c.className = 'uke-dcol' + (datoNokkel(d) === idagNo ? ' idag' : '');
+    c.innerHTML = '<div class="uke-dow">' + esc(UKEDAG_KORT[i]) + '</div>'
+                + '<div class="uke-dnum">' + d.getDate() + '</div>';
+    head.appendChild(c);
+  });
+  boks.appendChild(head);
+
+  /* ---- Soeylene ---- */
+  const scroll = document.createElement('div');
+  scroll.className = 'uke-scroll';
+  const rad = document.createElement('div');
+  rad.className = 'pu-rad';
+
+  dager.forEach(function(d){
+    const kol = document.createElement('div');
+    const paa = bunker[datoNokkel(d)] || [];
+    kol.className = 'pu-kol'
+      + (paa.length ? '' : ' rolig')
+      + (d < idag0() ? ' forbi' : '');
+
+    paa.forEach(function(nr){
+      kol.appendChild(ukeBrikke(avtaler[nr], nr));
+    });
+    rad.appendChild(kol);
+  });
+
+  scroll.appendChild(rad);
+  boks.appendChild(scroll);
+
+  if(!avtaler.length){
+    const tom = document.createElement('div');
+    tom.className = 'uke-ingen';
+    tom.textContent = 'Ingenting i kalenderen denne uken.';
+    boks.appendChild(tom);
+  }
   if(res.feilet){
-    html += '<div class="plan-meta feil" style="padding-top:10px">'
-      + res.feilet + ' kalender(e) svarte ikke — prøv Oppdater.</div>';
+    const f = document.createElement('div');
+    f.className = 'uke-ingen feil';
+    f.textContent = res.feilet + ' kalender(e) svarte ikke — prøv Oppdater.';
+    boks.appendChild(f);
   }
-  boks.innerHTML = html;
 }
 
+/* Én avtale som brikke. Bygget som DOM og ikke som streng: den skal ha
+   farger satt fra kalenderfargen, og en style-streng med rgba() inne i en
+   HTML-streng er tre lag med hermetegn aa holde styr paa. */
+function ukeBrikke(e, nr){
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'pu-ev';
+  el.dataset.avtale = nr;
+  el.style.background  = dus(e.farge, .18);
+  el.style.borderColor = dus(e.farge, .62);
+  el.title = e.tittel;
+  el.onclick = function(ev){ ev.stopPropagation(); visDetalj(nr); };
+
+  const topp = document.createElement('div');
+  topp.className = 'pu-topp';
+
+  const ini = document.createElement('span');
+  ini.className = 'pu-ini';
+  ini.style.background = e.farge;
+  ini.textContent = String(e.kalender || '?').trim().charAt(0).toUpperCase();
+  ini.title = e.kalender || '';
+  topp.appendChild(ini);
+
+  const tid = document.createElement('span');
+  tid.className = 'pu-tid';
+  tid.textContent = e.heleDagen ? 'Hele dagen' : kl(e.start) + '–' + kl(e.slutt);
+  topp.appendChild(tid);
+
+  /* Sted og notat vises ikke her - de ligger i detaljkortet ved trykk.
+     En liten prikk forteller bare at det finnes mer aa se. */
+  if((e.notat || '').trim() || e.sted || e.harVedlegg){
+    const mer = document.createElement('span');
+    mer.className = 'pu-mer';
+    mer.style.background = dus(e.farge, .75);
+    topp.appendChild(mer);
+  }
+  el.appendChild(topp);
+
+  const t = document.createElement('div');
+  t.className = 'pu-tittel';
+  t.textContent = e.tittel;
+  el.appendChild(t);
+
+  return el;
+}
 
 /* ============================================================
    Fag og frister
@@ -2348,9 +2550,8 @@ function tegnUke(res){
    ============================================================ */
 const FAG_NOKKEL = 'emma-fag:v1';
 
-/* Utgangspunktet foerste gang. Ingenting skrives til KV av dette -
-   det staar bare i lista til noen legger inn noe. Fagene kan
-   endres og slettes i sida. */
+/* Utgangspunktet foerste gang. Ingenting skrives til KV av dette - det
+   staar bare i lista til noen legger inn noe. */
 const FAG_STANDARD = ['Norsk', 'Matematikk', 'Engelsk', 'Naturfag',
                       'Samfunnsfag', 'KRLE', 'Kroppsøving', 'Musikk',
                       'Kunst og håndverk', 'Mat og helse', 'Spansk'];
@@ -2362,39 +2563,58 @@ function nyId(){
 }
 
 function tomtFag(){
-  return { fag: FAG_STANDARD.map(function(n){ return { id:nyId(), navn:n }; }),
-           lekser: [] };
+  return { fag: FAG_STANDARD.map(function(n){
+             return { id:nyId(), navn:n, laerer:'', dager:[] };
+           }),
+           lekser: [], prover: [] };
 }
 
 /* Alt som leses utenfra kan vaere hva som helst. Formen tvinges her, én
-   gang, saa resten av fila slipper aa vokte hvert felt. */
+   gang, saa resten av fila slipper aa vokte hvert felt.
+
+   Nye felt taaler gamle data: `laerer`, `dager` og `prover` kom til
+   4. september, og en noekkel skrevet foer det mangler dem. De blir tomme
+   i stedet for undefined, saa ingen kallsteder trenger aa sjekke. */
 function ryddFag(d){
   if(!d || typeof d !== 'object') return tomtFag();
-  const fag = Array.isArray(d.fag) ? d.fag.filter(function(f){
+
+  const fag = (Array.isArray(d.fag) ? d.fag : []).filter(function(f){
     return f && f.id && String(f.navn || '').trim();
   }).map(function(f){
-    return { id:String(f.id), navn:String(f.navn).trim() };
-  }) : [];
+    const dager = (Array.isArray(f.dager) ? f.dager : [])
+      .map(Number).filter(function(n){ return n >= 0 && n <= 6; });
+    return { id:String(f.id), navn:String(f.navn).trim(),
+             laerer:String(f.laerer || '').trim(),
+             dager:dager.sort(function(a,b){ return a - b; }) };
+  });
+
   const kjente = {};
   fag.forEach(function(f){ kjente[f.id] = true; });
-  const lekser = Array.isArray(d.lekser) ? d.lekser.filter(function(l){
+
+  const lekser = (Array.isArray(d.lekser) ? d.lekser : []).filter(function(l){
     return l && l.id && kjente[l.fagId] && String(l.tekst || '').trim();
   }).map(function(l){
-    return { id:String(l.id), fagId:String(l.fagId),
-             tekst:String(l.tekst).trim(),
+    return { id:String(l.id), fagId:String(l.fagId), tekst:String(l.tekst).trim(),
              frist:String(l.frist || ''), ferdig:!!l.ferdig };
-  }) : [];
-  return { fag: fag.length ? fag : tomtFag().fag, lekser: lekser };
+  });
+
+  const prover = (Array.isArray(d.prover) ? d.prover : []).filter(function(p){
+    return p && p.id && kjente[p.fagId] && String(p.type || '').trim();
+  }).map(function(p){
+    return { id:String(p.id), fagId:String(p.fagId), type:String(p.type).trim(),
+             dato:String(p.dato || ''), karakter:String(p.karakter || '').trim() };
+  });
+
+  return { fag: fag.length ? fag : tomtFag().fag, lekser: lekser, prover: prover };
 }
 
-async function hentFag(){
-  return ryddFag(await husLesJson(FAG_NOKKEL));
-}
+async function hentFag(){ return ryddFag(await husLesJson(FAG_NOKKEL)); }
 
 async function lastFag(){
   try{ fagData = await hentFag(); }
   catch(e){ fagData = tomtFag(); }
   if(visning === 'fag') tegnFag();
+  if(fagVisId) tegnFagVis();
 }
 
 async function endreFag(endring){
@@ -2403,12 +2623,13 @@ async function endreFag(endring){
   await dataSkriv(FAG_NOKKEL, ny);
   fagData = ny;
   tegnFag();
+  if(fagVisId) tegnFagVis();
 }
 
-function fagNavnAv(id){
-  const f = (fagData && fagData.fag || []).find(function(x){ return x.id === id; });
-  return f ? f.navn : '';
+function fagAv(id){
+  return (fagData && fagData.fag || []).find(function(f){ return f.id === id; }) || null;
 }
+function fagNavnAv(id){ const f = fagAv(id); return f ? f.navn : ''; }
 
 /* ---------------- Frister ----------------
    Fristen leses mot ekte i dag, ikke mot dagen skjermen staar paa: en
@@ -2417,7 +2638,7 @@ function fristTekst(frist){
   if(!frist) return { tekst:'', klasse:'' };
   const d = datoFraTekst(frist);
   const dager = Math.round((d - idag0()) / 86400000);
-  if(dager <  0) return { tekst:'Gikk ut ' + UKEDAG_KORT[ukedagNr(d)], klasse:'over' };
+  if(dager <   0) return { tekst:'Gikk ut ' + UKEDAG_KORT[ukedagNr(d)], klasse:'over' };
   if(dager === 0) return { tekst:'I dag',    klasse:'naer' };
   if(dager === 1) return { tekst:'I morgen', klasse:'naer' };
   if(dager <   7) return { tekst:UKEDAGER[ukedagNr(d)], klasse:'' };
@@ -2427,15 +2648,19 @@ function fristTekst(frist){
 function fristSort(a, b){
   /* Uten frist er ikke det samme som frist langt fram - det er
      uspesifisert, og skal ligge sist. */
-  const A = a.frist || '9999-99-99';
-  const B = b.frist || '9999-99-99';
-  return A.localeCompare(B);
+  return (a.frist || '9999-99-99').localeCompare(b.frist || '9999-99-99');
 }
 
-/* ---------------- Tegning ----------------
-   Fag UTEN lekser staar ikke som tomme kort. Elleve tomme kort er en
-   liste man slutter aa lese; navnene deres staar samlet paa én linje
-   nederst i stedet, saa man ser at faget finnes. */
+function dagerTekst(dager){
+  if(!dager || !dager.length) return '';
+  return dager.map(function(n){ return UKEDAG_KORT[n]; }).join(', ');
+}
+
+/* ---------------- Fellesvisningen ----------------
+   Ett kort per fag, alle sammen, med laerer og ukedager under navnet.
+   Trykk aapner faget. Blyanten er borte: den og trykket ville kjempet om
+   det samme kortet, og det som ligger bak trykket - lekser, proever,
+   laerer - er mer enn en blyant lover. */
 function tegnFag(){
   const boks = $('fag');
   if(!boks) return;
@@ -2445,20 +2670,29 @@ function tegnFag(){
   fagData.lekser.forEach(function(l){
     (perFag[l.fagId] = perFag[l.fagId] || []).push(l);
   });
+  const proverFor = {};
+  fagData.prover.forEach(function(p){
+    (proverFor[p.fagId] = proverFor[p.fagId] || []).push(p);
+  });
 
-  /* Faget med den naermeste fristen staar foerst, tomme fag sist.
-     Avhukede lekser teller ikke med i naerheten - et fag der alt er gjort
-     skal synke, ellers blir toppen av lista staaende paa noe som er
-     unnagjort. Men det beholder rammen sin. */
   function naermest(f){
     const aapne = (perFag[f.id] || []).filter(function(l){ return !l.ferdig; });
     if(!aapne.length) return '9999-99-99';
     return aapne.map(function(l){ return l.frist || '9999-99-98'; }).sort()[0];
   }
+  /* Neste proeve som ikke har faatt karakter - den er ikke unnagjort selv
+     om datoen er passert. */
+  function nesteProve(f){
+    const igjen = (proverFor[f.id] || []).filter(function(p){
+      return !p.karakter && p.dato && datoFraTekst(p.dato) >= idag0();
+    });
+    if(!igjen.length) return null;
+    return igjen.map(function(p){ return p.dato; }).sort()[0];
+  }
 
-  /* slice() foerst: sort() endrer lista den staar paa, og fagData er
-     ikke vaar aa stokke om paa. Rekkefoelgen fagene ble lagt inn i er
-     den man ser igjen i nedtrekket i skjemaet. */
+  /* slice() foerst: sort() endrer lista den staar paa, og fagData er ikke
+     vaar aa stokke om paa. Rekkefoelgen fagene ble lagt inn i er den man
+     ser igjen i nedtrekket i skjemaet. */
   const sortert = fagData.fag.slice().sort(function(a, b){
     const noeA = (perFag[a.id] || []).length ? 0 : 1;
     const noeB = (perFag[b.id] || []).length ? 0 : 1;
@@ -2478,12 +2712,17 @@ function tegnFag(){
       return fristSort(a, b);
     });
 
-    let ut = '<div class="fag-kort' + (liste.length ? '' : ' tomt') + '">'
+    const meta = [f.laerer, dagerTekst(f.dager)].filter(Boolean).join(' · ');
+    const pr = nesteProve(f);
+    const prTekst = pr ? fristTekst(pr) : null;
+
+    let ut = '<div class="fag-kort' + (liste.length ? '' : ' tomt') + '"'
+      + ' onclick="apneFagVis(\'' + esc(f.id) + '\')" role="button" tabindex="0">'
       + '<div class="fag-topp">'
       +   '<span class="fag-navn">' + esc(f.navn) + '</span>'
-      +   '<button class="hu-endre" onclick="redigerFag(\'' + esc(f.id) + '\')" '
-      +     'aria-label="Endre faget">✎</button>'
-      + '</div>';
+      +   (prTekst ? '<span class="fag-merke">Prøve ' + esc(prTekst.tekst) + '</span>' : '')
+      + '</div>'
+      + (meta ? '<div class="fag-meta">' + esc(meta) + '</div>' : '');
 
     if(!liste.length){
       ut += '<div class="fag-ingen">Ingen lekser</div>';
@@ -2491,10 +2730,9 @@ function tegnFag(){
       liste.forEach(function(l){
         const fr = fristTekst(l.frist);
         ut += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '') + '">'
-          + '<button class="lekse-hake" onclick="vekslLekse(\'' + esc(l.id) + '\')" '
+          + '<button class="lekse-hake" onclick="event.stopPropagation();vekslLekse(\'' + esc(l.id) + '\')" '
           +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
-          + '<span class="lekse-tekst" onclick="redigerLekse(\'' + esc(l.id) + '\')">'
-          +   esc(l.tekst) + '</span>'
+          + '<span class="lekse-tekst">' + esc(l.tekst) + '</span>'
           + (fr.tekst ? '<span class="lekse-frist ' + fr.klasse + '">' + esc(fr.tekst) + '</span>' : '')
           + '</div>';
       });
@@ -2511,19 +2749,101 @@ async function vekslLekse(id){
       });
       return d;
     });
-  }catch(e){
-    varsle('Fikk ikke huket av leksa: ' + e.message);
+  }catch(e){ varsle('Fikk ikke huket av leksa: ' + e.message); }
+}
+
+/* ---------------- Ett fag ----------------
+   Proeveoversikten bor her og ikke i fellesvisningen. Elleve fag med hver
+   sin proeveliste er mer enn et blikk taaler; det man trenger paa avstand
+   er at det KOMMER en proeve, og det staar som et merke paa kortet. */
+let fagVisId = null;
+
+function apneFagVis(id){
+  if(!fagData || !fagAv(id)) return;
+  fagVisId = id;
+  tegnFagVis();
+  $('fagVisBak').hidden  = false;
+  $('fagVisBoks').hidden = false;
+  passSkjema();
+}
+
+function lukkFagVis(){
+  fagVisId = null;
+  $('fagVisBoks').hidden = true;
+  $('fagVisBak').hidden  = true;
+}
+
+function tegnFagVis(){
+  const f = fagAv(fagVisId);
+  if(!f){ lukkFagVis(); return; }
+
+  $('fagVisNavn').textContent = f.navn;
+
+  const meta = [];
+  if(f.laerer) meta.push('<span>Faglærer: <b>' + esc(f.laerer) + '</b></span>');
+  if(f.dager.length) meta.push('<span>Ukedager: <b>' + esc(dagerTekst(f.dager)) + '</b></span>');
+  $('fagVisMeta').innerHTML = meta.join('')
+    || '<span class="fagvis-tom">Faglærer og ukedager er ikke lagt inn.</span>';
+
+  const lekser = fagData.lekser.filter(function(l){ return l.fagId === f.id; })
+    .sort(function(a, b){
+      if(!!a.ferdig !== !!b.ferdig) return a.ferdig ? 1 : -1;
+      return fristSort(a, b);
+    });
+
+  /* Proever sorteres med den nyeste OEVERST: de som har vaert er de man
+     ser etter karakteren paa, og de som kommer staar det uansett et merke
+     om paa kortet ute i fellesvisningen. */
+  const prover = fagData.prover.filter(function(p){ return p.fagId === f.id; })
+    .sort(function(a, b){ return (b.dato || '').localeCompare(a.dato || ''); });
+
+  let ut = '<div class="fagvis-bolk"><h4>Lekser og frister</h4>';
+  if(!lekser.length){
+    ut += '<div class="fagvis-tom">Ingen lekser lagt inn.</div>';
+  }else{
+    lekser.forEach(function(l){
+      const fr = fristTekst(l.frist);
+      ut += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '') + '">'
+        + '<button class="lekse-hake" onclick="vekslLekse(\'' + esc(l.id) + '\')" '
+        +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
+        + '<span class="lekse-tekst" onclick="redigerLekse(\'' + esc(l.id) + '\')">'
+        +   esc(l.tekst) + '</span>'
+        + (fr.tekst ? '<span class="lekse-frist ' + fr.klasse + '">' + esc(fr.tekst) + '</span>' : '')
+        + '</div>';
+    });
   }
+  ut += '</div>';
+
+  ut += '<div class="fagvis-bolk"><h4>Prøver</h4>';
+  if(!prover.length){
+    ut += '<div class="fagvis-tom">Ingen prøver lagt inn.</div>';
+  }else{
+    prover.forEach(function(p){
+      const d = p.dato ? datoFraTekst(p.dato) : null;
+      const naer = d && d >= idag0() && (d - idag0()) < 7 * 86400000;
+      const dato = d ? (d.getDate() + '. ' + MND[d.getMonth()].slice(0, 3)) : 'uten dato';
+      ut += '<div class="prove-linje" onclick="redigerProve(\'' + esc(p.id) + '\')">'
+        + '<span class="prove-type">' + esc(p.type) + '</span>'
+        + '<span class="prove-dato' + (naer ? ' naer' : '') + '">' + esc(dato) + '</span>'
+        + '<span class="prove-karakter">' + esc(p.karakter) + '</span>'
+        + '</div>';
+    });
+  }
+  ut += '</div>';
+
+  $('fagVisKropp').innerHTML = ut;
 }
 
 /* ---------------- Skjemaet ----------------
-   Én boks for bade lekse og fag. De to har ikke nok felt hver til aa
-   fortjene hvert sitt skjema, og de aapnes fra samme rad. */
-let fagSkjema = null;      /* 'lekse' | 'fag' | null */
+   Én boks for lekse, fag og proeve. De tre har ikke nok felt hver til aa
+   fortjene hvert sitt skjema, og feltene som er felles - fag og dato -
+   ville ellers staatt skrevet tre ganger. */
+let fagSkjema = null;      /* 'lekse' | 'fag' | 'prove' | null */
 let fagEndrer = null;      /* id-en som endres, ellers null = ny */
+let fagDagerValgt = [];
 
-function fyllFagVelger(valgt){
-  const v = $('fagVelg');
+function fyllVelger(id, valgt){
+  const v = $(id);
   if(!v) return;
   v.innerHTML = (fagData && fagData.fag || []).map(function(f){
     return '<option value="' + esc(f.id) + '"' + (f.id === valgt ? ' selected' : '') + '>'
@@ -2531,55 +2851,112 @@ function fyllFagVelger(valgt){
   }).join('');
 }
 
-function visFagSkjema(modus, id){
+function tegnDagVelger(){
+  const b = $('fagDager');
+  b.innerHTML = UKEDAG_KORT.map(function(n, i){
+    return '<button type="button" class="' + (fagDagerValgt.indexOf(i) !== -1 ? 'paa' : '') + '"'
+         + ' onclick="vekslDag(' + i + ')">' + esc(n) + '</button>';
+  }).join('');
+}
+
+function vekslDag(i){
+  const p = fagDagerValgt.indexOf(i);
+  if(p === -1) fagDagerValgt.push(i); else fagDagerValgt.splice(p, 1);
+  fagDagerValgt.sort(function(a, b){ return a - b; });
+  tegnDagVelger();
+}
+
+/* Byttes faget i «Rediger fag»-nedtrekket, skal feltene under foelge med.
+   Skjemaet er ett fag om gangen, ikke en liste med lagre-knapp. */
+function fagByttet(){
+  fagEndrer = $('fagBytt').value;
+  const f = fagAv(fagEndrer);
+  if(!f) return;
+  $('fagNavn').value  = f.navn;
+  $('fagLarer').value = f.laerer;
+  fagDagerValgt = f.dager.slice();
+  tegnDagVelger();
+  huskSkjema('fagBoks');            /* nytt utgangspunkt for avbryt-regelen */
+}
+
+function visFagSkjema(modus, id, fagId){
   fagSkjema = modus;
   fagEndrer = id || null;
-  const lekse = (modus === 'lekse');
+  const erLekse = (modus === 'lekse');
+  const erFag   = (modus === 'fag');
+  const erProve = (modus === 'prove');
 
-  $('fagVelgFelt').hidden  = !lekse;
-  $('fagFristFelt').hidden = !lekse;
-  $('fagTekstKol').hidden  = !lekse;
-  $('fagNavnFelt').hidden  = lekse;
+  /* Fagvelgeren staar over bade lekse og proeve; «hvilket fag» er samme
+     spoersmaal, og en av dem maa svare paa det. */
+  $('fagVelgFelt').hidden     = erFag;
+  $('fagByttFelt').hidden     = !(erFag && !id && fagData.fag.length);
+  $('fagNavnFelt').hidden     = !erFag;
+  $('fagLarerFelt').hidden    = !erFag;
+  $('fagDagerFelt').hidden    = !erFag;
+  $('fagTypeFelt').hidden     = !erProve;
+  $('fagKarakterFelt').hidden = !erProve;
+  $('fagFristFelt').hidden    = erFag;
+  $('fagTekstKol').hidden     = !erLekse;
   $('fagFeil').hidden = true;
 
-  const l = lekse && id
-    ? (fagData.lekser.find(function(x){ return x.id === id; }) || null) : null;
-  const f = !lekse && id
-    ? (fagData.fag.find(function(x){ return x.id === id; }) || null) : null;
+  const l = erLekse && id ? fagData.lekser.find(function(x){ return x.id === id; }) : null;
+  const p = erProve && id ? fagData.prover.find(function(x){ return x.id === id; }) : null;
+  const f = erFag   && id ? fagAv(id) : null;
 
   $('fagTittelTekst').textContent =
-      lekse ? (l ? 'Endre lekse' : 'Ny lekse')
-            : (f ? 'Endre fag'   : 'Nytt fag');
+      erLekse ? (l ? 'Endre lekse' : 'Ny lekse')
+    : erProve ? (p ? 'Endre prøve' : 'Ny prøve')
+    :           (f ? 'Endre fag'   : 'Rediger fag');
 
-  if(lekse){
-    fyllFagVelger(l ? l.fagId : null);
-    $('fagTekst').value = l ? l.tekst : '';
-    $('fagFrist').value = l ? l.frist : datoNokkel(dagenViser());
+  $('fagFristFelt').firstChild.textContent = erProve ? 'Dato' : 'Frist';
+
+  if(erFag){
+    /* Uten id er dette «Rediger fag» fra tommelknappen: nedtrekket velger
+       hvilket, og feltene fylles av fagByttet(). */
+    const start = f || fagAv(fagId) || fagData.fag[0] || null;
+    fyllVelger('fagBytt', start ? start.id : null);
+    fagEndrer = f ? f.id : (start ? start.id : null);
+    $('fagNavn').value  = start ? start.navn : '';
+    $('fagLarer').value = start ? start.laerer : '';
+    fagDagerValgt = start ? start.dager.slice() : [];
+    tegnDagVelger();
   }else{
-    $('fagNavn').value = f ? f.navn : '';
+    fyllVelger('fagVelg', l ? l.fagId : (p ? p.fagId : (fagId || null)));
+    $('fagFrist').value = l ? l.frist : (p ? p.dato : datoNokkel(dagenViser()));
+    if(erLekse) $('fagTekst').value = l ? l.tekst : '';
+    if(erProve){
+      $('fagType').value     = p ? p.type : '';
+      $('fagKarakter').value = p ? p.karakter : '';
+    }
   }
 
-  $('fagSlett').hidden = !id;
-  $('fagLagre').textContent = id ? 'Lagre' : 'Legg til';
+  $('fagSlett').hidden = !fagEndrer;
+  $('fagLagre').textContent = id ? 'Lagre' : (erFag ? 'Lagre' : 'Legg til');
 
   $('fagBak').hidden  = false;
   $('fagBoks').hidden = false;
   huskSkjema('fagBoks');
   passSkjema();
   setTimeout(function(){
-    const f2 = lekse ? $('fagTekst') : $('fagNavn');
-    if(f2) f2.focus();
+    const foerste = erLekse ? $('fagTekst') : (erProve ? $('fagType') : $('fagNavn'));
+    if(foerste) foerste.focus();
   }, 30);
 }
 
-function apneLekseSkjema(){
+function apneLekseSkjema(fagId){
   if(!fagData) return;
   if(!fagData.fag.length){ varsle('Legg inn et fag først.'); return; }
-  visFagSkjema('lekse', null);
+  visFagSkjema('lekse', null, fagId || null);
 }
-function apneFagSkjema(){ if(fagData) visFagSkjema('fag', null); }
-function redigerLekse(id){ if(fagData) visFagSkjema('lekse', id); }
-function redigerFag(id){   if(fagData) visFagSkjema('fag', id); }
+function apneProveSkjema(fagId){
+  if(!fagData) return;
+  if(!fagData.fag.length){ varsle('Legg inn et fag først.'); return; }
+  visFagSkjema('prove', null, fagId || null);
+}
+function apneFagSkjema(){ if(fagData) visFagSkjema('fag', null, null); }
+function redigerLekse(id){ if(fagData) visFagSkjema('lekse', id, null); }
+function redigerProve(id){ if(fagData) visFagSkjema('prove', id, null); }
+function redigerFag(id){   if(fagData) visFagSkjema('fag', id || null, null); }
 
 function lukkFagSkjema(){
   fagSkjema = null;
@@ -2598,18 +2975,38 @@ async function lagreFagSkjema(){
   if(!fagSkjema) return;
   const knapp = $('fagLagre');
   knapp.disabled = true;
+  const id = fagEndrer;
   try{
     if(fagSkjema === 'fag'){
-      const navn = $('fagNavn').value.trim();
+      const navn  = $('fagNavn').value.trim();
+      const laerer = $('fagLarer').value.trim();
+      const dager  = fagDagerValgt.slice();
       if(!navn){ fagFeil('Faget må ha et navn.'); return; }
-      const id = fagEndrer;
       await endreFag(function(d){
         if(id){
           d.fag = d.fag.map(function(f){
-            return f.id === id ? Object.assign({}, f, {navn:navn}) : f;
+            return f.id === id
+              ? Object.assign({}, f, {navn:navn, laerer:laerer, dager:dager}) : f;
           });
         }else{
-          d.fag.push({ id:nyId(), navn:navn });
+          d.fag.push({ id:nyId(), navn:navn, laerer:laerer, dager:dager });
+        }
+        return d;
+      });
+    }else if(fagSkjema === 'prove'){
+      const type = $('fagType').value.trim();
+      if(!type){ fagFeil('Skriv hva slags prøve det er.'); return; }
+      const fagId    = $('fagVelg').value;
+      const dato     = $('fagFrist').value || '';
+      const karakter = $('fagKarakter').value.trim();
+      await endreFag(function(d){
+        if(id){
+          d.prover = d.prover.map(function(p){
+            return p.id === id
+              ? Object.assign({}, p, {fagId:fagId, type:type, dato:dato, karakter:karakter}) : p;
+          });
+        }else{
+          d.prover.push({ id:nyId(), fagId:fagId, type:type, dato:dato, karakter:karakter });
         }
         return d;
       });
@@ -2618,7 +3015,6 @@ async function lagreFagSkjema(){
       if(!tekst){ fagFeil('Skriv hva som skal gjøres.'); return; }
       const fagId = $('fagVelg').value;
       const frist = $('fagFrist').value || '';
-      const id = fagEndrer;
       await endreFag(function(d){
         if(id){
           d.lekser = d.lekser.map(function(l){
@@ -2639,35 +3035,46 @@ async function lagreFagSkjema(){
   }
 }
 
-/* Sletting beholder bekreftelsen. Et fag tar leksene sine med seg, og
-   det er ikke noe man ser at gikk galt etterpaa - da staar regelen om
-   at en handling kan miste dialogen naar feilen blir staaende synlig
-   ikke ved lag. */
+/* Sletting beholder bekreftelsen. Et fag tar leksene og proevene sine med
+   seg, og det er ikke noe man ser at gikk galt etterpaa - da staar
+   regelen om at en handling kan miste dialogen naar feilen blir staaende
+   synlig ikke ved lag. */
 async function slettFraFagSkjema(){
   const id = fagEndrer;
   if(!id) return;
+
   if(fagSkjema === 'fag'){
-    const antall = fagData.lekser.filter(function(l){ return l.fagId === id; }).length;
+    const l = fagData.lekser.filter(function(x){ return x.fagId === id; }).length;
+    const p = fagData.prover.filter(function(x){ return x.fagId === id; }).length;
+    const med = [];
+    if(l) med.push(l + ' lekse(r)');
+    if(p) med.push(p + ' prøve(r)');
     const ok = await bekreft(
-      antall
-        ? 'Slette ' + fagNavnAv(id) + '? ' + antall + ' lekse(r) under faget forsvinner også.'
+      med.length
+        ? 'Slette ' + fagNavnAv(id) + '? ' + med.join(' og ') + ' under faget forsvinner også.'
         : 'Slette ' + fagNavnAv(id) + '?',
       {jaTekst:'Slett', fare:true});
     if(!ok) return;
     try{
       await endreFag(function(d){
         d.fag    = d.fag.filter(function(f){ return f.id !== id; });
-        d.lekser = d.lekser.filter(function(l){ return l.fagId !== id; });
+        d.lekser = d.lekser.filter(function(x){ return x.fagId !== id; });
+        d.prover = d.prover.filter(function(x){ return x.fagId !== id; });
         return d;
       });
+      if(fagVisId === id) lukkFagVis();
       lukkFagSkjema();
     }catch(e){ fagFeil('Fikk ikke slettet: ' + e.message); }
     return;
   }
-  if(!(await bekreft('Slette leksa?', {jaTekst:'Slett', fare:true}))) return;
+
+  const erProve = (fagSkjema === 'prove');
+  if(!(await bekreft(erProve ? 'Slette prøven?' : 'Slette leksa?',
+                     {jaTekst:'Slett', fare:true}))) return;
   try{
     await endreFag(function(d){
-      d.lekser = d.lekser.filter(function(l){ return l.id !== id; });
+      if(erProve) d.prover = d.prover.filter(function(p){ return p.id !== id; });
+      else        d.lekser = d.lekser.filter(function(l){ return l.id !== id; });
       return d;
     });
     lukkFagSkjema();
@@ -3578,6 +3985,7 @@ function visTilIdag(){
 }
 function tilbakeTilStandard(){
   lukkDetalj();
+  lukkFagVis();
   lukkHuskeBoble();
   lukkVaerBoble();
   lukkHuskeSkjema();
@@ -3643,13 +4051,45 @@ window.neamBakgrunn = async function(){
    Fag staar framme, og en knapp som er meningsloes i to av tre visninger
    hoerer ikke hjemme i hjoernet. */
 window.neamSideHandlinger = function(){
+  /* Settet hentes ved hver aapning, saa oeverste plass betyr det den skal
+     der du staar: en avtale hoerer til kalenderen, og under Fag er det
+     ingen kalender aa legge den i. */
+  const oeverst = (visning === 'fag')
+    ? { plass:'opp', navn:'Rediger fag og lekser', tekst:'Rediger', behold:true,
+        ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+           + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+           + '<path d="M12 20h9"/>'
+           + '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+        gjor: function(){
+          neamSideStabel('opp', [
+            { navn:'Rediger fag',
+              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                 + '<path d="M4 5h16M4 12h16M4 19h9"/>'
+                 + '<path d="M17.5 16.5a1.6 1.6 0 0 1 2.2 2.2L16 22l-3 .7.7-3z"/></svg>',
+              gjor: function(){ redigerFag(null); } },
+            { navn:'Nytt fag',
+              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                 + '<path d="M4 5h16M4 12h10M4 19h10"/><path d="M18 15v6M15 18h6"/></svg>',
+              gjor: apneFagSkjema },
+            { navn:'Lim inn lekser',
+              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                 + '<rect x="6" y="4" width="12" height="17" rx="2"/>'
+                 + '<path d="M9 4V3h6v1M9 10h6M9 14h4"/></svg>',
+              gjor: apneLimInn }
+          ]);
+        } }
+    : { plass:'opp', navn:'Legg til avtale', tekst:'Avtale',
+        ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+           + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+           + '<rect x="3" y="5" width="18" height="16" rx="2"/>'
+           + '<path d="M16 3v4M8 3v4M3 11h18M12 14v5M9.5 16.5h5"/></svg>',
+        gjor: nyAvtale };
+
   return [
-    { plass:'opp', navn:'Legg til avtale', tekst:'Avtale',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<rect x="3" y="5" width="18" height="16" rx="2"/>'
-         + '<path d="M16 3v4M8 3v4M3 11h18M12 14v5M9.5 16.5h5"/></svg>',
-      gjor: nyAvtale },
+    oeverst,
 
     { plass:'skraa', navn:'Ny påminnelse i dag', tekst:'Påminnelse i dag',
       ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
@@ -3667,6 +4107,12 @@ window.neamSideHandlinger = function(){
       gjor: function(){ apneHuskeSkjema('uke'); } }
   ];
 };
+
+/* Andre trykk paa hoeyre haandtak legger skjermen tilbake i utgangsstand:
+   dagsvisning, dagens dato, ingen kort oppe. Det er den samme veien
+   hvileskjermen tar etter tre minutter - forskjellen er bare at man ber
+   om den selv. */
+window.neamSideAndreTrykk = function(){ tilbakeTilStandard(); };
 
 /* Haandtaket bestemmer seg for om det skal vises ÉN gang, i neamBygg(),
    og neamBygg() kjoerer med det samme fila er lastet naar det finnes en
@@ -3958,6 +4404,7 @@ document.addEventListener('keydown', function(e){
   if(huskeSkjema){ lukkHuskeSkjema(); return; }
   if($('limBoks') && !$('limBoks').hidden){ lukkLimInn(); return; }
   if(fagSkjema){ lukkFagSkjema(); return; }
+  if(fagVisId){ lukkFagVis(); return; }
   if(huBobleId) lukkHuskeBoble();
   if(vaerBobleAapen) lukkVaerBoble();
   if($('detalj') && !$('detalj').hidden) lukkDetalj();
