@@ -662,6 +662,11 @@ body{
   opacity:1;border-color:var(--handling-ny);background:var(--handling-ny);color:#FFFFFF;
 }
 
+/* Dato og klokkeslett paa samme linje - de svarer paa ett spoersmaal. */
+.to-felt-rad{ display:flex; gap:8px; margin-top:4px; }
+.to-felt-rad input[type=date]{ flex:1 1 58%; min-width:0; }
+.to-felt-rad input[type=time]{ flex:1 1 42%; min-width:0; }
+
 /* ---------- Ukedagsvelgeren ---------- */
 .dag-velg{ display:flex; gap:4px; margin-top:4px; flex-wrap:wrap; }
 .dag-velg button{
@@ -743,7 +748,37 @@ body{
   min-width:30px; text-align:center; flex-shrink:0;
   font-size:var(--t-brod); font-weight:700; color:var(--ink);
 }
+/* Hvem som la det inn, og naar. Dempet: det er noe man slaar opp naar
+   man lurer, ikke noe man leser hver gang. */
+.lekse-av{
+  font-size:var(--t-etikett); color:var(--ink-soft); margin-top:3px;
+  display:block; font-style:italic;
+}
 .fagvis-tom{ font-size:var(--t-meta); color:var(--ink-soft); font-style:italic; }
+
+/* ---------- Notatfeltet ----------
+   Skrives rett i, uten skjema og uten lagreknapp. Lagres et halvt sekund
+   etter siste tastetrykk - lenge nok til at man ikke skriver til KV for
+   hver bokstav, kort nok til at ingen rekker aa lukke vinduet foerst.
+   Blur lagrer med det samme, saa et trykk ut av feltet alltid holder. */
+.fagvis-notat{ margin-top:16px; }
+.fagvis-notat h4{
+  font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+  text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft);
+  margin:0 0 6px; padding-bottom:4px; border-bottom:1px solid var(--line);
+  display:flex; align-items:baseline; gap:10px;
+}
+.notat-status{
+  font-size:var(--t-etikett); font-weight:600; letter-spacing:0;
+  text-transform:none; color:var(--handling-ny); margin-left:auto;
+}
+.fagvis-notat textarea{
+  width:100%; min-height:120px; resize:vertical;
+  border:1.5px solid var(--line); border-radius:10px; background:#fff;
+  color:var(--ink); font-family:'Archivo',sans-serif; font-size:16px;
+  line-height:1.5; padding:11px 12px;
+}
+.fagvis-notat textarea:focus{ outline:2px solid var(--aksent); outline-offset:1px; }
 
 .lim-hjelp{font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5;margin-bottom:10px}
 .lim-omr{
@@ -1371,6 +1406,15 @@ select.hu-felt{
         <label class="av-felt" id="fagKarakterFelt" hidden>Karakter
           <input class="hu-felt" id="fagKarakter" maxlength="12" placeholder="Står tom til den er satt">
         </label>
+        <label class="av-felt" id="fagAvFelt" hidden>Lagt inn av
+          <select class="hu-felt" id="fagAv"></select>
+        </label>
+        <div class="av-felt" id="fagNarFelt" hidden>Opprettet
+          <div class="to-felt-rad">
+            <input class="hu-felt" type="date" id="fagLaget">
+            <input class="hu-felt" type="time" id="fagNar">
+          </div>
+        </div>
         <label class="av-felt" id="fagFristFelt">Frist
           <input class="hu-felt" type="date" id="fagFrist">
         </label>
@@ -1454,10 +1498,9 @@ select.hu-felt{
     <div class="av-tittel"><span id="fagVisNavn">Fag</span></div>
     <div class="fagvis-meta" id="fagVisMeta"></div>
     <div class="fagvis-kropp" id="fagVisKropp"></div>
-    <div class="av-foot">
-      <button class="knapp-gronn" onclick="apneProveSkjema(fagVisId)">Ny prøve</button>
-      <button class="knapp-gronn" onclick="apneLekseSkjema(fagVisId)">Ny lekse</button>
-    </div>
+    <!-- «Ny lekse» og «Ny prøve» laa her til 4. september. De ligger naa
+         i hoeyre tommelknapp, sammen med resten av det som legger noe
+         inn - staar fagvinduet aapent, gjelder de faget som staar der. -->
   </div>
 
   <div class="rutenett" id="rutenett">
@@ -2873,6 +2916,17 @@ const FAG_NOKKEL = 'emma-fag:v1';
    Ingenting skrives til KV av dette. Lista er utgangspunktet den dagen
    noekkelen er tom; er den alt fylt, blir den staaende som den er, og fag
    maa endres i sida. */
+/* Hvem som kan staa som den som la noe inn. Emma foerst - det er hennes
+   skjerm, og det er hun som legger inn mest. «Neam» settes av verktoeyene
+   hans og velges ikke for haand, men staar i lista saa den kan rettes hvis
+   noe er feilmerket. */
+const FAG_HVEM = ['Emma', 'Magne', 'Nina', 'Neam'];
+
+function naaKlokke(){
+  const d = new Date();
+  return pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
 const FAG_STANDARD = ['Norsk', 'Engelsk', 'Matematikk', 'Naturfag',
                       'Samfunnsfag', 'KRLE', 'Kroppsøving', 'Musikk',
                       'Utdanningsvalg', 'Spansk', 'Innsats for andre'];
@@ -2885,7 +2939,7 @@ function nyId(){
 
 function tomtFag(){
   return { fag: FAG_STANDARD.map(function(n){
-             return { id:nyId(), navn:n, laerer:'', dager:timeplanDager(n) };
+             return { id:nyId(), navn:n, laerer:'', notat:'', dager:timeplanDager(n) };
            }),
            lekser: [], prover: [] };
 }
@@ -2906,6 +2960,7 @@ function ryddFag(d){
       .map(Number).filter(function(n){ return n >= 0 && n <= 6; });
     return { id:String(f.id), navn:String(f.navn).trim(),
              laerer:String(f.laerer || '').trim(),
+             notat:String(f.notat || ''),
              dager:dager.sort(function(a,b){ return a - b; }) };
   });
 
@@ -2917,7 +2972,8 @@ function ryddFag(d){
   }).map(function(l){
     return { id:String(l.id), fagId:String(l.fagId), tekst:String(l.tekst).trim(),
              frist:String(l.frist || ''), ferdig:!!l.ferdig,
-             laget:String(l.laget || ''),
+             laget:String(l.laget || ''), nar:String(l.nar || ''),
+             av:String(l.av || ''),
              bilder:(Array.isArray(l.bilder) ? l.bilder : []).map(String) };
   });
 
@@ -2925,7 +2981,8 @@ function ryddFag(d){
     return p && p.id && kjente[p.fagId] && String(p.type || '').trim();
   }).map(function(p){
     return { id:String(p.id), fagId:String(p.fagId), type:String(p.type).trim(),
-             dato:String(p.dato || ''), karakter:String(p.karakter || '').trim() };
+             dato:String(p.dato || ''), karakter:String(p.karakter || '').trim(),
+             av:String(p.av || '') };
   });
 
   return { fag: fag.length ? fag : tomtFag().fag, lekser: lekser, prover: prover };
@@ -2968,6 +3025,20 @@ function fagNavnAv(id){ const f = fagAv(id); return f ? f.navn : ''; }
    ekstra: «i dag» og «i morgen» leses raskere enn et tall. */
 function datoKort(d){
   return d.getDate() + '. ' + MND[d.getMonth()].slice(0, 3);
+}
+
+/* «Mandag 7. september», ikke «man 7. sep». Fristen staar paa egen linje
+   under fagnavnet naa, og der er det plass - og en dato man skal planlegge
+   etter leses raskere hel enn forkortet. */
+function fristFullt(frist){
+  if(!frist) return { tekst:'', klasse:'' };
+  const d = datoFraTekst(frist);
+  const hel = UKEDAGER[ukedagNr(d)] + ' ' + d.getDate() + '. ' + MND[d.getMonth()];
+  const dager = Math.round((d - idag0()) / 86400000);
+  if(dager <   0) return { tekst:'Gikk ut ' + hel.toLowerCase(), klasse:'over' };
+  if(dager === 0) return { tekst:'I dag – ' + hel.toLowerCase(), klasse:'naer' };
+  if(dager === 1) return { tekst:'I morgen – ' + hel.toLowerCase(), klasse:'naer' };
+  return { tekst:hel, klasse:'' };
 }
 
 function fristTekst(frist){
@@ -3047,15 +3118,6 @@ const FAG_MERKE = {
   'Innsats for andre' : ['innsats-for-andre', 428]
 };
 
-/* NY MAPPE, ikke nye filnavn i den gamle. De staaende merkene erstattet
-   de runde 4. september, og de gamle ble liggende igjen overalt - i
-   Cloudflare, i nettleseren og, mest sannsynlig, i selve repoet, der en
-   fil lastet ned to ganger blir «norsk (1).png» og aldri kommer med.
-   Et `?v=`-nummer hjelper ikke mot det siste: adressen er ny, men fila
-   den peker paa er den samme gamle.
-
-   En mappe som aldri har eksistert kan ikke ha noe liggende i seg.
-   Naar det nye virker, kan bilder/fag/ slettes i sin helhet. */
 /* Versjon paa adressen, av samme grunn som paa CSS og JS: uten den
    spoer ikke nettleseren etter en fil den mener den alt har, og paa iPad
    finnes ingen hard oppfriskning aa ty til. Byttes et merke: oek tallet. */
@@ -3509,6 +3571,11 @@ function tegnFag(){
          en float. */
       + '<div class="fag-tekst">'
       + '<div class="fag-topp">'
+      +   (liste.length === 1
+            ? '<button class="lekse-hake" onclick="event.stopPropagation();vekslLekse(\''
+              + esc(liste[0].id) + '\')" aria-label="'
+              + (liste[0].ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
+            : '')
       +   '<span class="fag-navn">' + esc(f.navn) + '</span>'
       +   (prTekst ? '<span class="fag-merke">Prøve ' + esc(prTekst.tekst) + '</span>' : '')
       + '</div>'
@@ -3518,17 +3585,27 @@ function tegnFag(){
       ut += '<div class="fag-ingen">Ingen lekser</div>';
     }else{
       liste.forEach(function(l){
-        const fr   = fristTekst(l.frist);
+        const fr   = fristFullt(l.frist);
         const hast = lekseHast(l);
-        ut += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '')
-          +   (hast ? ' ' + hast : '') + '">'
-          + '<button class="lekse-hake" onclick="event.stopPropagation();vekslLekse(\'' + esc(l.id) + '\')" '
-          +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
-          + '<span class="lekse-tekst">' + esc(l.tekst)
-          +   (l.bilder.length ? ' <span class="fag-merke">' + l.bilder.length
-                               + ' bilde' + (l.bilder.length > 1 ? 'r' : '') + '</span>' : '')
-          + '</span>'
-          + (fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
+        /* Haken staar ved siden av FAGNAVNET naar faget har én lekse - det
+           er den vanlige uka - og teksten faar da hele spalten. Har faget
+           flere, maa hver av dem ha sin egen hake, og da staar de paa hver
+           sin linje som foer. Ett fag med to lekser og én hake ville ikke
+           sagt hvilken av dem som var gjort. */
+        const alene = (liste.length === 1);
+        ut += '<div class="lekse-blokk' + (l.ferdig ? ' ferdig' : '')
+          +   (hast ? ' ' + hast : '') + (alene ? ' alene' : '') + '">'
+          + (alene ? '' :
+              '<button class="lekse-hake" onclick="event.stopPropagation();vekslLekse(\''
+              + esc(l.id) + '\')" aria-label="'
+              + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>')
+          + '<div class="lekse-inn">'
+          +   (fr.tekst ? '<div class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</div>' : '')
+          +   '<div class="lekse-tekst">' + esc(l.tekst)
+          +     (l.bilder.length ? ' <span class="fag-merke">' + l.bilder.length
+                                 + ' bilde' + (l.bilder.length > 1 ? 'r' : '') + '</span>' : '')
+          +   '</div>'
+          + '</div>'
           + '</div>';
       });
     }
@@ -3537,6 +3614,48 @@ function tegnFag(){
   + (noeIUka ? ''
      : '<div class="tom" style="grid-column:1/-1">Ingen lekser med frist i '
        + esc(ukeNavn().toLowerCase()) + '.</div>');
+}
+
+/* ---------------- Notatet ----------------
+   Ingen lagreknapp. En knapp man maa huske aa trykke er en knapp man
+   glemmer, og et notat man trodde var lagret er verre enn ingen notat. */
+let notatVent = null;
+
+function notatEndret(){
+  const s = $('notatStatus');
+  if(s) s.textContent = 'skriver …';
+  clearTimeout(notatVent);
+  notatVent = setTimeout(notatLagre, 600);
+}
+
+async function notatLagre(){
+  clearTimeout(notatVent);
+  notatVent = null;
+  const felt = $('fagNotat');
+  const id = fagVisId;
+  if(!felt || !id) return;
+  const tekst = felt.value;
+  const f = fagAv(id);
+  if(f && f.notat === tekst){
+    if($('notatStatus')) $('notatStatus').textContent = '';
+    return;
+  }
+  const s = $('notatStatus');
+  try{
+    /* endreFag() tegner fagvinduet paa nytt, og det ville tatt markoeren
+       ut av feltet midt i skrivingen. Her skrives det derfor direkte. */
+    const fersk = await hentFag();
+    fersk.fag = fersk.fag.map(function(x){
+      return x.id === id ? Object.assign({}, x, {notat:tekst}) : x;
+    });
+    const ny = ryddFag(fersk);
+    await dataSkriv(FAG_NOKKEL, ny);
+    fagData = ny;
+    if(s) s.textContent = 'lagret';
+    setTimeout(function(){ if(s && s.textContent === 'lagret') s.textContent = ''; }, 1600);
+  }catch(e){
+    if(s){ s.textContent = 'ikke lagret'; s.style.color = 'var(--danger)'; }
+  }
 }
 
 async function vekslLekse(id){
@@ -3565,7 +3684,10 @@ function apneFagVis(id){
   passSkjema();
 }
 
-function lukkFagVis(){
+async function lukkFagVis(){
+  /* Et halvskrevet notat skal ikke gaa tapt fordi noen lukket vinduet
+     foer forsinkelsen loep ut. */
+  if(notatVent) await notatLagre();
   fagVisId = null;
   $('fagVisBoks').hidden = true;
   $('fagVisBak').hidden  = true;
@@ -3603,12 +3725,16 @@ function tegnFagVis(){
     lekser.forEach(function(l){
       const fr   = fristTekst(l.frist);
       const hast = lekseHast(l);
+      const avTekst = l.av
+        ? (l.av + (l.nar ? ' ' + l.nar : '') + (l.laget ? ' ' + datoKort(datoFraTekst(l.laget)) : ''))
+        : '';
       ut += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '')
         +   (hast ? ' ' + hast : '') + '">'
         + '<button class="lekse-hake" onclick="vekslLekse(\'' + esc(l.id) + '\')" '
         +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
         + '<div class="lekse-tekst">'
         +   '<span onclick="redigerLekse(\'' + esc(l.id) + '\')">' + esc(l.tekst) + '</span>'
+        +   (avTekst ? '<div class="lekse-av">Lagt inn av ' + esc(avTekst) + '</div>' : '')
         +   bilderHtml(l)
         + '</div>'
         + (fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
@@ -3626,7 +3752,9 @@ function tegnFagVis(){
       const naer = d && d >= idag0() && (d - idag0()) < 7 * 86400000;
       const dato = d ? (d.getDate() + '. ' + MND[d.getMonth()].slice(0, 3)) : 'uten dato';
       ut += '<div class="prove-linje" onclick="redigerProve(\'' + esc(p.id) + '\')">'
-        + '<span class="prove-type">' + esc(p.type) + '</span>'
+        + '<span class="prove-type">' + esc(p.type)
+        +   (p.av ? '<span class="lekse-av">Lagt inn av ' + esc(p.av) + '</span>' : '')
+        + '</span>'
         + '<span class="prove-dato' + (naer ? ' naer' : '') + '">' + esc(dato) + '</span>'
         + '<span class="prove-karakter">' + esc(p.karakter) + '</span>'
         + '</div>';
@@ -3634,7 +3762,17 @@ function tegnFagVis(){
   }
   ut += '</div>';
 
+  /* Notatfeltet bygges som markup her, men verdien settes ETTER at
+     innerHTML er skrevet - en value i en HTML-streng maa unnslippes, og
+     et notat med anfoerselstegn i ville brutt taggen. */
+  ut += '<div class="fagvis-notat">'
+      + '<h4>Notater <span class="notat-status" id="notatStatus"></span></h4>'
+      + '<textarea id="fagNotat" placeholder="Skriv rett inn her — det lagres av seg selv."'
+      + ' oninput="notatEndret()" onblur="notatLagre()"></textarea>'
+      + '</div>';
+
   $('fagVisKropp').innerHTML = ut;
+  $('fagNotat').value = f.notat || '';
   tegnLekseBilder($('fagVisKropp'));
 }
 
@@ -3699,6 +3837,9 @@ function visFagSkjema(modus, id, fagId){
   $('fagDagerFelt').hidden    = !erFag;
   $('fagTypeFelt').hidden     = !erProve;
   $('fagKarakterFelt').hidden = !erProve;
+  /* Hvem og naar hoerer til en lekse eller en proeve, ikke til et fag. */
+  $('fagAvFelt').hidden       = erFag;
+  $('fagNarFelt').hidden      = !erLekse;
   $('fagFristFelt').hidden    = erFag;
   $('fagTekstKol').hidden     = !erLekse;
   $('fagFeil').hidden = true;
@@ -3725,6 +3866,18 @@ function visFagSkjema(modus, id, fagId){
     fagDagerValgt = start ? start.dager.slice() : [];
     tegnDagVelger();
   }else{
+    /* Emma er utgangspunktet - det er hennes skjerm. Legger Neam noe inn,
+       setter verktoeyet «Neam» selv, og da staar det slik naar noen aapner
+       leksa etterpaa. */
+    const hvem = (l ? l.av : (p ? p.av : '')) || EIER;
+    $('fagAv').innerHTML = FAG_HVEM.map(function(h){
+      return '<option value="' + esc(h) + '"' + (h === hvem ? ' selected' : '') + '>'
+           + esc(h) + '</option>';
+    }).join('');
+    if(erLekse){
+      $('fagLaget').value = (l && l.laget) || datoNokkel(new Date());
+      $('fagNar').value   = (l && l.nar)   || naaKlokke();
+    }
     fyllVelger('fagVelg', l ? l.fagId : (p ? p.fagId : (fagId || null)));
     $('fagFrist').value = l ? l.frist : (p ? p.dato : datoNokkel(dagenViser()));
     if(erLekse){
@@ -3822,14 +3975,17 @@ async function lagreFagSkjema(){
       const fagId    = $('fagVelg').value;
       const dato     = $('fagFrist').value || '';
       const karakter = $('fagKarakter').value.trim();
+      const avP = $('fagAv').value || EIER;
       await endreFag(function(d){
         if(id){
           d.prover = d.prover.map(function(p){
             return p.id === id
-              ? Object.assign({}, p, {fagId:fagId, type:type, dato:dato, karakter:karakter}) : p;
+              ? Object.assign({}, p, {fagId:fagId, type:type, dato:dato,
+                                      karakter:karakter, av:avP}) : p;
           });
         }else{
-          d.prover.push({ id:nyId(), fagId:fagId, type:type, dato:dato, karakter:karakter });
+          d.prover.push({ id:nyId(), fagId:fagId, type:type, dato:dato,
+                          karakter:karakter, av:avP });
         }
         return d;
       });
@@ -3850,16 +4006,19 @@ async function lagreFagSkjema(){
       }
       const bilder = nyeBilder.map(function(b){ return b.id; });
 
+      const avL   = $('fagAv').value || EIER;
+      const laget = $('fagLaget').value || datoNokkel(new Date());
+      const nar   = $('fagNar').value   || naaKlokke();
       await endreFag(function(d){
         if(id){
           d.lekser = d.lekser.map(function(l){
             return l.id === id
               ? Object.assign({}, l, {fagId:fagId, tekst:tekst, frist:frist,
-                                      bilder:bilder}) : l;
+                                      bilder:bilder, av:avL, laget:laget, nar:nar}) : l;
           });
         }else{
           d.lekser.push({ id:nyId(), fagId:fagId, tekst:tekst, frist:frist,
-                          ferdig:false, laget:datoNokkel(new Date()),
+                          ferdig:false, laget:laget, nar:nar, av:avL,
                           bilder:bilder });
         }
         return d;
@@ -4800,6 +4959,21 @@ window.neamSideHandlinger = function(){
            + '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
         gjor: function(){
           neamSideStabel('opp', [
+            { navn:'Ny lekse', farge:'ny',
+              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                 + '<path d="M4 6h11M4 12h8M4 18h8"/><path d="M18 13v7M14.5 16.5h7"/></svg>',
+              /* Staar et fag aapent, gjelder den nye leksa DET faget.
+                 Ellers spoer skjemaet om hvilket. */
+              gjor: function(){ apneLekseSkjema(fagVisId); } },
+
+            { navn:'Ny prøve', farge:'ny',
+              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                 + '<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>'
+                 + '<path d="M9 8h6M9 12h6M9 16h3"/></svg>',
+              gjor: function(){ apneProveSkjema(fagVisId); } },
+
             { navn:'Rediger fag', farge:'endre',
               ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
                  + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
@@ -5292,7 +5466,8 @@ async function lagreForslag(){
         }
         d.lekser.push({ id:nyId(), fagId:f.id, tekst:String(r.tekst).trim(),
                         frist:String(r.frist || ''), ferdig:false,
-                        laget:datoNokkel(new Date()), bilder:[] });
+                        laget:datoNokkel(new Date()), nar:naaKlokke(), av:'Neam',
+                        bilder:[] });
       });
       return d;
     });
@@ -5639,7 +5814,8 @@ async function fagUtfor(navn, arg){
     const frist = datoKrev(arg.frist, 'Fristen');
     await endreFag(function(d){
       d.lekser.push({ id:nyId(), fagId:f.id, tekst:tekst, frist:frist, ferdig:false,
-                      laget:datoNokkel(new Date()), bilder:[] });
+                      laget:datoNokkel(new Date()), nar:naaKlokke(), av:'Neam',
+                      bilder:[] });
       return d;
     });
     return { lagt:{ fag:f.navn, tekst:tekst, frist:frist || null } };
@@ -5688,7 +5864,7 @@ async function fagUtfor(navn, arg){
     const dato = datoKrev(arg.dato, 'Datoen');
     await endreFag(function(d){
       d.prover.push({ id:nyId(), fagId:f.id, type:type, dato:dato,
-                      karakter:String(arg.karakter || '').trim() });
+                      karakter:String(arg.karakter || '').trim(), av:'Neam' });
       return d;
     });
     return { lagt:{ fag:f.navn, type:type, dato:dato || null } };
