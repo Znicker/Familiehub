@@ -879,6 +879,13 @@ body{
   font-size:var(--t-etikett); font-weight:700; color:var(--handling-endre);
   letter-spacing:.05em;
 }
+/* Fristen ligger i en annen uke enn planen gjelder. Kan vaere riktig - en
+   innlevering kan peke framover - men er oftere en dato som er lest feil,
+   og forskjellen er ikke synlig i en datoboks. */
+.forslag-utenfor{
+  font-size:var(--t-etikett); font-weight:700; color:var(--danger);
+  letter-spacing:.05em;
+}
 .forslag-nytt{
   font-size:var(--t-etikett); font-weight:700; color:var(--handling-ny);
   letter-spacing:.05em;
@@ -5189,6 +5196,12 @@ window.neamBakgrunn = async function(){
     + 'Huset setter den da til siste dagen faget har time den uka, ut fra '
     + 'timeplanen over, og merker linja som antatt så Emma ser å sjekke den. '
     + 'Send gjerne ukenummeret planen gjelder med, så blir uka riktig.\n\n'
+    + 'SJEKK AT UKA STEMMER. hent_skoleplan gir deg både ukenummeret fra '
+    + 'lenkenavnet og de ukenumrene som står i selve dokumentet. Spriker de, '
+    + 'spør Emma hvilken som er riktig FØR du legger noe fram - velg aldri selv. '
+    + 'Send alltid uke-argumentet videre til foreslaa_lekser; da sjekkes hver '
+    + 'frist mot den uka, og de som havner utenfor blir merket i rødt så hun ser '
+    + 'dem.\n\n'
     + 'DATOER skrives 2026-09-08. Står det «8/9» eller «torsdag» i kilden, må du '
     + 'regne det om selv - og er du i tvil om hvilken måned eller hvilken uke, '
     + 'send den heller UTEN frist og si fra at den mangler. En feil frist er verre '
@@ -5456,8 +5469,12 @@ const FAG_VERKTOY = [
     input_schema: {
       type:'object',
       properties:{
-        uke: { type:'number', description:'Ukenummeret planen gjelder. Brukes til å '
-                                        + 'regne ut antatte frister. Utelat for inneværende uke.' },
+        uke: { type:'number', description:'Ukenummeret planen gjelder. SEND ALLTID DENNE '
+                                        + 'når leksene kommer fra en ukeplan - den brukes '
+                                        + 'både til å regne ut antatte frister og til å '
+                                        + 'sjekke at fristene du har lest faktisk havner i '
+                                        + 'den uka. Utelater du den, brukes uka skjermen '
+                                        + 'tilfeldigvis står på, og det er sjelden riktig.' },
         lekser: {
           type:'array',
           description:'Leksene som legges fram.',
@@ -5792,6 +5809,7 @@ function tegnForslag(){
       +     'onchange="forslagSett(' + i + ', \'frist\', this.value); '
       +     'forslagSett(' + i + ', \'antatt\', false)">'
       +   (r.antatt ? '<span class="forslag-antatt">antatt</span>' : '')
+      +   (r.utenfor ? '<span class="forslag-utenfor">uke ' + r.uke + '</span>' : '')
       + '</span>'
       + '</div>';
   }).join('')
@@ -6190,7 +6208,38 @@ async function fagUtfor(navn, arg){
       url = hvilken.url;
     }
     const d = await skoleFil(url);
-    return { navn:d.navn, uke: hvilken ? hvilken.uke : null,
+
+    /* Ukenummeret staar to steder: i LENKENAVNET paa skolens side og
+       inne i DOKUMENTET. De skal stemme overens, og gjoer de ikke det,
+       er det som regel fordi en gammel fil er lastet opp under et nytt
+       navn - eller motsatt. Vi sier fra om begge tallene i stedet for aa
+       velge ett; Neam maa spoerre naar de spriker.
+
+       Bare de foerste 400 tegnene: uketallet staar i overskriften, og
+       lenger ned i teksten dukker «uke» opp i andre sammenhenger
+       («neste uke», «uke 40 er hoestferie»). */
+    const topp = String(d.tekst || '').slice(0, 400);
+    const iTekst = [];
+    const re = /uke\s*(\d{1,2})/gi;
+    let m;
+    while((m = re.exec(topp)) !== null){
+      const u = parseInt(m[1], 10);
+      if(u >= 1 && u <= 53 && iTekst.indexOf(u) === -1) iTekst.push(u);
+    }
+
+    const fraNavn = hvilken ? hvilken.uke : null;
+    const stemmer = (fraNavn && iTekst.length)
+      ? (iTekst.indexOf(fraNavn) !== -1) : null;
+
+    return { navn:d.navn,
+             ukeFraNavn: fraNavn,
+             ukeIDokumentet: iTekst.length ? iTekst : null,
+             stemmerOverens: stemmer,
+             advarsel: stemmer === false
+               ? 'Lenken sier uke ' + fraNavn + ', men dokumentet nevner uke '
+                 + iTekst.join(' og ') + '. Spør Emma hvilken som er riktig '
+                 + 'FØR du legger noe fram - ikke velg selv.'
+               : null,
              tegn:d.tegn, tekst:d.tekst };
   }
 
@@ -6213,15 +6262,33 @@ async function fagUtfor(navn, arg){
     });
     if(!rader.length) throw new Error('Ingen lekser å legge fram.');
 
+    /* En frist som er SKREVET i planen skal ligge i uka planen gjelder.
+       Gjoer den ikke det, er det enten en lekse som med vilje peker
+       framover - det finnes - eller en dato som er lest feil. Vi kan
+       ikke skille de to, saa vi merker dem og lar Emma se. */
+    const planUke = arg.uke ? Number(arg.uke) : isoUke(dagenViser()).uke;
+    rader.forEach(function(r){
+      r.uke = r.frist ? isoUke(datoFraTekst(r.frist)).uke : null;
+      r.utenfor = !!(r.frist && !r.antatt && r.uke !== planUke);
+    });
+
     const antatte = rader.filter(function(r){ return r.antatt; }).length;
-    apneForslag(rader, 'Ingenting er lagret ennå. Rett det som er galt, ta bort '
-                     + 'det som ikke skal med, og trykk Legg inn.'
-                     + (antatte ? ' ' + antatte + ' frist er antatt ut fra timeplanen '
-                                + '— de er merket.' : ''));
-    return { venter:true, antall:rader.length, antatteFrister:antatte || undefined,
+    const utenfor = rader.filter(function(r){ return r.utenfor; }).length;
+    apneForslag(rader, 'Ukeplan for uke ' + planUke + '. Ingenting er lagret ennå — '
+                     + 'rett det som er galt, ta bort det som ikke skal med, og trykk '
+                     + 'Legg inn.'
+                     + (antatte ? ' ' + antatte + ' frist er antatt ut fra timeplanen.' : '')
+                     + (utenfor ? ' ' + utenfor + ' frist havner UTENFOR uke ' + planUke
+                                + ' — se over dem.' : ''));
+    return { venter:true, antall:rader.length, uke:planUke,
+             antatteFrister:antatte || undefined,
+             utenforUka:utenfor || undefined,
              beskjed:'Forslagene ligger på skjermen og venter på at Emma godkjenner dem. '
-                   + 'Ingenting er lagret. Si hva du la fram, og si fra om hvilke frister '
-                   + 'som er antatt ut fra timeplanen framfor å stå i planen.' };
+                   + 'Ingenting er lagret. Si hva du la fram, hvilke frister som er antatt '
+                   + 'ut fra timeplanen, og '
+                   + (utenfor ? 'at ' + utenfor + ' frist(er) havner utenfor uke ' + planUke
+                              + ' - be henne se særlig på dem.'
+                              : 'at alle fristene ligger i uke ' + planUke + '.') };
   }
 
   if(navn === 'sett_laeringsmaal'){
