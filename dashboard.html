@@ -2419,7 +2419,41 @@ async function hentHuske(){
 
 /* Les paa nytt foer skriving. Flere i familien kan skrive samtidig, og
    KV er sist-skriving-vinner - da er vinduet i det minste kort. */
-async function endreHuske(endring){
+/* ============================================================
+   Skrivinger staar i ko
+   ------------------------------------------------------------
+   Hver skriving er les - endre - skriv tilbake. Gaar to av dem
+   samtidig, leser begge det SAMME utgangspunktet, og den siste
+   skriver over den foerste. Ingen av dem feiler; endringen bare
+   forsvinner.
+
+   Det skjer i praksis, og ikke sjelden: verktoeykallene i
+   felles-neam.js kjoeres PARALLELT med Promise.all naar de ikke
+   er merket neamSkriver. Ber man Neam sette ukedager paa elleve
+   fag, kommer elleve kall paa én gang - og ett fag overlever.
+
+   Koen loeser det uten aa roere verktoeylaget: hver skriving
+   venter paa den forrige, saa «les ferskt» faktisk ER ferskt.
+   Merkingen neamSkriver ville ogsaa serialisert dem, men den
+   utloeser en bekreftelsesdialog per kall, og elleve dialoger
+   for elleve fag er ikke en loesning.
+   ============================================================ */
+function iKo(ko, jobb){
+  /* Bade ved suksess og feil: en skriving som ryker skal ikke sperre
+     dem som staar bak i koen. */
+  const neste = ko.then(jobb, jobb);
+  return { p: neste, ko: neste.catch(function(){}) };
+}
+
+let huskeKo = Promise.resolve();
+
+function endreHuske(endring){
+  const r = iKo(huskeKo, function(){ return endreHuskeNaa(endring); });
+  huskeKo = r.ko;
+  return r.p;
+}
+
+async function endreHuskeNaa(endring){
   const fersk = await hentHuske();
   const ny = endring(fersk);
   const r = await fetch('/api/data?key=huskeliste', {

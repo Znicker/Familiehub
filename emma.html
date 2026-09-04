@@ -3083,7 +3083,41 @@ async function lastFag(){
   if(fagVisId) tegnFagVis();
 }
 
-async function endreFag(endring){
+/* ============================================================
+   Skrivinger staar i ko
+   ------------------------------------------------------------
+   Hver skriving er les - endre - skriv tilbake. Gaar to av dem
+   samtidig, leser begge det SAMME utgangspunktet, og den siste
+   skriver over den foerste. Ingen av dem feiler; endringen bare
+   forsvinner.
+
+   Det skjer i praksis, og ikke sjelden: verktoeykallene i
+   felles-neam.js kjoeres PARALLELT med Promise.all naar de ikke
+   er merket neamSkriver. Ber man Neam sette ukedager paa elleve
+   fag, kommer elleve kall paa én gang - og ett fag overlever.
+
+   Koen loeser det uten aa roere verktoeylaget: hver skriving
+   venter paa den forrige, saa «les ferskt» faktisk ER ferskt.
+   Merkingen neamSkriver ville ogsaa serialisert dem, men den
+   utloeser en bekreftelsesdialog per kall, og elleve dialoger
+   for elleve fag er ikke en loesning.
+   ============================================================ */
+function iKo(ko, jobb){
+  /* Bade ved suksess og feil: en skriving som ryker skal ikke sperre
+     dem som staar bak i koen. */
+  const neste = ko.then(jobb, jobb);
+  return { p: neste, ko: neste.catch(function(){}) };
+}
+
+let fagKo = Promise.resolve();
+
+function endreFag(endring){
+  const r = iKo(fagKo, function(){ return endreFagNaa(endring); });
+  fagKo = r.ko;
+  return r.p;
+}
+
+async function endreFagNaa(endring){
   const fersk = await hentFag();
   const ny = ryddFag(endring(fersk));
   await dataSkriv(FAG_NOKKEL, ny);
@@ -3742,13 +3776,12 @@ async function notatLagre(){
   try{
     /* endreFag() tegner fagvinduet paa nytt, og det ville tatt markoeren
        ut av feltet midt i skrivingen. Her skrives det derfor direkte. */
-    const fersk = await hentFag();
-    fersk.fag = fersk.fag.map(function(x){
-      return x.id === id ? Object.assign({}, x, {notat:tekst}) : x;
+    await endreFag(function(d){
+      d.fag = d.fag.map(function(x){
+        return x.id === id ? Object.assign({}, x, {notat:tekst}) : x;
+      });
+      return d;
     });
-    const ny = ryddFag(fersk);
-    await dataSkriv(FAG_NOKKEL, ny);
-    fagData = ny;
     if(s) s.textContent = 'lagret';
     setTimeout(function(){ if(s && s.textContent === 'lagret') s.textContent = ''; }, 1600);
   }catch(e){
@@ -3785,17 +3818,15 @@ async function maalLagre(){
   }
   const s = $('maalStatus');
   try{
-    const fersk = await hentFag();
-    fersk.fag = fersk.fag.map(function(x){
-      if(x.id !== id) return x;
-      const m = Object.assign({}, x.maal || {});
-      if(tekst) m[uke] = tekst; else delete m[uke];
-      return Object.assign({}, x, {maal:m});
+    await endreFag(function(d){
+      d.fag = d.fag.map(function(x){
+        if(x.id !== id) return x;
+        const m = Object.assign({}, x.maal || {});
+        if(tekst) m[uke] = tekst; else delete m[uke];
+        return Object.assign({}, x, {maal:m});
+      });
+      return d;
     });
-    const ny = ryddFag(fersk);
-    await dataSkriv(FAG_NOKKEL, ny);
-    fagData = ny;
-    fagAvtrykk = JSON.stringify(ny);
     if(s) s.textContent = 'lagret';
     setTimeout(function(){ if(s && s.textContent === 'lagret') s.textContent = ''; }, 1600);
   }catch(e){
@@ -4609,7 +4640,15 @@ async function hentHuske(){
 
 /* Les paa nytt foer skriving. Flere i familien kan skrive samtidig, og
    KV er sist-skriving-vinner - da er vinduet i det minste kort. */
-async function endreHuske(endring){
+let huskeKo = Promise.resolve();
+
+function endreHuske(endring){
+  const r = iKo(huskeKo, function(){ return endreHuskeNaa(endring); });
+  huskeKo = r.ko;
+  return r.p;
+}
+
+async function endreHuskeNaa(endring){
   const fersk = await hentHuske();
   const ny = endring(fersk);
   const r = await fetch('/api/data?key=huskeliste', {
