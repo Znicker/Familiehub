@@ -506,9 +506,12 @@ body{
    ut: boksen er gitt, og merket skaleres inn i den og sentreres.
    Merkene er 360x309-330, altsaa nesten kvadratiske, saa boksen kan
    settes ett sted uten at noen av dem faar mye luft rundt seg. */
+/* Staaende merker, ikke runde: ramma er hoeyere enn den er bred, og
+   bildet sentreres i den. Kortet er bredere enn merket - det er med
+   vilje, teksten under trenger bredden. */
 .fag-bilde{
   display:block; flex:none;
-  width:100%; height:126px;
+  width:100%; height:190px;
   margin:0 auto 8px;
 }
 .fag-bilde img{
@@ -522,13 +525,13 @@ body{
    samme kort blir hoeyere av seg selv, og trenger mer plass rundt seg. */
 @media(min-width:700px){
   #fag{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px; }
-  .fag-bilde{ height:150px; margin-bottom:10px; }
-  .fag-kort{ padding:15px 17px 17px; min-height:250px; }
+  .fag-bilde{ height:230px; margin-bottom:10px; }
+  .fag-kort{ padding:15px 17px 17px; min-height:336px; }
 }
 @media(min-width:1300px){
   #fag{ grid-template-columns:repeat(5, minmax(0,1fr)); gap:14px; }
-  .fag-bilde{ height:132px; }
-  .fag-kort{ padding:13px 15px 15px; min-height:224px; }
+  .fag-bilde{ height:200px; }
+  .fag-kort{ padding:13px 15px 15px; min-height:296px; }
 }
 .fag-kort{
   border:1px solid var(--line);border-radius:12px;background:var(--bg-2);
@@ -538,7 +541,7 @@ body{
      ikke overlatt til utregning. Kortene sto paa den gamle min-height
      paa 104px uansett hva som laa i dem - bildet talte ikke med - og da
      er en min-height som faktisk dekker innholdet det som holder. */
-  min-height:216px;
+  min-height:288px;
   /* Sperre, ikke rettelse: hoeyden over holder bildet inne av seg selv.
      Skulle noe likevel bli for stort en dag, blir det klippet HER og
      ikke tegnet oppaa nabokortet - en avkuttet ting er lett aa se og
@@ -655,7 +658,7 @@ body{
 }
 #fagVisBak{ z-index:57; }
 .fagvis-boks .av-tittel{ font-size:calc(var(--t-stor) * 1.35); gap:14px; }
-.fagvis-bilde{ width:92px; height:84px; flex:none; display:block; }
+.fagvis-bilde{ width:76px; height:100px; flex:none; display:block; }
 .fagvis-bilde img{ width:100%; height:100%; object-fit:contain; display:block; }
 .fagvis-boks .fagvis-meta{ font-size:var(--t-brod); gap:8px 20px; }
 .fagvis-boks .fagvis-bolk h4{ font-size:var(--t-meta); }
@@ -2978,25 +2981,27 @@ const TIMEPLAN_FAG = {
    utover hverandre. Chrome paa PC gjorde det ikke - derfor saa det
    riktig ut der.
 
-   Alle er 360 brede; bare hoeyden varierer. */
+   Alle er 320 brede; bare hoeyden varierer. Merkene ble byttet ut
+   4. september: de runde ble erstattet av staaende kort, og ramma i
+   CSS-en ble hoeyere og smalere av samme grunn. */
 const FAG_MERKE = {
-  'Norsk'             : ['norsk',             329],
-  'Engelsk'           : ['engelsk',           329],
-  'Matematikk'        : ['matematikk',        330],
-  'Naturfag'          : ['naturfag',          330],
-  'Samfunnsfag'       : ['samfunnsfag',       330],
-  'KRLE'              : ['krle',              327],
-  'Kroppsøving'       : ['kroppsoving',       327],
-  'Musikk'            : ['musikk',            329],
-  'Utdanningsvalg'    : ['utdanningsvalg',    321],
-  'Spansk'            : ['spansk',            323],
-  'Innsats for andre' : ['innsats-for-andre', 309]
+  'Norsk'             : ['norsk', 402],
+  'Engelsk'           : ['engelsk', 400],
+  'Matematikk'        : ['matematikk', 405],
+  'Naturfag'          : ['naturfag', 402],
+  'Samfunnsfag'       : ['samfunnsfag', 410],
+  'KRLE'              : ['krle', 408],
+  'Kroppsøving'       : ['kroppsoving', 414],
+  'Musikk'            : ['musikk', 410],
+  'Utdanningsvalg'    : ['utdanningsvalg', 424],
+  'Spansk'            : ['spansk', 423],
+  'Innsats for andre' : ['innsats-for-andre', 428]
 };
 
 function fagMerke(navn){
   const f = FAG_MERKE[String(navn || '').trim()];
   if(!f) return null;
-  return { url:'/bilder/fag/' + f[0] + '.png', b:360, h:f[1] };
+  return { url:'/bilder/fag/' + f[0] + '.png', b:320, h:f[1] };
 }
 
 /* <img> med maal. Kallstedene skal ikke skrive dem tre ganger. */
