@@ -4963,6 +4963,21 @@ window.neamBakgrunn = async function(){
     + 'UKEPLANEN LIGGER PÅ SKOLENS SIDE og kan hentes med hent_skoleplan. '
     + 'Uten argument får du den nyeste for 8. trinn. Timeplanene ligger i '
     + 'samme liste - bruk list_skoleplaner og send url hvis du skal ha en av dem.\n\n'
+    + 'HUN HETER EMMA. Ukeplanen er felles for hele trinnet, og noen beskjeder '
+    + 'i den er rettet til enkeltelever ved navn. Står navnet Emma i en beskjed, '
+    + 'gjelder den henne - ta den med. Står et annet elevnavn, er den ikke hennes; '
+    + 'la den ligge. Beskjeder uten navn gjelder hele klassen og gjelder derfor '
+    + 'også henne.\n\n'
+    + 'BESKJEDER SOM IKKE ER LEKSER går til legg_til_paaminnelse, ikke til '
+    + 'foreslaa_lekser. Regelen er enkel:\n'
+    + '  - Hører beskjeden til et FAG og er noe som skal gjøres: det er en lekse.\n'
+    + '  - Har den en DATO men hører ikke til et fag - turdag, gymtøy på tirsdag, '
+    + 'ta med matpakke, frist for et skjema: legg_til_paaminnelse MED dato. Den '
+    + 'havner under «Påminnelser i dag» på den dagen.\n'
+    + '  - Har den ingen dato - «husk innesko denne uka», «foreldremøte kommer»: '
+    + 'legg_til_paaminnelse UTEN dato. Den havner under «Påminnelser denne uken».\n'
+    + 'Si etterpå hvilke beskjeder du la inn og hvor de havnet, så hun kan rette '
+    + 'det som ble feil plassert.\n\n'
     + 'UKEPLANEN GÅR ALLTID VIA foreslaa_lekser. Får du en ukeplan, et bilde, en '
     + 'avskrift eller en liste med lekser du ikke har fått fra Emma i klartekst, '
     + 'legger du HELE settet fram i ett kall og lar henne godkjenne. Ingenting er '
@@ -5263,6 +5278,36 @@ const FAG_VERKTOY = [
         }
       },
       required:['lekser']
+    }
+  },
+  {
+    name: 'les_paaminnelser',
+    description: 'Påminnelsene som står på Emmas skjerm nå - både «i dag» og '
+               + '«denne uken», med id, tekst, dato og hvem de gjelder.',
+    input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'legg_til_paaminnelse',
+    description: 'Legger en beskjed i påminnelsene på Emmas skjerm. BRUK DETTE til '
+               + 'beskjeder fra ukeplanen som IKKE er lekser i et fag - turdag, ta med '
+               + 'gymtøy, foreldremøte, innlevering av skjema, beskjeder rettet til '
+               + 'Emma personlig. Har beskjeden en DATO, havner den under «Påminnelser '
+               + 'i dag» på den datoen. Har den ingen dato, havner den under '
+               + '«Påminnelser denne uken». Send ALDRI en lekse hit - lekser hører til '
+               + 'et fag og går via foreslaa_lekser.',
+    input_schema: {
+      type:'object',
+      properties:{
+        tekst:   { type:'string', description:'Kort overskrift. Det er denne som leses '
+                                            + 'på skjermen - hold den på få ord.' },
+        utdypning:{ type:'string', description:'Valgfri lengre tekst som vises når '
+                                             + 'påminnelsen åpnes.' },
+        dato:    { type:'string', description:'Dato på formen 2026-09-08. Utelat den '
+                                            + 'hvis beskjeden ikke gjelder en bestemt dag.' },
+        gjelder: { type:'string', description:'Emma, Magne, Nina, Andrea eller Familie. '
+                                            + 'Utelat for Emma.' }
+      },
+      required:['tekst']
     }
   },
   {
@@ -5612,11 +5657,16 @@ async function hentUkeplan(){
   }
   await neamStart(
     'Hent den nyeste ukeplanen for 8. trinn fra skolens side med '
-    + 'hent_skoleplan. Finn leksene og fristene i den, sorter dem på fagene '
-    + 'Emma har, regn om datoene til formen 2026-09-08, og legg ALT fram i '
-    + 'ETT kall til foreslaa_lekser. Er du i tvil om en dato, send leksa uten '
-    + 'frist og si fra om hvilke det gjaldt. Ta ikke med overskrifter, '
-    + 'ukenummer eller beskjeder som ikke er lekser.',
+    + 'hent_skoleplan. Gjør to ting med den:\n\n'
+    + '1. LEKSENE: sorter dem på fagene Emma har, regn om datoene til formen '
+    + '2026-09-08, og legg ALT fram i ETT kall til foreslaa_lekser. Er du i tvil '
+    + 'om en dato, send leksa uten frist og si fra om hvilke det gjaldt.\n\n'
+    + '2. BESKJEDENE som ikke er lekser - turdag, utstyr, frister, foreldremøte, '
+    + 'og alt som er rettet til Emma ved navn - legger du inn med '
+    + 'legg_til_paaminnelse, én per beskjed. Med dato hvis den har en, uten hvis '
+    + 'den ikke har.\n\n'
+    + 'Ta ikke med overskrifter eller ukenummer. Si til slutt hva du la fram og '
+    + 'hvilke beskjeder du la inn.',
     {friskt:true});
 }
 
@@ -5687,11 +5737,13 @@ async function sendArkTilNeam(){
     /* friskt: et lekseark er en ny sak, og den forrige samtalen har
        ingenting med tolkningen aa gjoere. */
     await neamStart(
-      'Her er lekselista fra skolen. Sorter den på fagene Emma har, regn om '
+      'Her er lekselista fra skolen. Sorter leksene på fagene Emma har, regn om '
       + 'datoene til formen 2026-09-08, og legg ALT fram i ETT kall til '
-      + 'foreslaa_lekser. Er du i tvil om en dato, send leksa uten frist og si '
-      + 'fra om hvilke det gjaldt. Ta ikke med overskrifter, ukenummer eller '
-      + 'beskjeder som ikke er lekser.\n\n' + tekst,
+      + 'foreslaa_lekser. Er du i tvil om en dato, send leksa uten frist og si fra '
+      + 'om hvilke det gjaldt.\n\n'
+      + 'Beskjeder som IKKE er lekser - utstyr, turdager, frister, og alt som er '
+      + 'rettet til Emma ved navn - legger du inn med legg_til_paaminnelse, med '
+      + 'dato hvis den har en. Ta ikke med overskrifter eller ukenummer.\n\n' + tekst,
       {friskt:true});
   }catch(e){
     varsle('Fikk ikke sendt til Neam: ' + e.message);
@@ -5902,6 +5954,50 @@ async function fagUtfor(navn, arg){
              beskjed:'Forslagene ligger på skjermen og venter på at Emma godkjenner dem. '
                    + 'Ingenting er lagret. Si hva du la fram, og si fra om hvilke frister '
                    + 'som er antatt ut fra timeplanen framfor å stå i planen.' };
+  }
+
+  if(navn === 'les_paaminnelser'){
+    const liste = (huskeliste || []).filter(function(m){
+      return EIER_MERKNADER.indexOf(String(m.gjelder || '').trim()) !== -1;
+    });
+    return { antall: liste.length, paaminnelser: liste.map(function(m){
+      return { id:m.id, tekst:m.overskrift, utdypning:m.tekst || null,
+               dato:m.frist || null,
+               hvor: m.omfang === 'uke' ? 'Påminnelser denne uken' : 'Påminnelser i dag',
+               gjelder:m.gjelder, ferdig:!!m.ferdig };
+    })};
+  }
+
+  if(navn === 'legg_til_paaminnelse'){
+    const tekst = String(arg.tekst || '').trim();
+    if(!tekst) throw new Error('Påminnelsen må ha en tekst.');
+    const dato = datoKrev(arg.dato, 'Datoen');
+
+    /* MED dato: en bestemt dag, altsaa «i dag»-boksen paa den datoen.
+       UTEN dato: noe som gjelder uka, og da settes fristen til soendagen
+       i uka man staar i - det er slik ukesboksen finner sine punkter, se
+       ukeAv() i tegnHuskeInner. */
+    const omfang = dato ? 'dag' : 'uke';
+    const frist  = dato || datoNokkel(new Date(
+        ukeStart(dagenViser()).getFullYear(),
+        ukeStart(dagenViser()).getMonth(),
+        ukeStart(dagenViser()).getDate() + 6));
+
+    const gjelder = String(arg.gjelder || '').trim() || EIER;
+    const ny = {
+      id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      laget: new Date().toISOString(),
+      overskrift: tekst,
+      tekst: String(arg.utdypning || '').trim(),
+      frist: frist,
+      omfang: omfang,
+      gjelder: gjelder,
+      av: 'Neam'
+    };
+    await endreHuske(function(liste){ return liste.concat([ny]); });
+    return { lagt:{ tekst:tekst, gjelder:gjelder, dato:dato || null,
+                    hvor: omfang === 'uke' ? 'Påminnelser denne uken'
+                                           : 'Påminnelser i dag' } };
   }
 
   if(navn === 'legg_til_lekse'){
