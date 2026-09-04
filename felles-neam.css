@@ -544,6 +544,45 @@
   transition:left .18s ease, bottom .18s ease, opacity .15s ease, transform .18s ease;
 }
 .neam-knapp img{ width:100%; height:auto; display:block; }
+
+/* ---- Flata over roeret ----
+   Roeret er et ::after med z-index:-1, og kommentaren lenger oppe sier at
+   den derfor havner bak hele knappen. Det stemmer bare saa lenge knappen
+   ikke lager en stablingskontekst - og den gjoer den: .neam-knapp har
+   `transform` bade lukket (scale(.5)) og aapen (scale(1)), og en transform
+   lager kontekst. Inne i den er -1 bakerst av knappens EGET innhold, men
+   fortsatt over knappens bakgrunn. Roeret ble derfor tegnet oppaa den hvite
+   flata og gikk tvers gjennom ikonet.
+
+   En papirskive som eget lag loeser det uten aa roere geometrien: ::after
+   nederst, skiva over den, ikonet oeverst. Merkene holdes utenfor - de har
+   eget omriss og skal ikke ha flate under seg. */
+.neam-knapp:not(.merke)::before{
+  content:''; position:absolute; inset:0; z-index:0;
+  border-radius:50%; background:var(--paper);
+}
+.neam-knapp svg, .neam-knapp .neam-knapp-tekst{ position:relative; z-index:1; }
+
+/* ---- Navnet i knappen ----
+   Strektegningene sier ikke nok alene. Et merke baerer navnet sitt selv og
+   faar ikke tekst; en strektegning faar den under seg, inne i skiva.
+
+   Knappen er 84px paa telefon og 120-128px ellers, saa teksten maa vaere
+   kort - kallstedet sender et eget `tekst`-felt der `navn` er for langt.
+   To linjer er taket; over det spiser teksten ikonet. */
+.neam-knapp:not(.merke){ flex-direction:column; gap:3px; padding:0 6px; }
+.neam-knapp:not(.merke) svg{
+  width:calc(var(--f-ikon) * .82); height:calc(var(--f-ikon) * .82);
+}
+.neam-knapp-tekst{
+  font-family:'Archivo', sans-serif; font-weight:700;
+  font-size:9.5px; line-height:1.15; letter-spacing:.02em;
+  text-transform:uppercase; text-align:center; color:var(--ink-soft);
+  max-width:100%; overflow:hidden;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+}
+@media(min-width:700px){ .neam-knapp-tekst{ font-size:12px; } }
+@media(min-width:1300px){ .neam-knapp-tekst{ font-size:12.5px; } }
 /* Strektegningen staar i en rund papirskive; et merke fyller hele knappen
    og har sin egen skive tegnet inn. --f-ikon er derfor satt slik at de to
    dekker omtrent like mye flate: merkets sirkel er ca. 82 % av bildets

@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=5">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=34">
+<link rel="stylesheet" href="/felles-neam.css?v=35">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -183,7 +183,7 @@ body{
 .rutenett.bred{grid-template-columns:1fr}
 .rutenett.bred .hoyre{display:none}
 .hoyre{display:flex;flex-direction:column;gap:16px;min-height:0}
-/* Hoeyrekolonnen er Merknader og Denne uken. Middagskortet laa under dem
+/* Hoeyrekolonnen er de to paaminnelsesboksene. Middagskortet laa under dem
    paa kjoekkendashen og tok bare hoeyden det trengte; her er de to alene
    og deler hoeyden likt. */
 .hoyre > .kort{flex:1 1 0;min-height:0}
@@ -1070,14 +1070,14 @@ select.hu-felt{
       </div>
 
       <div class="kort" id="kortMerknader">
-        <div class="kort-tittel"><span>Husk i dag</span><button class="hu-ny" onclick="apneHuskeSkjema('dag')" aria-label="Ny merknad">+</button></div>
+        <div class="kort-tittel"><span>Påminnelser i dag</span><button class="hu-ny" onclick="apneHuskeSkjema('dag')" aria-label="Ny merknad">+</button></div>
         <div class="kort-kropp" id="huskeIdag">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
       </div>
 
       <div class="kort" id="kortUken">
-        <div class="kort-tittel"><span>Denne uken</span><button class="hu-ny" onclick="apneHuskeSkjema('uke')" aria-label="Ny merknad">+</button></div>
+        <div class="kort-tittel"><span>Påminnelser denne uken</span><button class="hu-ny" onclick="apneHuskeSkjema('uke')" aria-label="Ny merknad">+</button></div>
         <div class="kort-kropp" id="huskeUken">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
@@ -1096,7 +1096,7 @@ select.hu-felt{
 <script src="/felles-filviser.js?v=2"></script>
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
-<script src="/felles-neam.js?v=40"></script>
+<script src="/felles-neam.js?v=41"></script>
 <script>
 /* ============================================================
    NEAM – Emma dash
@@ -3141,8 +3141,9 @@ function isoUke(dato){
 
 /* ============================================================
    Huskeliste – merknader med frist
-   Én KV-noekkel `fh:huskeliste`. Boksene foelger visningen: Merknader
-   viser punkter med frist paa dagen man ser paa, Denne uken viser
+   Én KV-noekkel `fh:huskeliste`. Boksene foelger visningen: Paaminnelser
+   i dag viser punkter med frist paa dagen man ser paa, Paaminnelser
+   denne uken viser
    punkter for uka den dagen ligger i. Utgraaing maales mot ekte i dag,
    ikke mot dagen man ser paa - ser du framover, staar alt normalt.
    ============================================================ */
@@ -3622,8 +3623,8 @@ window.neamBakgrunn = async function(){
       'EMMA DASH er Emmas egen skjerm. Emma er 13 år og går på ungdomsskolen. '
     + 'Skjermen har tre visninger i venstre kolonne: DAG (avtalene hennes og '
     + 'familiens den dagen), UKE (sju rader, én per dag) og FAG (lekser og '
-    + 'frister samlet per fag). Til høyre står Merknader og Denne uken, som '
-    + 'Magne, Nina og Emma selv kan skrive i.\n\n'
+    + 'frister samlet per fag). Til høyre står Påminnelser i dag og '
+    + 'Påminnelser denne uken, som Magne, Nina og Emma selv kan skrive i.\n\n'
     + 'TIMEPLANEN LIGGER IKKE I FAG-VISNINGEN. Den står som merknader på '
     + 'avtalene i kalenderen hennes. Fag handler om hva som skal være gjort '
     + 'til når, ikke om hvilken time som er når.\n\n'
@@ -3643,21 +3644,21 @@ window.neamBakgrunn = async function(){
    hoerer ikke hjemme i hjoernet. */
 window.neamSideHandlinger = function(){
   return [
-    { plass:'opp', navn:'Legg til avtale',
+    { plass:'opp', navn:'Legg til avtale', tekst:'Avtale',
       ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
          + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
          + '<rect x="3" y="5" width="18" height="16" rx="2"/>'
          + '<path d="M16 3v4M8 3v4M3 11h18M12 14v5M9.5 16.5h5"/></svg>',
       gjor: nyAvtale },
 
-    { plass:'skraa', navn:'Husk i dag',
+    { plass:'skraa', navn:'Ny påminnelse i dag', tekst:'Påminnelse i dag',
       ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
          + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
          + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
          + '<path d="M12 7v6M9 10h6"/></svg>',
       gjor: function(){ apneHuskeSkjema('dag'); } },
 
-    { plass:'ved', navn:'Husk denne uken',
+    { plass:'ved', navn:'Ny påminnelse denne uken', tekst:'Påminnelse denne uken',
       ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
          + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
          + '<rect x="3" y="4" width="18" height="17" rx="2"/>'

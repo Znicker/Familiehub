@@ -829,6 +829,20 @@ function neamDuseNed(){
   }, 190);
 }
 
+/* Innmaten i en knapp: ikonet, og navnet under naar ikonet er en
+   strektegning. Et merke baerer navnet sitt selv og faar ingen tekst.
+
+   Kallstedet kan sende et kortere `tekst` enn `navn` - `navn` gaar til
+   aria-label og title og skal vaere hel setning, mens det som staar inne
+   i en 84px sirkel maa vaere ett eller to ord. */
+function neamKnappInnhold(ikon, tekst, erMerke){
+  const i = ikon || '';
+  if(erMerke || !tekst) return i;
+  const trygg = String(tekst)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return i + '<span class="neam-knapp-tekst">' + trygg + '</span>';
+}
+
 /* Sant naar sida i det hele tatt har meldt inn noe. Avgjoer om
    haandtaket vises - se kommentaren over. */
 function neamSideHarNoe(){
@@ -867,7 +881,7 @@ function neamSideFirer(){
     k.classList.toggle('doed', !v);
     /* Et merke skal staa uten papirflate under seg - se .neam-knapp.merke. */
     k.classList.toggle('merke', !!(v && v.merke));
-    k.innerHTML = (v && v.ikon) || '';
+    k.innerHTML = v ? neamKnappInnhold(v.ikon, v.tekst || v.navn, !!v.merke) : '';
     const navn = v ? v.navn : '';
     k.setAttribute('aria-label', navn);
     k.title = navn;
@@ -1359,26 +1373,27 @@ function neamBygg(){
   firer.id = 'neamFirer';
   firer.hidden = true;
 
-  const knapp = function(id, plass, tekst, ikon){
+  const knapp = function(id, plass, tekst, ikon, kort){
     return '<button type="button" class="neam-knapp ' + plass + '" id="' + id + '"'
-         + ' aria-label="' + tekst + '" title="' + tekst + '">' + ikon + '</button>';
+         + ' aria-label="' + tekst + '" title="' + tekst + '">'
+         + neamKnappInnhold(ikon, kort || tekst, false) + '</button>';
   };
   firer.innerHTML =
       knapp('neamTLys', 'opp', 'Enheter og lys',
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
       + 'stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.9.7 1.5 1.7 1.5 2.8V17h4v-.3c0-1.1.6-2.1 1.5-2.8A6 6 0 0 0 12 3z"/></svg>')
+      + '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.9.7 1.5 1.7 1.5 2.8V17h4v-.3c0-1.1.6-2.1 1.5-2.8A6 6 0 0 0 12 3z"/></svg>', 'Enheter')
     + knapp('neamTApper', 'skraa', 'Andre apper',
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
       + 'stroke-linecap="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/>'
       + '<rect x="14" y="4" width="6" height="6" rx="1.5"/>'
       + '<rect x="4" y="14" width="6" height="6" rx="1.5"/>'
-      + '<rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>')
+      + '<rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>', 'Apper')
     + knapp('neamTDash', 'ved', 'Til Dash',
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
       + 'stroke-linecap="round" stroke-linejoin="round">'
       + '<rect x="3" y="4" width="18" height="14" rx="2"/>'
-      + '<path d="M3 9h18M9 18v3M15 18v3M8 21h8"/></svg>');
+      + '<path d="M3 9h18M9 18v3M15 18v3M8 21h8"/></svg>', 'Dash');
   document.body.appendChild(firer);
 
   /* Applista er sin egen boks utenfor fireren: den er fastposisjonert mot
