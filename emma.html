@@ -4459,6 +4459,9 @@ window.neamBakgrunn = async function(){
     + 'dem. Slå alltid opp med les_fagene eller les_lekser før du svarer på hva '
     + 'hun har - ikke gjett, og ikke svar av hukommelsen fra tidligere i '
     + 'samtalen hvis noe kan ha endret seg siden.\n\n'
+    + 'UKEPLANEN LIGGER PÅ SKOLENS SIDE og kan hentes med hent_skoleplan. '
+    + 'Uten argument får du den nyeste for 8. trinn. Timeplanene ligger i '
+    + 'samme liste - bruk list_skoleplaner og send url hvis du skal ha en av dem.\n\n'
     + 'UKEPLANEN GÅR ALLTID VIA foreslaa_lekser. Får du en ukeplan, et bilde, en '
     + 'avskrift eller en liste med lekser du ikke har fått fra Emma i klartekst, '
     + 'legger du HELE settet fram i ett kall og lar henne godkjenne. Ingenting er '
@@ -4505,6 +4508,13 @@ window.neamSideHandlinger = function(){
                  + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
                  + '<path d="M4 5h16M4 12h10M4 19h10"/><path d="M18 15v6M15 18h6"/></svg>',
               gjor: apneFagSkjema },
+
+            { navn:'Hent ukeplan fra skolen', tekst:'Hent ukeplan', farge:'ny',
+              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                 + '<path d="M12 3v12M8 11l4 4 4-4"/>'
+                 + '<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>',
+              gjor: hentUkeplan },
 
             { navn:'Lim inn lekseark', tekst:'Lim inn ark', farge:'ny',
               ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
@@ -4636,6 +4646,29 @@ const FAG_VERKTOY = [
     input_schema: {
       type:'object',
       properties:{ fag:{ type:'string', description:'Navn på et fag. Utelat for alle.' } },
+      required:[]
+    }
+  },
+  {
+    name: 'list_skoleplaner',
+    description: 'Filene som ligger under «Ukeplaner og filer» på skolens side, med '
+               + 'navn, ukenummer og adresse. Bruk dette for å finne HVILKEN ukeplan '
+               + 'som er den nyeste før du henter den.',
+    input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'hent_skoleplan',
+    description: 'Henter en .docx fra skolens side og gir innholdet som tekst. '
+               + 'Uten argument hentes den NYESTE ukeplanen for 8. trinn. '
+               + 'Etter dette: sorter leksene på fag og legg dem fram med '
+               + 'foreslaa_lekser - ikke skriv dem inn selv.',
+    input_schema: {
+      type:'object',
+      properties:{
+        uke: { type:'number', description:'Ukenummer. Utelat for den nyeste.' },
+        url: { type:'string', description:'Full adresse fra list_skoleplaner. '
+                                        + 'Bruk denne for timeplaner og annet enn ukeplaner.' }
+      },
       required:[]
     }
   },
@@ -4953,6 +4986,54 @@ async function lagreForslag(){
   }
 }
 
+/* ---------------- Skolens side ----------------
+   Hentingen skjer i /api/hent, ikke her. Nettleseren faar ikke hente fra
+   roligheden.skole.arendal.no - skolen sender ingen CORS-hoder til
+   neam.no - og .docx maa uansett pakkes ut, som er en zip-jobb sida ikke
+   skal baere.
+
+   Lista huskes resten av oekten. Neam kaller ofte list_skoleplaner rett
+   foer hent_skoleplan, og skolens side skal ikke hentes to ganger for aa
+   svare paa det samme.
+   ------------------------------------------------------------ */
+let skolePlanerHusk = null;
+
+async function skolePlaner(){
+  if(skolePlanerHusk) return skolePlanerHusk;
+  const r = await fetch('/api/hent?hva=liste', {cache:'no-store'});
+  const d = await r.json().catch(function(){ return null; });
+  if(!r.ok || !d || d.feil)
+    throw new Error((d && d.feil) || ('Fikk ikke tak i skolens side (' + r.status + ').'));
+  skolePlanerHusk = d.lenker || [];
+  return skolePlanerHusk;
+}
+
+async function skoleFil(url){
+  const r = await fetch('/api/hent?hva=fil&url=' + encodeURIComponent(url), {cache:'no-store'});
+  const d = await r.json().catch(function(){ return null; });
+  if(!r.ok || !d || d.feil)
+    throw new Error((d && d.feil) || ('Fikk ikke hentet fila (' + r.status + ').'));
+  return d;
+}
+
+/* Knappen. Neam gjoer jobben - han kan lese en ukeplan satt opp paa en
+   maate ingen har sett foer - og resultatet havner i forslagspanelet,
+   samme vei som alt annet han foreslaar. */
+async function hentUkeplan(){
+  if(typeof neamStart !== 'function'){
+    varsle('Neam er ikke tilgjengelig på denne siden.');
+    return;
+  }
+  await neamStart(
+    'Hent den nyeste ukeplanen for 8. trinn fra skolens side med '
+    + 'hent_skoleplan. Finn leksene og fristene i den, sorter dem på fagene '
+    + 'Emma har, regn om datoene til formen 2026-09-08, og legg ALT fram i '
+    + 'ETT kall til foreslaa_lekser. Er du i tvil om en dato, send leksa uten '
+    + 'frist og si fra om hvilke det gjaldt. Ta ikke med overskrifter, '
+    + 'ukenummer eller beskjeder som ikke er lekser.',
+    {friskt:true});
+}
+
 /* ---------------- Lekseark inn ----------------
    Teksten gaar til Neam, ikke til en tolk her i sida. Han kan lese en
    ukeplan som er satt opp paa en maate ingen har sett foer, og han legger
@@ -5131,6 +5212,39 @@ async function fagUtfor(navn, arg){
       return { id:p.id, fag:fagNavnAv(p.fagId), type:p.type,
                dato:p.dato || null, karakter:p.karakter || null };
     })};
+  }
+
+  if(navn === 'list_skoleplaner'){
+    const d = await skolePlaner();
+    return { antall:d.length, planer:d.map(function(l){
+      return { navn:l.navn, uke:l.uke, url:l.url };
+    })};
+  }
+
+  if(navn === 'hent_skoleplan'){
+    let url = String(arg.url || '').trim();
+    let hvilken = null;
+    if(!url){
+      const planer = await skolePlaner();
+      /* «8. trinn» og et ukenummer. Timeplanene ligger i samme liste og
+         har ikke uke, saa de faller ut av seg selv. */
+      const ukeplaner = planer.filter(function(l){
+        return l.uke && /8\.?\s*trinn/i.test(l.navn);
+      });
+      if(!ukeplaner.length)
+        throw new Error('Fant ingen ukeplan for 8. trinn på skolens side. '
+                      + 'Bruk list_skoleplaner for å se hva som ligger der.');
+      hvilken = arg.uke
+        ? ukeplaner.find(function(l){ return l.uke === Number(arg.uke); })
+        : ukeplaner.slice().sort(function(a, b){ return b.uke - a.uke; })[0];
+      if(!hvilken)
+        throw new Error('Fant ingen ukeplan for uke ' + arg.uke + '. Tilgjengelig: '
+                      + ukeplaner.map(function(l){ return l.uke; }).join(', ') + '.');
+      url = hvilken.url;
+    }
+    const d = await skoleFil(url);
+    return { navn:d.navn, uke: hvilken ? hvilken.uke : null,
+             tegn:d.tegn, tekst:d.tekst };
   }
 
   if(navn === 'foreslaa_lekser'){
