@@ -850,6 +850,14 @@
    Merkene plasseres av JS - se neamVisApper(). Boksen er tre kolonner
    bred og saa mange nivaaer hoey som figuren ble, og lenkene ligger
    absolutt inni den. Flex-oppsettet over gjelder ikke her. */
+/* MAA staa etter .fiskeben-regelen under.
+
+   `.neam-apper[hidden]` og `.neam-apper.fiskeben` har noeyaktig samme
+   spesifisitet - to klasser mot klasse og attributt - og da vinner den
+   som staar sist. Fiskebein-regelen kom sist og satte display:block, saa
+   `hidden` sluttet aa virke: applista lot seg aapne, men aldri lukke.
+   Treet ble staaende over sida til man lastet den paa nytt. */
+
 .neam-apper.fiskeben{
   display:block; position:fixed;
   width:calc(3 * var(--f-aapen) + 2 * var(--f-luft));
@@ -857,6 +865,7 @@
               + (var(--app-niv, 1) - 1) * var(--f-luft));
 }
 .neam-apper.fiskeben .neam-app-lenke{ position:absolute; }
+.neam-apper.fiskeben[hidden]{ display:none; }
 /* Applista henger under «skraa». Samlerroeret gaar UNDER merkene, ikke
    gjennom sentrene deres: merkene er runde og ligger med luft imellom, og
    et roer paa senterlinja viste seg bare som fire loese biter i gapene.
