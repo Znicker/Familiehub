@@ -109,7 +109,7 @@ const NEAM_MERKE  = '/bilder/merke-neam.png?v=' + MERKE_V;
 
    REGELEN: bruk aldri et tall om igjen som kan ha vaert servert mens en
    fil manglet. Oek heller. */
-const KNAPP_V = 3;
+const KNAPP_V = 4;
 function knappMerke(navn){
   return '<img src="/bilder/knapper/knapp-' + navn + '.png?v=' + KNAPP_V + '" alt=""'
        + ' onerror="neamMerkeFeilet(this)">';
