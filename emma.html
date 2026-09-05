@@ -3510,8 +3510,69 @@ const FAG_MERKE_V = 3;
    bytte adresse - og det er grunnen til at merkene sto som brutte
    bildeikoner: sida spurte etter en mappe som ikke fantes paa tjeneren.
    Versjonsnummeret over gjoer omdoepingen unoedvendig. */
+/* Oppslaget taaler at navnet ikke staar tegn for tegn likt.
+
+   «Utdanningsvalg (UTV)» fant ikke merket sitt: noekkelen er
+   «Utdanningsvalg», og parentesen gjorde de to til forskjellige strenger.
+   Faget sto da uten bilde uten at noe sa fra - den verste sorten feil,
+   siden den ser ut som at bildet mangler.
+
+   Vi normaliserer bort parenteser, tegnsetting og store bokstaver, og tar
+   med kallenavnene fra timeplanen: «UTV», «Matte», «Gym», «K&H». Da
+   finner et fag merket sitt uansett hvilken av skrivemaatene noen har
+   brukt. */
+function fagNoekkel(navn){
+  return String(navn || '')
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')      /* «(UTV)» ut */
+    .replace(/[^a-zæøå0-9 ]/g, ' ')   /* tegnsetting ut */
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/* Bygges ved FOERSTE OPPSLAG, ikke naar fila leses.
+
+   Foerste utgave bygget den med en gang, i en IIFE. Den leste
+   FAG_KALLENAVN, som staar over hundre tusen tegn lenger ned i fila - og
+   et `const` lest foer det er initialisert kaster. Ikke en advarsel i
+   konsollen: hele skriptet stopper, og sida blir staaende tom. Bygget
+   utsettes derfor til noen faktisk spoer etter et merke, og da er alt
+   lest. */
+let fagMerkeOppslag = null;
+
+function byggMerkeOppslag(){
+  const o = {};
+  Object.keys(FAG_MERKE).forEach(function(navn){
+    o[fagNoekkel(navn)] = FAG_MERKE[navn];
+  });
+  /* Kallenavnene peker paa det samme merket. TIMEPLAN_FAG oversetter
+     arkets navn til vaare; FAG_KALLENAVN tar dagligtalen. */
+  const alias = function(fra, til){
+    const m = o[fagNoekkel(til)];
+    if(m && !o[fagNoekkel(fra)]) o[fagNoekkel(fra)] = m;
+  };
+  try{
+    Object.keys(TIMEPLAN_FAG).forEach(function(k){ alias(k, TIMEPLAN_FAG[k]); });
+    Object.keys(FAG_KALLENAVN).forEach(function(k){ alias(k, FAG_KALLENAVN[k]); });
+  }catch(e){ /* et manglende alias er ikke verdt en tom side */ }
+  return o;
+}
+
 function fagMerke(navn){
-  const f = FAG_MERKE[String(navn || '').trim()];
+  if(!fagMerkeOppslag) fagMerkeOppslag = byggMerkeOppslag();
+  const n = fagNoekkel(navn);
+  let f = fagMerkeOppslag[n];
+
+  /* Treffer ikke hele navnet, proever vi kortere former av det.
+     «Kroppsøving/gym» blir «kroppsøving gym» etter normaliseringen, og
+     det er ikke en noekkel - men «kroppsøving» er. Foerst lengste
+     forstavelse, saa enkeltord: «gym» alene skal ogsaa treffe, men
+     «kroppsøving» skal vinne naar begge staar der. */
+  if(!f && n){
+    const ord = n.split(' ');
+    for(let i = ord.length - 1; i > 0 && !f; i--) f = fagMerkeOppslag[ord.slice(0, i).join(' ')];
+    for(let i = 0; i < ord.length && !f; i++) f = fagMerkeOppslag[ord[i]];
+  }
   if(!f) return null;
   return { url:'/bilder/fag/' + f[0] + '.png?v=' + FAG_MERKE_V, b:320, h:f[1] };
 }
