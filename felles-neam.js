@@ -1425,103 +1425,100 @@ function neamVisApper(){
            + '</a>';
     }).join('');
 
-  /* To rader over fire apper. Seks merker paa én rad ble 900px bredt og
-     dyttet lista ut av skjermen paa alt annet enn en stor PC. Bruddet
-     laases i CSS med --app-kol, saa det skjer paa samme sted uansett
-     skjerm - roeret under er tegnet for ett bestemt bruddpunkt. */
-  const kol = apper.length > 4 ? Math.ceil(apper.length / 2) : apper.length;
-  boks.style.setProperty('--app-kol', kol);
+  /* ---- Fiskebein ----
+     Merkene henger paa en loddrett stamme: ett i midten nederst, saa to
+     og to paa tverrbjelker, og ett paa toppen naar antallet gaar opp.
+     Foer laa de paa én lang rad som ble 900px bred med seks apper, og
+     senere paa to rader der roeret gikk under begge.
 
-  /* flex-wrap:wrap-reverse gjoer at de FOERSTE havner nederst, naermest
-     fireren. Det er riktig vei: den man bruker mest skal vaere naermest. */
-  const iNede = Math.min(kol, apper.length);
-  const iOppe = apper.length - iNede;
+     Stammen staar i MIDTKOLONNEN, som ligger rett over «skraa» - altsaa
+     der lista uansett henger fast. Derfor trengs ingen omvei ned: samme
+     roer baerer hele figuren og fortsetter rett ned i knappen.
 
-  /* Roeret: samler under hver rad, oppstikk i hvert merke, og et
-     stigeroer mellom radene. Alt er deler fra arket - se .rdel i CSS-en.
-     Legges foerst, saa merkene tegnes over. */
+     Nivaaene fylles nedenfra, saa den foerste appen er den naermeste
+     tommelen. ETT nederst paa stammen, saa par oppover, og blir det én
+     til overs havner den paa toppen: 1-2-2-1 med seks apper, 1-2-2 med
+     fem, 1-2-1 med fire.
+
+     Foerste utgave vekslet enkelt og par annenhver og ga 1-2-1-2 - to
+     bjelker med et loest merke imellom, ikke figuren i skissen. */
+  const niv = [];
+  (function(){
+    let i = 0, igjen = apper.length;
+    if(!igjen) return;
+    niv.push({ enkelt:true, fra:0, antall:1 });     /* nederst paa stammen */
+    i = 1; igjen -= 1;
+    while(igjen >= 2){
+      niv.push({ enkelt:false, fra:i, antall:2 });
+      i += 2; igjen -= 2;
+    }
+    if(igjen === 1) niv.push({ enkelt:true, fra:i, antall:1 });   /* paa toppen */
+  })();
+
+  boks.classList.add('fiskeben');
+  boks.style.setProperty('--app-niv', niv.length);
+
+  /* Merkene plasseres i rutenettet: midtkolonnen for enkeltnivaaene,
+     ytterkolonnene for parene. */
+  const lenker = Array.prototype.slice.call(boks.querySelectorAll('.neam-app-lenke'));
+  niv.forEach(function(n, j){
+    const y = 'calc(var(--f-aapen)/2 + ' + j
+            + '*(var(--f-aapen) + var(--f-luft)) - var(--f-aapen)/2)';
+    for(let k = 0; k < n.antall; k++){
+      const el = lenker[n.fra + k];
+      if(!el) continue;
+      /* Kolonne 1 for enkelt, 0 og 2 for par. */
+      const kol = n.enkelt ? 1 : (k === 0 ? 0 : 2);
+      el.style.left = 'calc(' + kol + '*(var(--f-aapen) + var(--f-luft)))';
+      el.style.bottom = y;
+    }
+  });
+
+  /* Roeret: stamme opp midten, tverrbjelke paa hvert parnivaa, kryss der
+     de moetes. Legges foerst, saa merkene tegnes over. */
   (function(){
     const A = 'var(--f-aapen)', L = 'var(--f-luft)', T = 'var(--ror-tykk)';
-    const rorB = 'calc(-1*var(--app-ror) - ' + T + '/2)';     /* nedre samler */
-    if(!apper.length) return;
+    if(!niv.length) return;
     const d = [];
     function del(kl, stil){ d.push('<i class="rdel ' + kl + '" style="' + stil + '"></i>'); }
-    const x = function(i){ return 'calc(' + A + '/2 + ' + i + '*(' + A + ' + ' + L + '))'; };
+    const y = function(j){ return 'calc(' + A + '/2 + ' + j + '*(' + A + ' + ' + L + '))'; };
+    const kolX = function(k){ return 'calc(' + A + '/2 + ' + k + '*(' + A + ' + ' + L + '))'; };
+    const midt = kolX(1);
+    const topp = niv.length - 1;
 
-    /* Stigeroeret staar midt i den OEVERSTE raden, saa krysset faar armer
-       til begge sider. Har den oeverste raden bare to merker, finnes
-       ingen midtstilling - da havner det paa et endepunkt, og skjoeten
-       blir et T med loddrett gjennomroer i stedet. */
-    const cKryss = iOppe ? Math.floor((iOppe - 1) / 2) : -1;
-    const kryssMidt = (iOppe >= 3 && cKryss > 0 && cKryss < iOppe - 1);
-
-    /* ---- Nedre rad ---- */
-    del('flis-h', 'left:calc(' + A + '/2); '
-      + 'width:calc(' + (iNede - 1) + '*(' + A + ' + ' + L + '));'
-      + 'bottom:' + rorB + ';');
-    for(let i = 0; i < iNede; i++){
-      /* Ved stigeroeret gaar oppstikket helt opp til oevre samler i
-         stedet - det passerer bak merket, som tegnes over. */
-      const helt = (iOppe && i === cKryss);
-      del('flis-v', 'left:calc(' + x(i) + ' - ' + T + '/2);'
-        + 'bottom:' + rorB + ';'
-        + 'height:calc(' + (helt
-            ? A + ' + ' + L + '/2 + var(--app-ror) + ' + T + '/2'
-            : A + '/2 + var(--app-ror)') + ');');
-      if(i > 0 && i < iNede - 1){
-        del('hel t-opp', 'left:calc(' + x(i) + ' - 23px);'
-          + 'bottom:calc(' + rorB + ' + ' + T + '/2 - 9px);');
-      }
-    }
-    del('hel krage-h', 'left:calc(' + A + '/2 - 6.5px);'
-      + 'bottom:calc(' + rorB + ' - 4.5px);');
-    del('hel krage-h', 'left:calc(' + x(iNede - 1) + ' - 6.5px);'
-      + 'bottom:calc(' + rorB + ' - 4.5px);');
-
-    /* ---- Oevre rad ---- */
-    if(iOppe){
-      const y1 = 'calc(' + A + ' + ' + L + '/2)';        /* samler i gapet */
-      del('flis-h', 'left:calc(' + A + '/2); '
-        + 'width:calc(' + (iOppe - 1) + '*(' + A + ' + ' + L + '));'
-        + 'bottom:calc(' + y1 + ' - ' + T + '/2);');
-      for(let i = 0; i < iOppe; i++){
-        del('flis-v', 'left:calc(' + x(i) + ' - ' + T + '/2);'
-          + 'bottom:calc(' + y1 + ');'
-          + 'height:calc(' + A + '/2 + ' + L + '/2);');
-        if(i === cKryss){
-          /* Skjoeten der stigeroeret kommer opp. Kryss naar samleren gaar
-             videre begge veier, ellers et T med loddrett gjennomroer. */
-          if(kryssMidt){
-            del('hel kryss', 'left:calc(' + x(i) + ' - 27.8px);'
-              + 'bottom:calc(' + y1 + ' - 15.8px);');
-          }else{
-            del('hel ' + (i === 0 ? 't-hoyre' : 't-venstre'),
-                'left:calc(' + x(i) + ' - ' + (i === 0 ? '9px' : '20px') + ');'
-              + 'bottom:calc(' + y1 + ' - 22px);');
-          }
-        }else if(i > 0 && i < iOppe - 1){
-          del('hel t-opp', 'left:calc(' + x(i) + ' - 23px);'
-            + 'bottom:calc(' + y1 + ' - 9px);');
-        }
-      }
-      /* Endekrager, men ikke der krysset alt daekker skjoeten. */
-      if(cKryss !== 0){
-        del('hel krage-h', 'left:calc(' + A + '/2 - 6.5px);'
-          + 'bottom:calc(' + y1 + ' - ' + T + '/2 - 4.5px);');
-      }
-      if(cKryss !== iOppe - 1){
-        del('hel krage-h', 'left:calc(' + x(iOppe - 1) + ' - 6.5px);'
-          + 'bottom:calc(' + y1 + ' - ' + T + '/2 - 4.5px);');
-      }
-    }
-
-    /* ---- Stammen ned til «skraa» ---- */
-    const skraaX = 'calc(1.5*' + A + ' + ' + L + ')';
-    del('flis-v', 'left:calc(' + skraaX + ' - ' + T + '/2);'
+    /* Stammen: fra «skraa»-knappens senter opp til oeverste nivaa. */
+    del('flis-v', 'left:calc(' + midt + ' - ' + T + '/2);'
       + 'bottom:calc(-1*(' + A + '/2 + 16px));'
-      + 'height:calc(' + A + '/2 + 16px - var(--app-ror));');
-    del('hel t-ned', 'left:calc(' + skraaX + ' - 22px);'
-      + 'bottom:calc(' + rorB + ' + ' + T + '/2 - 20px);');
+      + 'height:calc(' + A + '/2 + 16px + ' + y(topp) + ');');
+
+    niv.forEach(function(n, j){
+      if(n.enkelt){
+        /* Stammen gaar bak merket. Er dette det oeverste nivaaet, slutter
+           den der og faar en krage som ende - ellers ville roeret bare
+           tatt slutt bak en skive. */
+        if(j === topp && j > 0){
+          del('hel krage-v', 'left:calc(' + midt + ' - 11px);'
+            + 'bottom:calc(' + y(j) + ' - 6.5px);');
+        }
+        return;
+      }
+      /* Tverrbjelken fra venstre til hoeyre merkesenter. */
+      del('flis-h', 'left:' + kolX(0) + '; width:calc(2*(' + A + ' + ' + L + '));'
+        + 'bottom:calc(' + y(j) + ' - ' + T + '/2);');
+      del('hel krage-h', 'left:calc(' + kolX(0) + ' - 6.5px);'
+        + 'bottom:calc(' + y(j) + ' - ' + T + '/2 - 4.5px);');
+      del('hel krage-h', 'left:calc(' + kolX(2) + ' - 6.5px);'
+        + 'bottom:calc(' + y(j) + ' - ' + T + '/2 - 4.5px);');
+      /* Skjoeten i midten: kryss naar stammen gaar videre opp, T med
+         stammen ned naar bjelken er det oeverste nivaaet. */
+      if(j < topp){
+        del('hel kryss', 'left:calc(' + midt + ' - 27.8px);'
+          + 'bottom:calc(' + y(j) + ' - 15.8px);');
+      }else{
+        del('hel t-ned', 'left:calc(' + midt + ' - 22px);'
+          + 'bottom:calc(' + y(j) + ' - ' + T + '/2 - 20px);');
+      }
+    });
     boks.insertAdjacentHTML('afterbegin', d.join(''));
   })();
   boks.hidden = false;

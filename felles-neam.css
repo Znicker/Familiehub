@@ -845,6 +845,18 @@
   justify-content:flex-start; flex-wrap:wrap-reverse;
 }
 .neam-apper[hidden]{ display:none; }
+
+/* ---- Fiskebein ----
+   Merkene plasseres av JS - se neamVisApper(). Boksen er tre kolonner
+   bred og saa mange nivaaer hoey som figuren ble, og lenkene ligger
+   absolutt inni den. Flex-oppsettet over gjelder ikke her. */
+.neam-apper.fiskeben{
+  display:block; position:fixed;
+  width:calc(3 * var(--f-aapen) + 2 * var(--f-luft));
+  height:calc(var(--app-niv, 1) * var(--f-aapen)
+              + (var(--app-niv, 1) - 1) * var(--f-luft));
+}
+.neam-apper.fiskeben .neam-app-lenke{ position:absolute; }
 /* Applista henger under «skraa». Samlerroeret gaar UNDER merkene, ikke
    gjennom sentrene deres: merkene er runde og ligger med luft imellom, og
    et roer paa senterlinja viste seg bare som fire loese biter i gapene.
