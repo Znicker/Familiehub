@@ -98,6 +98,14 @@ const NEAM_LAGER  = 'neam_samtale';
    BYTTES ET MERKE: oek tallet. */
 const MERKE_V = 2;
 const NEAM_MERKE  = '/bilder/merke-neam.png?v=' + MERKE_V;
+
+/* Knappemerkene i fireren. De baerer navnet sitt selv, saa knappen faar
+   ingen tekst under - se neamKnappInnhold(). Egen versjon fra merkene:
+   de to settene byttes ikke samtidig. */
+const KNAPP_V = 1;
+function knappMerke(navn){
+  return '<img src="/bilder/knapper/knapp-' + navn + '.png?v=' + KNAPP_V + '" alt="">';
+}
 /* Modellene man kan veksle mellom, i rekkefoelge fra raskest til
    grundigst. Knappen i topplinja gaar rundt.
 
@@ -1592,26 +1600,22 @@ function neamBygg(){
   firer.id = 'neamFirer';
   firer.hidden = true;
 
-  const knapp = function(id, plass, tekst, ikon, kort){
-    return '<button type="button" class="neam-knapp ' + plass + '" id="' + id + '"'
+  /* `merke` sier at ikonet er et ferdig knappemerke med navn paa: da
+     faller papirskiva og teksten under bort, som for appmerkene. */
+  const knapp = function(id, plass, tekst, ikon, kort, merke){
+    return '<button type="button" class="neam-knapp ' + plass
+         + (merke ? ' merke' : '') + '" id="' + id + '"'
          + ' aria-label="' + tekst + '" title="' + tekst + '">'
-         + neamKnappInnhold(ikon, kort || tekst, false) + '</button>';
+         + neamKnappInnhold(ikon, kort || tekst, !!merke) + '</button>';
   };
   firer.innerHTML =
-      knapp('neamTLys', 'opp', 'Enheter og lys',
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
-      + 'stroke-linecap="round" stroke-linejoin="round">'
-      + '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.9.7 1.5 1.7 1.5 2.8V17h4v-.3c0-1.1.6-2.1 1.5-2.8A6 6 0 0 0 12 3z"/></svg>', 'Enheter')
-    + knapp('neamTApper', 'skraa', 'Andre apper',
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
-      + 'stroke-linecap="round"><rect x="4" y="4" width="6" height="6" rx="1.5"/>'
-      + '<rect x="14" y="4" width="6" height="6" rx="1.5"/>'
-      + '<rect x="4" y="14" width="6" height="6" rx="1.5"/>'
-      + '<rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>', 'Apper')
+      knapp('neamTLys', 'opp', 'Enheter og lys', knappMerke('enheter'), '', true)
+    + knapp('neamTApper', 'skraa', 'Andre apper', knappMerke('apper'), '', true)
+    /* «Dash» har ingen merkeknapp ennaa og beholder strektegningen. */
     + knapp('neamTDash', 'ved', 'Til Dash',
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
-      + 'stroke-linecap="round" stroke-linejoin="round">'
-      + '<rect x="3" y="4" width="18" height="14" rx="2"/>'
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+      + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+      + '<rect x="2" y="4" width="20" height="13" rx="2"/>'
       + '<path d="M3 9h18M9 18v3M15 18v3M8 21h8"/></svg>', 'Dash');
   document.body.appendChild(firer);
 

@@ -1079,23 +1079,15 @@ window.neamSideHandlinger = function(){
        ingen av dem tilhoerer noen app - de er huset, ikke innholdet.
        To trykk for aa logge ut er dessuten riktig vekting: paa en iPad
        flere deler, skal det ikke skje ved et uhell. */
-    { plass:'ved', navn:'System', behold:true,
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<rect x="3" y="4" width="18" height="12" rx="2"/>'
-         + '<path d="M8 20h8M12 16v4"/></svg>',
+    { plass:'ved', navn:'System', behold:true, merke:true,
+      ikon: knappMerke('system'),
       gjor: function(){
         neamSideStabel('ved', [
           { navn:'Oppdater',
-            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-               + '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg>',
+            merke:true, ikon:knappMerke('oppdater'),
             gjor: function(){ location.reload(); } },
           { navn:'Logg ut',
-            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-               + '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/>'
-               + '<path d="M10 17l-5-5 5-5M5 12h10"/></svg>',
+            merke:true, ikon:knappMerke('logg-ut'),
             gjor: loggUt }
         ]);
       } }
@@ -1131,6 +1123,6 @@ window.neamUtfor = async function(navn, arg){
      overalt, og senere er dette veien til aa snakke med Neam herfra. -->
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=54"></script>
+<script src="/felles-neam.js?v=55"></script>
 </body>
 </html>

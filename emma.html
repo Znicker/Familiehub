@@ -1796,7 +1796,7 @@ select.hu-felt{
 <script src="/felles-filviser.js?v=2"></script>
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
-<script src="/felles-neam.js?v=54"></script>
+<script src="/felles-neam.js?v=55"></script>
 <script>
 /* ============================================================
    NEAM – Emma dash
@@ -5607,37 +5607,24 @@ function menyPaaminnelser(){
 function menyLeggTil(){
   neamSideStabel('ved', [
     { navn:'Påminnelser', tekst:'Påminnelse', behold:true, meny:true, farge:'ny',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
-         + '<path d="M12 7v6M9 10h6"/></svg>',
+      merke:true, ikon:knappMerke('paaminnelse'),
       gjor: menyPaaminnelser },
 
     { navn:'Legg til avtale i kalenderen', tekst:'Avtale', farge:'ny',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<rect x="3" y="5" width="18" height="16" rx="2"/>'
-         + '<path d="M16 3v4M8 3v4M3 11h18M12 14v5M9.5 16.5h5"/></svg>',
+      merke:true, ikon:knappMerke('avtale'),
       gjor: nyAvtale },
 
     { navn:'Ny lekse', tekst:'Lekse', farge:'ny',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<path d="M4 6h11M4 12h8M4 18h8"/><path d="M18 13v7M14.5 16.5h7"/></svg>',
+      merke:true, ikon:knappMerke('lekse'),
       /* Staar et fag aapent, gjelder den nye leksa DET faget. */
       gjor: function(){ apneLekseSkjema(fagVisId); } },
 
     { navn:'Ny prøve', tekst:'Prøve', farge:'ny',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>'
-         + '<path d="M9 8h6M9 12h6M9 16h3"/></svg>',
+      merke:true, ikon:knappMerke('prove'),
       gjor: function(){ apneProveSkjema(fagVisId); } },
 
     { navn:'Nytt fag', tekst:'Fag', farge:'ny',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<path d="M4 5h16M4 12h10M4 19h10"/><path d="M18 15v6M15 18h6"/></svg>',
+      merke:true, ikon:knappMerke('fag'),
       gjor: apneFagSkjema }
   ]);
 }
@@ -5728,10 +5715,8 @@ window.neamSideHandlinger = function(){
       gjor: menyRoligheden },
 
     /* Nede til venstre: alt som LEGGER TIL. Ett pluss, én betydning. */
-    { plass:'ved', navn:'Legg til', tekst:'Legg til', behold:true, farge:'ny',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2.6" stroke-linecap="round">'
-         + '<path d="M12 5v14M5 12h14"/></svg>',
+    { plass:'ved', navn:'Legg til', behold:true, merke:true,
+      ikon: knappMerke('legg-til'),
       gjor: menyLeggTil }
   ];
 };
