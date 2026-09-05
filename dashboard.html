@@ -2050,9 +2050,20 @@ async function lastSjo(){
   if(!el) return;
   let d;
   try{
-    const r = await fetch('/api/sjo', {cache:'no-store'});
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    d = await r.json();
+    /* To kilder, i rekkefoelge:
+       1. /api/sjo - proxyen mot HI. Avvist av HI per 5. september 2026:
+          endepunktet svarer 404 til Cloudflares adresser uansett hoder.
+          Staar igjen i tilfelle det aapner seg.
+       2. KV-noekkelen «sjo» - skrevet av en henter som staar i huset
+          (Homey), med samme form: {temp, dybde, tid}. Det er denne som
+          faktisk kommer til aa fylle feltet. */
+    let r = await fetch('/api/sjo', {cache:'no-store'});
+    d = r.ok ? await r.json() : null;
+    if(!d || typeof d.temp !== 'number'){
+      r = await fetch('/api/data?key=sjo', {cache:'no-store'});
+      const kv = r.ok ? await r.json() : null;
+      d = kv && kv.value && typeof kv.value === 'object' ? kv.value : null;
+    }
   }catch(e){
     el.innerHTML = ''; el.className = 'vt-sjo';
     return;
