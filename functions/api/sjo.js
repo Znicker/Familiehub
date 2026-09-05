@@ -150,16 +150,24 @@ export async function onRequest(context){
     }
     if(!ut) ut = fraHtml(r.tekst);
     if(!ut){
-      /* Sier hva vi fikk, saa riktig endepunkt kan finnes uten gjetting. */
+      /* Sier hva vi fikk, saa riktig endepunkt kan finnes uten gjetting.
+
+         STATUS 200, ikke 502. Svarer en Pages Function med 502, setter
+         Cloudflare inn sin egen «Bad gateway»-side i stedet for kroppen
+         vaar - og hele diagnosen forsvinner. Det var det som skjedde:
+         sida viste Cloudflares feilside, og `start` kom aldri fram.
+         Klienten ser paa om `temp` finnes, ikke paa statuskoden, saa 200
+         med {feil} haandteres riktig - feltet blir tomt. */
       return svar({
         feil: 'Fant ingen maaling paa ' + DYBDE + ' m i svaret.',
         kilde: mal, type: r.type, tegn: r.tekst.length,
-        start: r.tekst.replace(/\s+/g, ' ').slice(0, 300)
-      }, 502);
+        start: r.tekst.replace(/\s+/g, ' ').slice(0, 400)
+      });
     }
     ut.kilde = mal;
     return svar(ut);
   }catch(e){
-    return svar({ feil: (e && e.message) || 'Noe gikk galt.' }, 502);
+    /* Samme grunn: 200 med {feil}, saa meldingen kommer fram. */
+    return svar({ feil: (e && e.message) || 'Noe gikk galt.', kilde: mal });
   }
 }
