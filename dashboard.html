@@ -855,7 +855,11 @@ select.hu-felt{
     <div class="av-tittel"><span id="huTittelTekst">Ny merknad</span></div>
     <div class="av-skjema">
       <div class="av-kol">
-        <input class="hu-felt" id="huOverskrift" maxlength="80" placeholder="Overskrift">
+        <!-- autocomplete=off: nettleseren foreslo tidligere overskrifter i en
+             nedtrekksliste under feltet. Den dekket skjemaet, og forslagene var
+             gamle paaminnelser som sjelden var det man skulle skrive igjen. -->
+        <input class="hu-felt" id="huOverskrift" maxlength="80" placeholder="Overskrift"
+               autocomplete="off" autocorrect="off" spellcheck="false">
         <div class="av-rad">
           <label>Gjelder<select class="hu-felt" id="huGjelder"></select></label>
           <label>Skrevet av<select class="hu-felt" id="huAv"></select></label>

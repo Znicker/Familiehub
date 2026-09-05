@@ -810,7 +810,7 @@ body{
 /* Maalfeltet er lavere enn notatet og staar oeverst - det er rammen, ikke
    arbeidsboka. */
 .fagvis-maal textarea{
-  width:100%; min-height:56px; resize:vertical;
+  width:100%; min-height:52px; resize:vertical; overflow-y:hidden;
   border:1.5px solid var(--line); border-radius:10px; background:#fff;
   color:var(--ink); font-family:'Archivo',sans-serif; font-size:16px;
   line-height:1.45; padding:9px 12px;
@@ -829,7 +829,7 @@ body{
   text-transform:none; color:var(--handling-ny); margin-left:auto;
 }
 .fagvis-notat textarea{
-  width:100%; min-height:120px; resize:vertical;
+  width:100%; min-height:96px; resize:vertical; overflow-y:hidden;
   border:1.5px solid var(--line); border-radius:10px; background:#fff;
   color:var(--ink); font-family:'Archivo',sans-serif; font-size:16px;
   line-height:1.5; padding:11px 12px;
@@ -1546,7 +1546,11 @@ select.hu-felt{
     <div class="av-tittel"><span id="huTittelTekst">Ny merknad</span></div>
     <div class="av-skjema">
       <div class="av-kol">
-        <input class="hu-felt" id="huOverskrift" maxlength="80" placeholder="Overskrift">
+        <!-- autocomplete=off: nettleseren foreslo tidligere overskrifter i en
+             nedtrekksliste under feltet. Den dekket skjemaet, og forslagene var
+             gamle paaminnelser som sjelden var det man skulle skrive igjen. -->
+        <input class="hu-felt" id="huOverskrift" maxlength="80" placeholder="Overskrift"
+               autocomplete="off" autocorrect="off" spellcheck="false">
         <div class="av-rad">
           <label>Gjelder<select class="hu-felt" id="huGjelder"></select></label>
           <label>Skrevet av<select class="hu-felt" id="huAv"></select></label>
@@ -4109,7 +4113,7 @@ function tegnFagVis(){
       +   ' <span class="notat-status" id="maalStatus"></span></h4>'
       + '<textarea id="fagMaal" rows="2" data-uke="' + esc(ukeN) + '"'
       + ' placeholder="Hva skal hun kunne når uka er omme?"'
-      + ' oninput="maalEndret()" onblur="maalLagre()"></textarea>'
+      + ' oninput="maalEndret(); voksFelt(this)" onblur="maalLagre()"></textarea>'
       + '</div>';
 
   ut += '<div class="fagvis-bolk"><h4>Lekser og frister</h4>';
@@ -4162,12 +4166,17 @@ function tegnFagVis(){
   ut += '<div class="fagvis-notat">'
       + '<h4>Notater <span class="notat-status" id="notatStatus"></span></h4>'
       + '<textarea id="fagNotat" placeholder="Skriv rett inn her — det lagres av seg selv."'
-      + ' oninput="notatEndret()" onblur="notatLagre()"></textarea>'
+      + ' oninput="notatEndret(); voksFelt(this, 520)" onblur="notatLagre()"></textarea>'
       + '</div>';
 
   $('fagVisKropp').innerHTML = ut;
   $('fagMaal').value  = (f.maal && f.maal[ukeN]) || '';
   $('fagNotat').value = f.notat || '';
+  /* Hoeyden settes etter innholdet naar vinduet aapnes, ikke bare mens
+     man skriver - ellers staar et langt notat sammenklemt til man roerer
+     det. voksFelt() har et tak paa 260px; her skal notatet faa mer. */
+  voksFelt($('fagMaal'));
+  voksFelt($('fagNotat'), 520);
   tegnLekseBilder($('fagVisKropp'));
 }
 
@@ -5442,131 +5451,164 @@ window.neamBakgrunn = async function(){
    ikke her, men paa raden under fagvisningen: de gir bare mening naar
    Fag staar framme, og en knapp som er meningsloes i to av tre visninger
    hoerer ikke hjemme i hjoernet. */
+/* ---- Sidas egne handlinger: hoeyre firer ----
+   LIKE I ALLE VISNINGENE. Settet skiftet foer med visningen - «Avtale» i
+   Dag og Uke, «Rediger» i Fag - og da maatte man vite hvor man sto for aa
+   vite hva hjoernet kunne. Naa staar de tre plassene fast, og det som
+   avhenger av visningen ligger inne i menyene i stedet.
+
+   MENYENE GAAR I DYBDEN. «Legg til» aapner en meny; «Påminnelser» der
+   inne aapner en NY meny paa samme plass. Det er ikke et tre som folder
+   seg ut - det er én meny om gangen, som erstattes. Grunnen er plassen:
+   fem valg med to undervalg hver ville vaert femten knapper i et hjoerne.
+   Tilbake er andre trykk paa haandtaket, som ellers.
+
+   Ikonene er strektegninger, saa hver knapp faar navnet sitt under seg -
+   se neamKnappInnhold() i fellesfila. Roerene tegnes av stabelen selv og
+   loeper langs kolonnens akse inn i moderknappen. */
+
+/* Knappene som legger noe til. Egne funksjoner for hver undermeny, saa
+   nedstigningen leses ovenfra og ned i koden ogsaa. */
+function menyPaaminnelser(){
+  neamSideStabel('ved', [
+    { navn:'Ny påminnelse i dag', tekst:'I dag', farge:'ny',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
+         + '<path d="M12 7v6M9 10h6"/></svg>',
+      gjor: function(){ apneHuskeSkjema('dag'); } },
+
+    { navn:'Ny påminnelse denne uken', tekst:'Denne uken', farge:'ny',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
+         + '<path d="M3 9h18M8 2v4M16 2v4"/>'
+         + '<path d="M12 12v5M9.5 14.5h5"/></svg>',
+      gjor: function(){ apneHuskeSkjema('uke'); } }
+  ]);
+}
+
+function menyLeggTil(){
+  neamSideStabel('ved', [
+    { navn:'Påminnelser', tekst:'Påminnelse', behold:true, farge:'ny',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
+         + '<path d="M12 7v6M9 10h6"/></svg>',
+      gjor: menyPaaminnelser },
+
+    { navn:'Legg til avtale i kalenderen', tekst:'Avtale', farge:'ny',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<rect x="3" y="5" width="18" height="16" rx="2"/>'
+         + '<path d="M16 3v4M8 3v4M3 11h18M12 14v5M9.5 16.5h5"/></svg>',
+      gjor: nyAvtale },
+
+    { navn:'Ny lekse', tekst:'Lekse', farge:'ny',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M4 6h11M4 12h8M4 18h8"/><path d="M18 13v7M14.5 16.5h7"/></svg>',
+      /* Staar et fag aapent, gjelder den nye leksa DET faget. */
+      gjor: function(){ apneLekseSkjema(fagVisId); } },
+
+    { navn:'Ny prøve', tekst:'Prøve', farge:'ny',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>'
+         + '<path d="M9 8h6M9 12h6M9 16h3"/></svg>',
+      gjor: function(){ apneProveSkjema(fagVisId); } },
+
+    { navn:'Nytt fag', tekst:'Fag', farge:'ny',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M4 5h16M4 12h10M4 19h10"/><path d="M18 15v6M15 18h6"/></svg>',
+      gjor: apneFagSkjema }
+  ]);
+}
+
+function menyUkeplan(){
+  neamSideStabel('skraa', [
+    { navn:'Hent ukeplan fra skolens side', tekst:'Hent fra nett', farge:'ny',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M12 3v12M8 11l4 4 4-4"/>'
+         + '<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>',
+      gjor: hentUkeplan },
+
+    { navn:'Lim inn lekseark', tekst:'Lim inn', farge:'ny',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<rect x="6" y="4" width="12" height="17" rx="2"/>'
+         + '<path d="M9 4V3h6v1M9 10h6M9 14h4"/></svg>',
+      gjor: apneArk },
+
+    { navn:'Se ukeplanen på skolens side', tekst:'Se på nett',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M10 14 21 3M21 3v7M21 3h-7"/>'
+         + '<path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>',
+      gjor: function(){ window.open(ROLIGHEDEN, '_blank', 'noopener'); } }
+  ]);
+}
+
+function menyRoligheden(){
+  neamSideStabel('skraa', [
+    { navn:'Ukeplan', tekst:'Ukeplan', behold:true,
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
+         + '<path d="M3 9h18M8 2v4M16 2v4M7 13h10M7 17h6"/></svg>',
+      gjor: menyUkeplan },
+
+    { navn:'Timeplan 8C', tekst:'Timeplan',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
+         + '<path d="M3 9h18M9 9v12M15 9v12"/></svg>',
+      gjor: apneTimeplan }
+  ]);
+}
+
 window.neamSideHandlinger = function(){
-  /* Settet hentes ved hver aapning, saa oeverste plass betyr det den skal
-     der du staar: en avtale hoerer til kalenderen, og under Fag er det
-     ingen kalender aa legge den i. */
-  const oeverst = (visning === 'fag')
-    ? { plass:'opp', navn:'Rediger fag og lekser', tekst:'Rediger', behold:true, farge:'endre',
-        ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-           + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-           + '<path d="M12 20h9"/>'
-           + '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
-        gjor: function(){
-          neamSideStabel('opp', [
-            { navn:'Ny lekse', farge:'ny',
-              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-                 + '<path d="M4 6h11M4 12h8M4 18h8"/><path d="M18 13v7M14.5 16.5h7"/></svg>',
-              /* Staar et fag aapent, gjelder den nye leksa DET faget.
-                 Ellers spoer skjemaet om hvilket. */
-              gjor: function(){ apneLekseSkjema(fagVisId); } },
-
-            { navn:'Ny prøve', farge:'ny',
-              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-                 + '<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>'
-                 + '<path d="M9 8h6M9 12h6M9 16h3"/></svg>',
-              gjor: function(){ apneProveSkjema(fagVisId); } },
-
-            { navn:'Rediger fag', farge:'endre',
-              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-                 + '<path d="M4 5h16M4 12h16M4 19h9"/>'
-                 + '<path d="M17.5 16.5a1.6 1.6 0 0 1 2.2 2.2L16 22l-3 .7.7-3z"/></svg>',
-              gjor: function(){ redigerFag(null); } },
-            { navn:'Nytt fag', farge:'ny',
-              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-                 + '<path d="M4 5h16M4 12h10M4 19h10"/><path d="M18 15v6M15 18h6"/></svg>',
-              gjor: apneFagSkjema },
-
-            { navn:'Lim inn lekseark', tekst:'Lim inn ark', farge:'ny',
-              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-                 + '<rect x="6" y="4" width="12" height="17" rx="2"/>'
-                 + '<path d="M9 4V3h6v1M9 10h6M9 14h4"/></svg>',
-              gjor: apneArk },
-
-            /* Ryddeknapp for testing. Skal ut naar ukeplanveien er kjoert
-               inn - den hoerer ikke hjemme i en hverdagsmeny. */
-            { navn:'Slett leksene i uka som vises', tekst:'Slett ukas lekser', farge:'slett',
-              ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                 + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-                 + '<path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/>'
-                 + '<path d="M10 11v6M14 11v6"/></svg>',
-              gjor: slettUkasLekser }
-          ]);
-        } }
-    : { plass:'opp', navn:'Legg til avtale', tekst:'Avtale', farge:'ny',
-        ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-           + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-           + '<rect x="3" y="5" width="18" height="16" rx="2"/>'
-           + '<path d="M16 3v4M8 3v4M3 11h18M12 14v5M9.5 16.5h5"/></svg>',
-        gjor: nyAvtale };
-
   return [
-    oeverst,
+    /* Oeverst: det som ENDRER noe som finnes. */
+    { plass:'opp', navn:'Rediger fag og lekser', tekst:'Rediger', behold:true, farge:'endre',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M12 20h9"/>'
+         + '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+      gjor: function(){
+        neamSideStabel('opp', [
+          { navn:'Rediger fag', farge:'endre',
+            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               + '<path d="M4 5h16M4 12h16M4 19h9"/>'
+               + '<path d="M17.5 16.5a1.6 1.6 0 0 1 2.2 2.2L16 22l-3 .7.7-3z"/></svg>',
+            gjor: function(){ redigerFag(null); } },
 
-    /* Skolen samlet paa én plass. De to peker ut av huset - den ene til
-       en nettside, den andre til timeplanen vi har som data - og hoerer
-       derfor sammen, ikke ved siden av knappene som legger noe inn. */
+          { navn:'Slett leksene i uka som vises', tekst:'Slett ukas lekser', farge:'slett',
+            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+               + '<path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/>'
+               + '<path d="M10 11v6M14 11v6"/></svg>',
+            gjor: slettUkasLekser }
+        ]);
+      } },
+
+    /* Paa skraa: alt som peker mot skolen. */
     { plass:'skraa', navn:'Roligheden skole', tekst:'Roligheden', behold:true,
       ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
          + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
          + '<path d="M3 21h18M5 21V9l7-5 7 5v12"/>'
          + '<path d="M9 21v-6h6v6M10 12h4"/></svg>',
-      gjor: function(){
-        neamSideStabel('skraa', [
-          { navn:'Ukeplan på skolens side', tekst:'Ukeplan',
-            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-               + '<path d="M10 14 21 3M21 3v7M21 3h-7"/>'
-               + '<path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>',
-            gjor: function(){ window.open(ROLIGHEDEN, '_blank', 'noopener'); } },
+      gjor: menyRoligheden },
 
-          { navn:'Hent ukeplan fra skolen', tekst:'Hent ukeplan', farge:'ny',
-            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-               + '<path d="M12 3v12M8 11l4 4 4-4"/>'
-               + '<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>',
-            gjor: hentUkeplan },
-
-          { navn:'Timeplan 8C', tekst:'Timeplan',
-            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-               + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
-               + '<path d="M3 9h18M9 9v12M15 9v12"/></svg>',
-            gjor: apneTimeplan }
-        ]);
-      } },
-
-    /* De to paaminnelsene under én knapp. De gjoer det samme - legger en
-       lapp - og skiller seg bare paa hvor lenge den staar. To knapper i
-       hjoernet for det var to plasser brukt paa én sak. */
-    { plass:'ved', navn:'Påminnelser', tekst:'Påminnelser', behold:true, farge:'ny',
+    /* Nede til venstre: alt som LEGGER TIL. Ett pluss, én betydning. */
+    { plass:'ved', navn:'Legg til', tekst:'Legg til', behold:true, farge:'ny',
       ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
-         + '<path d="M12 7v6M9 10h6"/></svg>',
-      gjor: function(){
-        neamSideStabel('ved', [
-          { navn:'Ny påminnelse i dag', tekst:'I dag', farge:'ny',
-            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-               + '<path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1z"/>'
-               + '<path d="M12 7v6M9 10h6"/></svg>',
-            gjor: function(){ apneHuskeSkjema('dag'); } },
-
-          { navn:'Ny påminnelse denne uken', tekst:'Denne uken', farge:'ny',
-            ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-               + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-               + '<rect x="3" y="4" width="18" height="17" rx="2"/>'
-               + '<path d="M3 9h18M8 2v4M16 2v4"/>'
-               + '<path d="M12 12v5M9.5 14.5h5"/></svg>',
-            gjor: function(){ apneHuskeSkjema('uke'); } }
-        ]);
-      } }
+         + 'stroke-width="2.6" stroke-linecap="round">'
+         + '<path d="M12 5v14M5 12h14"/></svg>',
+      gjor: menyLeggTil }
   ];
 };
 
@@ -6177,9 +6219,10 @@ function forslagLinjer(t){
 }
 
 /* Lar feltet vokse med innholdet mens man skriver. */
-function voksFelt(el){
+function voksFelt(el, tak){
+  if(!el) return;
   el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 260) + 'px';
+  el.style.height = Math.min(el.scrollHeight, tak || 260) + 'px';
 }
 
 function forslagMed(i, paa){
