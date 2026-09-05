@@ -465,16 +465,10 @@
 
   /* Roeret tegnes av JS - se neamRorKolonne(). CSS-ens eget er slaatt av
      med .medror. */
-  /* To kolonner er en loesning paa manglende HOEYDE. Paa telefon er det
-     bredden som mangler, og da er to kolonner feil vei: fire valg ble et
-     2x2-rutenett som fylte halve skjermen paa tvers. Her staar de i én
-     kolonne uansett hvor mange de er. */
-  .neam-stabel.bred{
-    flex-wrap:nowrap; max-height:none; width:var(--f-aapen);
-  }
-  .neam-stabel.bred::after{ content:none; }
-  .neam-stabel.bred::before{ left:calc(50% - var(--ror-tykk) / 2); right:auto; }
-  .neam-stabel.side.bred::before{ left:calc(50% - var(--ror-tykk) / 2); right:auto; }
+  /* Tobradersoppsettet gjelder OGSAA paa telefon. Det sto en kort stund
+     av her, med den begrunnelsen at telefonen mangler bredde og ikke
+     hoeyde - men fire valg over hverandre naar toppen av skjermen, og
+     to rader innover fra kanten leses som fireren selv. */
 
   /* Nedstikkene fra radoppsettet gjelder ikke lenger.
 

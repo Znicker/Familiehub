@@ -1231,8 +1231,16 @@ function neamFlipKlokke(el){
 function neamRorKolonne(antall, side){
   const A = 'var(--f-aapen)', L = 'var(--f-luft)', T = 'var(--ror-tykk)';
   const ytre = side ? 'right' : 'left';
-  /* Ledningen: en halv knapp pluss 14px utenfor knappekanten. */
-  const R   = 'calc(' + A + ' + 14px)';
+  /* Ledningen ligger UTENFOR knappene, mot skjermkanten - ikke innenfor
+     dem, mot innholdet. Foerste utgave la den paa innsiden, og da laa
+     roeret mellom menyen og teksten paa sida i stedet for langs kanten
+     der resten av fireren staar.
+
+     Negativ verdi: 14px forbi boksens egen kant. Boksen er én knapp bred,
+     saa knappesenteret ligger A/2 inn fra kanten og ledningen 14 utenfor
+     - til sammen A/2 + 14 fra senter til ledning, som foer, bare andre
+     veien. */
+  const R   = '-14px';
   const mor = 'calc(-1*(' + A + '/2 + 16px))';        /* moderknappens senter */
   const d = [];
   function del(kl, stil){ d.push('<i class="rdel ' + kl + '" style="' + stil + '"></i>'); }
@@ -1249,8 +1257,11 @@ function neamRorKolonne(antall, side){
   del('flis-h', ytre + ':calc(' + A + '/2);'
     + 'width:calc(' + A + '/2 + 14px);'
     + 'bottom:calc(' + mor + ' - ' + T + '/2);');
-  del('hel ' + (side ? 'bend-oh' : 'bend-ov'),
-      ytre + ':calc(' + R + ' - ' + (side ? '22px' : '21.5px') + ');'
+  /* Bendet nederst svinger fra ledningen inn mot moderknappen. Naar
+     ledningen ligger paa yttersiden, peker sidearmen INNOVER - altsaa
+     motsatt bend av foer. */
+  del('hel ' + (side ? 'bend-ov' : 'bend-oh'),
+      ytre + ':calc(' + R + ' - ' + (side ? '9.5px' : '9px') + ');'
     + 'bottom:calc(' + mor + ' - 9px);');
 
   /* Per knapp: stubb inn fra ledningen. T-stykke der ledningen fortsetter
@@ -1261,11 +1272,13 @@ function neamRorKolonne(antall, side){
       + 'width:calc(' + A + '/2 + 14px);'
       + 'bottom:calc(' + y + ' - ' + T + '/2);');
     if(i < antall - 1){
-      del('hel ' + (side ? 't-hoyre' : 't-venstre'),
-          ytre + ':calc(' + R + ' - 20px); bottom:calc(' + y + ' - 22px);');
+      /* Stammen peker innover mot knappene. */
+      del('hel ' + (side ? 't-venstre' : 't-hoyre'),
+          ytre + ':calc(' + R + ' - ' + (side ? '9px' : '20px') + ');'
+        + 'bottom:calc(' + y + ' - 22px);');
     }else{
-      del('hel ' + (side ? 'bend-nh' : 'bend-nv'),
-          ytre + ':calc(' + R + ' - ' + (side ? '22px' : '21.5px') + ');'
+      del('hel ' + (side ? 'bend-nv' : 'bend-nh'),
+          ytre + ':calc(' + R + ' - ' + (side ? '9.5px' : '9px') + ');'
         + 'bottom:calc(' + topp + ' - 23px);');
     }
   }
@@ -1354,10 +1367,18 @@ function neamSideStabel(plass, liste){
      roerdelene, og de to figurene er ikke like. */
   const smal = (window.innerWidth || 0) <= 900;
   const loddrett = (plass === 'opp' || plass === 'skraa');
-  const kolonne = loddrett || smal;
+  /* Over tre valg legges kolonnen i TO RADER, ogsaa paa telefon: fire
+     valg over hverandre blir en stolpe som naar toppen av skjermen, og
+     to rader ved siden av hverandre leses som fireren selv. Radene
+     vokser innover fra kanten - se .neam-stabel.side.bred.
+
+     Da tegner CSS roerene sine, og JS skal ikke tegne sine oppaa: to
+     kolonner er en annen figur enn én ledning med avstikkere. */
+  const bred = loddrett && liste.length > 3;
+  const kolonne = (loddrett || smal) && !bred;
   boks.className = 'neam-stabel side '
                  + (loddrett
-                      ? ('fra-' + plass + (liste.length > 3 && !smal ? ' bred' : ''))
+                      ? ('fra-' + plass + (bred ? ' bred' : ''))
                       : 'fra-ved rad')
                  /* medror: roeret tegnes av JS, saa CSS-ens eget
                     ledningsroer skal ligge unna. */
