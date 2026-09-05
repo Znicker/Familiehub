@@ -759,6 +759,12 @@
 .neam-enhet:not(.merke) svg{
   width:calc(var(--f-ikon) * .82); height:calc(var(--f-ikon) * .82);
 }
+/* Merkeknappene baerer navnet i selve bildet. Teksten ligger der likevel,
+   som reserve om bildet ikke laster - se neamKnappInnhold(). Da tas
+   `merke` av knappen, papirskiva kommer tilbake og navnet fram. */
+.neam-knapp.merke .neam-knapp-tekst,
+.neam-enhet.merke .neam-knapp-tekst{ display:none; }
+
 .neam-knapp-tekst{
   font-family:'Archivo', sans-serif; font-weight:700;
   font-size:9.5px; line-height:1.15; letter-spacing:.02em;

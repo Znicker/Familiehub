@@ -104,7 +104,8 @@ const NEAM_MERKE  = '/bilder/merke-neam.png?v=' + MERKE_V;
    de to settene byttes ikke samtidig. */
 const KNAPP_V = 1;
 function knappMerke(navn){
-  return '<img src="/bilder/knapper/knapp-' + navn + '.png?v=' + KNAPP_V + '" alt="">';
+  return '<img src="/bilder/knapper/knapp-' + navn + '.png?v=' + KNAPP_V + '" alt=""'
+       + ' onerror="neamMerkeFeilet(this)">';
 }
 /* Modellene man kan veksle mellom, i rekkefoelge fra raskest til
    grundigst. Knappen i topplinja gaar rundt.
@@ -881,11 +882,32 @@ function neamFargeKlasse(farge){
 
 function neamKnappInnhold(ikon, tekst, erMerke){
   const i = ikon || '';
-  if(erMerke || !tekst) return i;
+  if(!tekst) return i;
   const trygg = String(tekst)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  /* Teksten foelger med OGSAA paa merkeknappene, men skjult i CSS.
+
+     Grunnen er hva som skjer naar et merkebilde ikke laster: knappen har
+     hverken flate eller ramme - merket ER knappen - saa den blir helt
+     usynlig. Roerene staar igjen og peker mot ingenting. Det skjedde da
+     knappemerkene ble tatt i bruk foer filene laa i repoet, og utenfra
+     saa det ut som at hele fireren var borte.
+
+     Feiler bildet, tas `merke` av knappen: da kommer papirskiva tilbake
+     og teksten fram. En knapp med navn og uten bilde er stygg, men den
+     virker - og den forteller hva som mangler. */
   return i + '<span class="neam-knapp-tekst">' + trygg + '</span>';
 }
+
+/* Kalles fra bildets onerror. Global, siden den staar i en attributt. */
+window.neamMerkeFeilet = function(img){
+  const k = img && img.parentElement;
+  if(!k) return;
+  k.classList.remove('merke');
+  k.classList.add('merke-mangler');
+  img.remove();
+  console.warn('Knappemerket mangler:', img.getAttribute('src'));
+};
 
 /* Sant naar sida i det hele tatt har meldt inn noe. Avgjoer om
    haandtaket vises - se kommentaren over. */
