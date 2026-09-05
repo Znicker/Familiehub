@@ -28,9 +28,11 @@
    ============================================================ */
 
 const VERT  = 'www.imr.no';
-/* Sida som viser tallene. Byttes til dataendepunktet naar det er
-   kjent - se merknaden over. */
-const KILDE = 'https://www.imr.no/forskning/forskningsdata/temperatur_flodevigen/draw.map?boey=1';
+/* Dataendepunktet sida selv henter tabellen fra - funnet i Network-fanen
+   5. september 2026: updateLatest.js kaller updateLastReadings.ajx og
+   faar 1,1 kB tilbake. draw.map, som var foerste gjetning, er bare
+   visningssida og har ingen tall i seg. */
+const KILDE = 'https://www.imr.no/forskning/forskningsdata/temperatur_flodevigen/updateLastReadings.ajx?boey=1';
 const DYBDE = 1;        /* meter - badetemperaturen */
 
 function svar(obj, status){
