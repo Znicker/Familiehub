@@ -420,14 +420,23 @@
    hvor mange som fikk plass paa linja, og de regnestykkene gjelder ikke
    for en kolonne. De skrus av her, og det loddrette roeret fra
    kolonnestabelen settes paa i stedet. */
-@media(max-width:700px){
+@media(max-width:900px){
   .neam-stabel.rad{
     flex-direction:column-reverse; flex-wrap:nowrap;
     align-items:flex-start; width:var(--f-aapen);
     left:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
     right:auto;
+    /* Over BEGGE radene i fireren, ikke bare over «ved».
+       Kolonnen staar i samme kolonne som «skraa» - én knapp inn fra
+       hjoernet - og startet den rett over «ved», landet foerste valg
+       oppaa «skraa». Paa telefonen la «Påminnelse» seg midt oppaa
+       «Roligheden», med begge navnene lesbare gjennom hverandre.
+
+       Roeret gaar da ned gjennom «skraa» for aa naa «ved». Det er
+       greit, og det samme staar alt om broen lenger oppe: et roer
+       forsvinner bak en knapp og kommer ut paa andre siden. */
     bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom)
-                + var(--f-aapen) + 16px);
+                + 2 * var(--f-aapen) + var(--f-luft) + 16px);
   }
   .neam-stabel.side.rad{
     flex-direction:column-reverse; align-items:flex-end;
