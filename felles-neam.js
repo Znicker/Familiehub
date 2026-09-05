@@ -102,7 +102,14 @@ const NEAM_MERKE  = '/bilder/merke-neam.png?v=' + MERKE_V;
 /* Knappemerkene i fireren. De baerer navnet sitt selv, saa knappen faar
    ingen tekst under - se neamKnappInnhold(). Egen versjon fra merkene:
    de to settene byttes ikke samtidig. */
-const KNAPP_V = 1;
+/* v1 er brent. To av knappene ble bedt om mens mappa ennaa ikke laa paa
+   tjeneren, og Cloudflare cachet forsidens 200-svar mot nettopp de to
+   adressene - permanent. Filene var der hele tiden; det var adressen som
+   var oedelagt. Samme felle som med merkene og med Emma dash.
+
+   REGELEN: bruk aldri et tall om igjen som kan ha vaert servert mens en
+   fil manglet. Oek heller. */
+const KNAPP_V = 2;
 function knappMerke(navn){
   return '<img src="/bilder/knapper/knapp-' + navn + '.png?v=' + KNAPP_V + '" alt=""'
        + ' onerror="neamMerkeFeilet(this)">';
