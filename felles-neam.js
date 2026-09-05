@@ -1147,6 +1147,76 @@ function neamFlipKlokke(el){
 
    Returnerer HTML-strengen; kalleren legger den FOERST i boksen, saa
    knappene tegnes over roerene. */
+/* ============================================================
+   Roeret langs en KOLONNE
+   ------------------------------------------------------------
+   Samme figur som neamRorRad, dreid 90 grader: stigning fra
+   moderknappen ut til en LEDNING som staar utenfor knappene, og
+   en stubb inn i hver knapp.
+
+   Foer laa roeret rett bak kolonnen. I mellomrommene saa det ut
+   som et roer tvers GJENNOM knappene, og det var det det saa ut
+   som fordi det var det det var.
+
+   To deler manglet i biblioteket og er laget ved aa vende de
+   eksisterende: bend-ov og bend-oh er bend-nv og bend-nh speilet
+   loddrett, t-venstre og t-hoeyre er t-ned dreid en kvart runde.
+   Begge ble proevd foerst - lyset ligger paa yttersvingen og
+   taaler baade vending og dreining, i motsetning til det
+   kommentaren over delene frykter for en fri rotasjon.
+
+   Maaltall i css-px (halve filas): bend 31x32 med nedarm 9 (nh)
+   / 21,5 (nv) fra venstre og sidearm 9 fra topp - speilingen
+   gjoer sidearmen til 23 fra topp. T 29x44 med gjennomroer 20
+   fra ledningssida og stamme 22 fra topp.
+
+   `side` speiler alt: i hoeyre hjoerne maales fra hoeyre kant og
+   ledningen staar til venstre for knappene, i venstre hjoerne
+   omvendt. */
+function neamRorKolonne(antall, side){
+  const A = 'var(--f-aapen)', L = 'var(--f-luft)', T = 'var(--ror-tykk)';
+  const ytre = side ? 'right' : 'left';
+  /* Ledningen: en halv knapp pluss 14px utenfor knappekanten. */
+  const R   = 'calc(' + A + ' + 14px)';
+  const mor = 'calc(-1*(' + A + '/2 + 16px))';        /* moderknappens senter */
+  const d = [];
+  function del(kl, stil){ d.push('<i class="rdel ' + kl + '" style="' + stil + '"></i>'); }
+
+  const topp = 'calc(' + A + '/2 + ' + (antall - 1) + '*(' + A + ' + ' + L + '))';
+
+  /* Ledningen, fra moderknappens hoeyde opp til oeverste knapp. */
+  del('flis-v', ytre + ':calc(' + R + ' - ' + T + '/2);'
+    + 'bottom:' + mor + ';'
+    + 'height:calc(' + A + ' + 16px + ' + (antall - 1) + '*(' + A + ' + ' + L + '));');
+
+  /* Nederst: vannrett fra moderknappen ut til ledningen, og et bend som
+     vender oppover. Bendet er den delen som ikke fantes. */
+  del('flis-h', ytre + ':calc(' + A + '/2);'
+    + 'width:calc(' + A + '/2 + 14px);'
+    + 'bottom:calc(' + mor + ' - ' + T + '/2);');
+  del('hel ' + (side ? 'bend-oh' : 'bend-ov'),
+      ytre + ':calc(' + R + ' - ' + (side ? '22px' : '21.5px') + ');'
+    + 'bottom:calc(' + mor + ' - 9px);');
+
+  /* Per knapp: stubb inn fra ledningen. T-stykke der ledningen fortsetter
+     forbi, bend der den slutter - altsaa paa den oeverste. */
+  for(let i = 0; i < antall; i++){
+    const y = 'calc(' + A + '/2 + ' + i + '*(' + A + ' + ' + L + '))';
+    del('flis-h', ytre + ':calc(' + A + '/2);'
+      + 'width:calc(' + A + '/2 + 14px);'
+      + 'bottom:calc(' + y + ' - ' + T + '/2);');
+    if(i < antall - 1){
+      del('hel ' + (side ? 't-hoyre' : 't-venstre'),
+          ytre + ':calc(' + R + ' - 20px); bottom:calc(' + y + ' - 22px);');
+    }else{
+      del('hel ' + (side ? 'bend-nh' : 'bend-nv'),
+          ytre + ':calc(' + R + ' - ' + (side ? '22px' : '21.5px') + ');'
+        + 'bottom:calc(' + topp + ' - 23px);');
+    }
+  }
+  return d.join('');
+}
+
 function neamRorRad(antall, side){
   const A = 'var(--f-aapen)', L = 'var(--f-luft)', T = 'var(--ror-tykk)';
   const ytre = side ? 'right' : 'left';       /* mot moderknappen */
@@ -1224,11 +1294,19 @@ function neamSideStabel(plass, liste){
      Over tre valg legges kolonnen i to rader - se .neam-stabel.bred.
      Gjelder de loddrette («opp» og «skraa»); «ved» er alt en rad som
      brekker av seg selv. */
+  /* Under 900px blir OGSAA «ved» en kolonne - se CSS-en. Da faar den
+     kolonneroeret, ikke radroeret, og det maa avgjoeres her: JS tegner
+     roerdelene, og de to figurene er ikke like. */
+  const smal = (window.innerWidth || 0) <= 900;
   const loddrett = (plass === 'opp' || plass === 'skraa');
+  const kolonne = loddrett || smal;
   boks.className = 'neam-stabel side '
                  + (loddrett
-                      ? ('fra-' + plass + (liste.length > 3 ? ' bred' : ''))
-                      : 'fra-ved rad');
+                      ? ('fra-' + plass + (liste.length > 3 && !smal ? ' bred' : ''))
+                      : 'fra-ved rad')
+                 /* medror: roeret tegnes av JS, saa CSS-ens eget
+                    ledningsroer skal ligge unna. */
+                 + (kolonne ? ' medror' : '');
   boks.innerHTML = liste.map(function(v, i){
     /* Samme regel som i fireren: en strektegning baerer ikke betydningen
        alene og faar navnet under seg, et merke baerer sitt eget. Uten
@@ -1273,7 +1351,9 @@ function neamSideStabel(plass, liste){
     });
     /* Roerdelene tegnes naa som soesken FOER knappene, for raden vi
        faktisk fikk. Broen gjelder bare nederste rad. */
-    if(plass === 'ved'){
+    if(kolonne){
+      boks.insertAdjacentHTML('afterbegin', neamRorKolonne(knapper.length, true));
+    }else if(plass === 'ved'){
       boks.insertAdjacentHTML('afterbegin', neamRorRad(iNederst, true));
     }
   }
