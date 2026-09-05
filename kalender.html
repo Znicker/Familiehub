@@ -1530,7 +1530,7 @@ input,select,textarea{font-size:16px}
 </div>
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
-<script src="/felles-graph.js?v=1"></script>
+<script src="/felles-graph.js?v=2"></script>
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
@@ -1900,6 +1900,10 @@ async function gyldigToken(){
    da skal vi tilbake til innloggingsskjermen, ikke kastes ut av Access. */
 function nullstillLokalt(){
   localStorage.removeItem('fh_cal_auth');
+  /* Cachen inneholder kalender-ID-er fra denne postkassen. Blir de
+     liggende, arver neste innlogging dem - og da er vi tilbake i 404 paa
+     alt. Ryddes her, ikke bare ved neste innlasting. */
+  try{ localStorage.removeItem(CACHE_KEY); }catch(_){}
   sessionStorage.clear();
   S.token = null; S.refresh = null; S.me = null; S.expires = 0;
   S.calendars = []; S.events = [];
@@ -1953,6 +1957,18 @@ function toggleFull(){
 async function loadMe(){
   S.me = await graph('/me');
   visNavn(S.me && S.me.displayName);
+
+  /* Cachen leses FOER vi vet hvem som er innlogget - den skal vises med
+     det samme, og /me tar et halvt sekund. Her er identiteten kjent, og
+     da kontrolleres den: tilhoerer cachen en annen konto, er kalender-
+     ID-ene fra feil postkasse, og alt som staar paa skjermen er noe vi
+     aldri kan oppdatere. Da kastes den og alt hentes friskt.
+
+     Det var dette som skjedde: et brukerbytte i samme nettleser ga Emma
+     sys sine ID-er. Cachen tegnet en full uke, mens hvert eneste friske
+     kall svarte 404 «not found in the store» - og utenfra saa det ut som
+     at ÉN avtale manglet. */
+  cacheTilhorerMeg();
   /* Graph er fasit for hvem som er innlogget — sett rettighetene herfra. */
   const fra = normEpost((S.me && (S.me.mail || S.me.userPrincipalName)) || '');
   if(fra){ minEpost = fra; settRettigheter(); render(); }
@@ -2183,13 +2199,28 @@ function cacheDekker(){
    henter friske data i bakgrunnen.
    ============================================================ */
 const CACHE_KEY = 'fh_kal_cache';
+
+/* Hvem cachen tilhoerer. Kalender-ID-ene fra Graph er knyttet til ÉN
+   postkasse: en id hentet som sys finnes ikke i Emmas, og Graph svarer
+   «The specified object was not found in the store» - 404 paa hver
+   eneste kalender, ogsaa hennes egen.
+
+   Det skjedde: cachen laa under samme noekkel uansett hvem som var
+   innlogget, saa et brukerbytte i samme nettleser ga Emma sys sine
+   ID-er. Skjermen viste da cachede avtaler fra foer, mens alle friske
+   kall feilet - og det saa ut som at ÉN avtale manglet, ikke som at
+   hele hentingen var nede. */
+function kontoNoekkel(){
+  return normEpost((S.me && (S.me.mail || S.me.userPrincipalName)) || '') || '?';
+}
 const CACHE_MAKS = 4000;          /* avtaler - holder localStorage i sjakk */
 
 function lagreLokalt(){
   if(!S.loaded || !S.all) return;
   try{
     localStorage.setItem(CACHE_KEY, JSON.stringify({
-      v: 1,
+      v: 2,
+      konto: kontoNoekkel(),
       fra: S.loaded[0].toISOString(),
       til: S.loaded[1].toISOString(),
       ider: Array.from(S.loadedIds || []),
@@ -2211,10 +2242,30 @@ function lagreLokalt(){
   }catch(err){ /* fullt lager - da klarer vi oss uten */ }
 }
 
+/* Kaster cachen om den er skrevet av en annen konto. Returnerer sant naar
+   noe ble kastet, saa kalleren vet at skjermen maa tegnes paa nytt. */
+function cacheTilhorerMeg(){
+  let d = null;
+  try{ d = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); }catch(_){}
+  if(!d) return false;
+  if(d.konto === kontoNoekkel()) return false;
+  try{ localStorage.removeItem(CACHE_KEY); }catch(_){}
+  S.all = []; S.loaded = null; S.loadedIds = new Set();
+  S.calendars = [];
+  render();
+  return true;
+}
+
 function lesLokalt(){
   try{
     const d = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-    if(!d || d.v !== 1 || !Array.isArray(d.avtaler)) return false;
+    if(!d || d.v !== 2 || !Array.isArray(d.avtaler)) return false;
+    /* Cache fra en annen konto er ubrukelig - ID-ene peker inn i feil
+       postkasse. Kast den heller enn aa vise noe som ikke kan oppdateres. */
+    if(d.konto !== kontoNoekkel()){
+      try{ localStorage.removeItem(CACHE_KEY); }catch(_){}
+      return false;
+    }
     /* Eldre enn et doegn: la den ligge, men hent friskt foer visning */
     S.all = d.avtaler.map(function(a){
       return { id:a[0], title:a[1], allDay:!!a[2], start:new Date(a[3]), end:new Date(a[4]),

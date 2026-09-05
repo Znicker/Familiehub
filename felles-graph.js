@@ -65,6 +65,10 @@ async function graph(sti, valg){
      ganger. Kalenderens sperre er tatt med hit. */
   const kanProveIgjen = opt.method === 'GET';
   let forsok = 0;
+  /* 429 kom i praksis foerst naar én bruker hadde sju kalendere og alle
+     ble hentet samtidig. Gjenproevingen under henter den ene igjen; det
+     som hindrer at det skjer er at kallstedene ikke fyrer av alt paa én
+     gang - se kalenderhentingen i sidene. */
   let r;
   while(true){
     r = await fetch(GRAPH + sti, opt);
