@@ -1796,7 +1796,7 @@ select.hu-felt{
 <script src="/felles-filviser.js?v=2"></script>
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
-<script src="/felles-neam.js?v=59"></script>
+<script src="/felles-neam.js?v=60"></script>
 <script>
 /* ============================================================
    NEAM – Emma dash
@@ -5632,14 +5632,7 @@ function menyUkeplan(){
       merke:true, ikon:knappMerke('skann-ark'),
       gjor: apneSkann },
 
-    /* Ingen «Lim inn»-merke i settet - den beholder strektegningen sin.
-       Et merke som sier «Skann ark» paa en knapp som limer inn tekst er
-       verre enn ingen merke. */
-    { navn:'Lim inn lekseark', tekst:'Lim inn', farge:'ny',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<rect x="6" y="4" width="12" height="17" rx="2"/>'
-         + '<path d="M9 4V3h6v1M9 10h6M9 14h4"/></svg>',
+    { navn:'Lim inn lekseark', merke:true, ikon:knappMerke('lim-inn'),
       gjor: apneArk },
 
     { navn:'Se ukeplanen på skolens side', tekst:'Se på nett',
@@ -5663,8 +5656,10 @@ function menyRoligheden(){
 window.neamSideHandlinger = function(){
   return [
     /* Oeverst: det som ENDRER noe som finnes. */
-    { plass:'opp', navn:'Rediger fag og lekser', tekst:'Rediger', behold:true, farge:'endre',
-      merke:true, ikon:knappMerke('rediger-fag'),
+    { plass:'opp', navn:'Rediger fag og lekser', behold:true, merke:true,
+      /* Eget merke - «Rediger fag» ligger INNE i denne menyen, og samme
+         bilde paa begge nivaaene sa ikke hvor man var. */
+      ikon:knappMerke('rediger'),
       gjor: function(){
         neamSideStabel('opp', [
           { navn:'Rediger fag', farge:'endre',
