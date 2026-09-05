@@ -2219,6 +2219,47 @@ async function hentPlan(){
   return hentAvtaler(start, new Date(start.getTime() + 86400000));
 }
 
+/* ============================================================
+   Fagvisningens uke
+   ------------------------------------------------------------
+   Fra FREDAG KLOKKA 18 peker Fag paa uka som kommer. Ukeplanen
+   for neste uke ligger ute i helga, og det er da den legges inn
+   - staar fanen paa uka som gaar ut, havner leksene i feil uke,
+   og man maa huske aa bla foerst hver gang.
+
+   GJELDER BARE FAG. Dag- og ukesvisningen viser fortsatt det den
+   alltid har vist; en kalender som hopper en uke fram fredag
+   kveld ville vaert feil.
+
+   Bare naar man IKKE har bladd selv: har man trykket paa en pil,
+   er det den uka man ba om som gjelder.
+
+   Klokka 18 og ikke 20 som doegnskiftet ellers: doegnskiftet
+   handler om hvilken DAG skjermen skal vise, dette om naar helga
+   begynner i praksis. De to har ingenting med hverandre aa
+   gjoere, og aa binde dem sammen ville laast begge.
+   ============================================================ */
+function fagDag(){
+  const naa = new Date();
+  const dag = ukedagNr(naa);             /* 0 = mandag */
+  const helg = (dag === 4 && naa.getHours() >= 18) || dag === 5 || dag === 6;
+
+  /* Regnet fra MANDAGEN I DAG, ikke fra dagenViser(). To grunner:
+
+     Doegnskiftet kl 20 ville ellers slaatt inn i tillegg. Soendag kveld
+     peker dagenViser() alt paa mandagen i neste uke, og et helgeskift
+     oppaa det ville hoppet to uker fram.
+
+     Og skiftet maa gjelde OGSAA naar man har bladd. Foerste utgave ga
+     opp skiftet saa snart dagOffset ikke var null: i helga sto Fag paa
+     uke 38, men foerste trykk paa pila ga dagOffset=7, altsaa uke 38 én
+     gang til. Pila gjorde ingenting. Naa legges dagOffset OPPAA den
+     skiftede uka, og pilene flytter én uke slik de skal. */
+  const man = ukeStart(idag0());
+  return new Date(man.getFullYear(), man.getMonth(),
+                  man.getDate() + (helg ? 7 : 0) + dagOffset);
+}
+
 /* Mandag i uka dagen ligger i. */
 function ukeStart(d){
   const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -3565,7 +3606,7 @@ function mandagIUke(uke){
 function sisteFagdag(fagnavn, uke){
   const dager = timeplanDager(fagnavn);
   if(!dager.length) return '';
-  const m = mandagIUke(uke);
+  const m = uke ? mandagIUke(uke) : ukeStart(fagDag());
   const d = new Date(m.getFullYear(), m.getMonth(), m.getDate() + dager[dager.length - 1]);
   return datoNokkel(d);
 }
@@ -3829,11 +3870,16 @@ function tegnFag(){
        inneværende uke
      Den siste er ikke pynt: uten den ville en glemt lekse forsvunnet ut
      av bildet mandag morgen, og det er nettopp den man skal se. */
-  const uStart = datoNokkel(ukeStart(dagenViser()));
-  const uSlutt = datoNokkel(new Date(ukeStart(dagenViser()).getFullYear(),
-                                     ukeStart(dagenViser()).getMonth(),
-                                     ukeStart(dagenViser()).getDate() + 6));
-  const naaUke = (uStart === datoNokkel(ukeStart(idag0())));
+  const fStart = ukeStart(fagDag());
+  const uStart = datoNokkel(fStart);
+  const uSlutt = datoNokkel(new Date(fStart.getFullYear(), fStart.getMonth(),
+                                     fStart.getDate() + 6));
+  /* Etterslepet vises bade paa den EKTE inneværende uka og paa uka Fag
+     staar paa av seg selv i helga - ellers ville en glemt lekse fra uka
+     som gikk vaert usynlig hele helga, som er nettopp naar man har tid
+     til aa ta den. */
+  const naaUke = (uStart === datoNokkel(ukeStart(idag0())))
+              || (uStart === datoNokkel(ukeStart(fagDag())));
   const iDag   = datoNokkel(idag0());
 
   function iUka(l){
@@ -4114,7 +4160,7 @@ function tegnFagVis(){
 
   /* Laeringsmaalet oeverst: det er rammen resten staar i. To linjer hoeyt
      - er det lengre enn det, er det ikke lenger et maal for uka. */
-  const ukeN = ukeNokkel(dagenViser());
+  const ukeN = ukeNokkel(fagDag());
   let ut = '<div class="fagvis-bolk fagvis-maal">'
       + '<h4>Læringsmål · ' + esc(ukeNavn().toLowerCase())
       +   ' <span class="notat-status" id="maalStatus"></span></h4>'
@@ -5314,7 +5360,9 @@ function settDagsTitler(){
    det eneste som sier hvor man er. Raden for i dag er merket, saa
    inneværende uke kjennes igjen uansett. */
 function ukeNavn(){
-  return 'Uke ' + isoUke(dagenViser()).uke;
+  /* Fag har sin egen uke i helga - se fagDag(). De to andre visningene
+     foelger dagen som staar paa skjermen. */
+  return 'Uke ' + isoUke(visning === 'fag' ? fagDag() : dagenViser()).uke;
 }
 
 /* Skjermen staar framme hele dagen. Har noen bladd seg fram i tid og gaatt
@@ -6086,7 +6134,7 @@ let forslagUke = '';
 function apneForslag(rader, beskjed, maal, ukeN){
   ventendeForslag = rader;
   ventendeMaal = maal || [];
-  forslagUke = ukeN || ukeNokkel(dagenViser());
+  forslagUke = ukeN || ukeNokkel(fagDag());
   $('forslagHjelp').textContent = beskjed || '';
   tegnForslag();
   $('forslagBak').hidden  = false;
@@ -6549,7 +6597,7 @@ async function slettUkasLekser(){
      Staar man i Dag- eller Ukesvisningen, gjelder den uka dagen ligger i.
      Uketallet staar i spoersmaalet uansett, saa ingen kan komme i skade
      for aa slette en annen uke enn den de tror. */
-  const start = ukeStart(dagenViser());
+  const start = ukeStart(fagDag());
   const uke   = isoUke(start).uke;
   const fra   = datoNokkel(start);
   const til   = datoNokkel(new Date(start.getFullYear(), start.getMonth(),
@@ -6636,7 +6684,7 @@ async function fagUtfor(navn, arg){
       });
       return { id:f.id, navn:f.navn, faglaerer:f.laerer || null,
                ukedager: f.dager.map(function(n){ return UKEDAGER[n]; }),
-               laeringsmaal: (f.maal && f.maal[ukeNokkel(dagenViser())]) || null,
+               laeringsmaal: (f.maal && f.maal[ukeNokkel(fagDag())]) || null,
                apneLekser:l.length, kommendeProver:p.length };
     })};
   }
@@ -6774,7 +6822,7 @@ async function fagUtfor(navn, arg){
        Gjoer den ikke det, er det enten en lekse som med vilje peker
        framover - det finnes - eller en dato som er lest feil. Vi kan
        ikke skille de to, saa vi merker dem og lar Emma se. */
-    const planUke = arg.uke ? Number(arg.uke) : isoUke(dagenViser()).uke;
+    const planUke = arg.uke ? Number(arg.uke) : isoUke(fagDag()).uke;
     rader.forEach(function(r){
       r.uke = r.frist ? isoUke(datoFraTekst(r.frist)).uke : null;
       r.utenfor = !!(r.frist && !r.antatt && r.uke !== planUke);
@@ -6804,7 +6852,7 @@ async function fagUtfor(navn, arg){
   if(navn === 'sett_laeringsmaal'){
     const f = fagKrev(arg.fag);
     const tekst = String(arg.maal || '').trim();
-    const uke = arg.uke ? ukeNokkel(mandagIUke(arg.uke)) : ukeNokkel(dagenViser());
+    const uke = arg.uke ? ukeNokkel(mandagIUke(arg.uke)) : ukeNokkel(fagDag());
     await endreFag(function(d){
       d.fag = d.fag.map(function(x){
         if(x.id !== f.id) return x;
