@@ -407,6 +407,55 @@
   right:calc(var(--f-marg-x) + 2 * var(--f-aapen) + 2 * var(--f-luft));
 }
 
+/* ---- Telefon: kolonne i stedet for rad ----
+   Raden legger seg innover fra moderknappen og bruker BREDDE. Paa en
+   telefon er det ikke bredde vi har - fem valg paa 390px brakk til tre
+   rader, roerene gikk paa kryss, og halvparten av knappene endte oppaa
+   innholdet.
+
+   Under 700px staar de derfor i en kolonne rett over moderknappen, som
+   valgene fra «opp». Da er det hoeyden som brukes, og den finnes.
+
+   Roeret maa byttes med: radens broer og nedstikk tegnes av JS ut fra
+   hvor mange som fikk plass paa linja, og de regnestykkene gjelder ikke
+   for en kolonne. De skrus av her, og det loddrette roeret fra
+   kolonnestabelen settes paa i stedet. */
+@media(max-width:700px){
+  .neam-stabel.rad{
+    flex-direction:column-reverse; flex-wrap:nowrap;
+    align-items:flex-start; width:var(--f-aapen);
+    left:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
+    right:auto;
+    bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom)
+                + var(--f-aapen) + 16px);
+  }
+  .neam-stabel.side.rad{
+    flex-direction:column-reverse; align-items:flex-end;
+    left:auto;
+    right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
+  }
+
+  /* Loddrett roer ned i moderknappen - samme regnestykke som for
+     kolonnestablene lenger oppe i fila. */
+  .neam-stabel.rad::before{
+    content:''; position:absolute; z-index:0;
+    width:var(--ror-tykk); background-image:var(--ror-lodd);
+    background-size:100% auto; background-repeat:repeat-y;
+    box-shadow:var(--ror-skygge);
+    left:calc(50% - var(--ror-tykk) / 2);
+    top:calc(var(--f-aapen) / 2);
+    bottom:calc(-1 * (var(--f-aapen) / 2 + 16px));
+  }
+  /* JS-delene og nedstikkene fra radoppsettet gjelder ikke lenger. */
+  .neam-stabel.rad .rdel{ display:none; }
+  .neam-stabel.rad .neam-enhet.over::after{ content:none; }
+  .neam-stabel.rad .neam-enhet.over::before{
+    content:''; position:absolute; inset:0; z-index:0;
+    border-radius:50%; background:var(--paper);
+  }
+  .neam-stabel.rad .neam-enhet.merke.over::before{ content:none; }
+}
+
 .neam-enhet{
   pointer-events:auto; flex:none;
   width:var(--f-aapen); height:var(--f-aapen); border-radius:50%;
