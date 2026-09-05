@@ -55,7 +55,7 @@ body{
 /* Samme merke som flisen paa forsiden. Merket har egen ramme og egen
    bunn, saa det staar fritt - ingen sirkel eller skygge rundt. */
 .merke-ikon{
-  width:56px;height:56px;flex-shrink:0;
+  width:112px;height:112px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
 }
 .merke-ikon img{width:100%;height:100%;object-fit:contain;display:block}
@@ -124,6 +124,18 @@ body{
   font-weight:600;white-space:nowrap;
 }
 .vt-pil{width:1.1em;height:1.1em;vertical-align:-.18em;margin-right:1px}
+/* ---------- Sjoetemperaturen ----------
+   Samme felt som paa Emma dash. Tidspunktet er ikke pynt: et tall uten
+   alder kan vaere fra i gaar eller fra i fjor, og forskjellen synes ikke
+   paa tallet. */
+.vt-sjo{ display:flex; align-items:center; gap:10px; margin-left:auto; }
+.vt-sjo:empty{ display:none; }
+.vt-sjo-ikon{ font-size:26px; line-height:1; }
+.vt-sjo-grad{ font-size:var(--t-stor); font-weight:700; line-height:1; }
+.vt-sjo-meta{ font-size:var(--t-etikett); color:var(--ink-soft); line-height:1.3; }
+.vt-sjo.gammel .vt-sjo-grad{ color:var(--ink-soft); }
+.vt-sjo.gammel .vt-sjo-meta{ color:var(--danger); }
+
 .vt-meta{
   display:flex;flex-direction:column;gap:2px;flex-shrink:0;
   font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);
@@ -764,12 +776,10 @@ select.hu-felt{
 <div class="skjerm" id="skjerm">
 
   <div class="topp">
-    <a class="merke" href="./index.html">
-      <span class="merke-ikon"><img src="/bilder/merke-kjokken-dash.png?v=2" alt="Kjøkken dash" width="256" height="265"></span>
-      <span>
-        <span class="merke-tittel">Kjøkken dash</span>
-        <span class="merke-sub" style="display:block">NEAM</span>
-      </span>
+    <!-- Bare merket. Det baerer navnet sitt selv, og teksten ved siden
+         sa det samme én gang til. Stoerrelsen er satt i CSS-en. -->
+    <a class="merke" href="./index.html" aria-label="Til forsiden">
+      <span class="merke-ikon"><img src="/bilder/merke-kjokken-dash.png?v=2" alt="Kjøkken dash" width="512" height="511"></span>
     </a>
     <div class="vaer-stripe" id="vaerStripe" hidden></div>
     <div class="vaer-sted">
@@ -2030,6 +2040,50 @@ async function finnPosisjon(){
   }
 }
 
+/* ---------- Sjoetemperaturen ved Floedevigen ----------
+   Gjennom /api/sjo (functions/api/sjo.js). Hentes ved oppstart og hver
+   gang skjermen vekkes - se Emma dash for hele begrunnelsen. */
+let sjoAvtrykk = '';
+
+async function lastSjo(){
+  const el = $('vtSjo');
+  if(!el) return;
+  let d;
+  try{
+    const r = await fetch('/api/sjo', {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    d = await r.json();
+  }catch(e){
+    el.innerHTML = ''; el.className = 'vt-sjo';
+    return;
+  }
+  if(!d || typeof d.temp !== 'number'){ el.innerHTML = ''; return; }
+  const avtrykk = JSON.stringify(d);
+  if(avtrykk === sjoAvtrykk) return;
+  sjoAvtrykk = avtrykk;
+
+  const naar = d.tid ? new Date(d.tid) : null;
+  const alder = (naar && !isNaN(naar)) ? (Date.now() - naar.getTime()) / 3600000 : null;
+  const gammel = alder !== null && alder > 24;
+  let naarTekst = '';
+  if(naar && !isNaN(naar)){
+    const kl = pad(naar.getHours()) + ':' + pad(naar.getMinutes());
+    const idag = datoNokkel(naar) === datoNokkel(new Date());
+    naarTekst = idag ? 'kl. ' + kl
+              : UKEDAG_KORT[ukedagNr(naar)] + ' ' + naar.getDate() + '. ' + MND[naar.getMonth()].slice(0,3) + ' ' + kl;
+  }
+  el.className = 'vt-sjo' + (gammel ? ' gammel' : '');
+  el.innerHTML =
+      '<span class="vt-sjo-ikon">🌊</span>'
+    + '<span>'
+    +   '<span class="vt-sjo-grad">' + d.temp.toFixed(1).replace('.', ',') + '°</span>'
+    +   '<span class="vt-sjo-meta" style="display:block">'
+    +     esc(d.dybde ? d.dybde + ' m · ' : '') + esc(naarTekst)
+    +     (gammel ? ' · gammel' : '')
+    +   '</span>'
+    + '</span>';
+}
+
 async function hentVaer(){
   const url = 'https://api.open-meteo.com/v1/forecast'
     + '?latitude=' + posisjon.lat + '&longitude=' + posisjon.lon
@@ -2151,10 +2205,13 @@ function tegnVaerStripe(){
     + '<span class="vt-meta">'
     +   (regn > 0.05 ? '<span>' + regn.toFixed(1).replace('.', ',') + ' mm nedbør</span>' : '')
     + '</span>'
-    + '<span class="vt-timer"><span class="vt-rad">' + timer + '</span></span>';
+    /* Timestripa er tatt bort - seks smaa tall som sa det samme som det
+       store. Plassen brukes til sjoetemperaturen, se lastSjo(). */
+    + '<span class="vt-sjo" id="vtSjo"></span>';
 
   settSted(posisjon.navn, true);
   stripe.hidden = false;
+  lastSjo();
 }
 
 /* ---------- Vaerboble ----------
@@ -3437,7 +3494,7 @@ document.addEventListener('keydown', function(e){
 });
 
 document.addEventListener('visibilitychange', function(){
-  if(!document.hidden){ tegnKlokke(); oppdaterAlt(false); speilHuske(); speilEmmaFag(); }
+  if(!document.hidden){ tegnKlokke(); oppdaterAlt(false); speilHuske(); speilEmmaFag(); lastSjo(); }
 });
 </script>
 </body>
