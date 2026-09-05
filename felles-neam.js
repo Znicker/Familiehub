@@ -728,7 +728,14 @@ const NEAM_APPER = [
   { sti:'/handleliste.html', navn:'Handleliste', ikon:'/bilder/merke-handleliste.png' },
   { sti:'/oppskrifter.html', navn:'Matlaging',   ikon:'/bilder/merke-matlaging.png'   },
   { sti:'/kalender.html',    navn:'Kalender',    ikon:'/bilder/merke-kalender.png'    },
-  { sti:'/dashboard.html',   navn:'Kjøkken',     ikon:'/bilder/merke-kjokken-dash.png' }
+  { sti:'/dashboard.html',   navn:'Kjøkken',     ikon:'/bilder/merke-kjokken-dash.png' },
+  /* Emma dash staar aapen paa forsiden, og da er det ingen grunn til at
+     applista skal skjule den. Argumentet mot - en snarvei til en doer man
+     blir avvist i - gjelder fortsatt for Andrea, men det gjelder like
+     mye flisen paa forsiden, og den beslutningen er alt tatt. Naar lista
+     en dag kan filtreres paa innlogget bruker, hoerer begge to hjemme i
+     samme filter. */
+  { sti:'/emma.html',        navn:'Emma dash',   ikon:'/bilder/merke-emma-dash.png'   }
 ];
 
 /* Stien til sida, normalisert.
@@ -758,13 +765,10 @@ const NEAM_SIDEMERKE = {
   '/oppskrifter': { navn:'Matlaging',    ikon:'/bilder/merke-matlaging.png'    },
   '/kalender'   : { navn:'Kalender',     ikon:'/bilder/merke-kalender.png'     },
   '/dashboard'  : { navn:'Kjøkken dash', ikon:'/bilder/merke-kjokken-dash.png' },
-  /* Emma dash staar HER, men ikke i NEAM_APPER. Hoeyre haandtak maa vite
-     hvilket merke det skal baere paa sida man staar paa, og uten linja
-     under faller Emma dash tilbake paa Neam-merket - «Denne siden» med
-     feil bilde. Applista er et annet spoersmaal: den er lik for alle, og
-     en knapp dit fra en konto som blir avvist i porten er en snarvei til
-     en stengt doer. Skal den inn, maa lista foerst kunne filtreres paa
-     innlogget bruker. */
+  /* Emma dash staar bade her og i NEAM_APPER. Her fordi hoeyre haandtak
+     maa vite hvilket merke det skal baere paa sida man staar paa; uten
+     linja under falt det tilbake paa Neam-merket - «Denne siden» med
+     feil bilde. */
   '/emma'       : { navn:'Emma dash',    ikon:'/bilder/merke-emma-dash.png'    },
   '/'           : { navn:'Neam',         ikon:'/bilder/merke-neam.png'         }
 };
