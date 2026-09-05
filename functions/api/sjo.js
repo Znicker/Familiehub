@@ -93,6 +93,52 @@ function fraJson(d){
   return null;
 }
 
+/* Svaret er XML - sett 5. september 2026:
+
+     <data><sea>
+       <depth><dval>1.0</dval><date>2026-09-05</date><time>03:59:20</time>
+         <measure><type>0</type><value>16.40</value></measure>   temperatur
+         <measure><type>1</type><value>31.40</value></measure>   salt
+       </depth>
+       ...
+     </sea><air/></data>
+
+   Verdiene ligger i CDATA. type 0 er temperatur, type 1 saltholdighet.
+   Tidspunktet er lokal tid uten sone; vi legger paa Europe/Oslo-offset
+   for datoen, saa klienten faar en entydig ISO-streng. */
+function fraXml(xml){
+  const cd = function(navn, bit){
+    const m = new RegExp('<' + navn + '>\\s*(?:<!\\[CDATA\\[)?([^<\\]]*?)(?:\\]\\]>)?\\s*</' + navn + '>').exec(bit);
+    return m ? m[1].trim() : null;
+  };
+  const dybder = xml.split(/<depth>/).slice(1);
+  for(const d of dybder){
+    const dv = tall(cd('dval', d));
+    if(dv === null || Math.abs(dv - DYBDE) > 0.6) continue;
+    /* Temperaturen er maalingen med type 0. */
+    let temp = null;
+    const maal = d.split(/<measure>/).slice(1);
+    for(const m of maal){
+      if(cd('type', m) === '0'){ temp = tall(cd('value', m)); break; }
+    }
+    if(temp === null || temp < -3 || temp > 35) continue;
+    const dato = cd('date', d), kl = cd('time', d);
+    let tid = null;
+    if(dato && kl){
+      /* Europe/Oslo: sommertid fra siste soendag i mars til siste soendag
+         i oktober. Godt nok for en badetemperatur. */
+      const [y, mo, da] = dato.split('-').map(Number);
+      const s = new Date(Date.UTC(y, 2, 31)); s.setUTCDate(31 - s.getUTCDay());
+      const e = new Date(Date.UTC(y, 9, 31)); e.setUTCDate(31 - e.getUTCDay());
+      const dt = new Date(Date.UTC(y, mo - 1, da));
+      const sommer = dt >= s && dt < e;
+      tid = dato + 'T' + kl + (sommer ? '+02:00' : '+01:00');
+    }
+    return { temp: temp, dybde: DYBDE, tid: tid };
+  }
+  return null;
+}
+
 function fraHtml(html){
   const tekst = html
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
@@ -126,7 +172,9 @@ function fraHtml(html){
    bare det senere. */
 const HODER = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128 Safari/537.36',
-  'Accept': 'text/html, */*; q=0.01',
+  /* Det jQuery sender naar den ber om XML. Svaret ER XML, og noen tjenere
+     svarer 404 - ikke 406 - naar Accept ikke passer. */
+  'Accept': 'application/xml, text/xml, */*; q=0.01',
   'Accept-Language': 'nb-NO,nb;q=0.9,no;q=0.8,en;q=0.7',
   'X-Requested-With': 'XMLHttpRequest',
   'Referer': SIDEN
@@ -192,7 +240,8 @@ export async function onRequest(context){
   try{
     const r = await hent(mal);
     let ut = null;
-    if(/json/i.test(r.type) || /^\s*[\[{]/.test(r.tekst)){
+    if(/<depth>/.test(r.tekst)) ut = fraXml(r.tekst);
+    if(!ut && (/json/i.test(r.type) || /^\s*[\[{]/.test(r.tekst))){
       let d = null;
       try{ d = JSON.parse(r.tekst); }catch(e){}
       if(d) ut = fraJson(d);
