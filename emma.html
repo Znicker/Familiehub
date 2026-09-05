@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=5">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=40">
+<link rel="stylesheet" href="/felles-neam.css?v=41">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -1654,6 +1654,13 @@ select.hu-felt{
     <div class="av-skjema" style="display:block" id="timeplanKropp"></div>
   </div>
 
+  <!-- Skanning: capture=environment ber telefonen aapne KAMERAET med det
+       samme i stedet for bildebiblioteket. Paa PC blir det en vanlig
+       filvelger, som er riktig der. `multiple` fordi en ukeplan gjerne er
+       to sider. -->
+  <input type="file" id="skannFil" accept="image/*" capture="environment"
+         multiple hidden onchange="skannValgt(this.files)">
+
   <!-- Lekseark inn. Teksten gaar til Neam, som legger leksene fram i
        forslagspanelet - han skriver ingenting selv. -->
   <div class="hu-boble-bak avtale-bak" id="arkBak" hidden></div>
@@ -1789,7 +1796,7 @@ select.hu-felt{
 <script src="/felles-filviser.js?v=2"></script>
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
-<script src="/felles-neam.js?v=47"></script>
+<script src="/felles-neam.js?v=48"></script>
 <script>
 /* ============================================================
    NEAM – Emma dash
@@ -5535,6 +5542,14 @@ function menyUkeplan(){
          + '<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>',
       gjor: hentUkeplan },
 
+    { navn:'Skann ukeplanen med kamera', tekst:'Skann ark', farge:'ny',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M3 8V6a2 2 0 0 1 2-2h2M17 4h2a2 2 0 0 1 2 2v2'
+         + 'M21 16v2a2 2 0 0 1-2 2h-2M7 20H5a2 2 0 0 1-2-2v-2"/>'
+         + '<circle cx="12" cy="12" r="3.2"/></svg>',
+      gjor: apneSkann },
+
     { navn:'Lim inn lekseark', tekst:'Lim inn', farge:'ny',
       ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
          + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
@@ -6429,6 +6444,61 @@ function kobleArkSlipp(){
   });
 }
 
+/* Instruksen Neam faar sammen med et lekseark, enten det kommer som tekst
+   eller som bilde. Ett sted: den sto skrevet to ganger, og en presisering
+   i den ene fulgte ikke med til den andre. */
+const ARK_INSTRUKS =
+    'Dette er lekselista fra skolen. Sorter leksene på fagene Emma har, regn '
+  + 'om datoene til formen 2026-09-08, og legg ALT fram i ETT kall til '
+  + 'foreslaa_lekser. Er du i tvil om en dato, send leksa uten frist og si fra '
+  + 'om hvilke det gjaldt.\n\n'
+  + 'Står det læringsmål per fag, send dem i maal-lista i det samme '
+  + 'foreslaa_lekser-kallet.\n\n'
+  + 'Beskjeder som IKKE er lekser - utstyr, turdager, frister, og alt som er '
+  + 'rettet til Emma ved navn - legger du inn med legg_til_paaminnelse. Med '
+  + 'dato hvis den har en; har den ingen, send uke-argumentet med ukenummeret '
+  + 'planen gjelder. Ta ikke med overskrifter eller ukenummer.';
+
+/* ---------------- Skanning ----------------
+   Arket fotograferes og sendes til Neam som BILDE. Han leser det og legger
+   leksene fram i forslagspanelet, samme vei som en tekst.
+
+   Bildene krympes foer de sendes - se krympBilde(). En telefon leverer
+   4000 piksler bredt; modellen leser 1400 like godt, og forskjellen er en
+   faktor aatte paa det som skal over nettet.
+   ------------------------------------------------------------ */
+function apneSkann(){
+  const f = $('skannFil');
+  if(f){ f.value = ''; f.click(); }
+}
+
+async function skannValgt(filer){
+  const bilder = Array.prototype.slice.call(filer || [])
+    .filter(function(f){ return f && /^image\//.test(f.type); });
+  if(!bilder.length) return;
+  if(typeof neamStart !== 'function'){
+    varsle('Neam er ikke tilgjengelig på denne siden.');
+    return;
+  }
+  if(bilder.length > 4){
+    varsle('Send høyst fire sider om gangen.');
+    return;
+  }
+
+  let sendes;
+  try{
+    sendes = await Promise.all(bilder.map(async function(f){
+      const url = await krympBilde(f);
+      return { type:'image/jpeg', data:url.split(',')[1] || '' };
+    }));
+  }catch(e){
+    varsle('Fikk ikke lest bildet: ' + e.message);
+    return;
+  }
+
+  await neamStart(ARK_INSTRUKS, { friskt:true, bilder:sendes });
+}
+
 async function sendArkTilNeam(){
   const tekst = $('arkFelt').value.trim();
   if(!tekst){ varsle('Lim inn teksten først.'); return; }
@@ -6443,16 +6513,7 @@ async function sendArkTilNeam(){
     /* friskt: et lekseark er en ny sak, og den forrige samtalen har
        ingenting med tolkningen aa gjoere. */
     await neamStart(
-      'Her er lekselista fra skolen. Sorter leksene på fagene Emma har, regn om '
-      + 'datoene til formen 2026-09-08, og legg ALT fram i ETT kall til '
-      + 'foreslaa_lekser. Er du i tvil om en dato, send leksa uten frist og si fra '
-      + 'om hvilke det gjaldt.\n\n'
-      + 'Står det læringsmål per fag, send dem i maal-lista i det samme '
-      + 'foreslaa_lekser-kallet.\n\n'
-      + 'Beskjeder som IKKE er lekser - utstyr, turdager, frister, og alt som er '
-      + 'rettet til Emma ved navn - legger du inn med legg_til_paaminnelse. Med '
-      + 'dato hvis den har en; har den ingen, send uke-argumentet med ukenummeret '
-      + 'planen gjelder. Ta ikke med overskrifter eller ukenummer.\n\n' + tekst,
+      ARK_INSTRUKS + '\n\n' + tekst,
       {friskt:true});
   }catch(e){
     varsle('Fikk ikke sendt til Neam: ' + e.message);
@@ -6460,6 +6521,7 @@ async function sendArkTilNeam(){
     knapp.disabled = false;
   }
 }
+
 
 /* ---------------- Rydding under testing ----------------
    Ligger i Rediger-stabelen fordi den hoerer til det samme arbeidet:

@@ -863,6 +863,13 @@
   font-size:var(--t-brod); line-height:1.45; white-space:pre-wrap;
   overflow-wrap:anywhere;
 }
+/* Et bilde brukeren sendte. Boblen er bare en ramme rundt det - ingen
+   polstring, ingen tekstfarge aa arve. */
+.neam-melding.neam-bilde{ padding:0; background:none; border:none; max-width:220px; }
+.neam-melding.neam-bilde img{
+  display:block; width:100%; height:auto; border-radius:12px;
+  border:1px solid var(--line);
+}
 .neam-melding.meg{
   align-self:flex-end; background:var(--aksent); color:#FFFFFF;
   border-bottom-right-radius:5px;

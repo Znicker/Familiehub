@@ -202,7 +202,14 @@ function neamLagre(){
 function neamKlipp(msgs){
   if(msgs.length <= NEAM_SENDT) return msgs;
   for(let i = msgs.length - NEAM_SENDT; i < msgs.length; i++){
-    if(msgs[i].role === 'user' && typeof msgs[i].content === 'string') return msgs.slice(i);
+    /* En bildemelding er ogsaa en ekte brukertur, selv om innholdet er en
+       liste og ikke en streng. Uten dette kunne klippet lande midt inne i
+       en runde med bilde og verktoeykall. */
+    const m = msgs[i];
+    if(m.role !== 'user') continue;
+    if(typeof m.content === 'string') return msgs.slice(i);
+    if(Array.isArray(m.content) && m.content.some(function(b){ return b.type === 'image'; }))
+      return msgs.slice(i);
   }
   return msgs;
 }
@@ -1687,8 +1694,19 @@ function neamTegn(){
     }
 
     (m.content || []).forEach(function(b){
-      if(b.type === 'text' && String(b.text || '').trim()){
-        neamBoble(boks, 'bot', b.text);
+      if(b.type === 'image' && b.source && b.source.data){
+        /* Miniatyr av det som ble sendt. Uten den ser samtalen ut som at
+           ingenting skjedde mellom trykket og svaret. */
+        const el = document.createElement('div');
+        el.className = 'neam-melding meg neam-bilde';
+        el.innerHTML = '<img alt="" src="data:'
+          + (b.source.media_type || 'image/jpeg') + ';base64,' + b.source.data + '">';
+        boks.appendChild(el);
+      }else if(b.type === 'text' && String(b.text || '').trim()){
+        /* Teksten som fulgte et bilde er sidens egen instruks - se
+           kommentaren over om `auto`. Den vises ikke. */
+        if(p.auto) return;
+        neamBoble(boks, m.role === 'user' ? 'meg' : 'bot', b.text);
       }else if(b.type === 'server_tool_use'){
         /* Nettsoeket vises som en linje, som vaare egne verktoey - men med
            soekeordet, siden det er det eneste som sier hva han lette etter. */
@@ -1903,7 +1921,9 @@ async function neamStart(beskjed, valg){
   const v = valg || {};
   if(neamVenter) return;
   const tekst = String(beskjed || '').trim();
-  if(!tekst) return;
+  /* Et bilde uten ord er en gyldig melding - «her, les dette». */
+  const bilder = Array.isArray(v.bilder) ? v.bilder.filter(Boolean) : [];
+  if(!tekst && !bilder.length) return;
 
   neamBygg();
   if(v.friskt){ neamPoster = []; neamPaatvunget = null; }
@@ -1920,7 +1940,25 @@ async function neamStart(beskjed, valg){
 
   neamTurVerktoy = Array.isArray(v.verktoy) && v.verktoy.length ? v.verktoy : null;
 
-  neamPoster.push({ api:{ role:'user', content:tekst }, auto:true });
+  /* Med bilder maa innholdet vaere en LISTE av blokker, ikke en streng.
+     Bildene foerst: modellen leser dem best naar de staar foer teksten
+     som forteller hva den skal gjoere med dem.
+
+     `auto` skjuler beskjeden i samtalen - den er skrevet for Neam, ikke
+     for brukeren. Bildene vises likevel, saa man ser HVA man sendte;
+     ellers staar det bare «tenker ...» uten spor av at noe ble sendt. */
+  if(bilder.length){
+    const blokker = bilder.map(function(b){
+      return { type:'image',
+               source:{ type:'base64',
+                        media_type: b.type || 'image/jpeg',
+                        data: b.data } };
+    });
+    if(tekst) blokker.push({ type:'text', text:tekst });
+    neamPoster.push({ api:{ role:'user', content:blokker }, auto:true, viserBilder:true });
+  }else{
+    neamPoster.push({ api:{ role:'user', content:tekst }, auto:true });
+  }
   await neamTur();
 }
 
