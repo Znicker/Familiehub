@@ -92,7 +92,12 @@
    ============================================================ */
 
 const NEAM_LAGER  = 'neam_samtale';
-const NEAM_MERKE  = '/bilder/merke-neam.png';
+/* Versjon paa merkeadressene. Bildene byttes med jevne mellomrom, og en
+   fil som erstattes under samme navn blir liggende i cachen - hos
+   Cloudflare, i nettleseren, og paa en iPad uten hard oppfrisking.
+   BYTTES ET MERKE: oek tallet. */
+const MERKE_V = 2;
+const NEAM_MERKE  = '/bilder/merke-neam.png?v=' + MERKE_V;
 /* Modellene man kan veksle mellom, i rekkefoelge fra raskest til
    grundigst. Knappen i topplinja gaar rundt.
 
@@ -729,6 +734,8 @@ const NEAM_APPER = [
   { sti:'/oppskrifter.html', navn:'Matlaging',   ikon:'/bilder/merke-matlaging.png'   },
   { sti:'/kalender.html',    navn:'Kalender',    ikon:'/bilder/merke-kalender.png'    },
   { sti:'/dashboard.html',   navn:'Kjøkken',     ikon:'/bilder/merke-kjokken-dash.png' },
+  /* Versjonen legges paa i neamMerkeUrl(), ikke her - da staar stien
+     lesbar i lista og nummeret ett sted. */
   /* Emma dash staar aapen paa forsiden, og da er det ingen grunn til at
      applista skal skjule den. Argumentet mot - en snarvei til en doer man
      blir avvist i - gjelder fortsatt for Andrea, men det gjelder like
@@ -747,6 +754,13 @@ const NEAM_APPER = [
    de bommer stille, med en reserve som ser plausibel ut.
 
    Taaler begge former, saa den virker like godt lokalt og bak Pages. */
+/* Merkeadresse med versjon. Alle steder som viser et merke gaar gjennom
+   denne, saa ett tall bytter dem alle. */
+function neamMerkeUrl(sti){
+  const u = String(sti || '');
+  return u ? (u + (u.indexOf('?') === -1 ? '?v=' : '&v=') + MERKE_V) : u;
+}
+
 function neamSti(sti){
   let p = String(sti != null ? sti : location.pathname || '/').toLowerCase();
   p = p.replace(/\.html$/, '');
@@ -1421,7 +1435,7 @@ function neamVisApper(){
   boks.innerHTML = apper.map(function(a){
       return '<a class="neam-app-lenke" href="' + a.sti + '" '
            +   'title="' + a.navn + '" aria-label="' + a.navn + '">'
-           +   '<img src="' + a.ikon + '" alt="">'
+           +   '<img src="' + neamMerkeUrl(a.ikon) + '" alt="">'
            + '</a>';
     }).join('');
 
@@ -1629,7 +1643,7 @@ function neamBygg(){
   sHandtak.id = 'neamSideHandtak';
   sHandtak.title = sm.navn;
   sHandtak.setAttribute('aria-label', sm.navn + ' - handlinger');
-  sHandtak.innerHTML = '<img src="' + sm.ikon + '" alt="">';
+  sHandtak.innerHTML = '<img src="' + neamMerkeUrl(sm.ikon) + '" alt="">';
   sHandtak.onclick = neamSideFirer;
   sHandtak.hidden = !neamSideHarNoe();
   document.body.appendChild(sHandtak);

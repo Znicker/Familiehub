@@ -402,7 +402,7 @@ input,select,textarea{font-size:16px}
 
   <div class="top">
     <div class="brand">
-      <a href="/" class="brand-icon" title="Til Neam" style="display:block;text-decoration:none"><img src="/bilder/merke-neam.png" alt="Neam" width="256" height="277"></a>
+      <a href="/" class="brand-icon" title="Til Neam" style="display:block;text-decoration:none"><img src="/bilder/merke-neam.png?v=2" alt="Neam" width="256" height="277"></a>
     </div>
     <div class="clock">
       <div class="clock-time" id="clock-time">--:--</div>
@@ -418,16 +418,16 @@ input,select,textarea{font-size:16px}
       </div>
       <div class="apps skjul-planlagte" id="apps">
         <a class="app merke" href="dashboard.html" id="dashKort" hidden aria-label="Kjøkken dash">
-          <span class="app-icon"><img alt="Kjøkken dash" src="/bilder/merke-kjokken-dash.png" width="256" height="265"></span>
+          <span class="app-icon"><img alt="Kjøkken dash" src="/bilder/merke-kjokken-dash.png?v=2" width="256" height="265"></span>
         </a>
         <a class="app merke" href="emma.html" id="emmaKort" aria-label="Emma dash">
-          <span class="app-icon"><img alt="Emma dash" src="/bilder/merke-emma-dash.png" width="512" height="516"></span>
+          <span class="app-icon"><img alt="Emma dash" src="/bilder/merke-emma-dash.png?v=2" width="512" height="516"></span>
         </a>
         <a class="app merke" href="oppskrifter.html" aria-label="Matlaging">
-          <span class="app-icon"><img alt="Matlaging" src="/bilder/merke-matlaging.png" width="256" height="270"></span>
+          <span class="app-icon"><img alt="Matlaging" src="/bilder/merke-matlaging.png?v=2" width="256" height="270"></span>
         </a>
         <a class="app merke" href="handleliste.html" aria-label="Handleliste">
-          <span class="app-icon"><img alt="Handleliste" src="/bilder/merke-handleliste.png" width="256" height="268"></span>
+          <span class="app-icon"><img alt="Handleliste" src="/bilder/merke-handleliste.png?v=2" width="256" height="268"></span>
         </a>
         <a class="app merke" href="kalender.html" aria-label="Kalender">
           <span class="app-icon"><img alt="Kalender" src="/bilder/merke-kalender.png?v=2" width="384" height="384"></span>
@@ -438,9 +438,12 @@ input,select,textarea{font-size:16px}
           <span class="app-name">Kvitte&shy;ringer</span>
           <span class="app-badge">Kommer</span>
         </div>
-        <div class="app soon planlagt">
-          <span class="app-icon"><img src="/bilder/flis-okonomi.png" alt="" width="256" height="256"></span>
-          <span class="app-name">Økonomi</span>
+        <!-- Merkeform, ikke flisform: merket baerer navnet sitt selv, og en
+             app-name under det ville sagt «Økonomi» to ganger. «Kommer»
+             blir staaende - det er den eneste opplysningen flisen har som
+             merket ikke har. -->
+        <div class="app merke soon planlagt">
+          <span class="app-icon"><img src="/bilder/merke-okonomi.png?v=2" alt="Økonomi" width="512" height="521"></span>
           <span class="app-badge">Kommer</span>
         </div>
         <div class="app soon planlagt">
@@ -453,9 +456,8 @@ input,select,textarea{font-size:16px}
           <span class="app-name">Sikker&shy;het</span>
           <span class="app-badge">Kommer</span>
         </div>
-        <div class="app soon planlagt">
-          <span class="app-icon"><img src="/bilder/flis-arbeidsoppgaver.png" alt="" width="256" height="256"></span>
-          <span class="app-name">Arbeids&shy;oppgaver</span>
+        <div class="app merke soon planlagt">
+          <span class="app-icon"><img src="/bilder/merke-arbeidsoppgaver.png?v=2" alt="Arbeidsoppgaver" width="512" height="521"></span>
           <span class="app-badge">Kommer</span>
         </div>
         <div class="app soon planlagt">
@@ -1129,6 +1131,6 @@ window.neamUtfor = async function(navn, arg){
      overalt, og senere er dette veien til aa snakke med Neam herfra. -->
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=53"></script>
+<script src="/felles-neam.js?v=54"></script>
 </body>
 </html>
