@@ -455,6 +455,17 @@
     top:calc(var(--f-aapen) / 2);
     bottom:calc(-1 * (var(--f-aapen) / 2 + 16px));
   }
+  /* To kolonner er en loesning paa manglende HOEYDE. Paa telefon er det
+     bredden som mangler, og da er to kolonner feil vei: fire valg ble et
+     2x2-rutenett som fylte halve skjermen paa tvers. Her staar de i én
+     kolonne uansett hvor mange de er. */
+  .neam-stabel.bred{
+    flex-wrap:nowrap; max-height:none; width:var(--f-aapen);
+  }
+  .neam-stabel.bred::after{ content:none; }
+  .neam-stabel.bred::before{ left:calc(50% - var(--ror-tykk) / 2); right:auto; }
+  .neam-stabel.side.bred::before{ left:calc(50% - var(--ror-tykk) / 2); right:auto; }
+
   /* JS-delene og nedstikkene fra radoppsettet gjelder ikke lenger. */
   .neam-stabel.rad .rdel{ display:none; }
   .neam-stabel.rad .neam-enhet.over::after{ content:none; }

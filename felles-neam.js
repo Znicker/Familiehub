@@ -1203,6 +1203,13 @@ function neamRorRad(antall, side){
 function neamSideStabel(plass, liste){
   const boks = document.getElementById('neamSideStabel');
   if(!boks) return;
+  /* Aapen stabel + nytt kall = LUKK. Det er det som gjoer at et nytt
+     trykk paa samme knapp lukker menyen.
+
+     MEN ikke naar kallet kommer fra en knapp INNE i stabelen: da er det
+     en undermeny som skal erstatte den, ikke en lukking. Klikkhaandtereren
+     under skjuler boksen foer den kaller gjor(), saa `hidden` er alt sant
+     naar vi kommer hit fra en undermeny - og da faller vi rett gjennom. */
   if(!boks.hidden){ boks.hidden = true; neamSideGren(''); return; }
   if(!liste || !liste.length) return;
 
@@ -1235,7 +1242,14 @@ function neamSideStabel(plass, liste){
     k.onclick = function(){
       const v = liste[parseInt(k.dataset.nr, 10)];
       boks.hidden = true;
-      neamSideFirerNed();
+      /* `meny:true` betyr at valget aapner en UNDERMENY. Da skal fireren
+         bli staaende - den nye menyen henger i den samme knappen, og
+         henger den i en firer som er slaatt ned, staar valgene igjen
+         alene paa skjermen uten noe aa peke paa.
+
+         Det var nettopp det som skjedde: Roligheden aapnet Ukeplan, og
+         Roligheden, Legg til og Rediger forsvant i stedet for aa dempes. */
+      if(!(v && v.meny)) neamSideFirerNed();
       if(v && typeof v.gjor === 'function'){
         try{ v.gjor(); }catch(e){ console.warn('Systemvalg feilet:', e); }
       }
