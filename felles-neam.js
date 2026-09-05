@@ -1479,24 +1479,22 @@ function neamVisApper(){
      der lista uansett henger fast. Derfor trengs ingen omvei ned: samme
      roer baerer hele figuren og fortsetter rett ned i knappen.
 
-     Nivaaene fylles nedenfra, saa den foerste appen er den naermeste
-     tommelen. ETT nederst paa stammen, saa par oppover, og blir det én
-     til overs havner den paa toppen: 1-2-2-1 med seks apper, 1-2-2 med
-     fem, 1-2-1 med fire.
+     Nivaaene fylles nedenfra: PAR hele veien opp, og blir det én til
+     overs havner den ALENE PAA TOPPEN. 2-2-2 med seks apper, 2-2-1 med
+     fem, 2-1 med tre.
 
-     Foerste utgave vekslet enkelt og par annenhver og ga 1-2-1-2 - to
-     bjelker med et loest merke imellom, ikke figuren i skissen. */
+     Foerste utgave satte den enslige nederst, naermest tommelen. Da laa
+     én app for seg selv i bunnen mens de andre sto parvis over - det
+     leses som at den er noe annet enn de andre, og det er den ikke.
+     Toppen er et bedre sted for en som blir til overs. */
   const niv = [];
   (function(){
     let i = 0, igjen = apper.length;
-    if(!igjen) return;
-    niv.push({ enkelt:true, fra:0, antall:1 });     /* nederst paa stammen */
-    i = 1; igjen -= 1;
     while(igjen >= 2){
       niv.push({ enkelt:false, fra:i, antall:2 });
       i += 2; igjen -= 2;
     }
-    if(igjen === 1) niv.push({ enkelt:true, fra:i, antall:1 });   /* paa toppen */
+    if(igjen === 1) niv.push({ enkelt:true, fra:i, antall:1 });
   })();
 
   boks.classList.add('fiskeben');
@@ -1549,18 +1547,27 @@ function neamVisApper(){
       /* Tverrbjelken fra venstre til hoeyre merkesenter. */
       del('flis-h', 'left:' + kolX(0) + '; width:calc(2*(' + A + ' + ' + L + '));'
         + 'bottom:calc(' + y(j) + ' - ' + T + '/2);');
+      /* krage-h er 13x22 i css med roeret vannrett gjennom midten:
+         senteret ligger 11 fra bunn og 6,5 fra venstre. */
       del('hel krage-h', 'left:calc(' + kolX(0) + ' - 6.5px);'
-        + 'bottom:calc(' + y(j) + ' - ' + T + '/2 - 4.5px);');
+        + 'bottom:calc(' + y(j) + ' - 11px);');
       del('hel krage-h', 'left:calc(' + kolX(2) + ' - 6.5px);'
-        + 'bottom:calc(' + y(j) + ' - ' + T + '/2 - 4.5px);');
+        + 'bottom:calc(' + y(j) + ' - 11px);');
       /* Skjoeten i midten: kryss naar stammen gaar videre opp, T med
          stammen ned naar bjelken er det oeverste nivaaet. */
+      /* MAALT FRA BUNNEN, ikke fra toppen. `bottom` setter avstanden fra
+         beholderens bunn til delens bunn, mens maaltallene i CSS-en er
+         oppgitt fra delens TOPP. Krysset er 42 hoeyt med vannrett arm 15,8
+         fra topp - altsaa 26,2 fra bunn. Foerste utgave brukte 15,8 rett,
+         og da laa hvert kryss ti piksler for hoeyt. Det saa nesten riktig
+         ut, som er det som gjoer slike feil vanskelige aa se. */
       if(j < topp){
         del('hel kryss', 'left:calc(' + midt + ' - 27.8px);'
-          + 'bottom:calc(' + y(j) + ' - 15.8px);');
+          + 'bottom:calc(' + y(j) + ' - 26.2px);');
       }else{
+        /* t-ned: 29 hoey, gjennomroer 9 fra topp = 20 fra bunn. */
         del('hel t-ned', 'left:calc(' + midt + ' - 22px);'
-          + 'bottom:calc(' + y(j) + ' - ' + T + '/2 - 20px);');
+          + 'bottom:calc(' + y(j) + ' - 20px);');
       }
     });
     boks.insertAdjacentHTML('afterbegin', d.join(''));
