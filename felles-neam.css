@@ -435,6 +435,11 @@
    for en kolonne. De skrus av her, og det loddrette roeret fra
    kolonnestabelen settes paa i stedet. */
 @media(max-width:900px){
+  /* Kolonnen staar ETT hakk lenger inn paa telefon enn ellers, saa
+     ledningen faar plass mellom knappene og skjermkanten uten aa havne
+     oppaa fireren under. 14px klaring til knappekanten er nok paa iPad,
+     der ledningen har hele margen aa staa i - paa en telefon er margen
+     24px, og da ligger roeret praktisk talt inntil kanten. */
   .neam-stabel.rad{
     flex-direction:column-reverse; flex-wrap:nowrap;
     align-items:flex-start; width:var(--f-aapen);
@@ -458,17 +463,8 @@
     right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
   }
 
-  /* Loddrett roer ned i moderknappen - samme regnestykke som for
-     kolonnestablene lenger oppe i fila. */
-  .neam-stabel.rad::before{
-    content:''; position:absolute; z-index:0;
-    width:var(--ror-tykk); background-image:var(--ror-lodd);
-    background-size:100% auto; background-repeat:repeat-y;
-    box-shadow:var(--ror-skygge);
-    left:calc(50% - var(--ror-tykk) / 2);
-    top:calc(var(--f-aapen) / 2);
-    bottom:calc(-1 * (var(--f-aapen) / 2 + 16px));
-  }
+  /* Roeret tegnes av JS - se neamRorKolonne(). CSS-ens eget er slaatt av
+     med .medror. */
   /* To kolonner er en loesning paa manglende HOEYDE. Paa telefon er det
      bredden som mangler, og da er to kolonner feil vei: fire valg ble et
      2x2-rutenett som fylte halve skjermen paa tvers. Her staar de i én
@@ -480,8 +476,14 @@
   .neam-stabel.bred::before{ left:calc(50% - var(--ror-tykk) / 2); right:auto; }
   .neam-stabel.side.bred::before{ left:calc(50% - var(--ror-tykk) / 2); right:auto; }
 
-  /* JS-delene og nedstikkene fra radoppsettet gjelder ikke lenger. */
-  .neam-stabel.rad .rdel{ display:none; }
+  /* Nedstikkene fra radoppsettet gjelder ikke lenger.
+
+     MERK at .rdel IKKE skjules her. Regelen gjorde det en kort stund, fra
+     den gang radens roerdeler var de eneste som fantes - og da JS begynte
+     aa tegne KOLONNEroeret inn i den samme boksen, skjulte den de nye
+     delene ogsaa. «Legg til» sto derfor helt uten roer paa telefon, mens
+     undermenyene hadde sine. Hvilke deler som skal tegnes avgjoeres i JS,
+     ikke her. */
   .neam-stabel.rad .neam-enhet.over::after{ content:none; }
   .neam-stabel.rad .neam-enhet.over::before{
     content:''; position:absolute; inset:0; z-index:0;
