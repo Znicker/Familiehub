@@ -1425,36 +1425,97 @@ function neamVisApper(){
            + '</a>';
     }).join('');
 
-  /* Roeret under raden: samlerroer med endekrager, oppstikk med T-stykke
-     opp i hvert merke, og stammen med T ned mot «skraa». Alt er deler fra
-     arket - se .rdel i CSS-en. Legges foerst, saa merkene tegnes over. */
+  /* To rader over fire apper. Seks merker paa én rad ble 900px bredt og
+     dyttet lista ut av skjermen paa alt annet enn en stor PC. Bruddet
+     laases i CSS med --app-kol, saa det skjer paa samme sted uansett
+     skjerm - roeret under er tegnet for ett bestemt bruddpunkt. */
+  const kol = apper.length > 4 ? Math.ceil(apper.length / 2) : apper.length;
+  boks.style.setProperty('--app-kol', kol);
+
+  /* flex-wrap:wrap-reverse gjoer at de FOERSTE havner nederst, naermest
+     fireren. Det er riktig vei: den man bruker mest skal vaere naermest. */
+  const iNede = Math.min(kol, apper.length);
+  const iOppe = apper.length - iNede;
+
+  /* Roeret: samler under hver rad, oppstikk i hvert merke, og et
+     stigeroer mellom radene. Alt er deler fra arket - se .rdel i CSS-en.
+     Legges foerst, saa merkene tegnes over. */
   (function(){
     const A = 'var(--f-aapen)', L = 'var(--f-luft)', T = 'var(--ror-tykk)';
-    const rorB = 'calc(-1*var(--app-ror) - ' + T + '/2)';     /* roerets bunn */
-    const n = apper.length;
-    if(!n) return;
+    const rorB = 'calc(-1*var(--app-ror) - ' + T + '/2)';     /* nedre samler */
+    if(!apper.length) return;
     const d = [];
     function del(kl, stil){ d.push('<i class="rdel ' + kl + '" style="' + stil + '"></i>'); }
-    /* Samlerroeret fra foerste til siste merkesenter. */
-    del('flis-h', 'left:calc(' + A + '/2); right:calc(' + A + '/2);'
+    const x = function(i){ return 'calc(' + A + '/2 + ' + i + '*(' + A + ' + ' + L + '))'; };
+
+    /* Stigeroeret staar midt i den OEVERSTE raden, saa krysset faar armer
+       til begge sider. Har den oeverste raden bare to merker, finnes
+       ingen midtstilling - da havner det paa et endepunkt, og skjoeten
+       blir et T med loddrett gjennomroer i stedet. */
+    const cKryss = iOppe ? Math.floor((iOppe - 1) / 2) : -1;
+    const kryssMidt = (iOppe >= 3 && cKryss > 0 && cKryss < iOppe - 1);
+
+    /* ---- Nedre rad ---- */
+    del('flis-h', 'left:calc(' + A + '/2); '
+      + 'width:calc(' + (iNede - 1) + '*(' + A + ' + ' + L + '));'
       + 'bottom:' + rorB + ';');
-    for(let i = 0; i < n; i++){
-      const senter = 'calc(' + A + '/2 + ' + i + '*(' + A + ' + ' + L + '))';
-      /* Oppstikk fra roeret opp i merket. */
-      del('flis-v', 'left:calc(' + senter + ' - ' + T + '/2);'
-        + 'bottom:' + rorB + '; height:calc(' + A + '/2 + var(--app-ror));');
-      /* T med stammen opp - gjennomroer-senter 16 fra topp, stamme 23. */
-      if(i > 0 && i < n - 1){
-        del('hel t-opp', 'left:calc(' + senter + ' - 23px);'
+    for(let i = 0; i < iNede; i++){
+      /* Ved stigeroeret gaar oppstikket helt opp til oevre samler i
+         stedet - det passerer bak merket, som tegnes over. */
+      const helt = (iOppe && i === cKryss);
+      del('flis-v', 'left:calc(' + x(i) + ' - ' + T + '/2);'
+        + 'bottom:' + rorB + ';'
+        + 'height:calc(' + (helt
+            ? A + ' + ' + L + '/2 + var(--app-ror) + ' + T + '/2'
+            : A + '/2 + var(--app-ror)') + ');');
+      if(i > 0 && i < iNede - 1){
+        del('hel t-opp', 'left:calc(' + x(i) + ' - 23px);'
           + 'bottom:calc(' + rorB + ' + ' + T + '/2 - 9px);');
       }
     }
-    /* Endekrager paa samlerroeret. */
     del('hel krage-h', 'left:calc(' + A + '/2 - 6.5px);'
       + 'bottom:calc(' + rorB + ' - 4.5px);');
-    del('hel krage-h', 'right:calc(' + A + '/2 - 6.5px);'
+    del('hel krage-h', 'left:calc(' + x(iNede - 1) + ' - 6.5px);'
       + 'bottom:calc(' + rorB + ' - 4.5px);');
-    /* Stammen ned til «skraa»-knappens senter, med T i avgreiningen. */
+
+    /* ---- Oevre rad ---- */
+    if(iOppe){
+      const y1 = 'calc(' + A + ' + ' + L + '/2)';        /* samler i gapet */
+      del('flis-h', 'left:calc(' + A + '/2); '
+        + 'width:calc(' + (iOppe - 1) + '*(' + A + ' + ' + L + '));'
+        + 'bottom:calc(' + y1 + ' - ' + T + '/2);');
+      for(let i = 0; i < iOppe; i++){
+        del('flis-v', 'left:calc(' + x(i) + ' - ' + T + '/2);'
+          + 'bottom:calc(' + y1 + ');'
+          + 'height:calc(' + A + '/2 + ' + L + '/2);');
+        if(i === cKryss){
+          /* Skjoeten der stigeroeret kommer opp. Kryss naar samleren gaar
+             videre begge veier, ellers et T med loddrett gjennomroer. */
+          if(kryssMidt){
+            del('hel kryss', 'left:calc(' + x(i) + ' - 27.8px);'
+              + 'bottom:calc(' + y1 + ' - 15.8px);');
+          }else{
+            del('hel ' + (i === 0 ? 't-hoyre' : 't-venstre'),
+                'left:calc(' + x(i) + ' - ' + (i === 0 ? '9px' : '20px') + ');'
+              + 'bottom:calc(' + y1 + ' - 22px);');
+          }
+        }else if(i > 0 && i < iOppe - 1){
+          del('hel t-opp', 'left:calc(' + x(i) + ' - 23px);'
+            + 'bottom:calc(' + y1 + ' - 9px);');
+        }
+      }
+      /* Endekrager, men ikke der krysset alt daekker skjoeten. */
+      if(cKryss !== 0){
+        del('hel krage-h', 'left:calc(' + A + '/2 - 6.5px);'
+          + 'bottom:calc(' + y1 + ' - ' + T + '/2 - 4.5px);');
+      }
+      if(cKryss !== iOppe - 1){
+        del('hel krage-h', 'left:calc(' + x(iOppe - 1) + ' - 6.5px);'
+          + 'bottom:calc(' + y1 + ' - ' + T + '/2 - 4.5px);');
+      }
+    }
+
+    /* ---- Stammen ned til «skraa» ---- */
     const skraaX = 'calc(1.5*' + A + ' + ' + L + ')';
     del('flis-v', 'left:calc(' + skraaX + ' - ' + T + '/2);'
       + 'bottom:calc(-1*(' + A + '/2 + 16px));'

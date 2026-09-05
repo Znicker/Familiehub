@@ -140,6 +140,11 @@
 .rdel.bend-oh  { width:31px; height:32px; background-image:url('/bilder/deler/bend-oh.png?v=1'); }
 .rdel.t-venstre{ width:29px; height:44px; background-image:url('/bilder/deler/t-venstre.png?v=1'); }
 .rdel.t-hoyre  { width:29px; height:44px; background-image:url('/bilder/deler/t-hoyre.png?v=1'); }
+/* Krysset: der stigeroeret mellom radene moeter den oevre samleren og
+   fortsetter opp i merket over. Fire armer, altsaa ikke et T-stykke.
+   56x42 css, vannrett arm-senter 15,8 fra topp, loddrett 27,8 fra
+   venstre - maalt paa fila, ikke gjettet. */
+.rdel.kryss{ width:56px; height:42px; background-image:url('/bilder/deler/kryss.png?v=1'); }
 .rdel.krage-v{ width:22px; height:13px; background-image:url('/bilder/deler/krage.png?v=2'); }
 .rdel.krage-h{ width:13px; height:22px; background-image:url('/bilder/deler/krage-h.png?v=2'); }
 
@@ -814,7 +819,13 @@
      fra hver kant - stakk da langt ut forbi foerste og siste app.
      max-content med tak lar den fortsatt bryte naar den maa. */
   left:var(--f-marg-x); right:auto;
-  width:max-content;
+  /* --app-kol settes av JS: over fire apper deles lista i to rader, og
+     bredden laases til det antallet saa den brekker der vi vil og ikke
+     der skjermen tilfeldigvis tar slutt. Uten laas kunne rekkefoelgen bli
+     3+2 paa én skjerm og 4+1 paa en annen, og roeret er tegnet for ett
+     bestemt bruddpunkt. */
+  width:calc(var(--app-kol, 6) * var(--f-aapen)
+             + (var(--app-kol, 6) - 1) * var(--f-luft));
   max-width:calc(100vw - 2 * var(--f-marg-x));
   /* env(safe-area-inset-bottom) MAA staa her ogsaa. Fireren har den, og
      uten den her maales de to fra hvert sitt nullpunkt: paa en iPhone
