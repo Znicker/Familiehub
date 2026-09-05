@@ -1611,12 +1611,7 @@ function neamBygg(){
   firer.innerHTML =
       knapp('neamTLys', 'opp', 'Enheter og lys', knappMerke('enheter'), '', true)
     + knapp('neamTApper', 'skraa', 'Andre apper', knappMerke('apper'), '', true)
-    /* «Dash» har ingen merkeknapp ennaa og beholder strektegningen. */
-    + knapp('neamTDash', 'ved', 'Til Dash',
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-      + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-      + '<rect x="2" y="4" width="20" height="13" rx="2"/>'
-      + '<path d="M3 9h18M9 18v3M15 18v3M8 21h8"/></svg>', 'Dash');
+    + knapp('neamTDash', 'ved', 'Til Dash', knappMerke('dash'), '', true);
   document.body.appendChild(firer);
 
   /* Applista er sin egen boks utenfor fireren: den er fastposisjonert mot
