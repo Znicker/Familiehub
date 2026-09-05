@@ -33,6 +33,9 @@ const VERT  = 'www.imr.no';
    faar 1,1 kB tilbake. draw.map, som var foerste gjetning, er bare
    visningssida og har ingen tall i seg. */
 const KILDE = 'https://www.imr.no/forskning/forskningsdata/temperatur_flodevigen/updateLastReadings.ajx?boey=1';
+/* Sida endepunktet hoerer til. Sendes som Referer, og hentes foerst hvis
+   endepunktet krever en sesjonskake. */
+const SIDEN = 'https://www.imr.no/forskning/forskningsdata/temperatur_flodevigen/draw.map?boey=1';
 const DYBDE = 1;        /* meter - badetemperaturen */
 
 function svar(obj, status){
@@ -111,17 +114,63 @@ function fraHtml(html){
   return { temp: temp, dybde: DYBDE, tid: tid };
 }
 
-async function hent(url){
+/* Endepunktet svarte 404 paa et vanlig GET, men 200 til sidas eget skript.
+   Da ser tjeneren paa HVEM som spoer. Vi proever det skriptet gjoer, i
+   stigende grad av innsats:
+
+     1. GET med X-Requested-With og Referer  (det jQuery legger paa)
+     2. POST med det samme                    (ajaxfunctions kan bruke POST)
+     3. Hent sida foerst, ta med kaka, og proev 1 og 2 igjen
+
+   Det som virket staar i `via` i svaret, saa vi kan stramme inn til
+   bare det senere. */
+const HODER = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128 Safari/537.36',
+  'Accept': 'text/html, */*; q=0.01',
+  'Accept-Language': 'nb-NO,nb;q=0.9,no;q=0.8,en;q=0.7',
+  'X-Requested-With': 'XMLHttpRequest',
+  'Referer': SIDEN
+};
+
+async function proev(url, metode, kake){
+  const h = Object.assign({}, HODER);
+  if(kake) h['Cookie'] = kake;
+  if(metode === 'POST') h['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
   const r = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; Neam/1.0; familiehub enkeltoppslag)',
-      'Accept': 'application/json, text/html;q=0.9, */*;q=0.5'
-    },
-    redirect: 'follow',
-    cf: { cacheTtl: 3600, cacheEverything: true }
+    method: metode, headers: h, redirect: 'follow',
+    body: metode === 'POST' ? '' : undefined,
+    cf: { cacheTtl: 3600, cacheEverything: metode === 'GET' }
   });
-  if(!r.ok) throw new Error('imr.no svarte ' + r.status);
-  return { tekst: await r.text(), type: r.headers.get('content-type') || '' };
+  const tekst = await r.text();
+  return { ok: r.ok, status: r.status, tekst: tekst,
+           type: r.headers.get('content-type') || '' };
+}
+
+async function hent(url){
+  const forsok = [];
+  let svar = await proev(url, 'GET', null);
+  forsok.push('GET ' + svar.status);
+  if(svar.ok) return Object.assign(svar, { via: forsok.join(', ') });
+
+  svar = await proev(url, 'POST', null);
+  forsok.push('POST ' + svar.status);
+  if(svar.ok) return Object.assign(svar, { via: forsok.join(', ') });
+
+  /* Sesjonskake: hent sida, plukk cookien, proev igjen. */
+  const side = await fetch(SIDEN, { headers: { 'User-Agent': HODER['User-Agent'] }, redirect: 'follow' });
+  const kake = (side.headers.get('set-cookie') || '').split(',')
+                 .map(function(c){ return c.split(';')[0].trim(); })
+                 .filter(Boolean).join('; ');
+  forsok.push('side ' + side.status + (kake ? ' +kake' : ' uten kake'));
+  if(kake){
+    svar = await proev(url, 'GET', kake);
+    forsok.push('GET+kake ' + svar.status);
+    if(svar.ok) return Object.assign(svar, { via: forsok.join(', ') });
+    svar = await proev(url, 'POST', kake);
+    forsok.push('POST+kake ' + svar.status);
+    if(svar.ok) return Object.assign(svar, { via: forsok.join(', ') });
+  }
+  throw new Error('imr.no svarte ' + svar.status + ' (' + forsok.join(', ') + ')');
 }
 
 export async function onRequest(context){
@@ -160,11 +209,12 @@ export async function onRequest(context){
          med {feil} haandteres riktig - feltet blir tomt. */
       return svar({
         feil: 'Fant ingen maaling paa ' + DYBDE + ' m i svaret.',
-        kilde: mal, type: r.type, tegn: r.tekst.length,
+        kilde: mal, via: r.via, type: r.type, tegn: r.tekst.length,
         start: r.tekst.replace(/\s+/g, ' ').slice(0, 400)
       });
     }
     ut.kilde = mal;
+    ut.via = r.via;
     return svar(ut);
   }catch(e){
     /* Samme grunn: 200 med {feil}, saa meldingen kommer fram. */
